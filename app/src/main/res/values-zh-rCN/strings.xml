@@ -12,6 +12,7 @@
     <string name="no_apps_found">未找到应用程序</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">独立模式</string>
+    <string name="to_android_auto">到 Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">移除</string>
     <string name="usb">USB</string>
@@ -1283,4 +1284,10 @@
     <string name="home_choose_favorite_app">选择应用</string>
     <string name="home_show_favorite_apps">主画面收藏应用</string>
     <string name="home_show_favorite_apps_description">Open Headunit 作为主画面应用时，在主按钮下方显示四个应用快捷方式</string>
+    <string name="home_use_classic">经典主屏幕</string>
+    <string name="home_use_classic_description">以前的设计，四个同样大小的按钮</string>
+    <string name="home_design_notice_title">全新的主屏幕</string>
+    <string name="home_design_notice_message">Open Headunit 有了全新的主屏幕：你使用的连接是一个大按钮，其余内容位于驾驶员一侧。\n\n要使用新设计吗？你可以随时在“设置 > 个人化”中切换回来。</string>
+    <string name="home_design_notice_use_new">使用新设计</string>
+    <string name="home_design_notice_keep_classic">保留经典设计</string>
 </resources>

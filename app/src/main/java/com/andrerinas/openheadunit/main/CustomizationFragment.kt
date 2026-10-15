@@ -40,6 +40,7 @@ import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.app.BaseActivity
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.ColorUtils
+import com.andrerinas.openheadunit.utils.ClassicHomeUiHelper
 import com.andrerinas.openheadunit.utils.HomeUiHelper
 import com.andrerinas.openheadunit.utils.PickImageContract
 import com.andrerinas.openheadunit.utils.Settings
@@ -88,6 +89,7 @@ class CustomizationFragment : Fragment() {
     private var rowColorSettings: View? = null
     private var switchAutoMonochromeNight: SwitchMaterial? = null
     private var switchShowFavoriteApps: SwitchMaterial? = null
+    private var switchUseClassicHome: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
     private var btnResetColors: MaterialButton? = null
 
@@ -194,6 +196,7 @@ class CustomizationFragment : Fragment() {
         rowColorSettings = view.findViewById(R.id.row_color_settings)
         switchAutoMonochromeNight = view.findViewById(R.id.switch_auto_monochrome_night)
         switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
+        switchUseClassicHome = view.findViewById(R.id.switch_use_classic_home)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
 
@@ -329,6 +332,14 @@ class CustomizationFragment : Fragment() {
             settings.showHomeFavoriteApps = isChecked
         }
 
+        switchUseClassicHome?.isChecked = settings.useClassicHome
+        switchUseClassicHome?.setOnCheckedChangeListener { _, isChecked ->
+            settings.useClassicHome = isChecked
+            // The preview below inflates the chosen design, so it has to start over.
+            overlayHomeContent?.removeAllViews()
+            currentOverlayHomeView = null
+        }
+
         switchAutoMonochromeNight?.setOnCheckedChangeListener { _, isChecked ->
             settings.autoMonochromeButtonsAtNight = isChecked
             settings.monochromeIcons = isChecked
@@ -408,7 +419,8 @@ class CustomizationFragment : Fragment() {
         // Inflate real home screen layout into container if needed
         if (currentOverlayHomeView == null || container.childCount == 0) {
             container.removeAllViews()
-            currentOverlayHomeView = layoutInflater.inflate(R.layout.fragment_home, container, false)
+            val homeLayout = if (settings.useClassicHome) R.layout.fragment_home_classic else R.layout.fragment_home
+            currentOverlayHomeView = layoutInflater.inflate(homeLayout, container, false)
             container.addView(currentOverlayHomeView)
         }
 
@@ -440,7 +452,14 @@ class CustomizationFragment : Fragment() {
             }
         }
 
-        // 2. Paint the main button and the bar as the home screen does when idle
+        // 2. Paint the chosen design as the home screen does when idle
+        if (settings.useClassicHome) {
+            val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+            ClassicHomeUiHelper.applyButtonStyles(ctx, homeView, settings, isNightActive)
+            ClassicHomeUiHelper.applyButtonVisibility(homeView, settings)
+            ClassicHomeUiHelper.applyButtonScale(homeView, validScale, isPortrait, resources.displayMetrics.density)
+            return
+        }
         val decision = HomePrimaryPolicy.decide(
             HomePrimaryPolicy.Input(
                 chosen = HomeUiHelper.chosenConnections(settings),

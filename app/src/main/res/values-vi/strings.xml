@@ -13,6 +13,7 @@
     <string name="no_apps_found">Không tìm thấy ứng dụng nào</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Chế độ độc lập</string>
+    <string name="to_android_auto">Sang Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Xoá</string>
     <string name="usb">USB</string>
@@ -1288,4 +1289,10 @@
     <string name="home_choose_favorite_app">Chọn ứng dụng</string>
     <string name="home_show_favorite_apps">Ứng dụng yêu thích trên màn hình chính</string>
     <string name="home_show_favorite_apps_description">Bốn lối tắt ứng dụng dưới nút chính khi Open Headunit là ứng dụng màn hình chính</string>
+    <string name="home_use_classic">Màn hình chính cổ điển</string>
+    <string name="home_use_classic_description">Thiết kế trước đây, với bốn nút bằng nhau</string>
+    <string name="home_design_notice_title">Màn hình chính mới</string>
+    <string name="home_design_notice_message">Open Headunit có màn hình chính mới: kết nối bạn dùng là một nút lớn, phần còn lại nằm ở phía người lái.\n\nBạn có muốn dùng không? Bạn có thể quay lại bất cứ lúc nào trong Cài đặt, Tùy chỉnh.</string>
+    <string name="home_design_notice_use_new">Dùng thiết kế mới</string>
+    <string name="home_design_notice_keep_classic">Giữ kiểu cổ điển</string>
 </resources>

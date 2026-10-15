@@ -1571,6 +1571,15 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("show-home-favorite-apps", true)
         set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
 
+    /** The 2x2 grid from before the redesign, kept while users get used to the new home screen. */
+    var useClassicHome: Boolean
+        get() = prefs.getBoolean("use-classic-home", false)
+        set(value) { prefs.edit().putBoolean("use-classic-home", value).apply() }
+
+    var homeDesignNoticeShown: Boolean
+        get() = prefs.getBoolean("home-design-notice-shown", false)
+        set(value) { prefs.edit().putBoolean("home-design-notice-shown", value).apply() }
+
     @SuppressLint("ApplySharedPref")
     fun commit() {
         prefs.edit().commit()

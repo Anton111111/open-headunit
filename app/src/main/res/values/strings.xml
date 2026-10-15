@@ -195,6 +195,7 @@
     <string name="no_apps_found">No applications found</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
+    <string name="to_android_auto">To Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Remove</string>
     <string name="usb">USB</string>
@@ -1363,4 +1364,10 @@
     <string name="home_choose_favorite_app">Choose an app</string>
     <string name="home_show_favorite_apps">Favorite apps on the home screen</string>
     <string name="home_show_favorite_apps_description">Four app shortcuts under the main button while Open Headunit is the launcher</string>
+    <string name="home_use_classic">Classic home screen</string>
+    <string name="home_use_classic_description">The previous design, with four equal buttons</string>
+    <string name="home_design_notice_title">A new home screen</string>
+    <string name="home_design_notice_message">Open Headunit has a new home screen: the connection you use is one big button, and the rest sits on the driver\'s side.\n\nDo you want to use it? You can switch back any time in Settings, Customization.</string>
+    <string name="home_design_notice_use_new">Use the new design</string>
+    <string name="home_design_notice_keep_classic">Keep the classic one</string>
 </resources>

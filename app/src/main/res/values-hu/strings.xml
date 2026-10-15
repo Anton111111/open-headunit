@@ -13,6 +13,7 @@
     <string name="no_apps_found">Nem találhatók alkalmazások</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Önálló mód</string>
+    <string name="to_android_auto">Android Auto-ba</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Eltávolít</string>
     <string name="usb">USB</string>
@@ -1281,4 +1282,10 @@
     <string name="home_choose_favorite_app">Válassz alkalmazást</string>
     <string name="home_show_favorite_apps">Kedvenc alkalmazások a kezdőképernyőn</string>
     <string name="home_show_favorite_apps_description">Négy alkalmazás-parancsikon a fő gomb alatt, amíg az Open Headunit a kezdőképernyő-alkalmazás</string>
+    <string name="home_use_classic">Klasszikus kezdőképernyő</string>
+    <string name="home_use_classic_description">Az előző kialakítás, négy egyforma gombbal</string>
+    <string name="home_design_notice_title">Új kezdőképernyő</string>
+    <string name="home_design_notice_message">Az Open Headunit új kezdőképernyőt kapott: a használt kapcsolat egyetlen nagy gomb, a többi a vezető oldalán van.\n\nSzeretnéd használni? Bármikor visszaválthatsz a Beállítások, Testreszabás menüben.</string>
+    <string name="home_design_notice_use_new">Az új kialakítás használata</string>
+    <string name="home_design_notice_keep_classic">A klasszikus megtartása</string>
 </resources>

@@ -13,6 +13,7 @@
     <string name="no_apps_found">لم يتم العثور على تطبيقات</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">الوضع الذاتي</string>
+    <string name="to_android_auto">إلى Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">إزالة</string>
     <string name="usb">USB</string>
@@ -1283,4 +1284,10 @@
     <string name="home_choose_favorite_app">اختر تطبيقًا</string>
     <string name="home_show_favorite_apps">التطبيقات المفضلة على الشاشة الرئيسية</string>
     <string name="home_show_favorite_apps_description">أربعة اختصارات لتطبيقات أسفل الزر الرئيسي عندما يكون Open Headunit تطبيق الشاشة الرئيسية</string>
+    <string name="home_use_classic">الشاشة الرئيسية الكلاسيكية</string>
+    <string name="home_use_classic_description">التصميم السابق، بأربعة أزرار متساوية</string>
+    <string name="home_design_notice_title">شاشة رئيسية جديدة</string>
+    <string name="home_design_notice_message">لدى Open Headunit شاشة رئيسية جديدة: الاتصال الذي تستخدمه أصبح زرًا كبيرًا واحدًا، والباقي في جهة السائق.\n\nهل تريد استخدامها؟ يمكنك العودة في أي وقت من الإعدادات، التخصيص.</string>
+    <string name="home_design_notice_use_new">استخدام التصميم الجديد</string>
+    <string name="home_design_notice_keep_classic">الإبقاء على الكلاسيكي</string>
 </resources>

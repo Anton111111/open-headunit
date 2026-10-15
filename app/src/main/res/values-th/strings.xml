@@ -189,6 +189,7 @@
     <string name="no_apps_found">ไม่พบแอปพลิเคชัน</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">โหมดตนเอง (Self Mode)</string>
+    <string name="to_android_auto">ไปที่ Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">ลบ</string>
     <string name="usb">USB</string>
@@ -1331,4 +1332,10 @@
     <string name="home_choose_favorite_app">เลือกแอป</string>
     <string name="home_show_favorite_apps">แอปโปรดบนหน้าจอหลัก</string>
     <string name="home_show_favorite_apps_description">ทางลัดแอปสี่รายการใต้ปุ่มหลักเมื่อ Open Headunit เป็นแอปหน้าจอหลัก</string>
+    <string name="home_use_classic">หน้าจอหลักแบบคลาสสิก</string>
+    <string name="home_use_classic_description">ดีไซน์เดิม มีปุ่มขนาดเท่ากันสี่ปุ่ม</string>
+    <string name="home_design_notice_title">หน้าจอหลักใหม่</string>
+    <string name="home_design_notice_message">Open Headunit มีหน้าจอหลักใหม่: การเชื่อมต่อที่คุณใช้จะเป็นปุ่มใหญ่ปุ่มเดียว และส่วนที่เหลืออยู่ฝั่งคนขับ\n\nต้องการใช้หน้าจอนี้ไหม? คุณเปลี่ยนกลับได้ทุกเมื่อใน การตั้งค่า, การปรับแต่ง</string>
+    <string name="home_design_notice_use_new">ใช้ดีไซน์ใหม่</string>
+    <string name="home_design_notice_keep_classic">ใช้แบบคลาสสิกต่อ</string>
 </resources>

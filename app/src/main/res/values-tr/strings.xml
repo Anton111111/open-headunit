@@ -14,6 +14,7 @@
     <string name="no_apps_found">Uygulama bulunamadı</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Dahili Mod</string>
+    <string name="to_android_auto">Android Auto\'ya Geç</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Kaldır</string>
     <string name="usb">USB</string>
@@ -1280,4 +1281,10 @@
     <string name="home_choose_favorite_app">Bir uygulama seç</string>
     <string name="home_show_favorite_apps">Ana ekranda favori uygulamalar</string>
     <string name="home_show_favorite_apps_description">Open Headunit ana ekran uygulaması olduğunda ana düğmenin altında dört uygulama kısayolu</string>
+    <string name="home_use_classic">Klasik ana ekran</string>
+    <string name="home_use_classic_description">Dört eşit düğmeli önceki tasarım</string>
+    <string name="home_design_notice_title">Yeni bir ana ekran</string>
+    <string name="home_design_notice_message">Open Headunit\'in yeni bir ana ekranı var: kullandığınız bağlantı tek bir büyük düğme, geri kalanı ise sürücü tarafında.\n\nKullanmak ister misiniz? İstediğiniz zaman Ayarlar, Özelleştirme bölümünden geri dönebilirsiniz.</string>
+    <string name="home_design_notice_use_new">Yeni tasarımı kullan</string>
+    <string name="home_design_notice_keep_classic">Klasik olanı koru</string>
 </resources>

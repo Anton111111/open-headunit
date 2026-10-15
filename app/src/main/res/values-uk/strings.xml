@@ -13,6 +13,7 @@
     <string name="no_apps_found">Програми не знайдено</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Самостійний режим</string>
+    <string name="to_android_auto">В Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Видалити</string>
     <string name="usb">USB</string>
@@ -1286,4 +1287,10 @@
     <string name="home_choose_favorite_app">Виберіть програму</string>
     <string name="home_show_favorite_apps">Улюблені програми на головному екрані</string>
     <string name="home_show_favorite_apps_description">Чотири ярлики програм під головною кнопкою, коли Open Headunit є головним екраном</string>
+    <string name="home_use_classic">Класичний головний екран</string>
+    <string name="home_use_classic_description">Попередній дизайн із чотирма однаковими кнопками</string>
+    <string name="home_design_notice_title">Новий головний екран</string>
+    <string name="home_design_notice_message">В Open Headunit новий головний екран: ваше підключення тепер одна велика кнопка, а все інше розташоване з боку водія.\n\nВикористовувати його? Повернутися можна будь-коли в розділі Налаштування, Персоналізація.</string>
+    <string name="home_design_notice_use_new">Використовувати новий дизайн</string>
+    <string name="home_design_notice_keep_classic">Залишити класичний</string>
 </resources>

@@ -13,6 +13,7 @@
     <string name="no_apps_found">Nessuna applicazione trovata</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Modalità Self</string>
+    <string name="to_android_auto">A Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Rimuovi</string>
     <string name="usb">USB</string>
@@ -1288,4 +1289,10 @@
     <string name="home_choose_favorite_app">Scegli un\'app</string>
     <string name="home_show_favorite_apps">App preferite nella schermata iniziale</string>
     <string name="home_show_favorite_apps_description">Quattro scorciatoie alle app sotto il pulsante principale quando Open Headunit è l\'app Home</string>
+    <string name="home_use_classic">Schermata Home classica</string>
+    <string name="home_use_classic_description">Il design precedente, con quattro pulsanti uguali</string>
+    <string name="home_design_notice_title">Una nuova schermata Home</string>
+    <string name="home_design_notice_message">Open Headunit ha una nuova schermata Home: la connessione che usi è un unico pulsante grande e il resto si trova sul lato del guidatore.\n\nVuoi usarla? Puoi tornare indietro in qualsiasi momento in Impostazioni, Personalizzazione.</string>
+    <string name="home_design_notice_use_new">Usa il nuovo design</string>
+    <string name="home_design_notice_keep_classic">Mantieni quello classico</string>
 </resources>

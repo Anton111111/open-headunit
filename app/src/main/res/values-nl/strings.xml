@@ -12,6 +12,7 @@
     <string name="no_apps_found">Geen applicaties gevonden</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
+    <string name="to_android_auto">Naar Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Verwijder</string>
     <string name="usb">USB</string>
@@ -1285,4 +1286,10 @@
     <string name="home_choose_favorite_app">Kies een app</string>
     <string name="home_show_favorite_apps">Favoriete apps op het startscherm</string>
     <string name="home_show_favorite_apps_description">Vier app-snelkoppelingen onder de hoofdknop zolang Open Headunit de start-app is</string>
+    <string name="home_use_classic">Klassiek startscherm</string>
+    <string name="home_use_classic_description">Het vorige ontwerp, met vier gelijke knoppen</string>
+    <string name="home_design_notice_title">Een nieuw startscherm</string>
+    <string name="home_design_notice_message">Open Headunit heeft een nieuw startscherm: de verbinding die je gebruikt is één grote knop, en de rest staat aan de kant van de bestuurder.\n\nWil je het gebruiken? Je kunt altijd terugschakelen via Instellingen, Aanpassing.</string>
+    <string name="home_design_notice_use_new">Nieuw ontwerp gebruiken</string>
+    <string name="home_design_notice_keep_classic">Klassiek houden</string>
 </resources>

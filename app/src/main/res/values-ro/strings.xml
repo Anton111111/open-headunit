@@ -13,6 +13,7 @@
     <string name="no_apps_found">Nicio aplicație găsită</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Mod local</string>
+    <string name="to_android_auto">Către Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Elimină</string>
     <string name="usb">USB</string>
@@ -1282,4 +1283,10 @@
     <string name="home_choose_favorite_app">Alege o aplicație</string>
     <string name="home_show_favorite_apps">Aplicații favorite pe ecranul principal</string>
     <string name="home_show_favorite_apps_description">Patru scurtături de aplicații sub butonul principal cât timp Open Headunit este aplicația principală</string>
+    <string name="home_use_classic">Ecran principal clasic</string>
+    <string name="home_use_classic_description">Designul anterior, cu patru butoane egale</string>
+    <string name="home_design_notice_title">Un nou ecran principal</string>
+    <string name="home_design_notice_message">Open Headunit are un nou ecran principal: conexiunea pe care o folosești este un singur buton mare, iar restul se află pe partea șoferului.\n\nVrei să îl folosești? Poți reveni oricând din Setări, Personalizare.</string>
+    <string name="home_design_notice_use_new">Folosește noul design</string>
+    <string name="home_design_notice_keep_classic">Păstrează varianta clasică</string>
 </resources>

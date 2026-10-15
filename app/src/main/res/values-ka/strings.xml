@@ -13,6 +13,7 @@
     <string name="no_apps_found">აპლიკაციები ვერ მოიძებნა</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">ავტონომიური რეჟიმი</string>
+    <string name="to_android_auto">Android Auto-ზე გადასვლა</string>
     <string name="title">Open Headunit</string>
     <string name="remove">წაშლა</string>
     <string name="usb">USB</string>
@@ -1266,4 +1267,10 @@
     <string name="home_choose_favorite_app">აირჩიეთ აპი</string>
     <string name="home_show_favorite_apps">რჩეული აპები მთავარ ეკრანზე</string>
     <string name="home_show_favorite_apps_description">აპების ოთხი მალსახმობი მთავარი ღილაკის ქვემოთ, როცა Open Headunit მთავარი აპია</string>
+    <string name="home_use_classic">კლასიკური მთავარი ეკრანი</string>
+    <string name="home_use_classic_description">წინა დიზაინი, ოთხი ერთნაირი ღილაკით</string>
+    <string name="home_design_notice_title">ახალი მთავარი ეკრანი</string>
+    <string name="home_design_notice_message">Open Headunit-ს ახალი მთავარი ეკრანი აქვს: თქვენ მიერ გამოყენებული კავშირი ერთი დიდი ღილაკია, დანარჩენი კი მძღოლის მხარესაა.\n\nგსურთ მისი გამოყენება? ნებისმიერ დროს შეგიძლიათ დაბრუნება: პარამეტრები, პერსონალიზაცია.</string>
+    <string name="home_design_notice_use_new">ახალი დიზაინის გამოყენება</string>
+    <string name="home_design_notice_keep_classic">კლასიკურის დატოვება</string>
 </resources>

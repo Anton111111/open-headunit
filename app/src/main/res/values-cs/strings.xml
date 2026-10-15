@@ -13,6 +13,7 @@
     <string name="no_apps_found">Nenalezeny žádné aplikace</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
+    <string name="to_android_auto">Do Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Odstranit</string>
     <string name="usb">USB</string>
@@ -1285,4 +1286,10 @@
     <string name="home_choose_favorite_app">Vyberte aplikaci</string>
     <string name="home_show_favorite_apps">Oblíbené aplikace na domovské obrazovce</string>
     <string name="home_show_favorite_apps_description">Čtyři zkratky aplikací pod hlavním tlačítkem, když je Open Headunit domovskou aplikací</string>
+    <string name="home_use_classic">Klasická domovská obrazovka</string>
+    <string name="home_use_classic_description">Předchozí vzhled se čtyřmi stejnými tlačítky</string>
+    <string name="home_design_notice_title">Nová domovská obrazovka</string>
+    <string name="home_design_notice_message">Open Headunit má novou domovskou obrazovku: připojení, které používáte, je jedno velké tlačítko a zbytek je na straně řidiče.\n\nChcete ji používat? Kdykoli se můžete vrátit v Nastavení, Přizpůsobení.</string>
+    <string name="home_design_notice_use_new">Použít nový vzhled</string>
+    <string name="home_design_notice_keep_classic">Ponechat klasický</string>
 </resources>

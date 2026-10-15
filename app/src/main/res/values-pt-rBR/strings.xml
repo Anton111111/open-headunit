@@ -13,6 +13,7 @@
     <string name="no_apps_found">Nenhum aplicativo encontrado</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
+    <string name="to_android_auto">Ir para o Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Remover</string>
     <string name="usb">USB</string>
@@ -1286,4 +1287,10 @@
     <string name="home_choose_favorite_app">Escolha um app</string>
     <string name="home_show_favorite_apps">Apps favoritos na tela inicial</string>
     <string name="home_show_favorite_apps_description">Quatro atalhos de apps abaixo do botão principal quando o Open Headunit é o app de início</string>
+    <string name="home_use_classic">Tela inicial clássica</string>
+    <string name="home_use_classic_description">O design anterior, com quatro botões iguais</string>
+    <string name="home_design_notice_title">Uma nova tela inicial</string>
+    <string name="home_design_notice_message">O Open Headunit tem uma nova tela inicial: a conexão que você usa é um único botão grande, e o resto fica do lado do motorista.\n\nQuer usá-la? Você pode voltar quando quiser em Configurações, Personalização.</string>
+    <string name="home_design_notice_use_new">Usar o novo design</string>
+    <string name="home_design_notice_keep_classic">Manter o clássico</string>
 </resources>
