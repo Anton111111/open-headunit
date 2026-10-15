@@ -470,8 +470,12 @@ class CustomizationFragment : Fragment() {
                 wifiScanning = false
             )
         )
-        HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections)
-        HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, isNightActive)
+        val palette = HomeUiHelper.palette(
+            ctx, HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive)
+        )
+        HomeUiHelper.applyTheme(ctx, homeView, palette)
+        HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections, palette)
+        HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, palette)
         HomeUiHelper.applyFavoritesVisibility(homeView, settings.isCarLauncherActive, settings.showHomeFavoriteApps)
         HomeUiHelper.applyDriverSide(homeView, settings.rightHandDrive)
 

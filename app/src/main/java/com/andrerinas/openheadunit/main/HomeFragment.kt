@@ -102,6 +102,7 @@ class HomeFragment : Fragment() {
     private var isClassicHome = false
     private var classicGridListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var decision: HomePrimaryPolicy.Decision? = null
+    private var cachedPalette: HomeUiHelper.Palette? = null
     private var reconnectCountdown: Job? = null
     private var reconnectTarget: HomePrimaryPolicy.Connection? = null
     private var reconnectSecondsLeft = 0
@@ -119,6 +120,7 @@ class HomeFragment : Fragment() {
 
     private fun inflateHomeContent(container: FrameLayout) {
         isClassicHome = App.provide(container.context).settings.useClassicHome
+        cachedPalette = null
         container.removeAllViews()
         LayoutInflater.from(container.context)
             .inflate(if (isClassicHome) R.layout.fragment_home_classic else R.layout.fragment_home, container, true)
@@ -279,9 +281,10 @@ class HomeFragment : Fragment() {
             )
         )
         this.decision = decision
-        HomeUiHelper.applyBar(ctx, root, appSettings, decision.barConnections)
+        val palette = homePalette(ctx)
+        HomeUiHelper.applyBar(ctx, root, appSettings, decision.barConnections, palette)
         HomeUiHelper.applyPrimaryCard(
-            ctx, root, appSettings, decision, usbPhone?.let { phoneName(it) }, reconnectSecondsLeft, isNightActive()
+            ctx, root, appSettings, decision, usbPhone?.let { phoneName(it) }, reconnectSecondsLeft, palette
         )
     }
 
@@ -302,6 +305,13 @@ class HomeFragment : Fragment() {
 
     private fun isNightActive(): Boolean =
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+    // A theme change recreates the activity, so the palette can be kept for the life of the view.
+    private fun homePalette(ctx: Context): HomeUiHelper.Palette = cachedPalette ?: run {
+        val appSettings = App.provide(ctx).settings
+        val mode = HomeThemePolicy.resolve(appSettings.appTheme, appSettings.useExtremeDarkMode, isNightActive())
+        HomeUiHelper.palette(ctx, mode).also { cachedPalette = it }
+    }
 
     private fun updateLauncherViews() {
         val ctx = context ?: return
@@ -359,12 +369,11 @@ class HomeFragment : Fragment() {
         if (app == null) {
             icon.setImageResource(R.drawable.ic_add_white)
             label.setText(R.string.home_add_favorite)
-            slotView.setBackgroundResource(R.drawable.home_favorite_slot_bg)
         } else {
             icon.setImageDrawable(app.icon)
             label.text = app.label
-            slotView.setBackgroundResource(R.drawable.home_tile_bg)
         }
+        (slotView as? ViewGroup)?.let { HomeUiHelper.paintFavoriteSlot(slotView.context, it, app != null, homePalette(slotView.context)) }
     }
 
     private fun onFavoriteClicked(slot: Int) {
@@ -904,6 +913,7 @@ class HomeFragment : Fragment() {
         } else {
             HomeUiHelper.applyDriverSide(root, homeSettings.rightHandDrive)
             HomeUiHelper.applyButtonScale(root, homeSettings.homeButtonScalePercent)
+            HomeUiHelper.applyTheme(root.context, root, homePalette(root.context))
         }
     }
 
