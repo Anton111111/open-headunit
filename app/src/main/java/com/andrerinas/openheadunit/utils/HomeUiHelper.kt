@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
@@ -60,7 +61,11 @@ object HomeUiHelper {
         Connection.SELF -> R.id.self_mode_button
     }
 
-    /** Puts the bar and the start of every row on the driver's side, and aligns the main button with it. */
+    /**
+     * Puts the bar and the start of every row on the driver's side, and aligns the main button with
+     * it. LEFT and RIGHT on purpose: the driver's side is physical, not a reading direction.
+     */
+    @SuppressLint("RtlHardcoded")
     fun applyDriverSide(rootView: View, rightHandDrive: Boolean) {
         mirroredRows.mapNotNull { rootView.findViewById<LinearLayout>(it) }
             .filter { it.orientation == LinearLayout.HORIZONTAL }
@@ -79,7 +84,8 @@ object HomeUiHelper {
         val xmlOrder = row.getTag(R.id.home_xml_order) as? List<View>
             ?: (0 until row.childCount).map { row.getChildAt(it) }.also { row.setTag(R.id.home_xml_order, it) }
         row.removeAllViews()
-        (if (reversed) xmlOrder.asReversed() else xmlOrder).forEach { row.addView(it) }
+        // A for loop, not forEach: lint reads that one as Iterable.forEach, which is API 24.
+        for (child in if (reversed) xmlOrder.asReversed() else xmlOrder) row.addView(child)
     }
 
     fun applyBar(context: Context, rootView: View, settings: Settings, barConnections: List<Connection>) {
@@ -131,7 +137,8 @@ object HomeUiHelper {
         rootView.findViewById<TextView>(R.id.home_primary_subtitle)?.text = context.getString(subtitleRes(decision))
         rootView.findViewById<TextView>(R.id.home_primary_action)?.text = context.getString(actionRes(decision))
         rootView.findViewById<ImageView>(R.id.home_primary_icon)?.setImageResource(iconRes(decision.primary))
-        rootView.findViewById<View>(R.id.home_primary_cancel)?.visibility = if (reconnecting) View.VISIBLE else View.GONE
+        val cancel = rootView.findViewById<View>(R.id.home_primary_cancel)
+        cancel?.visibility = if (reconnecting) View.VISIBLE else View.GONE
         rootView.findViewById<TextView>(R.id.home_countdown)?.apply {
             visibility = if (reconnecting) View.VISIBLE else View.GONE
             text = secondsLeft.toString()
@@ -147,8 +154,7 @@ object HomeUiHelper {
             background = pressable(0xFFFFFFFF.toInt(), resources.getDimension(R.dimen.home_cta_height) / 3.5f)
             setTextColor(ColorUtils.darkenColor(color, 0.66f))
         }
-        rootView.findViewById<View>(R.id.home_primary_cancel)?.background =
-            pressable(shade, resources.getDimension(R.dimen.home_secondary_cta_height) / 2f)
+        cancel?.background = pressable(shade, resources.getDimension(R.dimen.home_secondary_cta_height) / 2f)
     }
 
     /**

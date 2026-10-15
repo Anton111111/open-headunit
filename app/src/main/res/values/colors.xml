@@ -51,7 +51,6 @@
     <color name="home_tile">#232934</color>
     <color name="home_tile_pressed">#323A47</color>
     <color name="home_slot_stroke">#39414D</color>
-    <color name="home_text_secondary">#A9B1BD</color>
     <color name="home_apps_tile">#0F766E</color>
     <color name="home_apps_tile_pressed">#0B5A54</color>
     <color name="home_usb">#B9530F</color>

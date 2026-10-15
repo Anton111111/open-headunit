@@ -12,6 +12,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
+    android:baselineAligned="false"
     android:padding="@dimen/home_gap"
     android:divider="@drawable/home_gap"
     android:showDividers="middle">
