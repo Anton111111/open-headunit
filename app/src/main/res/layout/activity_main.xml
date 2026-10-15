@@ -44,7 +44,7 @@
     <!-- Why the last connection attempt failed, and what fixes it.
 
          Here rather than in fragment_home.xml because the home screen has two layout variants
-         (a ConstraintLayout chain and a portrait LinearLayout grid) and this needs to look the
+         (landscape with a side bar, portrait with a bottom row) and this needs to look the
          same on both. Declared after main_content so it draws over the fragment, and offset far
          enough down to clear the wifi_direct_info pill above it, which is visible in Helper mode.
 

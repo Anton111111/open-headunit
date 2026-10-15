@@ -13,7 +13,6 @@
     <string name="no_apps_found">Приложения не найдены</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Автономный режим</string>
-    <string name="to_android_auto">В Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Удалить</string>
     <string name="usb">USB</string>
@@ -1254,4 +1253,35 @@
     <string name="pref_set_default_launcher_title">Главное приложение по умолчанию</string>
     <string name="pref_default_launcher_status_active">Активно (Нажмите для управления)</string>
     <string name="pref_default_launcher_status_inactive">Не задано (Нажмите для настройки)</string>
+    <!-- Home screen -->
+    <string name="home_kicker_active">Android Auto</string>
+    <string name="home_kicker_last_connection">Последнее подключение</string>
+    <string name="home_kicker_cable">Кабель</string>
+    <string name="home_kicker_wireless">Без проводов</string>
+    <string name="home_title_active">Телефон подключён</string>
+    <string name="home_title_reconnecting">Переподключение</string>
+    <string name="home_title_searching">Поиск телефона…</string>
+    <string name="home_title_phone_detected">Найден %1$s</string>
+    <string name="home_title_phone_detected_generic">Телефон найден</string>
+    <string name="home_title_usb_ready">Подключите телефон</string>
+    <string name="home_title_wifi_ready">Подключиться без проводов</string>
+    <string name="home_title_self_ready">Android Auto на этой магнитоле</string>
+    <string name="home_subtitle_searching">Откройте Android Auto на телефоне, если он не появляется</string>
+    <string name="home_subtitle_usb">Через USB-кабель</string>
+    <string name="home_subtitle_wifi">Через Wi‑Fi</string>
+    <string name="home_subtitle_self">Запускает Android Auto прямо на магнитоле</string>
+    <string name="home_action_back_to_android_auto">Вернуться в Android Auto</string>
+    <string name="home_action_connect_now">Подключить</string>
+    <string name="home_action_search_again">Искать снова</string>
+    <string name="home_action_connect_usb">Подключить по USB</string>
+    <string name="home_action_connect_wifi">Подключить по Wi‑Fi</string>
+    <string name="home_action_start_self_mode">Запустить автономный режим</string>
+    <string name="home_all_apps">Все</string>
+    <string name="home_add_favorite">Добавить</string>
+    <string name="home_favorite_change">Заменить</string>
+    <string name="home_add_to_favorites">Добавить в избранное</string>
+    <string name="home_favorites_full">Все четыре места заняты. Удерживайте одно из приложений на главном экране, чтобы заменить его.</string>
+    <string name="home_choose_favorite_app">Выберите приложение</string>
+    <string name="home_show_favorite_apps">Избранные приложения на главном экране</string>
+    <string name="home_show_favorite_apps_description">Четыре ярлыка приложений под главной кнопкой, когда Open Headunit используется как главный экран</string>
 </resources>

@@ -13,7 +13,6 @@
     <string name="no_apps_found">Програми не знайдено</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Самостійний режим</string>
-    <string name="to_android_auto">В Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Видалити</string>
     <string name="usb">USB</string>
@@ -1256,4 +1255,35 @@
     <string name="pref_set_default_launcher_title">Головна програма за замовчуванням</string>
     <string name="pref_default_launcher_status_active">Активно (Натисніть для керування)</string>
     <string name="pref_default_launcher_status_inactive">Не вибрано (Натисніть для налаштування)</string>
+    <!-- Home screen -->
+    <string name="home_kicker_active">Android Auto</string>
+    <string name="home_kicker_last_connection">Останнє підключення</string>
+    <string name="home_kicker_cable">Кабель</string>
+    <string name="home_kicker_wireless">Бездротово</string>
+    <string name="home_title_active">Телефон підключено</string>
+    <string name="home_title_reconnecting">Перепідключення</string>
+    <string name="home_title_searching">Пошук телефону…</string>
+    <string name="home_title_phone_detected">Знайдено %1$s</string>
+    <string name="home_title_phone_detected_generic">Телефон знайдено</string>
+    <string name="home_title_usb_ready">Підключіть телефон</string>
+    <string name="home_title_wifi_ready">Підключитися бездротово</string>
+    <string name="home_title_self_ready">Android Auto на цій магнітолі</string>
+    <string name="home_subtitle_searching">Відкрийте Android Auto на телефоні, якщо його не видно</string>
+    <string name="home_subtitle_usb">Через USB-кабель</string>
+    <string name="home_subtitle_wifi">Через Wi-Fi</string>
+    <string name="home_subtitle_self">Запускає Android Auto просто на магнітолі</string>
+    <string name="home_action_back_to_android_auto">Назад до Android Auto</string>
+    <string name="home_action_connect_now">Підключити</string>
+    <string name="home_action_search_again">Шукати знову</string>
+    <string name="home_action_connect_usb">Підключити через USB</string>
+    <string name="home_action_connect_wifi">Підключити через Wi-Fi</string>
+    <string name="home_action_start_self_mode">Запустити самостійний режим</string>
+    <string name="home_all_apps">Усі</string>
+    <string name="home_add_favorite">Додати</string>
+    <string name="home_favorite_change">Змінити</string>
+    <string name="home_add_to_favorites">Додати в улюблені</string>
+    <string name="home_favorites_full">Усі чотири місця зайняті. Утримуйте одну з програм на головному екрані, щоб змінити її.</string>
+    <string name="home_choose_favorite_app">Виберіть програму</string>
+    <string name="home_show_favorite_apps">Улюблені програми на головному екрані</string>
+    <string name="home_show_favorite_apps_description">Чотири ярлики програм під головною кнопкою, коли Open Headunit є головним екраном</string>
 </resources>

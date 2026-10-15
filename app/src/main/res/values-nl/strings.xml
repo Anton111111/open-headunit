@@ -12,7 +12,6 @@
     <string name="no_apps_found">Geen applicaties gevonden</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">Naar Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Verwijder</string>
     <string name="usb">USB</string>
@@ -1255,4 +1254,35 @@
     <string name="pref_set_default_launcher_title">Standaard start-app</string>
     <string name="pref_default_launcher_status_active">Actief (Tik om te beheren)</string>
     <string name="pref_default_launcher_status_inactive">Niet ingesteld (Tik om in te stellen)</string>
+    <!-- Home screen -->
+    <string name="home_kicker_active">Android Auto</string>
+    <string name="home_kicker_last_connection">Je laatste verbinding</string>
+    <string name="home_kicker_cable">Kabel</string>
+    <string name="home_kicker_wireless">Draadloos</string>
+    <string name="home_title_active">Je telefoon is verbonden</string>
+    <string name="home_title_reconnecting">Opnieuw verbinden</string>
+    <string name="home_title_searching">Je telefoon zoeken…</string>
+    <string name="home_title_phone_detected">%1$s gevonden</string>
+    <string name="home_title_phone_detected_generic">Telefoon gevonden</string>
+    <string name="home_title_usb_ready">Sluit je telefoon aan</string>
+    <string name="home_title_wifi_ready">Draadloos verbinden</string>
+    <string name="home_title_self_ready">Android Auto op deze autoradio</string>
+    <string name="home_subtitle_searching">Open Android Auto op de telefoon als hij niet verschijnt</string>
+    <string name="home_subtitle_usb">Via USB-kabel</string>
+    <string name="home_subtitle_wifi">Via WiFi</string>
+    <string name="home_subtitle_self">Draait Android Auto op de autoradio zelf</string>
+    <string name="home_action_back_to_android_auto">Terug naar Android Auto</string>
+    <string name="home_action_connect_now">Nu verbinden</string>
+    <string name="home_action_search_again">Opnieuw zoeken</string>
+    <string name="home_action_connect_usb">Verbinden via USB</string>
+    <string name="home_action_connect_wifi">Verbinden via WiFi</string>
+    <string name="home_action_start_self_mode">Self Mode starten</string>
+    <string name="home_all_apps">Alle</string>
+    <string name="home_add_favorite">App toevoegen</string>
+    <string name="home_favorite_change">Wijzigen</string>
+    <string name="home_add_to_favorites">Toevoegen aan favorieten</string>
+    <string name="home_favorites_full">Alle vier favorieten zijn bezet. Houd er een ingedrukt op het startscherm om hem te wijzigen.</string>
+    <string name="home_choose_favorite_app">Kies een app</string>
+    <string name="home_show_favorite_apps">Favoriete apps op het startscherm</string>
+    <string name="home_show_favorite_apps_description">Vier app-snelkoppelingen onder de hoofdknop zolang Open Headunit de start-app is</string>
 </resources>

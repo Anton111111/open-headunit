@@ -87,6 +87,7 @@ class CustomizationFragment : Fragment() {
     private var rowColorWifi: View? = null
     private var rowColorSettings: View? = null
     private var switchAutoMonochromeNight: SwitchMaterial? = null
+    private var switchShowFavoriteApps: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
     private var btnResetColors: MaterialButton? = null
 
@@ -192,6 +193,7 @@ class CustomizationFragment : Fragment() {
         rowColorWifi = view.findViewById(R.id.row_color_wifi)
         rowColorSettings = view.findViewById(R.id.row_color_settings)
         switchAutoMonochromeNight = view.findViewById(R.id.switch_auto_monochrome_night)
+        switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
 
@@ -322,6 +324,11 @@ class CustomizationFragment : Fragment() {
             }
         }
 
+        switchShowFavoriteApps?.isChecked = settings.showHomeFavoriteApps
+        switchShowFavoriteApps?.setOnCheckedChangeListener { _, isChecked ->
+            settings.showHomeFavoriteApps = isChecked
+        }
+
         switchAutoMonochromeNight?.setOnCheckedChangeListener { _, isChecked ->
             settings.autoMonochromeButtonsAtNight = isChecked
             settings.monochromeIcons = isChecked
@@ -433,16 +440,24 @@ class CustomizationFragment : Fragment() {
             }
         }
 
-        // 2. Sync Button Colors & Monochrome Theme
-        HomeUiHelper.applyButtonStyles(ctx, homeView, settings, isNightActive)
+        // 2. Paint the main button and the bar as the home screen does when idle
+        val decision = HomePrimaryPolicy.decide(
+            HomePrimaryPolicy.Input(
+                chosen = HomeUiHelper.chosenConnections(settings),
+                lastConnection = HomeUiHelper.lastConnection(settings),
+                usbPhoneDetected = false,
+                sessionActive = false,
+                reconnectTarget = null,
+                wifiScanning = false
+            )
+        )
+        HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections)
+        HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, isNightActive)
+        HomeUiHelper.applyFavoritesVisibility(homeView, settings.isCarLauncherActive, settings.showHomeFavoriteApps)
+        HomeUiHelper.applyDriverSide(homeView, settings.rightHandDrive)
 
-        // 3. Sync Button Visibility
-        HomeUiHelper.applyButtonVisibility(homeView, settings)
-
-        // 4. Scale Home Buttons
-        val density = resources.displayMetrics.density
-        val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-        HomeUiHelper.applyButtonScale(homeView, validScale, isPortrait, density)
+        // 3. Scale Home Buttons
+        HomeUiHelper.applyButtonScale(homeView, validScale)
     }
 
     private fun handleImageSelected(uri: Uri) {

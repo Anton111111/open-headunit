@@ -13,7 +13,6 @@
     <string name="no_apps_found">لم يتم العثور على تطبيقات</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">الوضع الذاتي</string>
-    <string name="to_android_auto">إلى Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">إزالة</string>
     <string name="usb">USB</string>
@@ -1253,4 +1252,35 @@
     <string name="pref_set_default_launcher_title">تطبيق الصفحة الرئيسية الافتراضي</string>
     <string name="pref_default_launcher_status_active">نشط (اضغط للإدارة)</string>
     <string name="pref_default_launcher_status_inactive">غير محدد (اضغط لتعيين كافتراضي)</string>
+    <!-- Home screen -->
+    <string name="home_kicker_active">Android Auto</string>
+    <string name="home_kicker_last_connection">آخر اتصال لك</string>
+    <string name="home_kicker_cable">سلكي</string>
+    <string name="home_kicker_wireless">لاسلكي</string>
+    <string name="home_title_active">هاتفك متصل</string>
+    <string name="home_title_reconnecting">جارٍ إعادة الاتصال</string>
+    <string name="home_title_searching">جارٍ البحث عن هاتفك…</string>
+    <string name="home_title_phone_detected">تم اكتشاف %1$s</string>
+    <string name="home_title_phone_detected_generic">تم اكتشاف هاتف</string>
+    <string name="home_title_usb_ready">وصّل هاتفك</string>
+    <string name="home_title_wifi_ready">اتصل لاسلكيًا</string>
+    <string name="home_title_self_ready">Android Auto على شاشة السيارة هذه</string>
+    <string name="home_subtitle_searching">افتح Android Auto على الهاتف إذا لم يظهر</string>
+    <string name="home_subtitle_usb">عبر كابل USB</string>
+    <string name="home_subtitle_wifi">عبر واي فاي</string>
+    <string name="home_subtitle_self">يشغّل Android Auto على شاشة السيارة نفسها</string>
+    <string name="home_action_back_to_android_auto">العودة إلى Android Auto</string>
+    <string name="home_action_connect_now">اتصل الآن</string>
+    <string name="home_action_search_again">ابحث مجددًا</string>
+    <string name="home_action_connect_usb">اتصل عبر USB</string>
+    <string name="home_action_connect_wifi">اتصل عبر واي فاي</string>
+    <string name="home_action_start_self_mode">بدء الوضع الذاتي</string>
+    <string name="home_all_apps">الكل</string>
+    <string name="home_add_favorite">إضافة تطبيق</string>
+    <string name="home_favorite_change">تغيير</string>
+    <string name="home_add_to_favorites">إضافة إلى المفضلة</string>
+    <string name="home_favorites_full">المفضلات الأربع ممتلئة. اضغط مطولًا على أحدها في الشاشة الرئيسية لتغييره.</string>
+    <string name="home_choose_favorite_app">اختر تطبيقًا</string>
+    <string name="home_show_favorite_apps">التطبيقات المفضلة على الشاشة الرئيسية</string>
+    <string name="home_show_favorite_apps_description">أربعة اختصارات لتطبيقات أسفل الزر الرئيسي عندما يكون Open Headunit تطبيق الشاشة الرئيسية</string>
 </resources>
