@@ -104,4 +104,8 @@ class SettingsPendingCopyTest {
         copy.loadFrom(settings)
         assertFalse(copy.differsFrom(settings))
     }
+
+    @Test fun `the tab choice is not part of the copy`() {
+        assertFalse(fields().any { it.name == "advancedSettings" })
+    }
 }
