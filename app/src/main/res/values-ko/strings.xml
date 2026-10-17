@@ -551,7 +551,7 @@
     <string name="vehicle_type_car">승용차</string>
     <string name="vehicle_type_truck">트럭</string>
     <string name="vehicle_type_motorcycle">오토바이</string>
-    <string name="vehicle_type_forced_by_microphone">헤드유닛 마이크가 꺼져 있어, 여기서 무엇을 선택하든 Android Auto에는 오토바이로 전달됩니다. 이 때문에 휴대전화가 자체 마이크를 사용합니다.</string>
+    <string name="vehicle_type_forced_by_microphone">헤드유닛 마이크가 꺼져 있어 휴대전화의 마이크를 사용합니다. Android Auto에는 오토바이로 표시됩니다.</string>
     <string name="vehicle_id_description">내부 식별자로만 사용됩니다. 이 값을 변경하면 휴대전화가 다른 차량으로 인식하여 이 차량의 Android Auto 설정이 초기화됩니다.</string>
     <string name="head_unit_make_label">제조사</string>
     <string name="head_unit_make_description">헤드유닛 제조사입니다.</string>
@@ -780,8 +780,10 @@
     <string name="onb_change_later">나중에 설정에서 변경할 수 있습니다.</string>
     <string name="dpi_automatic">자동</string>
     <string name="dpi_automatic_desc">기기의 픽셀 밀도를 사용합니다.</string>
+    <string name="onb_conn_usb_label">USB(또는 어댑터)</string>
+    <string name="onb_connection_self_detail">단독 모드는 휴대전화를 연결하지 않고 이 기기에서 Android Auto를 실행합니다.</string>
     <string name="dpi_widescreen_hint">%1$d DPI 이하에서는 Android Auto가 지도 옆에 미디어 카드를 표시하며, 텍스트가 작아집니다.</string>
-    <string name="dpi_automatic_desc_canvas">%2$s에 %1$d DPI 사용, %3$dx%4$d dp 캔버스</string>
+    <string name="dpi_automatic_desc_canvas">%2$s에 %1$d DPI를 사용합니다(%3$dx%4$d dp 캔버스).</string>
     <string name="dpi_row_value_format">%1$d (%2$dx%3$d dp)</string>
     <string name="dpi_row_auto_format">자동: %1$d (%2$dx%3$d dp)</string>
     <string name="dpi_row_clamped_format">%1$d, 전송값 %2$d (%3$dx%4$d dp)</string>
@@ -789,8 +791,6 @@
     <string name="dpi_clamped_note_portrait">세로 모드에서 Android Auto의 Google Maps는 730 dp보다 좁은 캔버스에서 터치를 무시하므로 %1$d DPI가 %2$d(으)로 전송됩니다.</string>
     <string name="dpi_portrait_override_note">%1$d DPI는 선택한 값 그대로 전송됩니다. 세로 모드에서는 %2$d DPI를 넘으면 Android Auto의 Google Maps가 터치를 무시할 수 있습니다.</string>
     <string name="dpi_floor_override_note">%1$d DPI는 선택한 값 그대로 전송됩니다. %2$d DPI를 넘으면 캔버스가 Android Auto에 필요한 748x450 dp보다 작아져 축소된 레이아웃이 표시될 수 있습니다.</string>
-    <string name="onb_conn_usb_label">USB(또는 어댑터)</string>
-    <string name="onb_connection_self_detail">단독 모드는 휴대전화를 연결하지 않고 이 기기에서 Android Auto를 실행합니다.</string>
     <string name="connection_kind_all">모두</string>
     <string name="onb_connection_all_detail">USB와 Wi-Fi 설정을 모두 표시합니다.</string>
     <string name="onb_connection_warning">연결 방식을 선택하면 해당하지 않는 설정이 기본 및 고급 탭에서 모두 숨겨집니다. 다시 보려면 나중에 연결 설정에서 다른 연결 방식을 선택하세요.</string>
