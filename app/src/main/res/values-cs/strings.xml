@@ -28,7 +28,7 @@
     <string name="threshold_brightness_desc">Hodnota jasu (0–255). Pod touto hodnotou = noc.</string>
     <string name="threshold_light_title">Citlivost na světlo</string>
     <string name="threshold_brightness_title">Úroveň jasu</string>
-    <string name="threshold_light_hint">Tmavý režim se aktivuje, když okolní světlo klesne pod tuto úroveň</string>
+    <string name="threshold_light_hint">Tmavý režim se aktivuje, když okolní světlo klesne pod tuto úroveň.</string>
     <string name="threshold_brightness_hint">Tmavý režim se aktivuje, když je jas obrazovky pod touto hodnotou. Android hlásí jas jako 0–255, ale skutečný rozsah se může lišit podle zařízení. Možná budete muset experimentovat, abyste našli správnou prahovou hodnotu pro vaše zařízení.</string>
     <string name="current_light_reading">Aktuální osvětlení: %d lx</string>
     <string name="enable_fine_lux_control">Jemné ovládání (0–100 Lux)</string>
@@ -36,7 +36,7 @@
     <string name="night_mode_end">Čas ukončení nočního režimu</string>
 
     <string name="app_theme">Tmavý režim (aplikace)</string>
-    <string name="app_theme_description">Ovládejte vzhled aplikace</string>
+    <string name="app_theme_description">Ovládejte vzhled aplikace.</string>
     <string name="change_app_theme">Změnit téma</string>
     <string name="use_gradient_background">Použít přechodové pozadí</string>
     <string name="use_gradient_background_description_on">Aplikace kreslí vlastní pozadí s přechodovým kruhem uprostřed</string>
@@ -46,9 +46,9 @@
     <string name="category_dark_mode">Tmavý režim</string>
     <string name="category_theming">Motiv a vzhled</string>
     <string name="customization_title">Přizpůsobení</string>
-    <string name="customization_description">Přizpůsobte pozadí a vzhled domovské obrazovky</string>
+    <string name="customization_description">Přizpůsobte pozadí a vzhled domovské obrazovky.</string>
     <string name="home_background_image">Obrázek na pozadí</string>
-    <string name="home_background_image_description">Vyberte vlastní obrázek pro domovskou obrazovku</string>
+    <string name="home_background_image_description">Vyberte vlastní obrázek pro domovskou obrazovku.</string>
     <string name="home_background_default">Výchozí (bg.png)</string>
     <string name="home_background_custom">Vlastní obrázek</string>
     <string name="btn_choose_image">Vybrat obrázek</string>
@@ -58,9 +58,9 @@
     <string name="app_theme_short">Aplikace</string>
     <string name="night_mode_short">Android Auto</string>
     <string name="aa_monochrome">Černobílé zobrazení Android Auto</string>
-    <string name="aa_monochrome_description">Snižuje barvy Android Auto pro noční jízdu. Vyžaduje režim zobrazení GLES. Projeví se pouze při zapnutém tmavém režimu</string>
+    <string name="aa_monochrome_description">Snižuje barvy Android Auto pro noční jízdu. Vyžaduje režim zobrazení GLES. Projeví se pouze při zapnutém tmavém režimu.</string>
     <string name="aa_desaturation">Desaturace</string>
-    <string name="aa_desaturation_description">Určuje, kolik barvy se odstraní. Projeví se pouze při zapnutém tmavém režimu</string>
+    <string name="aa_desaturation_description">Určuje, kolik barvy se odstraní. Projeví se pouze při zapnutém tmavém režimu.</string>
     <string name="gles_required_title">Vyžadován GLES</string>
     <string name="gles_required_message">Černobílý režim potřebuje vykreslování GLES, aby mohl na obraz použít filtr stupňů šedi. Povolit GLES?</string>
     <string name="enable_gles">Povolit GLES</string>
@@ -76,7 +76,7 @@
     <string name="invalid_bluetooth_address">To není adresa Bluetooth. Zadejte šest dvojic šestnáctkových číslic, například 0C:32:3A:2D:5D:4A.</string>
     <string name="reset">Resetovat</string>
     <string name="gps_for_navigation">GPS pro navigaci</string>
-    <string name="gps_for_navigation_description">Použít GPS pro navigaci</string>
+    <string name="gps_for_navigation_description">Použít GPS pro navigaci.</string>
     <string name="enabled">Zapnuto</string>
     <string name="disabled">Vypnuto</string>
     <string name="resolution">Rozlišení</string>
@@ -98,7 +98,7 @@
     <string name="orientation_portrait_reverse">Na výšku obráceně (270°)</string>
     <string name="enter_dpi_value">Zadejte hodnotu DPI (0 pro automatické)</string>
     <string name="custom_margin">Vlastní okraje</string>
-    <string name="custom_margin_description">Nastavit vlastní okraje zobrazení (0 pro automatické)</string>
+    <string name="custom_margin_description">Nastavit vlastní okraje zobrazení (0 pro automatické).</string>
     <string name="enter_custom_margins">Zadejte vlastní okraje (0 pro automatické)</string>
     <string name="margin_left">Vlevo</string>
     <string name="margin_top">Nahoře</string>
@@ -119,13 +119,13 @@
     <string name="press_back_again_to_exit">Stiskněte znovu tlačítko zpět pro ukončení</string>
     <string name="back">Zpět</string>
     <string name="debug_mode">Režim ladění</string>
-    <string name="debug_mode_description">Podrobnější protokolování</string>
+    <string name="debug_mode_description">Podrobnější protokolování.</string>
     <string name="export_logs">Exportovat protokoly</string>
-    <string name="export_logs_description">Uložit protokoly pro účely ladění</string>
+    <string name="export_logs_description">Uložit protokoly pro účely ladění.</string>
 
 
     <string name="not_set">Nenastaveno</string>
-    <string name="keymap_description">Změnit přiřazení kláves pro vaši jednotku</string>
+    <string name="keymap_description">Změnit přiřazení kláves pro vaši jednotku.</string>
 
     <string name="key_soft_left">Softklávesa vlevo</string>
     <string name="key_soft_right">Softklávesa vpravo</string>
@@ -174,7 +174,7 @@
     <string name="auto_start_wifi_label">Spuštění při připojení k Wi-Fi</string>
     <string name="auto_start_wifi_description">Automaticky otevřít Open Headunit při připojení k určité Wi-Fi síti (SSID).</string>
     <string name="auto_start_wifi_ssid_label">SSID Wi-Fi</string>
-    <string name="auto_start_wifi_ssid_description">Spustit pouze při připojení k této síti Wi-Fi (SSID)</string>
+    <string name="auto_start_wifi_ssid_description">Spustit pouze při připojení k této síti Wi-Fi (SSID).</string>
     <string name="auto_start_wifi_warning">Zastaralá funkce: na Androidu 8+ může kvůli omezením na pozadí fungovat nespolehlivě. Ujistěte se, že aplikace je vyloučena z optimalizace baterie.</string>
     <string name="enter_wifi_ssid">Zadejte SSID Wi-Fi</string>
     <string name="wifi_ssid_not_set">Nenastaveno</string>
@@ -184,9 +184,9 @@
     <string name="show_toast_messages">Zobrazovat krátká oznámení</string>
     <string name="show_toast_messages_description">Zobrazit vyskakovací zprávy o stavu při připojení, odpojení a změně režimu.</string>
     <string name="auto_start_usb_label">Spuštění při připojení USB</string>
-    <string name="auto_start_usb_description">Automaticky otevřít aplikaci a pokusit se o připojení při zapojení USB zařízení</string>
+    <string name="auto_start_usb_description">Automaticky otevřít aplikaci a pokusit se o připojení při zapojení USB zařízení.</string>
     <string name="auto_start_settings">Nastavení automatického spouštění</string>
-    <string name="auto_start_settings_description">Nastavte, kdy se aplikace spouští automaticky</string>
+    <string name="auto_start_settings_description">Nastavte, kdy se aplikace spouští automaticky.</string>
     <string name="auto_start_oem_warning">Toto zařízení může vyžadovat povolení automatického spuštění a odebrání optimalizace baterie nebo omezení na pozadí pro tuto aplikaci.\n\nNa autorádiích s Quick Boot (rychlé spuštění) nemusí automatické spuštění fungovat. Hledejte v nastavení systému \"DuraSpeed\" a povolte tam tuto aplikaci. Na některých autorádiích je DuraSpeed skrytý a k jeho nalezení můžete potřebovat aplikaci jako \"Hidden Settings\". Pokud DuraSpeed nemáte, zkuste vypnout Quick Boot.</string>
     <string name="car_launcher_autostart_info">Open Headunit je nastaven jako spouštěč v autě. Spouští se automaticky při startu systému.</string>
     <string name="auto_start_on_boot_label">Spustit při startu systému</string>
@@ -202,7 +202,7 @@
     <string name="open_settings">Nastavení</string>
     <string name="wireless_connection_settings">Bezdrátové připojení</string>
     <string name="right_hand_drive">Pravostranné řízení</string>
-    <string name="right_hand_drive_description">Přizpůsobit rozhraní vozidlu s pravostranným řízením</string>
+    <string name="right_hand_drive_description">Přizpůsobit rozhraní vozidlu s pravostranným řízením.</string>
     <string name="category_graphic">Grafika</string>
     <string name="custom_insets">Vlastní okraje</string>
     <string name="inset_top">Nahoře</string>
@@ -214,9 +214,9 @@
     <!-- Video Settings -->
     <string name="category_video">Video</string>
     <string name="force_software_decoding">Vynutit softwarové dekódování</string>
-    <string name="force_software_decoding_description">Může vyřešit problémy na některých zařízeních, ale je pomalejší</string>
+    <string name="force_software_decoding_description">Může vyřešit problémy na některých zařízeních, ale je pomalejší.</string>
     <string name="wireless_mode">Bezdrátový režim</string>
-    <string name="wireless_mode_description">Vyberte, jak se aplikace připojuje bezdrátově (ruční seznam, automatické vyhledání telefonu nebo režim Wireless Launcher)</string>
+    <string name="wireless_mode_description">Vyberte, jak se aplikace připojuje bezdrátově (ruční seznam, automatické vyhledání telefonu nebo režim Wireless Launcher).</string>
     <string-array name="wireless_connection_modes">
         <item>Ručně (seznam)</item>
         <item>Automatické vyhledávání (Headunit Server)</item>
@@ -224,11 +224,11 @@
         <item>Native Android Auto</item>
     </string-array>
     <string name="auto_connect_last_session">Automaticky připojit poslední relaci</string>
-    <string name="auto_connect_last_session_description">Při spuštění aplikace se automaticky znovu připojit k naposledy použitému zařízení</string>
+    <string name="auto_connect_last_session_description">Při spuštění aplikace se automaticky znovu připojit k naposledy použitému zařízení.</string>
     <string name="auto_connect_single_usb">Automaticky připojit USB zařízení</string>
-    <string name="auto_connect_single_usb_description">Automaticky připojit, když je dostupné pouze jedno kompatibilní zařízení</string>
+    <string name="auto_connect_single_usb_description">Automaticky připojit, když je dostupné pouze jedno kompatibilní zařízení.</string>
     <string name="auto_connect_settings">Nastavení automatického připojení</string>
-    <string name="auto_connect_settings_description">Nastavte metody automatického připojení a jejich pořadí</string>
+    <string name="auto_connect_settings_description">Nastavte metody automatického připojení a jejich pořadí.</string>
     <string name="auto_connect_help">Tyto metody se spouštějí automaticky při otevření aplikace. Zapněte požadované metody a přetažením nastavte jejich pořadí. Použije se první zapnutá metoda, která uspěje.</string>
     <string name="auto_connect_priority">Priorita %d</string>
     <string name="auto_connect_all_disabled">Vše vypnuto</string>
@@ -278,10 +278,10 @@
     <!-- Info Settings -->
     <string name="category_info">Informace</string>
     <string name="about">O aplikaci a podpora</string>
-    <string name="about_description">Další informace o Open Headunit</string>
+    <string name="about_description">Další informace o Open Headunit.</string>
     <string name="version">Verze</string>
     <string name="check_for_updates">Zkontrolovat aktualizace</string>
-    <string name="check_for_updates_description">Zkontrolovat, zda je k dispozici novější verze Open Headunit</string>
+    <string name="check_for_updates_description">Zkontrolovat, zda je k dispozici novější verze Open Headunit.</string>
     <string name="checking_for_updates">Kontrola aktualizací…</string>
     <string name="update_available_title">Dostupná aktualizace</string>
     <string name="update_available_playstore_message">Je k dispozici novější verze (%1$s). Navštivte prosím Google Play Store a aplikaci aktualizujte.</string>
@@ -390,7 +390,7 @@
     <string name="allow_external_configuration">Povolit externí konfiguraci</string>
     <string name="allow_external_configuration_description">Umožní automatizačním aplikacím jako Tasker nebo MacroDroid měnit nastavení, nastavit úroveň protokolu a exportovat protokoly. Připojení a odpojení funguje vždy; toto se týká pouze příkazů, které mění nastavení jednotky.</string>
     <string name="log_level">Úroveň protokolování</string>
-    <string name="log_level_description">Filtrovat úroveň protokolu při exportu</string>
+    <string name="log_level_description">Filtrovat úroveň protokolu při exportu.</string>
     <string name="log_source">Zdroj protokolu</string>
     <string name="log_source_logcat">Logcat</string>
     <string name="log_source_applog_file">Přímo do souboru</string>
@@ -398,17 +398,17 @@
     <string name="log_location_default">Výchozí (Úložiště aplikace)</string>
     <string name="log_location_downloads">Složka Ke stažení</string>
     <string name="start_log_capture">Spustit záznam protokolu</string>
-    <string name="start_log_capture_description">Zahájit záznam úplných protokolů pro ladění</string>
+    <string name="start_log_capture_description">Zahájit záznam úplných protokolů pro ladění.</string>
     <string name="start_log_capture_in_applog_file">Zprávy protokolu se zapisují do souboru pouze při aktivním záznamu</string>
     <string name="start_log_capture_in_silent">Nelze zahájit záznam: vybrána úroveň tichého protokolování</string>
     <string name="stop_log_capture">Zastavit záznam protokolu</string>
-    <string name="stop_log_capture_description">Probíhá záznam… klepnutím jej zastavíte</string>
+    <string name="stop_log_capture_description">Probíhá záznam… klepnutím jej zastavíte.</string>
 
     <!-- Navigation notifications -->
     <string name="show_navigation_notifications">Oznámení navigace</string>
-    <string name="show_navigation_notifications_description">Zobrazit v oznámeních „Za X metrů Y“ a aktuální ulici (pro ladění)</string>
+    <string name="show_navigation_notifications_description">Zobrazit v oznámeních „Za X metrů Y“ a aktuální ulici (pro ladění).</string>
     <string name="nav_notification_channel_name">Navigace</string>
-    <string name="nav_notification_channel_description">Podrobné navigační pokyny z Android Auto</string>
+    <string name="nav_notification_channel_description">Podrobné navigační pokyny z Android Auto.</string>
     <string name="nav_notification_title_format">Za %1$d m: %2$s</string>
     <string name="nav_notification_street_format">Ulice: %1$s</string>
     <string name="nav_action_unknown">Akce</string>
@@ -429,9 +429,9 @@
     <string name="nav_action_ferry_train">Trajekt / vlak</string>
     <string name="nav_action_destination">Příjezd do cíle</string>
     <string name="monochrome_icons">Monochromatické ikony</string>
-    <string name="monochrome_icons_description">Použít šedé ikony na domovské obrazovce v tmavém nebo extrémně tmavém režimu</string>
+    <string name="monochrome_icons_description">Použít šedé ikony na domovské obrazovce v tmavém nebo extrémně tmavém režimu.</string>
     <string name="use_extreme_dark">Použít extrémně tmavý režim</string>
-    <string name="use_extreme_dark_description">Použít čistě černé pozadí při aktivním tmavém režimu</string>
+    <string name="use_extreme_dark_description">Použít čistě černé pozadí při aktivním tmavém režimu.</string>
     <string name="performance_overlay_settings">Výkonnostní překryv</string>
     <string name="overlay_field_fps">FPS</string>
     <string name="overlay_field_cpu">CPU</string>
@@ -451,7 +451,7 @@
     <string name="enable_rotary">Povolit otočný ovladač (Rotary)</string>
     <string name="enable_rotary_description">Oznámí podporu fyzických otočných knoflíků a koleček. Tuto možnost vypněte, pokud vaše dotyková obrazovka nefunguje správně.</string>
     <string name="kill_on_disconnect">Zavřít aplikaci při odpojení</string>
-    <string name="kill_on_disconnect_description">Automaticky zavřít aplikaci, když se Android Auto odpojí</string>
+    <string name="kill_on_disconnect_description">Automaticky zavřít aplikaci, když se Android Auto odpojí.</string>
     <string name="kill_on_disconnect_warning_title">Varování</string>
     <string name="kill_on_disconnect_warning">Následující nastavení opětovného připojení budou v konfliktu se zavřením aplikace při odpojení:\n\n%1$s\n\nVaše nastavení počátečního připojení (automatické připojení, automatické spuštění) budou fungovat i po zapnutí jednotky. Po prvním odpojení se však aplikace okamžitě zavře místo opětovného připojení.\n\nPoznámka: Některá dodatečně instalovaná autorádia se nikdy zcela nevypnou. Místo toho přejdou do hibernace, podobně jako telefon, který zamkne obrazovku, ale nikdy se skutečně nevypne. Je-li tato možnost zapnutá, aplikace se po prvním odpojení zavře a při dalším nastartování se nemusí automaticky znovu otevřít.\n\nChcete výše uvedená nastavení opětovného připojení vypnout?</string>
     <string name="kill_on_disconnect_disable_and_enable">Vypnout a zapnout</string>
@@ -464,7 +464,7 @@
 
     <!-- Vehicle Info Settings -->
     <string name="vehicle_info_settings">Informace o vozidle</string>
-    <string name="vehicle_info_settings_description">Přizpůsobte, jak se vaše vozidlo zobrazuje na telefonu</string>
+    <string name="vehicle_info_settings_description">Přizpůsobte, jak se vaše vozidlo zobrazuje na telefonu.</string>
     <string name="ui_scale">Velikost textu a zobrazení</string>
     <string name="ui_scale_description">Změní velikost textu, nabídek a prvků rozhraní v celé aplikaci. Doporučeno pro displeje s vysokým rozlišením a malým textem.</string>
     <string name="ui_scale_home">Domovská obrazovka</string>
@@ -472,30 +472,30 @@
     <string name="category_vehicle">Vozidlo</string>
     <string name="category_head_unit">Autorádio</string>
     <string name="vehicle_display_name_label">Zobrazovaný název</string>
-    <string name="vehicle_display_name_description">Název zobrazený na telefonu pro toto vozidlo</string>
+    <string name="vehicle_display_name_description">Název zobrazený na telefonu pro toto vozidlo.</string>
     <string name="vehicle_make_label">Výrobce</string>
-    <string name="vehicle_make_description">Výrobce vozidla (např. Honda, Toyota)</string>
+    <string name="vehicle_make_description">Výrobce vozidla (např. Honda, Toyota).</string>
     <string name="vehicle_model_label">Model</string>
-    <string name="vehicle_model_description">Model vozidla (např. Civic, Corolla)</string>
+    <string name="vehicle_model_description">Model vozidla (např. Civic, Corolla).</string>
     <string name="vehicle_year_label">Rok</string>
-    <string name="vehicle_year_description">Rok výroby vozidla</string>
+    <string name="vehicle_year_description">Rok výroby vozidla.</string>
     <string name="vehicle_id_label">ID vozidla</string>
     <string name="vehicle_type_label">Typ vozidla</string>
     <string name="vehicle_type_car">Automobil</string>
     <string name="vehicle_type_truck">Nákladní vůz</string>
     <string name="vehicle_type_motorcycle">Motocykl</string>
-    <string name="vehicle_type_forced_by_microphone">Mikrofon autorádia je vypnutý, takže Android Auto dostane informaci, že jde o motocykl, ať zde zvolíte cokoli. Díky tomu telefon používá vlastní mikrofon.</string>
+    <string name="vehicle_type_forced_by_microphone">Mikrofon autorádia je vypnutý, proto telefon použije vlastní. Android Auto uvidí motocykl.</string>
     <string name="vehicle_id_description">Pouze interní identifikátor. Jeho změna způsobí, že váš telefon bude toto vozidlo považovat za jiné, čímž se resetují vaše předvolby Android Auto pro toto auto.</string>
     <string name="head_unit_make_label">Výrobce</string>
-    <string name="head_unit_make_description">Výrobce autorádia</string>
+    <string name="head_unit_make_description">Výrobce autorádia.</string>
     <string name="head_unit_make_hint">Váš telefon zobrazuje tento název v nastavení Android Auto.\n\nSkutečná značka auta zobrazí své logo na tlačítku pro ukončení Android Auto, ale Android Auto pak přestane nabízet aplikace nainstalované mimo Obchod Play. Chcete-li je znovu zobrazit, nastavte zpět „Google“.</string>
     <string name="head_unit_model_label">Model</string>
-    <string name="head_unit_model_description">Model autorádia</string>
+    <string name="head_unit_model_description">Model autorádia.</string>
     <string name="vehicle_year_error_invalid">Zadejte platný rok</string>
     <string name="vehicle_year_error_max">Rok nemůže být pozdější než %1$d</string>
     <string name="vehicle_info_restart_note">Tyto údaje jsou odeslány do Android Auto při každém připojení.</string>
     <string name="auto_enable_hotspot">Automaticky zapnout hotspot</string>
-    <string name="auto_enable_hotspot_description">Automaticky zapne hotspot Wi-Fi na tomto zařízení. (Nemusí fungovat na všech zařízeních)</string>
+    <string name="auto_enable_hotspot_description">Automaticky zapne hotspot Wi-Fi na tomto zařízení. (Nemusí fungovat na všech zařízeních.)</string>
     <string name="hotspot_warning_title">Experimentální funkce</string>
     <string name="hotspot_warning_message">Tato funkce používá reflexi a nemusí fungovat na všech zařízeních. Může být nutné ručně udělit oprávnění \"Změna systémových nastavení\".</string>
     <string name="hotspot_permission_title">Vyžadováno oprávnění</string>
@@ -539,7 +539,7 @@
     <string name="audio_latency_multiplier">Násobitel latence zvuku</string>
     <string name="aaudio_output">Výstup AAudio (experimentální)</string>
     <string name="aaudio_output_description">Zkusí výstup médií s nízkou latencí. Pokud není dostupný, automaticky použije AudioTrack.</string>
-    <string name="audio_latency_multiplier_description">Úprava velikosti zvukové vyrovnávací paměti (Nižší = menší zpoždění, Vyšší = méně sekání)</string>
+    <string name="audio_latency_multiplier_description">Úprava velikosti zvukové vyrovnávací paměti (Nižší = menší zpoždění, Vyšší = méně sekání).</string>
     <string name="audio_queue_capacity">Kapacita zvukové fronty (Backpressure)</string>
     <string name="media_action_previous">Předchozí</string>
     <string name="media_action_play">Přehrát</string>
@@ -547,9 +547,9 @@
     <string name="media_action_next">Další</string>
     <string name="media_session_aa_status_placeholder">Připojeno</string>
     <string name="sync_media_session_aa_metadata">Aktuální skladba AA v mediální relaci</string>
-    <string name="sync_media_session_aa_metadata_description">Zobrazovat název skladby, interpreta, délku a obal alba z telefonu v systémové mediální relaci a mediálním oznámení</string>
+    <string name="sync_media_session_aa_metadata_description">Zobrazovat název skladby, interpreta, délku a obal alba z telefonu v systémové mediální relaci a mediálním oznámení.</string>
     <string name="auto_resume_playback_on_reconnect">Obnovit přehrávání při opětovném připojení</string>
-    <string name="auto_resume_playback_on_reconnect_description">Automaticky obnoví přehrávání hudby, pokud před krátkým výpadkem spojení hrála (do 60 sekund)</string>
+    <string name="auto_resume_playback_on_reconnect_description">Automaticky obnoví přehrávání hudby, pokud před krátkým výpadkem spojení hrála (do 60 sekund).</string>
     <string name="error_usb_permission_failed">Systémová chyba: Nepodařilo se zobrazit dialog s žádostí o oprávnění USB.</string>
 
     <!-- Custom loading screen -->
@@ -571,7 +571,7 @@
     <string name="loading_screen_keep_aspect_ratio">Zachovat poměr stran</string>
     <string name="loading_screen_scale">Měřítko</string>
     <string name="loading_screen_recommended_aspect_ratio">Doporučený poměr stran: %1$d:%2$d</string>
-    <string name="loading_screen_tap_fullscreen_hint">Klepnutím na náhled ho zobrazíte na celou obrazovku</string>
+    <string name="loading_screen_tap_fullscreen_hint">Klepnutím na náhled ho zobrazíte na celou obrazovku.</string>
     <string name="loading_screen_loop_video">Opakovat krátké animace</string>
     <string name="microphone_settings">Nastavení mikrofonu</string>
     <string name="use_head_unit_microphone">Mikrofon autorádia</string>
@@ -600,7 +600,7 @@
     <string name="select_bt_adapter">Vybrat adaptér Bluetooth</string>
     <!-- QR Code Generator -->
     <string name="share_hotspot_qr_title">Nakonfigurovat Wireless Helper</string>
-    <string name="share_hotspot_qr_desc">Zobrazit QR kód pro automatické připojení telefonu</string>
+    <string name="share_hotspot_qr_desc">Zobrazit QR kód pro automatické připojení telefonu.</string>
     <string name="hotspot_qr_description">Konfigurační QR kód Wireless Helper</string>
     <string name="scan_with_wireless_helper">Naskenujte tento QR kód pomocí QR skeneru v aplikaci Wireless Helper na vašem telefonu.</string>
     <string name="share_hotspot_qr_error">Nepodařilo se načíst přihlašovací údaje k aktivnímu hotspotu Wi-Fi. Ujistěte se, že je hotspot zapnutý a jsou povoleny služby určování polohy.</string>
@@ -611,7 +611,7 @@
     <string name="key_back">Zpět</string>
     <string name="category_backup">Záloha</string>
     <string name="export_settings">Exportovat nastavení</string>
-    <string name="export_settings_description">Uložit zálohu nastavení jako soubor JSON</string>
+    <string name="export_settings_description">Uložit zálohu nastavení jako soubor JSON.</string>
     <string name="export_settings_app_folder">Uložit do složky záloh aplikace</string>
     <string name="export_settings_downloads">Uložit do Stažených souborů</string>
     <string name="export_settings_choose_location">Vyberte umístění uložení</string>
@@ -620,7 +620,7 @@
     <string name="settings_backup_saved_to">Záloha nastavení uložena do:\n%1$s</string>
     <string name="share_settings_backup">Sdílet zálohu nastavení</string>
     <string name="import_settings">Importovat nastavení</string>
-    <string name="import_settings_description">Obnovit nastavení ze zálohy Open Headunit</string>
+    <string name="import_settings_description">Obnovit nastavení ze zálohy Open Headunit.</string>
     <string name="import_settings_app_folder">Importovat ze složky záloh aplikace</string>
     <string name="import_settings_downloads">Importovat ze Stažených souborů</string>
     <string name="import_settings_choose_file">Vyberte soubor zálohy</string>
@@ -780,9 +780,9 @@
     <string name="onb_dpi_help">Vyšší DPI zvětší ikony a text Android Auto, takže se na obrazovku vejde méně. Nižší DPI je zmenší a vejde se více. Projeví se po připojení Android Auto.</string>
     <string name="onb_change_later">Toto můžete změnit později v Nastavení.</string>
     <string name="dpi_automatic">Automaticky</string>
-    <string name="dpi_automatic_desc">Použít hustotu zařízení</string>
+    <string name="dpi_automatic_desc">Použít hustotu zařízení.</string>
     <string name="dpi_widescreen_hint">Při %1$d DPI nebo méně zobrazí Android Auto mapu s kartou médií vedle ní a text se zmenší.</string>
-    <string name="dpi_automatic_desc_canvas">Použije %1$d DPI pro %2$s, plocha %3$dx%4$d dp</string>
+    <string name="dpi_automatic_desc_canvas">Použije %1$d DPI pro %2$s (plocha %3$dx%4$d dp).</string>
     <string name="dpi_row_value_format">%1$d (%2$dx%3$d dp)</string>
     <string name="dpi_row_auto_format">Automaticky: %1$d (%2$dx%3$d dp)</string>
     <string name="dpi_row_clamped_format">%1$d, odesláno jako %2$d (%3$dx%4$d dp)</string>
@@ -821,7 +821,7 @@
     <string name="perm_granted">Uděleno</string>
     <string name="perm_optional_format">%1$s (volitelné)</string>
     <string name="permissions">Oprávnění</string>
-    <string name="permissions_desc">Zkontrolujte a udělte oprávnění, která aplikace potřebuje</string>
+    <string name="permissions_desc">Zkontrolujte a udělte oprávnění, která aplikace potřebuje.</string>
     <string name="perm_mic_title">Mikrofon</string>
     <string name="perm_mic_help">Umožňuje Android Auto používat hlasové příkazy, Google Assistant a telefonní hovory.</string>
     <string name="perm_location_title">Poloha</string>
@@ -841,14 +841,14 @@
     <string name="onb_ready_loading_button">Nastavit načítací obrazovku</string>
 
     <string name="support">Nahlásit problém</string>
-    <string name="support_description">Hledejte nebo nahlašujte chyby na GitHubu</string>
+    <string name="support_description">Hledejte nebo nahlašujte chyby na GitHubu.</string>
     <string name="support_title">Nahlásit problém</string>
     <string name="support_help">Pokud narazíte na chybu nebo problém, nejprve ho vyhledejte v seznamu hlášení na GitHubu. Pokud ho ještě nikdo nenahlásil, vytvořte nové hlášení a popište, co se stalo, vaše autorádio a postup, jak chybu zopakovat.</string>
     <string name="support_open_issues">Otevřít hlášení na GitHubu</string>
     <string name="support_scan_qr">Nebo naskenujte tento QR kód a otevřete seznam hlášení na jiném zařízení.</string>
     <string name="support_github_account_warning">Poznámka: k vytvoření hlášení potřebujete bezplatný účet na GitHubu.</string>
     <string name="onb_ready_extras_title">Než dokončíte, můžete také nastavit:</string>
-    <string name="onb_extra_loading_desc">Vlastní obrázek zobrazený při připojování auta</string>
+    <string name="onb_extra_loading_desc">Vlastní obrázek zobrazený při připojování auta.</string>
 
     <!-- Support / reporting rules -->
     <string name="support_rules_button">Pravidla hlášení</string>
@@ -973,7 +973,7 @@
     <string name="remove_from_blacklist">Odebrat z černé listiny</string>
     <string name="usb_device_action_title">Akce USB zařízení</string>
     <string name="home_button_colors">Barvy tlačítek a přechody</string>
-    <string name="home_button_colors_description">Přizpůsobte si barvy a přechody 4 tlačítek na domovské obrazovce</string>
+    <string name="home_button_colors_description">Přizpůsobte si barvy a přechody 4 tlačítek na domovské obrazovce.</string>
     <string name="btn_color_self_mode">Tlačítko samostatného režimu</string>
     <string name="btn_color_usb">Tlačítko USB</string>
     <string name="btn_color_wifi">Tlačítko Wi-Fi</string>
@@ -981,14 +981,14 @@
     <string name="btn_reset_colors">Obnovit všechny barvy tlačítek</string>
     <string name="btn_make_all_monochrome">Nastavit všechna tlačítka na monochromatická</string>
     <string name="auto_monochrome_at_night">V noci automaticky přepnout na monochromatické</string>
-    <string name="auto_monochrome_at_night_description">V tmavém režimu přepne barevná tlačítka na decentní šedou, aby se omezilo oslnění při řízení</string>
+    <string name="auto_monochrome_at_night_description">V tmavém režimu přepne barevná tlačítka na decentní šedou, aby se omezilo oslnění při řízení.</string>
     <string name="bg_night_behavior_title">Pozadí v noci</string>
-    <string name="bg_night_behavior_description">Určuje vzhled pozadí při aktivním tmavém režimu</string>
+    <string name="bg_night_behavior_description">Určuje vzhled pozadí při aktivním tmavém režimu.</string>
     <string name="bg_night_behavior_dim">Ztmavit (50 %)</string>
     <string name="bg_night_behavior_pure_black">Čistě černá (OLED)</string>
     <string name="bg_night_behavior_none">Beze změny</string>
     <string name="bg_style_title">Styl pozadí</string>
-    <string name="bg_style_description">Vyberte vzhled pozadí, pokud není použit vlastní obrázek</string>
+    <string name="bg_style_description">Vyberte vzhled pozadí, pokud není použit vlastní obrázek.</string>
     <string name="bg_type_standard">Výchozí (klasická modrá)</string>
     <string name="bg_type_gradient">Přechod</string>
     <string name="bg_type_pure_black">Čistě černá (OLED)</string>
@@ -997,7 +997,7 @@
     <string name="color_preset_default">Výchozí</string>
     <string name="color_custom_hex">Hexadecimální barva</string>
     <string name="home_button_scale">Velikost tlačítek</string>
-    <string name="home_button_scale_description">Upravte velikost 4 tlačítek domovské obrazovky</string>
+    <string name="home_button_scale_description">Upravte velikost 4 tlačítek domovské obrazovky.</string>
     <string name="home_button_scale_preview">Živý náhled domovské obrazovky</string>
     <string name="btn_reset_scale">Obnovit velikost tlačítek</string>
     <string name="static_bssid_title">Statický BSSID (adresa MAC)</string>
@@ -1046,7 +1046,7 @@
     <string name="native_aa_ignore_external_bt">Ignorovat kontrolu kompatibility Bluetooth</string>
     <string name="native_aa_ignore_external_bt_description">Tato jednotka podle všeho používá Bluetooth na samostatném modulu, ke kterému se Android nedostane, proto se bezdrátové Android Auto automaticky vypíná. Ve výchozím nastavení vypnuto. Zapněte jen tehdy, pokud si myslíte, že je to špatně: pokud je detekce správná, připojení tiše selže a protokol vypadá v pořádku.</string>
     <string name="native_aa_setup_qr_title">Nastavení pomocí QR kódu</string>
-    <string name="native_aa_setup_qr_description">Zobrazit kód, který může telefon naskenovat</string>
+    <string name="native_aa_setup_qr_description">Zobrazit kód, který může telefon naskenovat.</string>
     <string name="native_aa_setup_qr_content_description">QR kód pro nastavení bezdrátového Android Auto</string>
     <string name="native_aa_setup_qr_instruction">Naskenujte jej fotoaparátem telefonu a potvrďte v telefonu. Stačí to jednou: potom se telefon připojuje sám.</string>
     <string name="native_aa_setup_qr_not_drawn">Kód se nepodařilo vytvořit.</string>
@@ -1065,7 +1065,7 @@
     <string name="hide_clock_label">Skrýt hodiny</string>
     <string name="might_broken_on_newer_aa_versions">Tato funkce nemusí fungovat na novějších verzích Android Auto</string>
     <string name="auto_connect_delay">Zpoždění automatického připojení</string>
-    <string name="auto_connect_delay_description">Počkat před pokusem o připojení při startu (užitečné, pokud Wi-Fi potřebuje čas na probuzení)</string>
+    <string name="auto_connect_delay_description">Počkat před pokusem o připojení při startu (užitečné, pokud Wi-Fi potřebuje čas na probuzení).</string>
     <string name="auto_connect_delay_none">Žádné (Okamžitě)</string>
     <string name="auto_connect_delay_seconds_format">%d s</string>
     <string name="auto_connect_delay_custom">Vlastní…</string>
@@ -1073,7 +1073,7 @@
     <string name="failed_aa_not_system">Selhalo: Android Auto není nainstalováno jako systémová aplikace!</string>
     <string name="failed_aa_not_installed">Selhalo: Android Auto není nainstalováno!</string>
     <string name="raise_projection_during_call">Zůstat v Android Auto během hovorů</string>
-    <string name="raise_projection_during_call_description">Pouze samostatný režim. Vrátí projekci nad obrazovku hovoru telefonu, takže se hovory přijímají a ukončují v rozhraní Android Auto</string>
+    <string name="raise_projection_during_call_description">Pouze samostatný režim. Vrátí projekci nad obrazovku hovoru telefonu, takže se hovory přijímají a ukončují v rozhraní Android Auto.</string>
     <string name="audio_stream_settings">Zvukové streamy</string>
     <string name="audio_stream_settings_description">Vyberte systémový stream, na kterém hraje každý kanál Android Auto.</string>
     <string name="audio_stream_settings_info">Android Auto posílá zvuk třemi kanály: Média, Navigace a Systémové zvuky. Každý se do autorádia dostane určitým systémovým streamem a zvolený stream určuje, kterým tlačítkem hlasitosti se řídí a u řady autorádií i to, zda se pro něj vůbec zapne zesilovač. Tlačítkem reproduktoru si před uložením přehrajte na streamu zkušební tón.</string>
@@ -1109,7 +1109,7 @@
     <string name="onb_audio_help">Vyberte systémový stream, na kterém hraje každý kanál Android Auto, a klepnutím na reproduktor si jej poslechněte. Pokud některý kanál v autě mlčí, obvykle pomůže přesunout jej na jiný stream.</string>
     <string name="onb_audio_more_hint">Toto můžete později změnit v Nastavení → Zvukové streamy.</string>
     <string name="native_driver_selection_title">Výběr řidiče</string>
-    <string name="native_driver_selection_summary">Vyberte, který telefon se má připojit, když je ve vozidle více spárovaných telefonů</string>
+    <string name="native_driver_selection_summary">Vyberte, který telefon se má připojit, když je ve vozidle více spárovaných telefonů.</string>
     <string name="native_driver_selection_mode_off">Vypnuto</string>
     <string name="native_driver_selection_mode_auto">Automaticky</string>
     <string name="native_driver_selection_mode_always">Vždy se ptát</string>
@@ -1161,7 +1161,7 @@
 
     <string name="category_more_features">Další funkce</string>
     <string name="pref_enable_floating_button_title">Plovoucí tlačítko spouštěče</string>
-    <string name="pref_enable_floating_button_summary">Zobrazí plovoucí tlačítko nad OEM spouštěčem a jinými aplikacemi pro rychlý návrat do Open Headunit</string>
+    <string name="pref_enable_floating_button_summary">Zobrazí plovoucí tlačítko nad OEM spouštěčem a jinými aplikacemi pro rychlý návrat do Open Headunit.</string>
     <string name="pref_floating_button_connection_status_title">Indikátor stavu připojení</string>
     <string name="pref_floating_button_connection_status_summary">Když není připojen telefon, použije Neprůhlednost při odpojení, a při připojeném telefonu přejde na Neprůhlednost plovoucího tlačítka. Při 0 % je tlačítko skryté a propouští klepnutí.</string>
     <string name="pref_floating_button_size_title">Velikost plovoucího tlačítka</string>
@@ -1170,7 +1170,7 @@
     <string name="pref_floating_button_x_title">Vodorovná pozice (X)</string>
     <string name="pref_floating_button_y_title">Svislá pozice (Y)</string>
     <string name="pref_aa_exit_action_title">Akce při ukončení Android Auto</string>
-    <string name="pref_aa_exit_action_summary">Akce po klepnutí na Ukončit v nabídce aplikací Android Auto</string>
+    <string name="pref_aa_exit_action_summary">Akce po klepnutí na Ukončit v nabídce aplikací Android Auto.</string>
     <string name="aa_exit_action_oem_launcher">Návrat do OEM spouštěče (minimalizovat)</string>
     <string name="aa_exit_action_app_home">Zpět na úvod aplikace</string>
     <string name="aa_exit_action_disconnect">Odpojit relaci</string>
@@ -1182,7 +1182,7 @@
     <string name="no_usb_host_support">Tato jednotka nepodporuje režim hostitele USB, proto kabelové Android Auto není k dispozici. Použijte bezdrátové připojení.</string>
 
     <string name="oem_app_management">Správa konfliktů OEM aplikací (ADB)</string>
-    <string name="oem_app_management_desc">Zjištění a zakázání konfliktních aplikací (Zlink, AutoKit atd.)</string>
+    <string name="oem_app_management_desc">Zjištění a zakázání konfliktních aplikací (Zlink, AutoKit atd.).</string>
     <string name="oem_app_explanation">Tovární doplňkové aplikace jednotky (např. Zlink, AutoKit, SpeedPlay) často zachytávají připojení USB a Bluetooth a brání Open Headunit v připojení. Můžete je zakázat pomocí root nebo Self-ADB (port 5555).</string>
     <string name="oem_app_backend_root">Způsob spuštění: K dispozici Root (su)</string>
     <string name="oem_app_backend_adb">Způsob spuštění: Self-ADB (127.0.0.1:5555) připojeno</string>
@@ -1263,8 +1263,9 @@
     <string name="native_aa_wake_remeasure_confirm">Android Auto spustí bezdrátové připojení, jen když zaznamená změnu připojení Bluetooth. Tam, kde tato jednotka už drží spojení handsfree, ho aplikace musí přerušit, aby ke změně došlo. Jednou proto změří, zda se spojení vrátí, a pokud ne, zastaví se. Použijte, pokud se bezdrátové připojení přestalo spouštět samo a jste ochotni na chvíli přijít o handsfree, zatímco aplikace zkouší znovu.</string>
     <string name="native_aa_wake_remeasure_done">Probuzení Bluetooth se znovu změří při dalším připojení.</string>
     <string name="pref_enable_car_launcher_title">Použít jako spouštěč v autě</string>
-    <string name="pref_enable_car_launcher_summary">Zaregistruje Open Headunit jako aplikaci domovské obrazovky, aby se spustil po stisknutí tlačítka Domů v autě nebo na autorádiu</string>
+    <string name="pref_enable_car_launcher_summary">Zaregistruje Open Headunit jako aplikaci domovské obrazovky, aby se spustil po stisknutí tlačítka Domů v autě nebo na autorádiu.</string>
     <string name="pref_set_default_launcher_title">Výchozí domovská aplikace</string>
     <string name="pref_default_launcher_status_active">Aktivní (Klepnutím spravovat)</string>
     <string name="pref_default_launcher_status_inactive">Nenastaveno (Klepnutím nastavit)</string>
+    <string name="audio_settings_reconnect">Nastavení zvuku uloženo. Pro jeho použití znovu připojte Android Auto.</string>
 </resources>
