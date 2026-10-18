@@ -1141,6 +1141,7 @@ class CommManager(
                     action = com.andrerinas.openheadunit.aap.AapService.ACTION_STOP_SERVICE
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
+                com.andrerinas.openheadunit.aap.AapService.destroyIsUserStop = wasUserExit
                 context.stopService(stopIntent)
                 // Finish all tasks (API 21+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1472,6 +1473,7 @@ class CommManager(
                     action = com.andrerinas.openheadunit.aap.AapService.ACTION_STOP_SERVICE
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
+                com.andrerinas.openheadunit.aap.AapService.destroyIsUserStop = isUserExit
                 context.stopService(stopIntent)
                 // Finish all tasks (API 21+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

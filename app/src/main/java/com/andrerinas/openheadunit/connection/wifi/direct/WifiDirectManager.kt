@@ -507,6 +507,8 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
      * and grading it as a create would compare it to itself and call it stable for good.
      */
     @Volatile private var nativeAdoptDecisionPending = SoftApEndpointStabilityPolicy.UNDECIDED_UNTIL_BRING_UP
+    /** The adopt query is out, so a group may be ours before isGroupOwner says so. */
+    @Volatile private var adoptQueryInFlight = false
 
     /**
      * Bumped by [stop]. Every P2P callback that continues into another framework call captures this
@@ -2095,17 +2097,31 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
             // Taken before the request, not inside its callback: a group-info callback from the
             // receiver can reach the assessment first and grade the surviving group against itself.
             nativeAdoptDecisionPending = true
+            adoptQueryInFlight = true
             mgr.requestGroupInfo(ch) { group ->
+                adoptQueryInFlight = false
                 // An exit delivered to a stopped app starts the service, whose onCreate arms this,
                 // so the stop lands mid-flight and this callback adopted a group on a manager that
                 // had already stopped. The pending flag is left alone: stop() set it again, and a
                 // bring-up that has since re-armed owns it now.
                 if (supersededByStop(gen, "the adopt-or-create decision")) return@requestGroupInfo
-                if (group != null && P2pIdentityRotationPolicy.readsExistingGroup(
-                        Build.VERSION.SDK_INT, group.isGroupOwner, group.networkName, kept.networkName,
-                        group.passphrase, kept.passphrase
+                val survivorFrequency =
+                    if (group != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) group.frequency else 0
+                val sameIdentity = group != null && P2pIdentityRotationPolicy.readsExistingGroup(
+                    Build.VERSION.SDK_INT, group.isGroupOwner, group.networkName, kept.networkName,
+                    group.passphrase, kept.passphrase
+                )
+                val matchesSetting = NativeGroupKeepPolicy.matchesSetting(
+                    P2pBandPreference.fromSetting(appSettings.wifiDirectBand),
+                    appSettings.fiveGhzChannel, survivorFrequency,
+                )
+                if (sameIdentity && !matchesSetting) {
+                    AppLog.i(
+                        "WifiDirectManager: the group already up is on $survivorFrequency MHz, which " +
+                            "the band or channel setting no longer allows, so it is replaced."
                     )
-                ) {
+                }
+                if (group != null && sameIdentity && matchesSetting) {
                     AppLog.i(
                         "WifiDirectManager: a group named ${group.networkName} is already up from " +
                             "before this bring-up; reading it instead of tearing it down."
@@ -3135,7 +3151,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         return null
     }
 
-    fun stop() {
+    fun stop(keepGroup: Boolean = false) {
         AppLog.i("WifiDirectManager: Stopping and cleaning up...")
         WifiBandCapability.reportSessionFrequency(0)
         generation++
@@ -3189,7 +3205,13 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         // successfully joined.
         isReceiverRegistered = false
 
-        if (isGroupOwner) {
+        // A stop inside the adopt window cannot see the survivor yet, so it removes it anyway.
+        // Removing a group that is not there only fails.
+        val mayOwnGroup = isGroupOwner || adoptQueryInFlight
+        adoptQueryInFlight = false
+        if (isGroupOwner && keepGroup) {
+            AppLog.i("WifiDirectManager: keeping the group up through this stop, for the next start to read.")
+        } else if (mayOwnGroup) {
             manager?.removeGroup(channel, object : WifiP2pManager.ActionListener {
                 override fun onSuccess() { AppLog.d("WifiDirectManager: Final group removal success") }
                 override fun onFailure(reason: Int) { AppLog.d("WifiDirectManager: Final group removal failed: $reason") }
