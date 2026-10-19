@@ -1369,7 +1369,8 @@
     <string name="home_favorite_change">Change</string>
     <string name="home_add_to_favorites">Add to favorites</string>
     <string name="home_favorites_full">All four favorites are taken. Long-press one on the home screen to change it.</string>
-    <string name="home_choose_favorite_app">Choose an app</string>
+    <string name="home_choose_favorite_app">Choose an app or shortcut</string>
+    <string name="home_shortcut_badge">Shortcut</string>
     <string name="home_show_favorite_apps">Favorite apps on the home screen</string>
     <string name="home_show_favorite_apps_description">Four app shortcuts under the main button while Open Headunit is the launcher</string>
     <string name="home_use_classic">Classic home screen</string>

@@ -1292,7 +1292,8 @@
     <string name="home_favorite_change">변경</string>
     <string name="home_add_to_favorites">즐겨찾기에 추가</string>
     <string name="home_favorites_full">즐겨찾기 4개가 모두 찼습니다. 홈 화면에서 하나를 길게 눌러 변경하세요.</string>
-    <string name="home_choose_favorite_app">앱 선택</string>
+    <string name="home_choose_favorite_app">앱 또는 바로가기 선택</string>
+    <string name="home_shortcut_badge">바로가기</string>
     <string name="home_show_favorite_apps">홈 화면 즐겨찾기 앱</string>
     <string name="home_show_favorite_apps_description">Open Headunit이 홈 앱일 때 메인 버튼 아래에 앱 바로가기 4개를 표시합니다</string>
     <string name="home_use_classic">클래식 홈 화면</string>

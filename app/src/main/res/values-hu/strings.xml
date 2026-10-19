@@ -1279,7 +1279,8 @@
     <string name="home_favorite_change">Csere</string>
     <string name="home_add_to_favorites">Hozzáadás a kedvencekhez</string>
     <string name="home_favorites_full">Mind a négy kedvenc foglalt. Tarts lenyomva egyet a kezdőképernyőn a cseréjéhez.</string>
-    <string name="home_choose_favorite_app">Válassz alkalmazást</string>
+    <string name="home_choose_favorite_app">Válassz alkalmazást vagy parancsikont</string>
+    <string name="home_shortcut_badge">Parancsikon</string>
     <string name="home_show_favorite_apps">Kedvenc alkalmazások a kezdőképernyőn</string>
     <string name="home_show_favorite_apps_description">Négy alkalmazás-parancsikon a fő gomb alatt, amíg az Open Headunit a kezdőképernyő-alkalmazás</string>
     <string name="home_use_classic">Klasszikus kezdőképernyő</string>

@@ -340,29 +340,49 @@ class HomeFragment : Fragment() {
 
     /** Loads only the four favorites, off the main thread: the drawer's full list is not needed here. */
     private fun loadFavorites() {
-        val pm = requireContext().applicationContext.packageManager
+        val ctx = requireContext().applicationContext
+        val pm = ctx.packageManager
         val appSettings = App.provide(requireContext()).settings
-        val packages = appSettings.homeFavoriteApps
+        val targets = appSettings.homeFavoriteApps
         viewLifecycleOwner.lifecycleScope.launch {
-            val apps = withContext(Dispatchers.IO) { packages.map { loadFavorite(pm, it) } }
+            val apps = withContext(Dispatchers.IO) { targets.map { loadFavorite(ctx, pm, it) } }
             apps.forEachIndexed { slot, app -> bindFavorite(favoriteSlots[slot], app) }
-            // An uninstalled app frees its slot, so "Add to favorites" fills the "+" the user sees.
-            val uninstalled = packages.indices.filter { packages[it].isNotEmpty() && apps[it] == null }
-            if (uninstalled.isNotEmpty()) {
-                appSettings.homeFavoriteApps = uninstalled.fold(packages) { slots, slot -> FavoriteAppsPolicy.remove(slots, slot) }
+            // An uninstalled app, or a shortcut the app dropped, frees its slot so "Add to
+            // favorites" fills the "+" the user sees.
+            val gone = targets.indices.filter { targets[it] != FavoriteTarget.Empty && apps[it] == null }
+            if (gone.isNotEmpty()) {
+                appSettings.homeFavoriteApps = gone.fold(targets) { slots, slot -> FavoriteAppsPolicy.remove(slots, slot) }
             }
         }
     }
 
-    private fun loadFavorite(pm: PackageManager, packageName: String): FavoriteApp? {
-        if (packageName.isEmpty()) return null
-        return try {
-            val info = pm.getApplicationInfo(packageName, 0)
-            FavoriteApp(pm.getApplicationLabel(info), pm.getApplicationIcon(info))
-        } catch (e: PackageManager.NameNotFoundException) {
-            AppLog.i("HomeFragment: favorite $packageName is no longer installed, showing its slot as free")
-            null
+    private fun loadFavorite(context: Context, pm: PackageManager, target: FavoriteTarget): FavoriteApp? =
+        when (target) {
+            is FavoriteTarget.Empty -> null
+            is FavoriteTarget.App -> appFavorite(pm, target.packageName)
+            is FavoriteTarget.Shortcut -> shortcutFavorite(context, pm, target)
         }
+
+    private fun appFavorite(pm: PackageManager, packageName: String): FavoriteApp? = try {
+        val info = pm.getApplicationInfo(packageName, 0)
+        FavoriteApp(pm.getApplicationLabel(info), pm.getApplicationIcon(info))
+    } catch (e: PackageManager.NameNotFoundException) {
+        AppLog.i("HomeFragment: favorite $packageName is no longer installed, showing its slot as free")
+        null
+    }
+
+    /** A shortcut the app still offers, with its own icon and the app's as the fallback. */
+    private fun shortcutFavorite(context: Context, pm: PackageManager, target: FavoriteTarget.Shortcut): FavoriteApp? {
+        val shortcut = LauncherShortcuts.forPackage(context, target.packageName)
+            .firstOrNull { it.shortcutId == target.shortcutId }
+        if (shortcut == null) {
+            AppLog.i("HomeFragment: favorite shortcut ${target.packageName}/${target.shortcutId} is gone, showing its slot as free")
+            return null
+        }
+        val icon = LauncherShortcuts.icon(context, target.packageName, target.shortcutId)
+            ?: appFavorite(pm, target.packageName)?.icon
+        if (icon == null) return null
+        return FavoriteApp(shortcut.label, icon)
     }
 
     private fun bindFavorite(slotView: View, app: FavoriteApp?) {
@@ -379,15 +399,19 @@ class HomeFragment : Fragment() {
     }
 
     private fun onFavoriteClicked(slot: Int) {
-        val packageName = App.provide(requireContext()).settings.homeFavoriteApps[slot]
-        if (packageName.isEmpty() || !AppDrawerFragment.launchPackage(requireContext(), packageName)) {
-            openAppDrawer(favoriteSlot = slot)
+        val target = App.provide(requireContext()).settings.homeFavoriteApps[slot]
+        val launched = when (target) {
+            is FavoriteTarget.Empty -> false
+            is FavoriteTarget.App -> AppDrawerFragment.launchPackage(requireContext(), target.packageName)
+            is FavoriteTarget.Shortcut ->
+                LauncherShortcuts.launch(requireContext(), target.packageName, target.shortcutId)
         }
+        if (!launched) openAppDrawer(favoriteSlot = slot)
     }
 
     private fun showFavoriteMenu(slot: Int, anchor: View): Boolean {
         val appSettings = App.provide(requireContext()).settings
-        if (appSettings.homeFavoriteApps[slot].isEmpty()) return false
+        if (appSettings.homeFavoriteApps[slot] == FavoriteTarget.Empty) return false
         PopupMenu(requireContext(), anchor).apply {
             menu.add(R.string.home_favorite_change).setOnMenuItemClickListener {
                 openAppDrawer(favoriteSlot = slot)

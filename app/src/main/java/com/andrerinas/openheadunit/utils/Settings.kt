@@ -11,6 +11,7 @@ import android.media.AudioManager
 import android.os.Build
 import com.andrerinas.openheadunit.input.KeyCode
 import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
+import com.andrerinas.openheadunit.main.FavoriteTarget
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
 import com.andrerinas.openheadunit.view.PerformanceOverlayPolicy
@@ -1562,8 +1563,8 @@ class Settings(private val context: Context) {
             prefs.edit().putInt("home-button-scale-percent", valid).apply()
         }
 
-    /** Package names in slot order, empty for a free slot. See [FavoriteAppsPolicy]. */
-    var homeFavoriteApps: List<String>
+    /** What each favorite slot holds, in slot order. See [FavoriteAppsPolicy]. */
+    var homeFavoriteApps: List<FavoriteTarget>
         get() = FavoriteAppsPolicy.decode(prefs.getString("home-favorite-apps", "") ?: "")
         set(value) { prefs.edit().putString("home-favorite-apps", FavoriteAppsPolicy.encode(value)).apply() }
 

@@ -1284,7 +1284,8 @@
     <string name="home_favorite_change">Змінити</string>
     <string name="home_add_to_favorites">Додати в улюблені</string>
     <string name="home_favorites_full">Усі чотири місця зайняті. Утримуйте одну з програм на головному екрані, щоб змінити її.</string>
-    <string name="home_choose_favorite_app">Виберіть програму</string>
+    <string name="home_choose_favorite_app">Виберіть програму або ярлик</string>
+    <string name="home_shortcut_badge">Ярлик</string>
     <string name="home_show_favorite_apps">Улюблені програми на головному екрані</string>
     <string name="home_show_favorite_apps_description">Чотири ярлики програм під головною кнопкою, коли Open Headunit є головним екраном</string>
     <string name="home_use_classic">Класичний головний екран</string>

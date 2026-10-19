@@ -1329,7 +1329,8 @@
     <string name="home_favorite_change">เปลี่ยน</string>
     <string name="home_add_to_favorites">เพิ่มในรายการโปรด</string>
     <string name="home_favorites_full">รายการโปรดครบทั้งสี่แล้ว กดค้างที่แอปหนึ่งบนหน้าจอหลักเพื่อเปลี่ยน</string>
-    <string name="home_choose_favorite_app">เลือกแอป</string>
+    <string name="home_choose_favorite_app">เลือกแอปหรือทางลัด</string>
+    <string name="home_shortcut_badge">ทางลัด</string>
     <string name="home_show_favorite_apps">แอปโปรดบนหน้าจอหลัก</string>
     <string name="home_show_favorite_apps_description">ทางลัดแอปสี่รายการใต้ปุ่มหลักเมื่อ Open Headunit เป็นแอปหน้าจอหลัก</string>
     <string name="home_use_classic">หน้าจอหลักแบบคลาสสิก</string>

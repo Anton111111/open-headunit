@@ -1286,7 +1286,8 @@
     <string name="home_favorite_change">Đổi</string>
     <string name="home_add_to_favorites">Thêm vào yêu thích</string>
     <string name="home_favorites_full">Đã đủ bốn ứng dụng yêu thích. Nhấn giữ một ứng dụng trên màn hình chính để đổi.</string>
-    <string name="home_choose_favorite_app">Chọn ứng dụng</string>
+    <string name="home_choose_favorite_app">Chọn ứng dụng hoặc lối tắt</string>
+    <string name="home_shortcut_badge">Lối tắt</string>
     <string name="home_show_favorite_apps">Ứng dụng yêu thích trên màn hình chính</string>
     <string name="home_show_favorite_apps_description">Bốn lối tắt ứng dụng dưới nút chính khi Open Headunit là ứng dụng màn hình chính</string>
     <string name="home_use_classic">Màn hình chính cổ điển</string>

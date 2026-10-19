@@ -1328,7 +1328,8 @@
     <string name="home_favorite_change">Alterar</string>
     <string name="home_add_to_favorites">Adicionar aos favoritos</string>
     <string name="home_favorites_full">Os quatro favoritos já estão ocupados. Mantenha premido um no ecrã inicial para o alterar.</string>
-    <string name="home_choose_favorite_app">Escolha uma app</string>
+    <string name="home_choose_favorite_app">Escolha uma app ou atalho</string>
+    <string name="home_shortcut_badge">Atalho</string>
     <string name="home_show_favorite_apps">Apps favoritas no ecrã inicial</string>
     <string name="home_show_favorite_apps_description">Quatro atalhos de apps sob o botão principal quando o Open Headunit é a aplicação de ecrã inicial</string>
     <string name="home_use_classic">Ecrã inicial clássico</string>

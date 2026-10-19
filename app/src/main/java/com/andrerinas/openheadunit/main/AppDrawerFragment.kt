@@ -36,8 +36,19 @@ import kotlinx.coroutines.withContext
 data class AppDrawerItem(
     val label: String,
     val packageName: String,
-    val activityName: String
-)
+    val activityName: String,
+    /** Set when this item is one of the app's shortcuts instead of the app itself. */
+    val shortcutId: String? = null
+) {
+    /** Key of this item's icon in [AppDrawerCache], unique per app and per shortcut. */
+    val iconKey: String
+        get() = if (shortcutId == null) "$packageName/$activityName" else "$packageName/$shortcutId"
+
+    /** What a favorite slot stores for this item. */
+    fun favoriteTarget(): FavoriteTarget =
+        if (shortcutId == null) FavoriteTarget.App(packageName)
+        else FavoriteTarget.Shortcut(packageName, shortcutId)
+}
 
 object AppDrawerCache {
     @Volatile
@@ -114,8 +125,46 @@ class AppDrawerFragment : DialogFragment() {
                 }
             }.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
 
-            AppDrawerCache.cachedApps = appsList
-            return appsList
+            // A shortcut belongs to its app, so it is listed right under it. Only the first
+            // launcher activity of a package carries them, so they never show twice. Empty
+            // outside launcher mode, where the shortcuts cannot be read.
+            val shortcuts = LauncherShortcuts.allByPackage(context)
+            val withShortcuts = mutableListOf<AppDrawerItem>()
+            val seen = mutableSetOf<String>()
+            for (item in appsList) {
+                withShortcuts.add(item)
+                if (!seen.add(item.packageName)) continue
+                for (shortcut in shortcuts[item.packageName].orEmpty()) {
+                    withShortcuts.add(
+                        AppDrawerItem(
+                            label = shortcut.label,
+                            packageName = item.packageName,
+                            activityName = item.activityName,
+                            shortcutId = shortcut.shortcutId
+                        )
+                    )
+                }
+            }
+
+            AppDrawerCache.cachedApps = withShortcuts
+            return withShortcuts
+        }
+
+        /** The icon of an app or one of its shortcuts, or null when the package is gone. */
+        internal fun iconFor(context: Context, item: AppDrawerItem): Drawable? {
+            if (item.shortcutId != null) {
+                LauncherShortcuts.icon(context, item.packageName, item.shortcutId)?.let { return it }
+            }
+            val pm = context.packageManager
+            return try {
+                pm.getActivityIcon(ComponentName(item.packageName, item.activityName))
+            } catch (_: Exception) {
+                try {
+                    pm.getApplicationIcon(item.packageName)
+                } catch (_: Exception) {
+                    null
+                }
+            }
         }
     }
 
@@ -227,22 +276,19 @@ class AppDrawerFragment : DialogFragment() {
 
     private fun warmupIcons(apps: List<AppDrawerItem>) {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val pm = context?.applicationContext?.packageManager ?: return@launch
+            val ctx = context?.applicationContext ?: return@launch
             for (item in apps.take(40)) {
-                val key = "${item.packageName}/${item.activityName}"
-                if (AppDrawerCache.iconCache.get(key) == null) {
-                    try {
-                        val icon = pm.getActivityIcon(ComponentName(item.packageName, item.activityName))
-                        AppDrawerCache.iconCache.put(key, icon)
-                    } catch (_: Exception) {}
-                }
+                if (AppDrawerCache.iconCache.get(item.iconKey) != null) continue
+                val icon = iconFor(ctx, item) ?: continue
+                AppDrawerCache.iconCache.put(item.iconKey, icon)
             }
         }
     }
 
     private fun pickFavorite(slot: Int, item: AppDrawerItem) {
         val settings = App.provide(requireContext()).settings
-        settings.homeFavoriteApps = FavoriteAppsPolicy.place(settings.homeFavoriteApps, slot, item.packageName)
+        settings.homeFavoriteApps =
+            FavoriteAppsPolicy.place(settings.homeFavoriteApps, slot, item.favoriteTarget())
         closeDrawer()
     }
 
@@ -250,7 +296,7 @@ class AppDrawerFragment : DialogFragment() {
         PopupMenu(requireContext(), anchor).apply {
             menu.add(R.string.home_add_to_favorites).setOnMenuItemClickListener {
                 val settings = App.provide(requireContext()).settings
-                val updated = FavoriteAppsPolicy.add(settings.homeFavoriteApps, item.packageName)
+                val updated = FavoriteAppsPolicy.add(settings.homeFavoriteApps, item.favoriteTarget())
                 if (updated == null) {
                     ToastUtils.showToast(requireContext(), R.string.home_favorites_full, Toast.LENGTH_LONG)
                 } else {
@@ -263,6 +309,14 @@ class AppDrawerFragment : DialogFragment() {
     }
 
     private fun launchApp(item: AppDrawerItem) {
+        // A shortcut that no longer resolves falls through to the app itself.
+        val shortcutId = item.shortcutId
+        if (shortcutId != null &&
+            LauncherShortcuts.launch(requireContext(), item.packageName, shortcutId)) {
+            closeDrawer()
+            return
+        }
+
         val comp = ComponentName(item.packageName, item.activityName)
         val launchIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_LAUNCHER)
@@ -311,11 +365,13 @@ class AppDrawerAdapter(
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val ivIcon: ImageView = itemView.findViewById(R.id.iv_app_icon)
+        private val ivBadge: ImageView = itemView.findViewById(R.id.iv_shortcut_badge)
         private val tvName: TextView = itemView.findViewById(R.id.tv_app_name)
 
         fun bind(item: AppDrawerItem) {
             tvName.text = item.label
-            val itemKey = "${item.packageName}/${item.activityName}"
+            ivBadge.visibility = if (item.shortcutId == null) View.GONE else View.VISIBLE
+            val itemKey = item.iconKey
             ivIcon.tag = itemKey
 
             val cachedIcon = AppDrawerCache.iconCache.get(itemKey)
@@ -327,17 +383,7 @@ class AppDrawerAdapter(
                 ivIcon.alpha = 0.4f
 
                 coroutineScope.launch(Dispatchers.IO) {
-                    val pm = itemView.context.applicationContext.packageManager
-                    val icon = try {
-                        pm.getActivityIcon(ComponentName(item.packageName, item.activityName))
-                    } catch (_: Exception) {
-                        try {
-                            pm.getApplicationIcon(item.packageName)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-
+                    val icon = AppDrawerFragment.iconFor(itemView.context.applicationContext, item)
                     if (icon != null) {
                         AppDrawerCache.iconCache.put(itemKey, icon)
                         withContext(Dispatchers.Main) {

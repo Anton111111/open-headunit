@@ -1282,7 +1282,8 @@
     <string name="home_favorite_change">Заменить</string>
     <string name="home_add_to_favorites">Добавить в избранное</string>
     <string name="home_favorites_full">Все четыре места заняты. Удерживайте одно из приложений на главном экране, чтобы заменить его.</string>
-    <string name="home_choose_favorite_app">Выберите приложение</string>
+    <string name="home_choose_favorite_app">Выберите приложение или ярлык</string>
+    <string name="home_shortcut_badge">Ярлык</string>
     <string name="home_show_favorite_apps">Избранные приложения на главном экране</string>
     <string name="home_show_favorite_apps_description">Четыре ярлыка приложений под главной кнопкой, когда Open Headunit используется как главный экран</string>
     <string name="home_use_classic">Классический главный экран</string>

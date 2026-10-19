@@ -1323,7 +1323,8 @@
     <string name="home_favorite_change">Modifier</string>
     <string name="home_add_to_favorites">Ajouter aux favoris</string>
     <string name="home_favorites_full">Les quatre favoris sont déjà pris. Appuyez longuement sur l\'un d\'eux sur l\'écran d\'accueil pour le changer.</string>
-    <string name="home_choose_favorite_app">Choisir une app</string>
+    <string name="home_choose_favorite_app">Choisir une app ou un raccourci</string>
+    <string name="home_shortcut_badge">Raccourci</string>
     <string name="home_show_favorite_apps">Apps favorites sur l\'écran d\'accueil</string>
     <string name="home_show_favorite_apps_description">Quatre raccourcis d\'apps sous le bouton principal lorsque Open Headunit est l\'application d\'accueil</string>
     <string name="home_use_classic">Écran d\'accueil classique</string>
