@@ -1294,6 +1294,10 @@
     <string name="home_show_speed_description">此裝置 GPS 回報的速度，單位為 km/h。需要位置權限</string>
     <string name="home_speed_unit">km/h</string>
     <string name="home_speed_needs_location">速度需要位置權限</string>
+    <string name="home_add_widget">新增小工具</string>
+    <string name="home_widgets_full">沒有空間再放一個小工具</string>
+    <string name="home_widget_pick_title">在主畫面新增小工具</string>
+    <string name="home_widgets_none">此裝置沒有可新增的小工具</string>
     <string name="home_design_notice_title">全新的主畫面</string>
     <string name="home_design_notice_message">Open Headunit 推出了全新的主畫面：你使用的連線是一個大按鈕，其餘內容位於駕駛座一側。\n\n要使用新設計嗎？你隨時可以在「設定 > 個人化」中切換回來。</string>
     <string name="home_design_notice_use_new">使用新設計</string>

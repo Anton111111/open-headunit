@@ -1381,6 +1381,10 @@
     <string name="home_show_speed_description">What this unit\'s GPS reports, in km/h. It asks for the location permission</string>
     <string name="home_speed_unit">km/h</string>
     <string name="home_speed_needs_location">The speed needs the location permission</string>
+    <string name="home_add_widget">Add a widget</string>
+    <string name="home_widgets_full">No room for another widget</string>
+    <string name="home_widget_pick_title">Add a widget to the home screen</string>
+    <string name="home_widgets_none">This unit has no widgets to add</string>
     <string name="home_design_notice_title">A new home screen</string>
     <string name="home_design_notice_message">Open Headunit has a new home screen: the connection you use is one big button, and the rest sits on the driver\'s side.\n\nDo you want to use it? You can switch back any time in Settings, Customization.</string>
     <string name="home_design_notice_use_new">Use the new design</string>

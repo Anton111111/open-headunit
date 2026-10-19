@@ -1290,6 +1290,10 @@
     <string name="home_show_speed_description">Bu birimin GPS\'inin bildirdiği hız, km/sa. Konum izni ister</string>
     <string name="home_speed_unit">km/sa</string>
     <string name="home_speed_needs_location">Hız için konum izni gerekir</string>
+    <string name="home_add_widget">Widget ekle</string>
+    <string name="home_widgets_full">Başka widget için yer yok</string>
+    <string name="home_widget_pick_title">Ana ekrana widget ekle</string>
+    <string name="home_widgets_none">Bu birimde widget yok</string>
     <string name="home_design_notice_title">Yeni bir ana ekran</string>
     <string name="home_design_notice_message">Open Headunit\'in yeni bir ana ekranı var: kullandığınız bağlantı tek bir büyük düğme, geri kalanı ise sürücü tarafında.\n\nKullanmak ister misiniz? İstediğiniz zaman Ayarlar, Özelleştirme bölümünden geri dönebilirsiniz.</string>
     <string name="home_design_notice_use_new">Yeni tasarımı kullan</string>

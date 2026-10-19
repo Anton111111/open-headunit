@@ -1296,6 +1296,10 @@
     <string name="home_show_speed_description">O que o GPS desta unidade informa, em km/h. Pede a permissão de localização</string>
     <string name="home_speed_unit">km/h</string>
     <string name="home_speed_needs_location">A velocidade precisa da permissão de localização</string>
+    <string name="home_add_widget">Adicionar um widget</string>
+    <string name="home_widgets_full">Não há espaço para outro widget</string>
+    <string name="home_widget_pick_title">Adicionar um widget à tela inicial</string>
+    <string name="home_widgets_none">Esta unidade não tem widgets</string>
     <string name="home_design_notice_title">Uma nova tela inicial</string>
     <string name="home_design_notice_message">O Open Headunit tem uma nova tela inicial: a conexão que você usa é um único botão grande, e o resto fica do lado do motorista.\n\nQuer usá-la? Você pode voltar quando quiser em Configurações, Personalização.</string>
     <string name="home_design_notice_use_new">Usar o novo design</string>

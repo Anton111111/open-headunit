@@ -19,6 +19,9 @@ import android.view.ViewTreeObserver
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.pm.PackageManager
+import android.appwidget.AppWidgetHostView
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.graphics.drawable.Drawable
 import android.hardware.usb.UsbDevice
 import android.net.ConnectivityManager
@@ -123,6 +126,24 @@ class HomeFragment : Fragment() {
     private var homeInfoTicker: Job? = null
     private var gpsListener: LocationListener? = null
     private var gpsSpeedKmh: Int? = null
+
+    // The widget the system is asking the user to allow, and the answer coming back.
+    private var pendingWidgetId = -1
+
+    private val widgetBindLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val ctx = context ?: return@registerForActivityResult
+        val returned = result.data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
+        val id = if (returned >= 0) returned else pendingWidgetId
+        pendingWidgetId = -1
+        if (result.resultCode == android.app.Activity.RESULT_OK && id >= 0) {
+            placeWidget(id)
+        } else {
+            if (id >= 0) HomeWidgets.forget(ctx, id)
+            AppLog.i("HomeFragment: the widget was not allowed, releasing its id")
+        }
+    }
 
     // A fixed container whose content is swapped when the user changes design. Swapping the
     // fragment instead restores the old design's saved view state into the new one, whose views
@@ -456,6 +477,7 @@ class HomeFragment : Fragment() {
             AppDrawerFragment.preload(ctx)
             if (!isClassicHome && appSettings.showHomeFavoriteApps) loadFavorites()
         }
+        if (!isClassicHome) renderWidgets()
     }
 
     private class FavoriteApp(val label: CharSequence, val icon: Drawable)
@@ -518,6 +540,236 @@ class HomeFragment : Fragment() {
             label.text = app.label
         }
         (slotView as? ViewGroup)?.let { HomeUiHelper.paintFavoriteSlot(slotView.context, it, app != null, homePalette(slotView.context)) }
+    }
+
+    /**
+     * The widgets under the favorite apps, rebuilt rather than updated: there are at most two, and
+     * a rebuild is what tells a widget that was just added from one that was already there.
+     */
+    private fun renderWidgets() {
+        val ctx = context ?: return
+        val root = view ?: return
+        if (isClassicHome) return
+        val scroll = root.findViewById<HorizontalScrollView>(R.id.home_widgets_scroll) ?: return
+        val row = root.findViewById<LinearLayout>(R.id.home_widgets_row) ?: return
+        row.removeAllViews()
+        val appSettings = App.provide(ctx).settings
+        if (!appSettings.isCarLauncherActive) {
+            scroll.visibility = View.GONE
+            return
+        }
+
+        val ids = pruneWidgets(ctx, appSettings.homeWidgets)
+        val palette = homePalette(ctx)
+        ids.forEach { appWidgetId ->
+            widgetTile(ctx, row, appWidgetId, palette)?.let { row.addView(it) }
+        }
+        // Android 5.0 is where the system lets an app ask for a widget at all.
+        if (HomeWidgets.supported() && ids.size < HomeWidgetsPolicy.MAX_WIDGETS) {
+            val addTile = LayoutInflater.from(ctx).inflate(R.layout.item_home_widget_add, row, false)
+            addTile.setOnClickListener { pickWidget() }
+            HomeUiHelper.paintWidgetAddTile(ctx, addTile as ViewGroup, palette)
+            row.addView(addTile)
+        }
+        if (row.childCount == 0) {
+            scroll.visibility = View.GONE
+            return
+        }
+        scroll.visibility = View.VISIBLE
+        val addTileHeight = ctx.resources.getDimensionPixelSize(R.dimen.home_favorites_height)
+        val tallest = ids.maxOfOrNull { HomeWidgets.minHeightPx(ctx, it) } ?: 0
+        // The card has to be laid out before it can say how much of itself it cannot give up.
+        root.doOnLayout { fitWidgetStrip(root, maxOf(tallest, addTileHeight)) }
+    }
+
+    /** @return the frame that holds the widget, or null when its provider cannot draw any more. */
+    private fun widgetTile(
+        ctx: Context,
+        parent: ViewGroup,
+        appWidgetId: Int,
+        palette: HomeUiHelper.Palette
+    ): View? {
+        val hosted = HomeWidgets.view(ctx, appWidgetId) ?: return null
+        val frame = LayoutInflater.from(ctx).inflate(R.layout.item_home_widget, parent, false)
+        (frame as ViewGroup).addView(
+            hosted,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        HomeUiHelper.paintWidgetSlot(ctx, frame, palette)
+        // The width the widget asks for is the smallest it draws at. The row scrolls rather than
+        // squeezing it, and a narrow widget still gets a tile sized square.
+        val width = HomeWidgets.minWidthPx(ctx, appWidgetId)
+            .coerceAtLeast(ctx.resources.getDimensionPixelSize(R.dimen.home_favorites_height))
+        frame.layoutParams = LinearLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT)
+        frame.setOnLongClickListener { showWidgetMenu(appWidgetId, it) }
+        return frame
+    }
+
+    /**
+     * Gives the widget row what the main button can spare and no more. Without this a tall widget
+     * pushed the main button's action off the bottom of a short screen, the same way the driver
+     * bar used to lose its Exit tile.
+     */
+    private fun fitWidgetStrip(root: View, preferredPx: Int) {
+        val ctx = root.context
+        val scroll = root.findViewById<View>(R.id.home_widgets_scroll) ?: return
+        val area = root.findViewById<View>(R.id.home_favorites_area) ?: return
+        val appsRow = root.findViewById<View>(R.id.home_favorites) ?: return
+        val card = root.findViewById<View>(R.id.home_primary_card) ?: return
+        val column = area.parent as? View ?: return
+        val gap = ctx.resources.getDimensionPixelSize(R.dimen.home_gap)
+
+        // A portrait home stacks the driver bar in this same column, so its height is not room.
+        val bar = root.findViewById<View>(R.id.home_driver_bar)
+        val below = if (bar != null && bar.parent === column && bar.visibility == View.VISIBLE) {
+            bar.height + gap
+        } else 0
+        val columnHeight = column.height - column.paddingTop - column.paddingBottom - below
+        val cardMin = cardMinimumHeight(card)
+        val room = columnHeight - appsRow.height - gap - cardMin
+
+        val height = WidgetStripPolicy.height(
+            roomPx = room,
+            minPx = ctx.resources.getDimensionPixelSize(R.dimen.home_widget_strip_min),
+            maxPx = ctx.resources.getDimensionPixelSize(R.dimen.home_widget_strip_max),
+            tallestWidgetPx = preferredPx
+        )
+        if (height <= 0) {
+            AppLog.i(
+                "HomeFragment: no room for the widget row beside the main button " +
+                    "(room=${room}px, card needs ${cardMin}px), leaving it out"
+            )
+            scroll.visibility = View.GONE
+            return
+        }
+        AppLog.i("HomeFragment: the widget row is ${height}px tall, out of ${room}px of room")
+        if (scroll.height != height) {
+            scroll.layoutParams = (scroll.layoutParams ?: return).also { it.height = height }
+            scroll.requestLayout()
+        }
+        tellWidgetsTheirSize(root, height)
+    }
+
+    /**
+     * The height of the main button that it cannot give up: its own padding plus every child that
+     * is not one of the spacers that absorb the slack. Measured rather than guessed, because how
+     * tall the title is depends on the phone name and on the screen.
+     */
+    private fun cardMinimumHeight(card: View): Int {
+        // The card is a frame with the content inside it, so the minimum is the content's own.
+        val content = card.findViewById<View>(R.id.home_primary_content) ?: return 0
+        val children = content as? ViewGroup ?: return 0
+        var height = content.paddingTop + content.paddingBottom
+        for (i in 0 until children.childCount) {
+            val child = children.getChildAt(i)
+            if (child.visibility != View.VISIBLE) continue
+            val params = child.layoutParams as? LinearLayout.LayoutParams ?: continue
+            if (params.weight > 0f) continue
+            height += child.measuredHeight + params.topMargin + params.bottomMargin
+        }
+        return height
+    }
+
+    /** Tells every hosted widget the box it ended up with, so one that reflows lays itself out. */
+    private fun tellWidgetsTheirSize(root: View, height: Int) {
+        val row = root.findViewById<ViewGroup>(R.id.home_widgets_row) ?: return
+        val padding = root.resources.getDimensionPixelSize(R.dimen.home_widget_padding)
+        for (i in 0 until row.childCount) {
+            val frame = row.getChildAt(i) as? ViewGroup ?: continue
+            val hosted = frame.getChildAt(0) as? AppWidgetHostView ?: continue
+            HomeWidgets.tellSize(hosted, (frame.layoutParams?.width ?: 0) - padding * 2, height - padding * 2)
+        }
+    }
+
+    /** Drops the widgets whose provider is gone, so an uninstalled widget frees its place. */
+    private fun pruneWidgets(ctx: Context, stored: List<Int>): List<Int> {
+        val alive = stored.filter { appWidgetId ->
+            val isAlive = HomeWidgets.isAlive(ctx, appWidgetId)
+            if (!isAlive) {
+                AppLog.i("HomeFragment: widget $appWidgetId is no longer installed, dropping it")
+                HomeWidgets.forget(ctx, appWidgetId)
+            }
+            isAlive
+        }
+        if (alive.size != stored.size) App.provide(ctx).settings.homeWidgets = alive
+        return alive
+    }
+
+    private fun showWidgetMenu(appWidgetId: Int, anchor: View): Boolean {
+        PopupMenu(requireContext(), anchor).apply {
+            menu.add(R.string.remove).setOnMenuItemClickListener {
+                removeWidget(appWidgetId)
+                true
+            }
+            show()
+        }
+        return true
+    }
+
+    private fun removeWidget(appWidgetId: Int) {
+        val ctx = requireContext()
+        val appSettings = App.provide(ctx).settings
+        appSettings.homeWidgets = HomeWidgetsPolicy.remove(appSettings.homeWidgets, appWidgetId)
+        HomeWidgets.forget(ctx, appWidgetId)
+        renderWidgets()
+    }
+
+    /** The list of widgets the unit has, named the way their own apps name them. */
+    private fun pickWidget() {
+        val ctx = requireContext()
+        val providers = HomeWidgets.providers(ctx)
+        if (providers.isEmpty()) {
+            ToastUtils.showToast(ctx, R.string.home_widgets_none, Toast.LENGTH_LONG, force = true)
+            return
+        }
+        val adapter = object : ArrayAdapter<HomeWidgets.Provider>(
+            ctx, R.layout.item_widget_option, providers
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView
+                    ?: LayoutInflater.from(context).inflate(R.layout.item_widget_option, parent, false)
+                val provider = providers[position]
+                view.findViewById<TextView>(R.id.widget_option_label).text = provider.label
+                view.findViewById<TextView>(R.id.widget_option_app).text = provider.appLabel
+                view.findViewById<ImageView>(R.id.widget_option_icon)?.setImageDrawable(provider.icon)
+                return view
+            }
+        }
+        MaterialAlertDialogBuilder(ctx, R.style.DarkAlertDialog)
+            .setTitle(R.string.home_widget_pick_title)
+            .setAdapter(adapter) { _, which -> addWidget(providers[which].info.provider) }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Asks the system for the widget the user picked. From Android 5.0 the app may not bind one on
+     * its own: when the system says no, it is the user who is asked, and the id waits for them.
+     */
+    private fun addWidget(provider: ComponentName) {
+        val ctx = requireContext()
+        val appWidgetId = HomeWidgets.allocateId(ctx)
+        if (HomeWidgets.tryBind(ctx, appWidgetId, provider)) {
+            placeWidget(appWidgetId)
+            return
+        }
+        pendingWidgetId = appWidgetId
+        widgetBindLauncher.launch(HomeWidgets.bindRequest(appWidgetId, provider))
+    }
+
+    private fun placeWidget(appWidgetId: Int) {
+        val ctx = requireContext()
+        val appSettings = App.provide(ctx).settings
+        val updated = HomeWidgetsPolicy.add(appSettings.homeWidgets, appWidgetId)
+        if (updated == null) {
+            HomeWidgets.forget(ctx, appWidgetId)
+            ToastUtils.showToast(ctx, R.string.home_widgets_full, Toast.LENGTH_LONG, force = true)
+            return
+        }
+        appSettings.homeWidgets = updated
+        renderWidgets()
     }
 
     private fun onFavoriteClicked(slot: Int) {
@@ -1025,6 +1277,18 @@ class HomeFragment : Fragment() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // A host that is not listening holds an empty widget view, so this runs before the row is
+        // built in onResume.
+        HomeWidgets.startListening(requireContext())
+    }
+
+    override fun onStop() {
+        super.onStop()
+        HomeWidgets.stopListening()
     }
 
     override fun onPause() {

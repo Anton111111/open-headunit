@@ -1276,6 +1276,10 @@
     <string name="home_show_speed_description">რასაც ამ მოწყობილობის GPS აცხადებს, კმ/სთ-ში. ითხოვს მდებარეობის ნებართვას</string>
     <string name="home_speed_unit">კმ/სთ</string>
     <string name="home_speed_needs_location">სიჩქარეს სჭირდება მდებარეობის ნებართვა</string>
+    <string name="home_add_widget">ვიჯეტის დამატება</string>
+    <string name="home_widgets_full">სხვა ვიჯეტის ადგილი არ არის</string>
+    <string name="home_widget_pick_title">ვიჯეტის დამატება მთავარ ეკრანზე</string>
+    <string name="home_widgets_none">ამ მოწყობილობას ვიჯეტები არ აქვს</string>
     <string name="home_design_notice_title">ახალი მთავარი ეკრანი</string>
     <string name="home_design_notice_message">Open Headunit-ს ახალი მთავარი ეკრანი აქვს: თქვენ მიერ გამოყენებული კავშირი ერთი დიდი ღილაკია, დანარჩენი კი მძღოლის მხარესაა.\n\nგსურთ მისი გამოყენება? ნებისმიერ დროს შეგიძლიათ დაბრუნება: პარამეტრები, პერსონალიზაცია.</string>
     <string name="home_design_notice_use_new">ახალი დიზაინის გამოყენება</string>

@@ -1294,6 +1294,10 @@
     <string name="home_show_speed_description">To, co zgłasza GPS tego urządzenia, w km/h. Prosi o zgodę na lokalizację</string>
     <string name="home_speed_unit">km/h</string>
     <string name="home_speed_needs_location">Prędkość wymaga zgody na lokalizację</string>
+    <string name="home_add_widget">Dodaj widget</string>
+    <string name="home_widgets_full">Brak miejsca na kolejny widget</string>
+    <string name="home_widget_pick_title">Dodaj widget do ekranu głównego</string>
+    <string name="home_widgets_none">To urządzenie nie ma widgetów</string>
     <string name="home_design_notice_title">Nowy ekran główny</string>
     <string name="home_design_notice_message">Open Headunit ma nowy ekran główny: używane połączenie to jeden duży przycisk, a reszta znajduje się po stronie kierowcy.\n\nChcesz z niego korzystać? W każdej chwili możesz wrócić w Ustawienia, Personalizacja.</string>
     <string name="home_design_notice_use_new">Użyj nowego wyglądu</string>

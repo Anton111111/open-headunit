@@ -15,11 +15,14 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
+import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.main.BarFitPolicy
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
@@ -101,12 +104,22 @@ object HomeUiHelper {
             .forEach { placeChildren(it, reversed = rightHandDrive) }
 
         val side = if (rightHandDrive) Gravity.RIGHT else Gravity.LEFT
-        rootView.findViewById<LinearLayout>(R.id.home_primary_card)?.gravity = side
+        rootView.findViewById<LinearLayout>(R.id.home_primary_content)?.gravity = side
         listOf(R.id.home_primary_kicker, R.id.home_primary_title, R.id.home_primary_subtitle).forEach {
             rootView.findViewById<TextView>(it)?.gravity = side
         }
-        // The date and the speed read inwards, so they line up with the edge they sit against.
-        rootView.findViewById<LinearLayout>(R.id.home_info)?.gravity = side
+        // The date and the speed read inwards, so they line up with the edge they sit against, and
+        // they sit at the far end of the card, which is the other side from the driver.
+        val farSide = if (rightHandDrive) Gravity.LEFT else Gravity.RIGHT
+        val info = rootView.findViewById<View>(R.id.home_info)
+        (info?.layoutParams as? FrameLayout.LayoutParams)?.let { params ->
+            params.gravity = Gravity.TOP or farSide
+            info.layoutParams = params
+        }
+        rootView.findViewById<LinearLayout>(R.id.home_info)?.gravity = farSide
+        // The widget row keeps the order the driver placed, so it starts from their side by
+        // gravity rather than by reversing what they chose.
+        rootView.findViewById<LinearLayout>(R.id.home_widgets_row)?.gravity = side or Gravity.CENTER_VERTICAL
     }
 
     // The XML order is the left-hand drive one, kept on the row so applying twice is harmless.
@@ -207,9 +220,35 @@ object HomeUiHelper {
 
     /** A filled slot is a tile with the app's own icon; a free one is a dashed outline with a "+". */
     fun paintFavoriteSlot(context: Context, slot: ViewGroup, filled: Boolean, palette: Palette) {
+        paintSlot(context, slot, R.id.favorite_icon, R.id.favorite_label, filled, palette)
+    }
+
+    /** The "+" that adds a widget: the dashes an empty favorite slot already uses. */
+    fun paintWidgetAddTile(context: Context, tile: ViewGroup, palette: Palette) {
+        paintSlot(context, tile, R.id.widget_add_icon, R.id.widget_add_label, filled = false, palette)
+    }
+
+    /** A widget sits on the same tile surface as everything around it, so the row reads as one. */
+    fun paintWidgetSlot(context: Context, slot: View, palette: Palette) {
+        slot.background = shape(
+            palette.tile,
+            context.resources.getDimension(R.dimen.home_tile_radius),
+            palette.tileStroke,
+            dp(context, 1)
+        )
+    }
+
+    private fun paintSlot(
+        context: Context,
+        slot: ViewGroup,
+        @IdRes iconId: Int,
+        @IdRes labelId: Int,
+        filled: Boolean,
+        palette: Palette
+    ) {
         slot.setTag(R.id.home_favorite_filled, filled)
-        val icon = slot.findViewById<ImageView>(R.id.favorite_icon)
-        val label = slot.findViewById<TextView>(R.id.favorite_label)
+        val icon = slot.findViewById<ImageView>(iconId)
+        val label = slot.findViewById<TextView>(labelId)
         if (filled) {
             slot.background = tileBackground(context, palette)
             icon?.clearColorFilter()
@@ -457,7 +496,8 @@ object HomeUiHelper {
         val block = rootView.findViewById<View>(R.id.home_info) ?: return
         val showClock = settings.showHomeClock && !countdownVisible
         val showSpeed = settings.showHomeSpeed && !countdownVisible
-        block.visibility = if (showClock || showSpeed) View.VISIBLE else View.GONE
+        val visible = showClock || showSpeed
+        block.visibility = if (visible) View.VISIBLE else View.GONE
         rootView.findViewById<TextView>(R.id.home_info_clock)?.apply {
             visibility = if (showClock) View.VISIBLE else View.GONE
             text = clock
@@ -475,6 +515,44 @@ object HomeUiHelper {
             setTextColor(palette.text)
         }
         rootView.findViewById<TextView>(R.id.home_info_speed_unit)?.setTextColor(palette.textMuted)
+        constrainInfoTexts(rootView, block, visible)
+    }
+
+    /**
+     * The block floats in the card's empty corner, so the lines under it are narrowed to leave it
+     * their width. Without this a long title ran under the time on a narrow screen. On a card too
+     * narrow for both, the block steps out rather than covering the title.
+     */
+    private fun constrainInfoTexts(rootView: View, block: View, visible: Boolean) {
+        val card = rootView.findViewById<View>(R.id.home_primary_card) ?: return
+        val texts = listOf(
+            R.id.home_primary_kicker, R.id.home_primary_title, R.id.home_primary_subtitle
+        ).mapNotNull { rootView.findViewById<TextView>(it) }
+        if (!visible) {
+            texts.forEach { it.maxWidth = Int.MAX_VALUE }
+            return
+        }
+        if (card.width <= 0) {
+            // The first pass runs before the card has a width, and the block would cover the title
+            // until the next minute. Ask again once the layout has one.
+            card.doOnLayout { constrainInfoTexts(rootView, block, block.visibility == View.VISIBLE) }
+            return
+        }
+        block.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val resources = card.resources
+        val padding = resources.getDimensionPixelSize(R.dimen.home_card_padding_h)
+        val gap = resources.getDimensionPixelSize(R.dimen.home_gap)
+        val room = card.width - padding * 2 - block.measuredWidth - gap
+        if (room < resources.getDimensionPixelSize(R.dimen.home_info_min_text)) {
+            AppLog.i("HomeUiHelper: no width left for the title beside the date on this screen")
+            block.visibility = View.GONE
+            texts.forEach { it.maxWidth = Int.MAX_VALUE }
+            return
+        }
+        texts.forEach { it.maxWidth = room }
     }
 
     /** The speed readout: what the GPS last said, or a placeholder when it has nothing. */

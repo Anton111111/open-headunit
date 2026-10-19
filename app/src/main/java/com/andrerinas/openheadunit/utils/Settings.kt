@@ -12,6 +12,7 @@ import android.os.Build
 import com.andrerinas.openheadunit.input.KeyCode
 import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
 import com.andrerinas.openheadunit.main.FavoriteTarget
+import com.andrerinas.openheadunit.main.HomeWidgetsPolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
 import com.andrerinas.openheadunit.view.PerformanceOverlayPolicy
@@ -1582,6 +1583,16 @@ class Settings(private val context: Context) {
     var showHomeSpeed: Boolean
         get() = prefs.getBoolean("show-home-speed", false)
         set(value) { prefs.edit().putBoolean("show-home-speed", value).apply() }
+
+    /** The widgets shown under the main button, in order. See [HomeWidgetsPolicy]. */
+    var homeWidgets: List<Int>
+        get() = HomeWidgetsPolicy.decode(prefs.getString("home-widgets", "") ?: "")
+        set(value) { prefs.edit().putString("home-widgets", HomeWidgetsPolicy.encode(value)).apply() }
+
+    /** The app widget host every bound widget names. 0 until the first widget is added. */
+    var homeWidgetHostId: Int
+        get() = prefs.getInt("home-widget-host-id", 0)
+        set(value) { prefs.edit().putInt("home-widget-host-id", value).apply() }
 
     /** The 2x2 grid from before the redesign, kept while users get used to the new home screen. */
     var useClassicHome: Boolean

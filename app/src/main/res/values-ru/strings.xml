@@ -1294,6 +1294,10 @@
     <string name="home_show_speed_description">То, что сообщает GPS этого устройства, в км/ч. Запрашивает разрешение на геолокацию</string>
     <string name="home_speed_unit">км/ч</string>
     <string name="home_speed_needs_location">Для скорости нужно разрешение на геолокацию</string>
+    <string name="home_add_widget">Добавить виджет</string>
+    <string name="home_widgets_full">Нет места для ещё одного виджета</string>
+    <string name="home_widget_pick_title">Добавить виджет на главный экран</string>
+    <string name="home_widgets_none">На этом устройстве нет виджетов</string>
     <string name="home_design_notice_title">Новый главный экран</string>
     <string name="home_design_notice_message">В Open Headunit новый главный экран: ваше подключение теперь одна большая кнопка, а всё остальное находится со стороны водителя.\n\nИспользовать его? Вернуться можно в любой момент в разделе Настройки, Персонализация.</string>
     <string name="home_design_notice_use_new">Использовать новый дизайн</string>

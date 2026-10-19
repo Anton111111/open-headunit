@@ -1293,6 +1293,10 @@
     <string name="home_show_speed_description">ما يبلّغ عنه GPS هذه الوحدة، بالكيلومتر/الساعة. يطلب إذن الموقع</string>
     <string name="home_speed_unit">كم/س</string>
     <string name="home_speed_needs_location">تحتاج السرعة إلى إذن الموقع</string>
+    <string name="home_add_widget">إضافة أداة</string>
+    <string name="home_widgets_full">لا توجد مساحة لأداة أخرى</string>
+    <string name="home_widget_pick_title">إضافة أداة إلى الشاشة الرئيسية</string>
+    <string name="home_widgets_none">لا توجد أدوات في هذه الوحدة</string>
     <string name="home_design_notice_title">شاشة رئيسية جديدة</string>
     <string name="home_design_notice_message">لدى Open Headunit شاشة رئيسية جديدة: الاتصال الذي تستخدمه أصبح زرًا كبيرًا واحدًا، والباقي في جهة السائق.\n\nهل تريد استخدامها؟ يمكنك العودة في أي وقت من الإعدادات، التخصيص.</string>
     <string name="home_design_notice_use_new">استخدام التصميم الجديد</string>

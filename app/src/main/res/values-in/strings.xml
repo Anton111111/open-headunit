@@ -1343,6 +1343,10 @@
     <string name="home_show_speed_description">Apa yang dilaporkan GPS unit ini, dalam km/jam. Meminta izin lokasi</string>
     <string name="home_speed_unit">km/jam</string>
     <string name="home_speed_needs_location">Kecepatan memerlukan izin lokasi</string>
+    <string name="home_add_widget">Tambah widget</string>
+    <string name="home_widgets_full">Tidak ada ruang untuk widget lain</string>
+    <string name="home_widget_pick_title">Tambah widget ke layar utama</string>
+    <string name="home_widgets_none">Unit ini tidak punya widget</string>
     <string name="home_design_notice_title">Layar beranda baru</string>
     <string name="home_design_notice_message">Open Headunit punya layar beranda baru: koneksi yang Anda gunakan menjadi satu tombol besar, dan sisanya ada di sisi pengemudi.\n\nIngin menggunakannya? Anda bisa kembali kapan saja di Pengaturan, Kustomisasi.</string>
     <string name="home_design_notice_use_new">Gunakan desain baru</string>

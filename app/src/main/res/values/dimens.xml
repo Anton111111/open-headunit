@@ -34,5 +34,9 @@
     <dimen name="home_info_time">28sp</dimen>
     <dimen name="home_info_date">16sp</dimen>
     <dimen name="home_info_speed">28sp</dimen>
-    <dimen name="home_info_gap">4dp</dimen>
+    <dimen name="home_info_gap_wide">16dp</dimen>
+    <dimen name="home_info_min_text">120dp</dimen>
+    <dimen name="home_widget_padding">6dp</dimen>
+    <dimen name="home_widget_strip_min">64dp</dimen>
+    <dimen name="home_widget_strip_max">180dp</dimen>
 </resources>

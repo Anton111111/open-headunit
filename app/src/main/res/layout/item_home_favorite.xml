@@ -11,6 +11,6 @@
         app:srcCompat="@drawable/ic_add_white" />
     <TextView
         android:id="@+id/favorite_label"
-        style="@style/HomeTileLabel"
+        style="@style/HomeTileLabel.Wrap"
         android:text="@string/home_add_favorite" />
 </LinearLayout>
