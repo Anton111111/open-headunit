@@ -20,6 +20,7 @@ import android.net.ConnectivityManager
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -286,6 +287,7 @@ class HomeFragment : Fragment() {
         HomeUiHelper.applyPrimaryCard(
             ctx, root, appSettings, decision, usbPhone?.let { phoneName(it) }, reconnectSecondsLeft, palette
         )
+        HomeUiHelper.fitDriverBar(root, appSettings.homeButtonScalePercent)
     }
 
     private fun renderClassicHome(ctx: Context, root: View, appSettings: Settings) {
@@ -914,6 +916,8 @@ class HomeFragment : Fragment() {
             HomeUiHelper.applyDriverSide(root, homeSettings.rightHandDrive)
             HomeUiHelper.applyButtonScale(root, homeSettings.homeButtonScalePercent)
             HomeUiHelper.applyTheme(root.context, root, homePalette(root.context))
+            // The bar can only be fitted once it has a height to fit into.
+            root.doOnLayout { HomeUiHelper.fitDriverBar(it, homeSettings.homeButtonScalePercent) }
         }
     }
 

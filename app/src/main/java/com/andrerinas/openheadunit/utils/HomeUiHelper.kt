@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Build
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +21,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
 import com.andrerinas.openheadunit.R
+import com.andrerinas.openheadunit.main.BarFitPolicy
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Decision
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Status
@@ -52,7 +54,18 @@ object HomeUiHelper {
     )
 
     private val scaledTiles = listOf(
-        R.id.usb_button, R.id.wifi_button, R.id.self_mode_button, R.id.settings_button, R.id.exit_button
+        R.id.usb_button, R.id.wifi_button, R.id.self_mode_button, R.id.settings_button, R.id.exit_button,
+        // The scroll view keeps the tiles' width, so it scales with them.
+        R.id.home_bar_scroll
+    )
+
+    /**
+     * What [fitDriverBar] shrinks: the connection tiles and the settings tile. Exit is left out, its
+     * width and height stay at the user's scale, because it is the tile that must never be ambiguous
+     * and at the smallest scales its icon and its label no longer fit side by side.
+     */
+    private val fittedTiles = listOf(
+        R.id.usb_button, R.id.wifi_button, R.id.self_mode_button, R.id.settings_button, R.id.home_bar_scroll
     )
 
     fun chosenConnections(settings: Settings): Set<Connection> = settings.connectionModes.map {
@@ -256,13 +269,64 @@ object HomeUiHelper {
         val validScale = if (scalePercent in 60..120) scalePercent else 100
         val factor = validScale / 100.0f
         (scaledTiles + R.id.home_favorites).mapNotNull { rootView.findViewById<View>(it) }.forEach { scale(it, factor) }
+        // This overwrites the fit, so [fitDriverBar] has to run again on top of it.
+        rootView.setTag(R.id.home_bar_fit, null)
     }
 
+    /**
+     * Shrinks the bar tiles when the screen is too short for them at their current size, which is
+     * what keeps the pinned Exit tile on screen: without it Exit was the child that got clipped.
+     * The bar scrolls only when even the floor of [BarFitPolicy] is not enough. Portrait bars share
+     * the width between their tiles instead, so they are left alone.
+     */
+    fun fitDriverBar(rootView: View, scalePercent: Int) {
+        val bar = rootView.findViewById<LinearLayout>(R.id.home_driver_bar) ?: return
+        if (bar.orientation != LinearLayout.VERTICAL) return
+        val scroll = rootView.findViewById<View>(R.id.home_bar_scroll) ?: return
+        val tiles = rootView.findViewById<ViewGroup>(R.id.home_bar_tiles) ?: return
+
+        val available = scroll.height - tiles.paddingTop - tiles.paddingBottom
+        val visible = (0 until tiles.childCount).map { tiles.getChildAt(it) }
+            .filter { it.visibility == View.VISIBLE }
+        val gapPx = rootView.resources.getDimensionPixelSize(R.dimen.home_gap)
+        val fixedPx = gapPx * (visible.size - 1)
+        val tileScale = BarFitPolicy.tileScale(available, visible.sumOf { baseHeight(it) }, fixedPx, scalePercent)
+
+        // Applying the same size again would request another layout on every pass.
+        if (rootView.getTag(R.id.home_bar_fit) == tileScale) return
+        rootView.setTag(R.id.home_bar_fit, tileScale)
+        fittedTiles.mapNotNull { rootView.findViewById<View>(it) }.forEach { view ->
+            scale(view, tileScale)
+            (view as? ViewGroup)?.let { scaleTileContent(it, tileScale) }
+        }
+    }
+
+    /** The icon and the label shrink with their tile, so a shrunk tile still spells its name. */
+    private fun scaleTileContent(tile: ViewGroup, factor: Float) {
+        for (i in 0 until tile.childCount) {
+            when (val child = tile.getChildAt(i)) {
+                is ImageView -> scale(child, factor)
+                is TextView -> {
+                    val base = child.getTag(R.id.home_base_text_size) as? Float
+                        ?: child.textSize.also { child.setTag(R.id.home_base_text_size, it) }
+                    child.setTextSize(TypedValue.COMPLEX_UNIT_PX, base * factor)
+                }
+            }
+        }
+    }
+
+    private fun baseHeight(view: View): Int = baseSize(view)[1].coerceAtLeast(0)
+
     // Sizes from the XML, kept on the view so every call scales from them rather than compounding.
+    private fun baseSize(view: View): IntArray =
+        (view.getTag(R.id.home_base_size) as? IntArray) ?: run {
+            val params = view.layoutParams
+            intArrayOf(params?.width ?: 0, params?.height ?: 0).also { view.setTag(R.id.home_base_size, it) }
+        }
+
     private fun scale(view: View, factor: Float) {
         val params = view.layoutParams ?: return
-        val base = view.getTag(R.id.home_base_size) as? IntArray
-            ?: intArrayOf(params.width, params.height).also { view.setTag(R.id.home_base_size, it) }
+        val base = baseSize(view)
         if (base[0] > 0) params.width = (base[0] * factor).toInt()
         if (base[1] > 0) params.height = (base[1] * factor).toInt()
         view.layoutParams = params

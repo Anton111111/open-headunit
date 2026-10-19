@@ -4,6 +4,8 @@
     drive car; HomeUiHelper.applyDriverSide reverses the horizontal rows for a right-hand drive one,
     because setLayoutDirection does not exist on Android 4.1.
     Gaps are LinearLayout dividers rather than margins, so they survive that reversal.
+    The bar's tiles scroll when the screen is too short for them at their current size, and Exit
+    stays pinned under the scroll view: on a short screen it used to be the tile that got clipped.
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -28,54 +30,74 @@
         android:divider="@drawable/home_gap"
         android:showDividers="middle">
 
-        <LinearLayout
-            android:id="@+id/usb_button"
-            style="@style/HomeTile">
-            <ImageView
-                style="@style/HomeTileIcon"
-                app:srcCompat="@drawable/ic_usb_white" />
-            <TextView
-                style="@style/HomeTileLabel"
-                android:text="@string/usb" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/wifi_button"
-            style="@style/HomeTile">
-            <ImageView
-                style="@style/HomeTileIcon"
-                app:srcCompat="@drawable/ic_network_wifi_white" />
-            <TextView
-                style="@style/HomeTileLabel"
-                android:text="@string/wifi" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/self_mode_button"
-            style="@style/HomeTile">
-            <ImageView
-                style="@style/HomeTileIcon"
-                app:srcCompat="@drawable/ic_launch_white" />
-            <TextView
-                style="@style/HomeTileLabel"
-                android:text="@string/self_mode" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/settings_button"
-            style="@style/HomeTile">
-            <ImageView
-                style="@style/HomeTileIcon"
-                app:srcCompat="@drawable/ic_settings_white" />
-            <TextView
-                style="@style/HomeTileLabel"
-                android:text="@string/settings" />
-        </LinearLayout>
-
-        <View
-            android:layout_width="0dp"
+        <ScrollView
+            android:id="@+id/home_bar_scroll"
+            android:layout_width="@dimen/home_tile_size"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:id="@+id/home_bar_tiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:divider="@drawable/home_gap"
+                android:showDividers="middle">
+
+                <LinearLayout
+                    android:id="@+id/usb_button"
+                    style="@style/HomeTile">
+                    <ImageView
+                        style="@style/HomeTileIcon"
+                        app:srcCompat="@drawable/ic_usb_white" />
+                    <TextView
+                        style="@style/HomeTileLabel"
+                        android:text="@string/usb" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/wifi_button"
+                    style="@style/HomeTile">
+                    <ImageView
+                        style="@style/HomeTileIcon"
+                        app:srcCompat="@drawable/ic_network_wifi_white" />
+                    <TextView
+                        style="@style/HomeTileLabel"
+                        android:text="@string/wifi" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/self_mode_button"
+                    style="@style/HomeTile">
+                    <ImageView
+                        style="@style/HomeTileIcon"
+                        app:srcCompat="@drawable/ic_launch_white" />
+                    <TextView
+                        style="@style/HomeTileLabel"
+                        android:text="@string/self_mode" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/settings_button"
+                    style="@style/HomeTile">
+                    <ImageView
+                        style="@style/HomeTileIcon"
+                        app:srcCompat="@drawable/ic_settings_white" />
+                    <TextView
+                        style="@style/HomeTileLabel"
+                        android:text="@string/settings" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
+        </ScrollView>
 
         <LinearLayout
             android:id="@+id/exit_button"
