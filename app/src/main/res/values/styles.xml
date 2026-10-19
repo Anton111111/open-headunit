@@ -131,11 +131,18 @@
         <item name="android:layout_marginTop">6dp</item>
         <item name="android:paddingLeft">4dp</item>
         <item name="android:paddingRight">4dp</item>
+        <!-- One line: the landscape bar shrinks its tiles to fit the height, and two lines would be
+             cut by the shorter tile. See HomeTileLabel.Wrap for the portrait row. -->
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@android:color/white</item>
         <item name="android:textSize">@dimen/home_tile_label</item>
         <item name="android:textStyle">bold</item>
+    </style>
+    <style name="HomeTileLabel.Wrap">
+        <!-- Portrait: the tiles share the width, so a narrow phone stacks "Self Mode" instead of
+             ellipsizing it to "Sel...". The portrait tiles keep their full height. -->
+        <item name="android:maxLines">2</item>
     </style>
     <style name="HomeCardText">
         <item name="android:layout_width">wrap_content</item>

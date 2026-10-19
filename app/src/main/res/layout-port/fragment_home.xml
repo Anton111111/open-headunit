@@ -40,7 +40,7 @@
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_usb_white" />
             <TextView
-                style="@style/HomeTileLabel"
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/usb" />
         </LinearLayout>
 
@@ -53,7 +53,7 @@
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_network_wifi_white" />
             <TextView
-                style="@style/HomeTileLabel"
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/wifi" />
         </LinearLayout>
 
@@ -66,7 +66,7 @@
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_launch_white" />
             <TextView
-                style="@style/HomeTileLabel"
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/self_mode" />
         </LinearLayout>
 
@@ -79,7 +79,7 @@
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_settings_white" />
             <TextView
-                style="@style/HomeTileLabel"
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/settings" />
         </LinearLayout>
 
@@ -92,7 +92,7 @@
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_power_white" />
             <TextView
-                style="@style/HomeTileLabel"
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/exit" />
         </LinearLayout>
 

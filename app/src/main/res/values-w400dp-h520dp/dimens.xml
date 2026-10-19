@@ -1,4 +1,7 @@
 <resources>
+    <!-- Larger home elements for head units, which are both tall and wide. A portrait phone
+         (320x533dp) used to take these values on height alone and then clip the main button's
+         action, so the width qualifier keeps them for real head units. -->
     <dimen name="home_gap">20dp</dimen>
     <dimen name="home_panel_radius">28dp</dimen>
     <dimen name="home_tile_radius">22dp</dimen>
