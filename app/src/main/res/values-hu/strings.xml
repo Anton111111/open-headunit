@@ -1146,6 +1146,15 @@
     <string name="debug_video_feed_hold">Lassú dekóder szimulálása</string>
 
     <string name="category_more_features">További funkciók</string>
+    <string name="device_specific_settings">Eszközspecifikus beállítások</string>
+    <string name="device_specific_settings_description">A támogatott fejegységmodellek beállításai</string>
+    <string name="device_specific_mcu_checking">MCU-hozzáférés ellenőrzése...</string>
+    <string name="device_specific_mcu_unavailable">Az MCU nem érhető el. A kivetítés hátramenetben történő szüneteltetése ezen az eszközön le van tiltva.</string>
+    <string name="device_specific_head_unit_model">Fejegységmodell</string>
+    <string name="device_specific_model_none">Nincs kiválasztva</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Az Android Auto kivetítésének szüneteltetése hátramenetben</string>
+    <string name="device_specific_pause_projection_reverse_description">Az Android Auto videófókuszának átadása, amíg a tolatókamera aktív, majd a kivetítés visszaállítása a hátramenet kikapcsolásakor.</string>
     <string name="pref_enable_floating_button_title">Lebegő indítógomb</string>
     <string name="pref_enable_floating_button_summary">Lebegő gomb megjelenítése az OEM indító és egyéb alkalmazások felett az Open Headunit gyors eléréséhez</string>
     <string name="pref_floating_button_connection_status_title">Kapcsolat állapotjelző</string>

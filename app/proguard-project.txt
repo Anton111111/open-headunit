@@ -44,3 +44,11 @@
 -keep public class * implements com.bumptech.glide.module.GlideModule
 -keep class * extends com.bumptech.glide.module.AppGlideModule { <init>(...); }
 -keep public enum com.bumptech.glide.load.ImageHeaderParser$** { **[] $VALUES; public *; }
+
+# --- McuCommProxy Rules ---
+-keep class com.adayo.mcucommproxy.McuCommManager { *; }
+-keep interface com.adayo.mcucommproxy.IMcuCommCallback { *; }
+
+-keepclassmembers class * implements com.adayo.mcucommproxy.IMcuCommCallback {
+    public void mcuCommCallback(byte[], char);
+}

@@ -1147,6 +1147,15 @@
     <string name="debug_video_feed_hold">Simulează un decodor lent</string>
 
     <string name="category_more_features">Mai multe funcții</string>
+    <string name="device_specific_settings">Setări specifice dispozitivului</string>
+    <string name="device_specific_settings_description">Setări pentru modelele de unități multimedia compatibile</string>
+    <string name="device_specific_mcu_checking">Se verifică accesul la MCU…</string>
+    <string name="device_specific_mcu_unavailable">Accesul la MCU nu este disponibil. Funcția de întrerupere a proiecției la cuplarea marșarierului este dezactivată pe acest dispozitiv.</string>
+    <string name="device_specific_head_unit_model">Modelul unității multimedia</string>
+    <string name="device_specific_model_none">Neselectat</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Întrerupe proiecția Android Auto în marșarier</string>
+    <string name="device_specific_pause_projection_reverse_description">Eliberează focalizarea video Android Auto cât timp camera pentru marșarier este activă, apoi restabilește proiecția după decuplarea marșarierului.</string>
     <string name="pref_enable_floating_button_title">Buton plutitor lansator</string>
     <string name="pref_enable_floating_button_summary">Afișează un buton plutitor peste lansatorul OEM și alte aplicații pentru a reveni rapid la Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Indicator stare conexiune</string>

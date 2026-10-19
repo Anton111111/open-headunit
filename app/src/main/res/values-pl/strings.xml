@@ -1149,6 +1149,15 @@
     <string name="debug_video_feed_hold">Symuluj wolny dekoder</string>
 
     <string name="category_more_features">Więcej funkcji</string>
+    <string name="device_specific_settings">Ustawienia konkretnego urządzenia</string>
+    <string name="device_specific_settings_description">Ustawienia obsługiwanych modeli jednostek głównych</string>
+    <string name="device_specific_mcu_checking">Sprawdzanie dostępu do MCU…</string>
+    <string name="device_specific_mcu_unavailable">Dostęp do MCU jest niedostępny. Funkcja wstrzymywania projekcji po włączeniu biegu wstecznego jest wyłączona na tym urządzeniu.</string>
+    <string name="device_specific_head_unit_model">Model jednostki głównej</string>
+    <string name="device_specific_model_none">Nie wybrano</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Wstrzymuj projekcję Android Auto na biegu wstecznym</string>
+    <string name="device_specific_pause_projection_reverse_description">Zwalniaj fokus wideo Android Auto, gdy kamera cofania jest aktywna, i przywracaj projekcję po wyłączeniu biegu wstecznego.</string>
     <string name="pref_enable_floating_button_title">Pływający przycisk launchera</string>
     <string name="pref_enable_floating_button_summary">Wyświetla pływający przycisk nad launcherem OEM i innymi aplikacjami, aby szybko powrócić do Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Wskaźnik stanu połączenia</string>

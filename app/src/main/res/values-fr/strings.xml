@@ -1216,6 +1216,15 @@
     <string name="copied_to_clipboard">Copié dans le presse-papier</string>
 
     <string name="category_more_features">Autres fonctionnalités</string>
+    <string name="device_specific_settings">Paramètres propres à l\'appareil</string>
+    <string name="device_specific_settings_description">Paramètres des modèles d\'autoradios compatibles</string>
+    <string name="device_specific_mcu_checking">Vérification de l\'accès au MCU…</string>
+    <string name="device_specific_mcu_unavailable">L\'accès au MCU est indisponible. La mise en pause de la projection en marche arrière est désactivée sur cet appareil.</string>
+    <string name="device_specific_head_unit_model">Modèle d\'autoradio</string>
+    <string name="device_specific_model_none">Non sélectionné</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Mettre la projection Android Auto en pause en marche arrière</string>
+    <string name="device_specific_pause_projection_reverse_description">Libérer le focus vidéo d\'Android Auto lorsque la caméra de recul est active, puis rétablir la projection lorsque la marche arrière est désengagée.</string>
     <string name="pref_enable_floating_button_title">Bouton flottant du lanceur</string>
     <string name="pref_enable_floating_button_summary">Affiche un bouton flottant au-dessus du lanceur OEM et d\'autres applications pour revenir rapidement à Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Indicateur d\'état de connexion</string>

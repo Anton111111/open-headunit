@@ -1150,6 +1150,15 @@
     <string name="debug_video_feed_hold">Simulovat pomalý dekodér</string>
 
     <string name="category_more_features">Další funkce</string>
+    <string name="device_specific_settings">Nastavení konkrétního zařízení</string>
+    <string name="device_specific_settings_description">Nastavení pro podporované modely hlavních jednotek</string>
+    <string name="device_specific_mcu_checking">Kontrola přístupu k MCU…</string>
+    <string name="device_specific_mcu_unavailable">Přístup k MCU není dostupný. Funkce pozastavení projekce při zařazení zpátečky je na tomto zařízení vypnutá.</string>
+    <string name="device_specific_head_unit_model">Model hlavní jednotky</string>
+    <string name="device_specific_model_none">Nevybráno</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Pozastavit projekci Android Auto při zařazené zpátečce</string>
+    <string name="device_specific_pause_projection_reverse_description">Uvolnit fokus videa Android Auto, když je aktivní couvací kamera, a obnovit projekci po vyřazení zpátečky.</string>
     <string name="pref_enable_floating_button_title">Plovoucí tlačítko spouštěče</string>
     <string name="pref_enable_floating_button_summary">Zobrazí plovoucí tlačítko nad OEM spouštěčem a jinými aplikacemi pro rychlý návrat do Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Indikátor stavu připojení</string>

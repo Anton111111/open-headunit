@@ -1158,6 +1158,15 @@
     <string name="debug_video_feed_hold">느린 디코더 시뮬레이션</string>
 
     <string name="category_more_features">추가 기능</string>
+    <string name="device_specific_settings">기기별 설정</string>
+    <string name="device_specific_settings_description">지원되는 헤드 유닛 모델별 설정</string>
+    <string name="device_specific_mcu_checking">MCU 접근 확인 중...</string>
+    <string name="device_specific_mcu_unavailable">MCU에 접근할 수 없습니다. 이 기기에서는 후진 기어 사용 시 화면 투영을 일시 중지하는 기능이 비활성화됩니다.</string>
+    <string name="device_specific_head_unit_model">헤드 유닛 모델</string>
+    <string name="device_specific_model_none">선택 안 함</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">후진 기어 사용 시 Android Auto 화면 투영 일시 중지</string>
+    <string name="device_specific_pause_projection_reverse_description">후방 카메라가 작동하는 동안 Android Auto의 비디오 포커스를 해제하고, 후진 기어를 해제하면 화면 투영을 복원합니다.</string>
     <string name="pref_enable_floating_button_title">플로팅 런처 버튼</string>
     <string name="pref_enable_floating_button_summary">순정 런처 및 다른 앱 위에 플로팅 버튼을 표시하여 Open Headunit으로 빠르게 복귀합니다</string>
     <string name="pref_floating_button_connection_status_title">연결 상태 표시</string>
