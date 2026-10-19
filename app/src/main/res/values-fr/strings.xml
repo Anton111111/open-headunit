@@ -724,6 +724,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Température</string>
     <string name="overlay_field_frame_age">Âge de l\'image</string>
+    <string name="overlay_field_battery">Batterie</string>
+    <string name="overlay_field_memory">Mémoire libre</string>
+    <string name="overlay_field_wifi_signal">Signal Wi-Fi</string>
     <string name="performance_overlay_no_lines">Aucune ligne</string>
     <string name="show_performance_overlay">Afficher la superposition des performances</string>
     <string name="overlay_position">Position de la superposition des performances</string>

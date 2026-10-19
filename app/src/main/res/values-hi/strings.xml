@@ -858,6 +858,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">तापमान</string>
     <string name="overlay_field_frame_age">फ्रेम की आयु</string>
+    <string name="overlay_field_battery">बैटरी</string>
+    <string name="overlay_field_memory">खाली मेमोरी</string>
+    <string name="overlay_field_wifi_signal">वाई-फ़ाई सिग्नल</string>
     <string name="performance_overlay_no_lines">कोई पंक्ति नहीं</string>
     <string name="show_performance_overlay">परफ़ॉर्मेंस ओवरले दिखाएं</string>
     <string name="overlay_position">परफ़ॉर्मेंस ओवरले की जगह</string>

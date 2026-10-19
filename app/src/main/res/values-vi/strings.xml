@@ -448,6 +448,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Nhiệt độ</string>
     <string name="overlay_field_frame_age">Độ trễ khung hình</string>
+    <string name="overlay_field_battery">Pin</string>
+    <string name="overlay_field_memory">Bộ nhớ trống</string>
+    <string name="overlay_field_wifi_signal">Tín hiệu Wi-Fi</string>
     <string name="performance_overlay_no_lines">Không có dòng</string>
     <string name="show_performance_overlay">Hiển thị lớp phủ hiệu suất</string>
     <string name="overlay_position">Vị trí lớp phủ hiệu suất</string>

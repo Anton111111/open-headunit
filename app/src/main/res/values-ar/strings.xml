@@ -437,6 +437,9 @@
     <string name="overlay_field_cpu">المعالج</string>
     <string name="overlay_field_temperature">درجة الحرارة</string>
     <string name="overlay_field_frame_age">عمر الإطار</string>
+    <string name="overlay_field_battery">البطارية</string>
+    <string name="overlay_field_memory">الذاكرة الحرة</string>
+    <string name="overlay_field_wifi_signal">إشارة Wi-Fi</string>
     <string name="performance_overlay_no_lines">بدون أسطر</string>
     <string name="show_performance_overlay">إظهار لوحة الأداء</string>
     <string name="overlay_position">موضع لوحة الأداء</string>

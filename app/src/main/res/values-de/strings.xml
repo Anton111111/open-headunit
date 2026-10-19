@@ -490,6 +490,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatur</string>
     <string name="overlay_field_frame_age">Bildalter</string>
+    <string name="overlay_field_battery">Akku</string>
+    <string name="overlay_field_memory">Freier Speicher</string>
+    <string name="overlay_field_wifi_signal">WLAN-Signal</string>
     <string name="performance_overlay_no_lines">Keine Zeilen</string>
     <string name="show_performance_overlay">Leistungsanzeige einblenden</string>
     <string name="overlay_position">Position der Leistungsanzeige</string>

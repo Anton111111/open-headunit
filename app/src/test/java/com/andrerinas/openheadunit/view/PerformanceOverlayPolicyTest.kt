@@ -62,13 +62,17 @@ class PerformanceOverlayPolicyTest {
     }
 
     private val all = PerformanceOverlayField.values().toSet()
+    private val legacy = setOf(
+        PerformanceOverlayField.FPS, PerformanceOverlayField.CPU,
+        PerformanceOverlayField.TEMP, PerformanceOverlayField.FRAME
+    )
 
     private fun text(fields: Set<PerformanceOverlayField>) =
         PerformanceOverlayPolicy.format(fields, 60, 12, 40, null, 45, 16L)
 
     @Test
     fun `all four lines print the text the overlay printed before`() {
-        assertEquals("FPS: 60\nCPU: app 12% / sys 40%\nTemp: 45C\nFrame: 16ms", text(all))
+        assertEquals("FPS: 60\nCPU: app 12% / sys 40%\nTemp: 45C\nFrame: 16ms", text(legacy))
     }
 
     @Test
@@ -99,7 +103,7 @@ class PerformanceOverlayPolicyTest {
     @Test
     fun `an unreadable value prints dashes`() {
         assertEquals(
-            "FPS: --\nCPU: app -- / sys --\nTemp: --\nFrame: --",
+            "FPS: --\nCPU: app -- / sys --\nTemp: --\nFrame: --\nBatt: --\nMem: --\nRSSI: --",
             PerformanceOverlayPolicy.format(all, null, null, null, null, null, null)
         )
     }
@@ -116,7 +120,7 @@ class PerformanceOverlayPolicyTest {
 
     @Test
     fun `the field set round-trips through its stored int`() {
-        for (bits in 0..15) {
+        for (bits in 0..127) {
             val fields = PerformanceOverlayPolicy.fromBits(bits)
             assertEquals(bits, PerformanceOverlayPolicy.toBits(fields))
             assertEquals(fields, PerformanceOverlayPolicy.fromBits(PerformanceOverlayPolicy.toBits(fields)))
@@ -124,8 +128,8 @@ class PerformanceOverlayPolicyTest {
     }
 
     @Test
-    fun `the stored default is all four lines`() {
-        assertEquals(all, PerformanceOverlayPolicy.fromBits(PerformanceOverlayPolicy.DEFAULT_BITS))
+    fun `the stored default is the original four lines`() {
+        assertEquals(legacy, PerformanceOverlayPolicy.fromBits(PerformanceOverlayPolicy.DEFAULT_BITS))
     }
 
     @Test
@@ -148,8 +152,61 @@ class PerformanceOverlayPolicyTest {
     fun `describe names the fields and the sources`() {
         assertEquals("fields=FPS sources=none",
             PerformanceOverlayPolicy.describe(setOf(PerformanceOverlayField.FPS)))
-        assertEquals("fields=FPS,CPU,TEMP,FRAME sources=cpu,temp", PerformanceOverlayPolicy.describe(all))
+        assertEquals("fields=FPS,CPU,TEMP,FRAME,BATTERY,MEMORY,WIFI sources=cpu,temp,battery,memory,wifi",
+            PerformanceOverlayPolicy.describe(all))
         assertEquals("fields=none sources=none", PerformanceOverlayPolicy.describe(emptySet()))
+    }
+
+    private fun device(readings: DeviceReadings, field: PerformanceOverlayField) =
+        PerformanceOverlayPolicy.format(setOf(field), null, null, null, null, null, null, readings)
+
+    @Test
+    fun `battery prints the level and marks a unit that is plugged in`() {
+        assertEquals("Batt: 64%", device(DeviceReadings(batteryPercent = 64), PerformanceOverlayField.BATTERY))
+        assertEquals("Batt: 64% +",
+            device(DeviceReadings(batteryPercent = 64, pluggedIn = true), PerformanceOverlayField.BATTERY))
+        assertEquals("Batt: --", device(DeviceReadings(pluggedIn = true), PerformanceOverlayField.BATTERY))
+    }
+
+    @Test
+    fun `memory and signal print their units or dashes`() {
+        assertEquals("Mem: 412MB", device(DeviceReadings(freeMemoryMb = 412), PerformanceOverlayField.MEMORY))
+        assertEquals("RSSI: -61dBm", device(DeviceReadings(stationRssiDbm = -61), PerformanceOverlayField.WIFI))
+        assertEquals("RSSI: --", device(DeviceReadings(), PerformanceOverlayField.WIFI))
+    }
+
+    @Test
+    fun `battery percent scales the level and rejects missing extras`() {
+        assertEquals(64, PerformanceOverlayPolicy.batteryPercent(64, 100))
+        assertEquals(50, PerformanceOverlayPolicy.batteryPercent(128, 256))
+        assertEquals(100, PerformanceOverlayPolicy.batteryPercent(120, 100))
+        assertNull(PerformanceOverlayPolicy.batteryPercent(-1, 100))
+        assertNull(PerformanceOverlayPolicy.batteryPercent(50, 0))
+    }
+
+    @Test
+    fun `megabytes floors and rejects a negative count`() {
+        assertEquals(412L, PerformanceOverlayPolicy.megabytes(412L * 1024 * 1024 + 1000))
+        assertNull(PerformanceOverlayPolicy.megabytes(-1L))
+    }
+
+    @Test
+    fun `station rssi needs an associated station and a real reading`() {
+        assertEquals(-61, PerformanceOverlayPolicy.stationRssi(-61, true))
+        assertNull(PerformanceOverlayPolicy.stationRssi(-61, false))
+        assertNull(PerformanceOverlayPolicy.stationRssi(-127, true))
+        assertNull(PerformanceOverlayPolicy.stationRssi(-200, true))
+        assertNull(PerformanceOverlayPolicy.stationRssi(0, true))
+    }
+
+    @Test
+    fun `sampling reads each device source only for its own line`() {
+        assertEquals(setOf(PerformanceOverlaySource.BATTERY),
+            PerformanceOverlayPolicy.sampling(setOf(PerformanceOverlayField.BATTERY)))
+        assertEquals(setOf(PerformanceOverlaySource.MEMORY),
+            PerformanceOverlayPolicy.sampling(setOf(PerformanceOverlayField.MEMORY)))
+        assertEquals(setOf(PerformanceOverlaySource.WIFI),
+            PerformanceOverlayPolicy.sampling(setOf(PerformanceOverlayField.WIFI)))
     }
 
     @Test

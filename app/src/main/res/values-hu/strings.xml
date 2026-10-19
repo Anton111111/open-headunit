@@ -436,6 +436,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Hőmérséklet</string>
     <string name="overlay_field_frame_age">Képkocka kora</string>
+    <string name="overlay_field_battery">Akkumulátor</string>
+    <string name="overlay_field_memory">Szabad memória</string>
+    <string name="overlay_field_wifi_signal">Wi-Fi-jel</string>
     <string name="performance_overlay_no_lines">Nincs sor</string>
     <string name="show_performance_overlay">Teljesítményjelző megjelenítése</string>
     <string name="overlay_position">Teljesítményjelző helye</string>

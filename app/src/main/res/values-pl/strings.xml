@@ -435,6 +435,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatura</string>
     <string name="overlay_field_frame_age">Wiek klatki</string>
+    <string name="overlay_field_battery">Bateria</string>
+    <string name="overlay_field_memory">Wolna pamięć</string>
+    <string name="overlay_field_wifi_signal">Sygnał Wi-Fi</string>
     <string name="performance_overlay_no_lines">Brak wierszy</string>
     <string name="show_performance_overlay">Pokaż nakładkę wydajności</string>
     <string name="overlay_position">Pozycja nakładki wydajności</string>

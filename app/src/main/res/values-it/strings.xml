@@ -437,6 +437,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatura</string>
     <string name="overlay_field_frame_age">Età del fotogramma</string>
+    <string name="overlay_field_battery">Batteria</string>
+    <string name="overlay_field_memory">Memoria libera</string>
+    <string name="overlay_field_wifi_signal">Segnale Wi-Fi</string>
     <string name="performance_overlay_no_lines">Nessuna riga</string>
     <string name="show_performance_overlay">Mostra pannello prestazioni</string>
     <string name="overlay_position">Posizione del pannello prestazioni</string>

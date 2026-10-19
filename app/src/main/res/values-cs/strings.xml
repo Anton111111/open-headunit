@@ -437,6 +437,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Teplota</string>
     <string name="overlay_field_frame_age">Stáří snímku</string>
+    <string name="overlay_field_battery">Baterie</string>
+    <string name="overlay_field_memory">Volná paměť</string>
+    <string name="overlay_field_wifi_signal">Signál Wi-Fi</string>
     <string name="performance_overlay_no_lines">Žádné řádky</string>
     <string name="show_performance_overlay">Zobrazit výkonnostní překryv</string>
     <string name="overlay_position">Umístění výkonnostního překryvu</string>

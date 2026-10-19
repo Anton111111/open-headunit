@@ -441,6 +441,9 @@ Open Headunit предоставляется «как есть» без каки
     <string name="overlay_field_cpu">ЦП</string>
     <string name="overlay_field_temperature">Температура</string>
     <string name="overlay_field_frame_age">Возраст кадра</string>
+    <string name="overlay_field_battery">Батарея</string>
+    <string name="overlay_field_memory">Свободная память</string>
+    <string name="overlay_field_wifi_signal">Сигнал Wi-Fi</string>
     <string name="performance_overlay_no_lines">Нет строк</string>
     <string name="show_performance_overlay">Показывать панель производительности</string>
     <string name="overlay_position">Положение панели производительности</string>

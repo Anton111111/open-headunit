@@ -483,6 +483,9 @@
     <string name="overlay_field_temperature">ტემპერატურა</string>
     <string name="overlay_field_frame_age">კადრის ასაკი</string>
     <string name="performance_overlay_no_lines">ხაზების გარეშე</string>
+    <string name="overlay_field_battery">ბატარეა</string>
+    <string name="overlay_field_memory">თავისუფალი მეხსიერება</string>
+    <string name="overlay_field_wifi_signal">Wi-Fi სიგნალი</string>
     <string name="show_performance_overlay">წარმადობის ინდიკატორის ჩვენება</string>
     <string name="overlay_position">წარმადობის ინდიკატორის მდებარეობა</string>
     <string name="show_performance_overlay_description">პროექციის ზემოთ აჩვენებს FPS-ს, პროცესორის დატვირთვას, ტემპერატურას და კადრის ასაკს.</string>

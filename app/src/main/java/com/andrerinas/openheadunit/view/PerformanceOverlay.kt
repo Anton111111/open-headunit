@@ -1,7 +1,14 @@
 package com.andrerinas.openheadunit.view
 
+import android.app.ActivityManager
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Color
 import android.graphics.Typeface
+import android.net.wifi.SupplicantState
+import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -18,7 +25,7 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * The FPS / CPU / temperature HUD drawn over the projection. It owns its view, its one-second
+ * The FPS / CPU / temperature / device HUD drawn over the projection. It owns its view, its one-second
  * sampling loop and the worker that reads /proc and /sys, so the activity only attaches it,
  * starts it and re-lifts it whenever something is added over the top.
  */
@@ -57,6 +64,7 @@ class PerformanceOverlay(
         if (textView != null) return
         fields = settings.overlayFields
         sources = PerformanceOverlayPolicy.sampling(fields)
+        sampler.appContext = container.context.applicationContext
         AppLog.i("PerformanceOverlay: ${PerformanceOverlayPolicy.describe(fields)}")
         val view = TextView(container.context).apply {
             setTextColor(Color.YELLOW)
@@ -157,7 +165,7 @@ class PerformanceOverlay(
         }
         return PerformanceOverlayPolicy.format(
             fields, fpsSnapshot, metrics.appCpuPercent, metrics.totalCpuPercent,
-            metrics.loadAverage, metrics.temperatureC, frameAgeMs
+            metrics.loadAverage, metrics.temperatureC, frameAgeMs, metrics.device
         )
     }
 
@@ -171,8 +179,12 @@ class PerformanceOverlay(
             val appCpuPercent: Int?,
             val totalCpuPercent: Int?,
             val loadAverage: Double?,
-            val temperatureC: Int?
+            val temperatureC: Int?,
+            val device: DeviceReadings
         )
+
+        @Volatile
+        var appContext: Context? = null
 
         private val coreCount = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
         private var previousTotalCpu: TotalCpuSnapshot? = null
@@ -211,7 +223,50 @@ class PerformanceOverlay(
                 load = readLoadAverage()
             }
             val temp = if (PerformanceOverlaySource.TEMP in sources) readTemperatureC() else null
-            return Metrics(appCpu, totalCpu, load, temp)
+            return Metrics(appCpu, totalCpu, load, temp, readDevice(sources))
+        }
+
+        private fun readDevice(sources: Set<PerformanceOverlaySource>): DeviceReadings {
+            val context = appContext ?: return DeviceReadings()
+            var percent: Int? = null
+            var plugged = false
+            if (PerformanceOverlaySource.BATTERY in sources) {
+                // A null receiver only reads the sticky broadcast, so nothing is left registered.
+                val battery = try {
+                    context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                } catch (e: Exception) {
+                    null
+                }
+                if (battery != null) {
+                    percent = PerformanceOverlayPolicy.batteryPercent(
+                        battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
+                        battery.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+                    )
+                    plugged = battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
+                }
+            }
+            val freeMb = if (PerformanceOverlaySource.MEMORY in sources) readFreeMemoryMb(context) else null
+            val rssi = if (PerformanceOverlaySource.WIFI in sources) readStationRssi(context) else null
+            return DeviceReadings(percent, plugged, freeMb, rssi)
+        }
+
+        private fun readFreeMemoryMb(context: Context): Long? = try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val info = ActivityManager.MemoryInfo()
+            am.getMemoryInfo(info)
+            PerformanceOverlayPolicy.megabytes(info.availMem)
+        } catch (e: Exception) {
+            null
+        }
+
+        @Suppress("DEPRECATION")
+        private fun readStationRssi(context: Context): Int? = try {
+            val wm = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val info = wm.connectionInfo
+            if (info == null) null
+            else PerformanceOverlayPolicy.stationRssi(info.rssi, info.supplicantState == SupplicantState.COMPLETED)
+        } catch (e: Exception) {
+            null
         }
 
         private fun readTotalCpuSnapshot(): TotalCpuSnapshot? {

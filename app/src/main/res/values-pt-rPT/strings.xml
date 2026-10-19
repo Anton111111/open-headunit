@@ -858,6 +858,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatura</string>
     <string name="overlay_field_frame_age">Atraso de fotogramas</string>
+    <string name="overlay_field_battery">Bateria</string>
+    <string name="overlay_field_memory">Memória livre</string>
+    <string name="overlay_field_wifi_signal">Sinal Wi-Fi</string>
     <string name="performance_overlay_no_lines">Sem linhas</string>
     <string name="show_performance_overlay">Apresentar sobreposição de desempenho</string>
     <string name="overlay_position">Posição da sobreposição de desempenho</string>
