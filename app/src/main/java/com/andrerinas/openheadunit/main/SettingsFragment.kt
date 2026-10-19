@@ -3471,12 +3471,22 @@ class SettingsFragment : Fragment() {
             getString(R.string.self_mode)
         )
         val current = settings.connectionModes
-        val checked = BooleanArray(order.size) { order[it] in current }
+        // An empty set means "All", which the label says out loud: the three of them start checked
+        // so the dialog does not read as "none chosen".
+        val all = current.isEmpty()
+        val checked = BooleanArray(order.size) { all || order[it] in current }
+        var touched = false
         MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
             .setTitle(R.string.connection_mode)
-            .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                checked[which] = isChecked
+                touched = true
+            }
             .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                settings.connectionModes = order.filterIndexed { i, _ -> checked[i] }.toSet()
+                // Left alone, "All" stays "All" instead of turning into the three modes spelled out.
+                if (!(all && !touched)) {
+                    settings.connectionModes = order.filterIndexed { i, _ -> checked[i] }.toSet()
+                }
                 dialog.dismiss()
                 updateSettingsList()
             }
