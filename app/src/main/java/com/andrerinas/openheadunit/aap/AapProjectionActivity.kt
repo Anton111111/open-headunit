@@ -3,6 +3,7 @@ package com.andrerinas.openheadunit.aap
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -42,6 +43,7 @@ import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.decoder.video.VideoDimensionsListener
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.BluetoothHelper
+import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.connection.self.SelfModeCallRaisePolicy
 import com.andrerinas.openheadunit.connection.usb.UsbSwitchClaim
 import com.andrerinas.openheadunit.decoder.audio.CallState
@@ -1644,7 +1646,9 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val options = mutableListOf<ExitOption>()
         options.add(ExitOption(R.string.exit_dialog_stop, R.drawable.ic_stop, Color.RED))
 
-        if (!shortMenu && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // The unit has to declare the feature too: on one that does not, the framework refuses to
+        // put the projection in PiP, so the option is not offered at all.
+        if (!shortMenu && supportsPictureInPicture()) {
             options.add(ExitOption(R.string.exit_dialog_pip, R.drawable.ic_pip, Color.LTGRAY))
         }
 
@@ -1750,6 +1754,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun enterPiP() {
+        if (!supportsPictureInPicture()) {
+            AppLog.i("PiP: this unit does not declare ${PackageManager.FEATURE_PICTURE_IN_PICTURE}")
+            return
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 var width = videoDecoder.videoWidth.coerceAtLeast(1).toFloat()
@@ -1787,10 +1795,31 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
     }
 
+    /**
+     * PiP needs both halves: the activity declaring it supports it, which it does in the manifest,
+     * and the unit declaring the feature. A unit without the feature throws instead of entering,
+     * which is what a user reported as "PiP does nothing".
+     */
+    private fun supportsPictureInPicture(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
     private fun moveToBackground() {
-        val startMain = Intent(Intent.ACTION_MAIN)
-        startMain.addCategory(Intent.CATEGORY_HOME)
+        // Sending the home intent by itself leaves the front to whichever home app the system picks,
+        // and on a unit that still has the factory launcher as its default that is not this app: the
+        // user reported being dropped into the factory launcher with the session left behind. When
+        // this app is the home app, it is named, so the projection goes behind our own home screen.
+        val isHome = CarLauncherManager.isDefaultLauncher(this)
+        val startMain = if (isHome) {
+            Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+                addCategory(Intent.CATEGORY_HOME)
+            }
+        } else {
+            Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+        }
         startMain.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        AppLog.i("AapProjectionActivity: moving the projection to the background, home app is this one=$isHome")
         startActivity(startMain)
     }
 
