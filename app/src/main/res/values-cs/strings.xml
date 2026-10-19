@@ -285,12 +285,13 @@
     <string name="checking_for_updates">Kontrola aktualizací…</string>
     <string name="update_available_title">Dostupná aktualizace</string>
     <string name="update_available_playstore_message">Je k dispozici novější verze (%1$s). Navštivte prosím Google Play Store a aplikaci aktualizujte.</string>
-    <string name="update_available_github_message">Je k dispozici novější verze (%1$s). Přejděte na GitHub a stáhněte si nejnovější verzi.</string>
+    <string name="update_available_github_message">Je k dispozici novější verze (%1$s). Stáhněte si APK, nebo přejděte na GitHub Releases a zjistěte, co se změnilo.</string>
     <string name="update_not_available_title">Aplikace je aktuální</string>
     <string name="update_not_available_message">Již používáte nejnovější verzi (%1$s).</string>
     <string name="update_check_failed">Kontrola aktualizací se nezdařila. Zkontrolujte připojení k internetu.</string>
     <string name="open_play_store">Otevřít Play Store</string>
     <string name="open_github_releases">Přejít na GitHub Releases</string>
+    <string name="download_apk">Stáhnout APK</string>
     <string name="about_title">O aplikaci Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 

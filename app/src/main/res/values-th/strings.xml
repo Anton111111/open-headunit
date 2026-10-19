@@ -669,12 +669,13 @@
     <string name="checking_for_updates">กำลังตรวจหาการอัปเดต…</string>
     <string name="update_available_title">มีรุ่นใหม่</string>
     <string name="update_available_playstore_message">มีรุ่นใหม่กว่า (%1$s) โปรดไปที่ Google Play Store เพื่ออัปเดตแอป</string>
-    <string name="update_available_github_message">มีรุ่นใหม่กว่า (%1$s) ไปที่ GitHub เพื่อดาวน์โหลดรุ่นล่าสุด</string>
+    <string name="update_available_github_message">มีเวอร์ชันใหม่กว่า (%1$s) พร้อมใช้งาน ดาวน์โหลด APK หรือเปิด GitHub Releases เพื่อดูว่ามีอะไรเปลี่ยนแปลง</string>
     <string name="update_not_available_title">เป็นรุ่นล่าสุดแล้ว</string>
     <string name="update_not_available_message">คุณใช้รุ่นล่าสุด (%1$s) อยู่แล้ว</string>
     <string name="update_check_failed">ไม่สามารถตรวจหาการอัปเดตได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ</string>
     <string name="open_play_store">เปิด Play Store</string>
     <string name="open_github_releases">เปิด GitHub Releases</string>
+    <string name="download_apk">ดาวน์โหลด APK</string>
     <string name="about_title">เกี่ยวกับ Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 

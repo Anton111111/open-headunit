@@ -306,12 +306,13 @@
     <string name="checking_for_updates">Se caută actualizări…</string>
     <string name="update_available_title">Actualizare disponibilă</string>
     <string name="update_available_playstore_message">Este disponibilă o versiune mai nouă (%1$s). Accesează Google Play Store pentru a actualiza aplicația.</string>
-    <string name="update_available_github_message">Este disponibilă o versiune mai nouă (%1$s). Accesează GitHub pentru a descărca cea mai recentă versiune.</string>
+    <string name="update_available_github_message">Este disponibilă o versiune mai nouă (%1$s). Descarcă APK-ul sau deschide GitHub Releases pentru a vedea ce s-a schimbat.</string>
     <string name="update_not_available_title">La zi</string>
     <string name="update_not_available_message">Folosești deja cea mai recentă versiune (%1$s).</string>
     <string name="update_check_failed">Nu s-au putut căuta actualizări. Verifică conexiunea la internet.</string>
     <string name="open_play_store">Deschide Play Store</string>
     <string name="open_github_releases">Deschide GitHub Releases</string>
+    <string name="download_apk">Descarcă APK</string>
     <string name="about_title">Despre Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 

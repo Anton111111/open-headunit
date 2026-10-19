@@ -559,12 +559,13 @@
     <string name="checking_for_updates">Recherche de mises à jour…</string>
     <string name="update_available_title">Mise à jour disponible</string>
     <string name="update_available_playstore_message">Une version plus récente (%1$s) est disponible. Mettez à jour l\'application depuis le Google Play Store.</string>
-    <string name="update_available_github_message">Une version plus récente (%1$s) est disponible. Rendez-vous sur GitHub pour télécharger la dernière version.</string>
+    <string name="update_available_github_message">Une version plus récente (%1$s) est disponible. Téléchargez l\'APK ou ouvrez GitHub Releases pour voir les changements.</string>
     <string name="update_not_available_title">À jour</string>
     <string name="update_not_available_message">Vous utilisez déjà la dernière version (%1$s).</string>
     <string name="update_check_failed">Impossible de rechercher les mises à jour. Vérifiez votre connexion Internet.</string>
     <string name="open_play_store">Ouvrir le Play Store</string>
     <string name="open_github_releases">Ouvrir GitHub Releases</string>
+    <string name="download_apk">Télécharger l\'APK</string>
     <string name="about_title">À propos d\'Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 
