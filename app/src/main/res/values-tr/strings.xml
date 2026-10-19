@@ -1284,6 +1284,12 @@
     <string name="home_show_favorite_apps_description">Open Headunit ana ekran uygulaması olduğunda ana düğmenin altında dört uygulama kısayolu</string>
     <string name="home_use_classic">Klasik ana ekran</string>
     <string name="home_use_classic_description">Dört eşit düğmeli önceki tasarım</string>
+    <string name="home_show_clock">Ana ekranda tarih ve saat</string>
+    <string name="home_show_clock_description">Saat ve bugünün tarihi, ana düğmenin üstünde</string>
+    <string name="home_show_speed">Ana ekranda GPS hızı</string>
+    <string name="home_show_speed_description">Bu birimin GPS\'inin bildirdiği hız, km/sa. Konum izni ister</string>
+    <string name="home_speed_unit">km/sa</string>
+    <string name="home_speed_needs_location">Hız için konum izni gerekir</string>
     <string name="home_design_notice_title">Yeni bir ana ekran</string>
     <string name="home_design_notice_message">Open Headunit\'in yeni bir ana ekranı var: kullandığınız bağlantı tek bir büyük düğme, geri kalanı ise sürücü tarafında.\n\nKullanmak ister misiniz? İstediğiniz zaman Ayarlar, Özelleştirme bölümünden geri dönebilirsiniz.</string>
     <string name="home_design_notice_use_new">Yeni tasarımı kullan</string>

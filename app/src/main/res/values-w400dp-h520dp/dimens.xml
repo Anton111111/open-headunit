@@ -25,4 +25,8 @@
     <dimen name="home_countdown_text">36sp</dimen>
     <dimen name="home_favorites_height">120dp</dimen>
     <dimen name="home_favorite_icon">48dp</dimen>
+    <dimen name="home_info_time">38sp</dimen>
+    <dimen name="home_info_date">20sp</dimen>
+    <dimen name="home_info_speed">38sp</dimen>
+    <dimen name="home_info_gap">6dp</dimen>
 </resources>

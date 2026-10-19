@@ -1270,6 +1270,12 @@
     <string name="home_show_favorite_apps_description">აპების ოთხი მალსახმობი მთავარი ღილაკის ქვემოთ, როცა Open Headunit მთავარი აპია</string>
     <string name="home_use_classic">კლასიკური მთავარი ეკრანი</string>
     <string name="home_use_classic_description">წინა დიზაინი, ოთხი ერთნაირი ღილაკით</string>
+    <string name="home_show_clock">თარიღი და დრო მთავარ ეკრანზე</string>
+    <string name="home_show_clock_description">დრო და დღევანდელი თარიღი მთავარი ღილაკის ზემოთ</string>
+    <string name="home_show_speed">GPS სიჩქარე მთავარ ეკრანზე</string>
+    <string name="home_show_speed_description">რასაც ამ მოწყობილობის GPS აცხადებს, კმ/სთ-ში. ითხოვს მდებარეობის ნებართვას</string>
+    <string name="home_speed_unit">კმ/სთ</string>
+    <string name="home_speed_needs_location">სიჩქარეს სჭირდება მდებარეობის ნებართვა</string>
     <string name="home_design_notice_title">ახალი მთავარი ეკრანი</string>
     <string name="home_design_notice_message">Open Headunit-ს ახალი მთავარი ეკრანი აქვს: თქვენ მიერ გამოყენებული კავშირი ერთი დიდი ღილაკია, დანარჩენი კი მძღოლის მხარესაა.\n\nგსურთ მისი გამოყენება? ნებისმიერ დროს შეგიძლიათ დაბრუნება: პარამეტრები, პერსონალიზაცია.</string>
     <string name="home_design_notice_use_new">ახალი დიზაინის გამოყენება</string>

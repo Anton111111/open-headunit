@@ -1292,6 +1292,12 @@
     <string name="home_show_favorite_apps_description">Bốn lối tắt ứng dụng dưới nút chính khi Open Headunit là ứng dụng màn hình chính</string>
     <string name="home_use_classic">Màn hình chính cổ điển</string>
     <string name="home_use_classic_description">Thiết kế trước đây, với bốn nút bằng nhau</string>
+    <string name="home_show_clock">Ngày và giờ trên màn hình chính</string>
+    <string name="home_show_clock_description">Giờ và ngày hôm nay ở trên nút chính</string>
+    <string name="home_show_speed">Tốc độ GPS trên màn hình chính</string>
+    <string name="home_show_speed_description">Tốc độ mà GPS của thiết bị này báo, theo km/h. Yêu cầu quyền vị trí</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">Tốc độ cần quyền vị trí</string>
     <string name="home_design_notice_title">Màn hình chính mới</string>
     <string name="home_design_notice_message">Open Headunit có màn hình chính mới: kết nối bạn dùng là một nút lớn, phần còn lại nằm ở phía người lái.\n\nBạn có muốn dùng không? Bạn có thể quay lại bất cứ lúc nào trong Cài đặt, Tùy chỉnh.</string>
     <string name="home_design_notice_use_new">Dùng thiết kế mới</string>

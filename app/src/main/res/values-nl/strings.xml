@@ -1289,6 +1289,12 @@
     <string name="home_show_favorite_apps_description">Vier app-snelkoppelingen onder de hoofdknop zolang Open Headunit de start-app is</string>
     <string name="home_use_classic">Klassiek startscherm</string>
     <string name="home_use_classic_description">Het vorige ontwerp, met vier gelijke knoppen</string>
+    <string name="home_show_clock">Datum en tijd op het startscherm</string>
+    <string name="home_show_clock_description">De tijd en de datum van vandaag, boven aan de hoofdknoop</string>
+    <string name="home_show_speed">GPS-snelheid op het startscherm</string>
+    <string name="home_show_speed_description">Wat de GPS van dit toestel meldt, in km/h. Vraagt om de locatietoestemming</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">De snelheid heeft de locatietoestemming nodig</string>
     <string name="home_design_notice_title">Een nieuw startscherm</string>
     <string name="home_design_notice_message">Open Headunit heeft een nieuw startscherm: de verbinding die je gebruikt is één grote knop, en de rest staat aan de kant van de bestuurder.\n\nWil je het gebruiken? Je kunt altijd terugschakelen via Instellingen, Aanpassing.</string>
     <string name="home_design_notice_use_new">Nieuw ontwerp gebruiken</string>

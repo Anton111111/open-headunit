@@ -1335,6 +1335,12 @@
     <string name="home_show_favorite_apps_description">ทางลัดแอปสี่รายการใต้ปุ่มหลักเมื่อ Open Headunit เป็นแอปหน้าจอหลัก</string>
     <string name="home_use_classic">หน้าจอหลักแบบคลาสสิก</string>
     <string name="home_use_classic_description">ดีไซน์เดิม มีปุ่มขนาดเท่ากันสี่ปุ่ม</string>
+    <string name="home_show_clock">วันที่และเวลาบนหน้าจอหลัก</string>
+    <string name="home_show_clock_description">เวลาและวันที่ของวันนี้ที่ด้านบนปุ่มหลัก</string>
+    <string name="home_show_speed">ความเร็ว GPS บนหน้าจอหลัก</string>
+    <string name="home_show_speed_description">สิ่งที่ GPS ของเครื่องนี้รายงาน หน่วยเป็น กม./ชม. ขอสิทธิ์ตำแหน่ง</string>
+    <string name="home_speed_unit">กม./ชม.</string>
+    <string name="home_speed_needs_location">ความเร็วต้องใช้สิทธิ์ตำแหน่ง</string>
     <string name="home_design_notice_title">หน้าจอหลักใหม่</string>
     <string name="home_design_notice_message">Open Headunit มีหน้าจอหลักใหม่: การเชื่อมต่อที่คุณใช้จะเป็นปุ่มใหญ่ปุ่มเดียว และส่วนที่เหลืออยู่ฝั่งคนขับ\n\nต้องการใช้หน้าจอนี้ไหม? คุณเปลี่ยนกลับได้ทุกเมื่อใน การตั้งค่า, การปรับแต่ง</string>
     <string name="home_design_notice_use_new">ใช้ดีไซน์ใหม่</string>

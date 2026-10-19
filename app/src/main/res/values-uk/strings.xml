@@ -1290,6 +1290,12 @@
     <string name="home_show_favorite_apps_description">Чотири ярлики програм під головною кнопкою, коли Open Headunit є головним екраном</string>
     <string name="home_use_classic">Класичний головний екран</string>
     <string name="home_use_classic_description">Попередній дизайн із чотирма однаковими кнопками</string>
+    <string name="home_show_clock">Дата і час на головному екрані</string>
+    <string name="home_show_clock_description">Час і сьогоднішня дата вгорі головної кнопки</string>
+    <string name="home_show_speed">Швидкість GPS на головному екрані</string>
+    <string name="home_show_speed_description">Те, що повідомляє GPS цього пристрою, у км/год. Запитує дозвіл на геолокацію</string>
+    <string name="home_speed_unit">км/год</string>
+    <string name="home_speed_needs_location">Для швидкості потрібен дозвіл на геолокацію</string>
     <string name="home_design_notice_title">Новий головний екран</string>
     <string name="home_design_notice_message">В Open Headunit новий головний екран: ваше підключення тепер одна велика кнопка, а все інше розташоване з боку водія.\n\nВикористовувати його? Повернутися можна будь-коли в розділі Налаштування, Персоналізація.</string>
     <string name="home_design_notice_use_new">Використовувати новий дизайн</string>

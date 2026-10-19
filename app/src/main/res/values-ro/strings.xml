@@ -1286,6 +1286,12 @@
     <string name="home_show_favorite_apps_description">Patru scurtături de aplicații sub butonul principal cât timp Open Headunit este aplicația principală</string>
     <string name="home_use_classic">Ecran principal clasic</string>
     <string name="home_use_classic_description">Designul anterior, cu patru butoane egale</string>
+    <string name="home_show_clock">Data și ora pe ecranul principal</string>
+    <string name="home_show_clock_description">Ora și data de astăzi, sus pe butonul principal</string>
+    <string name="home_show_speed">Viteza GPS pe ecranul principal</string>
+    <string name="home_show_speed_description">Ce raportează GPS-ul acestei unități, în km/h. Cere permisiunea de locație</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">Viteza are nevoie de permisiunea de locație</string>
     <string name="home_design_notice_title">Un nou ecran principal</string>
     <string name="home_design_notice_message">Open Headunit are un nou ecran principal: conexiunea pe care o folosești este un singur buton mare, iar restul se află pe partea șoferului.\n\nVrei să îl folosești? Poți reveni oricând din Setări, Personalizare.</string>
     <string name="home_design_notice_use_new">Folosește noul design</string>

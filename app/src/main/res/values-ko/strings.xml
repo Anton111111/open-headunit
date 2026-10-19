@@ -1298,6 +1298,12 @@
     <string name="home_show_favorite_apps_description">Open Headunit이 홈 앱일 때 메인 버튼 아래에 앱 바로가기 4개를 표시합니다</string>
     <string name="home_use_classic">클래식 홈 화면</string>
     <string name="home_use_classic_description">이전 디자인, 같은 크기의 버튼 4개</string>
+    <string name="home_show_clock">홈 화면에 날짜와 시간</string>
+    <string name="home_show_clock_description">메인 버튼 위에 시각과 오늘 날짜</string>
+    <string name="home_show_speed">홈 화면에 GPS 속도</string>
+    <string name="home_show_speed_description">이 기기의 GPS가 알려주는 속도(km/h). 위치 권한을 요청합니다</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">속도에는 위치 권한이 필요합니다</string>
     <string name="home_design_notice_title">새로운 홈 화면</string>
     <string name="home_design_notice_message">Open Headunit의 홈 화면이 새로워졌습니다. 사용하는 연결이 하나의 큰 버튼이 되고, 나머지는 운전석 쪽에 있습니다.\n\n새 디자인을 사용하시겠습니까? 언제든지 설정, 사용자 지정에서 되돌릴 수 있습니다.</string>
     <string name="home_design_notice_use_new">새 디자인 사용</string>

@@ -1334,6 +1334,12 @@
     <string name="home_show_favorite_apps_description">Quatro atalhos de apps sob o botão principal quando o Open Headunit é a aplicação de ecrã inicial</string>
     <string name="home_use_classic">Ecrã inicial clássico</string>
     <string name="home_use_classic_description">O design anterior, com quatro botões iguais</string>
+    <string name="home_show_clock">Data e hora no ecrã inicial</string>
+    <string name="home_show_clock_description">A hora e a data de hoje, no topo do botão principal</string>
+    <string name="home_show_speed">Velocidade do GPS no ecrã inicial</string>
+    <string name="home_show_speed_description">O que o GPS desta unidade indica, em km/h. Pede a permissão de localização</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">A velocidade precisa da permissão de localização</string>
     <string name="home_design_notice_title">Um novo ecrã inicial</string>
     <string name="home_design_notice_message">O Open Headunit tem um novo ecrã inicial: a ligação que utiliza é um único botão grande e o resto fica do lado do condutor.\n\nQuer utilizá-lo? Pode voltar atrás a qualquer momento em Definições, Personalização.</string>
     <string name="home_design_notice_use_new">Usar o novo design</string>

@@ -1287,6 +1287,12 @@
     <string name="home_show_favorite_apps_description">Open Headunit 作为主画面应用时，在主按钮下方显示四个应用快捷方式</string>
     <string name="home_use_classic">经典主屏幕</string>
     <string name="home_use_classic_description">以前的设计，四个同样大小的按钮</string>
+    <string name="home_show_clock">在主屏幕上显示日期和时间</string>
+    <string name="home_show_clock_description">在主按钮上方显示时间和今天的日期</string>
+    <string name="home_show_speed">在主屏幕上显示 GPS 速度</string>
+    <string name="home_show_speed_description">此设备 GPS 报告的速度，单位为 km/h。需要位置权限</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">速度需要位置权限</string>
     <string name="home_design_notice_title">全新的主屏幕</string>
     <string name="home_design_notice_message">Open Headunit 有了全新的主屏幕：你使用的连接是一个大按钮，其余内容位于驾驶员一侧。\n\n要使用新设计吗？你可以随时在“设置 > 个人化”中切换回来。</string>
     <string name="home_design_notice_use_new">使用新设计</string>

@@ -1572,6 +1572,17 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("show-home-favorite-apps", true)
         set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
 
+    /** Date and time on the home screen. Off by default: the driver asks for them. */
+    var showHomeClock: Boolean
+        get() = prefs.getBoolean("show-home-clock", false)
+        set(value) { prefs.edit().putBoolean("show-home-clock", value).apply() }
+
+    /** The speed this unit's GPS reports, on the home screen. Off by default, and it needs the
+     *  location permission. */
+    var showHomeSpeed: Boolean
+        get() = prefs.getBoolean("show-home-speed", false)
+        set(value) { prefs.edit().putBoolean("show-home-speed", value).apply() }
+
     /** The 2x2 grid from before the redesign, kept while users get used to the new home screen. */
     var useClassicHome: Boolean
         get() = prefs.getBoolean("use-classic-home", false)

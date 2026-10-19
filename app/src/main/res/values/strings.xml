@@ -1375,6 +1375,12 @@
     <string name="home_show_favorite_apps_description">Four app shortcuts under the main button while Open Headunit is the launcher</string>
     <string name="home_use_classic">Classic home screen</string>
     <string name="home_use_classic_description">The previous design, with four equal buttons</string>
+    <string name="home_show_clock">Date and time on the home screen</string>
+    <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
+    <string name="home_show_speed">GPS speed on the home screen</string>
+    <string name="home_show_speed_description">What this unit\'s GPS reports, in km/h. It asks for the location permission</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">The speed needs the location permission</string>
     <string name="home_design_notice_title">A new home screen</string>
     <string name="home_design_notice_message">Open Headunit has a new home screen: the connection you use is one big button, and the rest sits on the driver\'s side.\n\nDo you want to use it? You can switch back any time in Settings, Customization.</string>
     <string name="home_design_notice_use_new">Use the new design</string>

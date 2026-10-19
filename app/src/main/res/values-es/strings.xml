@@ -1297,6 +1297,12 @@
     <string name="home_show_favorite_apps_description">Cuatro accesos directos a apps bajo el botón principal cuando Open Headunit es la app de inicio</string>
     <string name="home_use_classic">Pantalla de inicio clásica</string>
     <string name="home_use_classic_description">El diseño anterior, con cuatro botones iguales</string>
+    <string name="home_show_clock">Fecha y hora en la pantalla de inicio</string>
+    <string name="home_show_clock_description">La hora y la fecha de hoy, arriba del botón principal</string>
+    <string name="home_show_speed">Velocidad GPS en la pantalla de inicio</string>
+    <string name="home_show_speed_description">Lo que informa el GPS de esta unidad, en km/h. Pide el permiso de ubicación</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">La velocidad necesita el permiso de ubicación</string>
     <string name="home_design_notice_title">Una nueva pantalla de inicio</string>
     <string name="home_design_notice_message">Open Headunit tiene una nueva pantalla de inicio: la conexión que usas es un solo botón grande y el resto queda del lado del conductor.\n\n¿Quieres usarla? Puedes volver cuando quieras en Configuración, Personalización.</string>
     <string name="home_design_notice_use_new">Usar el diseño nuevo</string>

@@ -1294,6 +1294,12 @@
     <string name="home_show_favorite_apps_description">Open Headunit がホームアプリのとき、メインボタンの下に4つのアプリショートカットを表示します</string>
     <string name="home_use_classic">クラシックなホーム画面</string>
     <string name="home_use_classic_description">以前のデザイン（同じ大きさの4つのボタン）</string>
+    <string name="home_show_clock">ホーム画面に日付と時刻</string>
+    <string name="home_show_clock_description">メインボタンの上に時刻と今日の日付</string>
+    <string name="home_show_speed">ホーム画面にGPS速度</string>
+    <string name="home_show_speed_description">この端末のGPSが報告する速度（km/h）。位置情報の許可を求めます</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">速度には位置情報の許可が必要です</string>
     <string name="home_design_notice_title">新しいホーム画面</string>
     <string name="home_design_notice_message">Open Headunit のホーム画面が新しくなりました。使っている接続が1つの大きなボタンになり、その他は運転席側にまとまっています。\n\n新しいデザインを使いますか？いつでも 設定、カスタマイズ で元に戻せます。</string>
     <string name="home_design_notice_use_new">新しいデザインを使う</string>

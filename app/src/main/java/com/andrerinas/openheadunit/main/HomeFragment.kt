@@ -2,8 +2,13 @@ package com.andrerinas.openheadunit.main
 
 import android.content.Context
 import android.content.Intent
+import android.annotation.SuppressLint
 import android.hardware.usb.UsbManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
 import android.graphics.Color
 import android.content.res.ColorStateList
 import android.widget.*
@@ -58,6 +63,7 @@ import com.andrerinas.openheadunit.connection.self.SelfLaunchPath
 import com.andrerinas.openheadunit.connection.self.SelfLaunchRoutePolicy
 import com.andrerinas.openheadunit.connection.self.SelfLauncherManager
 import com.andrerinas.openheadunit.utils.BluetoothHelper
+import com.andrerinas.openheadunit.location.LocationHolder
 import com.andrerinas.openheadunit.connection.usb.UsbReceiver
 import com.andrerinas.openheadunit.connection.usb.UsbAccessoryMode
 import com.andrerinas.openheadunit.connection.wifi.modes.helper.HelperStrategy
@@ -65,6 +71,8 @@ import com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode
 import com.andrerinas.openheadunit.connection.wifi.WirelessSelectionPolicy
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlin.math.roundToInt
 
 class HomeFragment : Fragment() {
 
@@ -112,6 +120,9 @@ class HomeFragment : Fragment() {
     private var hasAttemptedSingleUsbAutoConnect = false
     private var activeDialog: androidx.appcompat.app.AlertDialog? = null
     private var driverCountdownTimer: CountDownTimer? = null
+    private var homeInfoTicker: Job? = null
+    private var gpsListener: LocationListener? = null
+    private var gpsSpeedKmh: Int? = null
 
     // A fixed container whose content is swapped when the user changes design. Swapping the
     // fragment instead restores the old design's saved view state into the new one, whose views
@@ -288,7 +299,118 @@ class HomeFragment : Fragment() {
             ctx, root, appSettings, decision, usbPhone?.let { phoneName(it) }, reconnectSecondsLeft, palette
         )
         HomeUiHelper.fitDriverBar(root, appSettings.homeButtonScalePercent)
+        renderHomeInfo()
     }
+
+    /**
+     * The date, the time and the speed, and nothing else: the ticker has to refresh this block
+     * once a minute, not rebuild the whole home screen.
+     */
+    private fun renderHomeInfo() {
+        val ctx = context ?: return
+        val root = view ?: return
+        if (isClassicHome) return
+        HomeUiHelper.applyInfoBlock(
+            rootView = root,
+            settings = App.provide(ctx).settings,
+            palette = homePalette(ctx),
+            clock = clockText(),
+            date = dateText(),
+            speed = HomeUiHelper.speedText(gpsSpeedKmh),
+            countdownVisible = decision?.status == HomePrimaryPolicy.Status.RECONNECTING
+        )
+    }
+
+    // The format follows the unit's locale and its 12/24 hour setting, which is what the driver
+    // already reads everywhere else on the screen.
+    private fun clockText(): String =
+        android.text.format.DateFormat.getTimeFormat(requireContext()).format(java.util.Date())
+
+    private fun dateText(): String =
+        android.text.format.DateFormat.getMediumDateFormat(requireContext()).format(java.util.Date())
+
+    private fun startHomeInfo() {
+        val appSettings = App.provide(requireContext()).settings
+        homeInfoTicker?.cancel()
+        homeInfoTicker = null
+        stopSpeedUpdates()
+        gpsSpeedKmh = null
+        if (!appSettings.showHomeClock && !appSettings.showHomeSpeed) return
+        if (appSettings.showHomeSpeed) {
+            // Whatever the unit already knows, so the readout is not blank while the chip locks.
+            gpsSpeedKmh = LocationHolder.currentGpsFix(requireContext(), SPEED_MAX_AGE_MS)
+                ?.takeIf { it.hasSpeed() }
+                ?.let { kmh(it.speed) }
+            startSpeedUpdates()
+        }
+        renderHomeInfo()
+        if (appSettings.showHomeClock) {
+            homeInfoTicker = viewLifecycleOwner.lifecycleScope.launch {
+                while (isActive) {
+                    val now = System.currentTimeMillis()
+                    renderHomeInfo()
+                    // To the next minute, so the clock turns over with the unit's own.
+                    delay(MINUTE_MS - now % MINUTE_MS + CLOCK_SLACK_MS)
+                }
+            }
+        }
+    }
+
+    private fun stopHomeInfo() {
+        homeInfoTicker?.cancel()
+        homeInfoTicker = null
+        stopSpeedUpdates()
+        gpsSpeedKmh = null
+    }
+
+    /**
+     * The home screen is what the driver looks at while nothing is projected, and the app's own
+     * GPS service only runs with a session, so the readout subscribes from here and lets go in
+     * onPause.
+     */
+    @SuppressLint("MissingPermission")
+    private fun startSpeedUpdates() {
+        if (gpsListener != null) return
+        val ctx = context ?: return
+        if (ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            AppLog.i("HomeFragment: the speed readout has no location permission, showing the placeholder")
+            return
+        }
+        val manager = ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return
+        val listener = object : LocationListener {
+            override fun onLocationChanged(location: Location) {
+                gpsSpeedKmh = if (location.hasSpeed()) kmh(location.speed) else null
+                renderHomeInfo()
+            }
+
+            override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+
+            override fun onProviderEnabled(provider: String) {}
+
+            override fun onProviderDisabled(provider: String) {}
+        }
+        try {
+            // Time only, no distance gate: a head unit sitting still still reports its speed, and
+            // this is the same subscription the app's own GPS service makes.
+            manager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER, SPEED_INTERVAL_MS, 0f, listener, Looper.getMainLooper()
+            )
+            gpsListener = listener
+        } catch (e: Exception) {
+            // A unit with no GPS provider, or one that refuses the subscription.
+            AppLog.w("HomeFragment: the speed readout could not subscribe to GPS: ${e.message}")
+        }
+    }
+
+    private fun stopSpeedUpdates() {
+        val listener = gpsListener ?: return
+        gpsListener = null
+        (context?.getSystemService(Context.LOCATION_SERVICE) as? LocationManager)?.removeUpdates(listener)
+    }
+
+    private fun kmh(metersPerSecond: Float): Int = (metersPerSecond * 3.6f).roundToInt()
 
     private fun renderClassicHome(ctx: Context, root: View, appSettings: Settings) {
         val isConnected = commManager.isConnected
@@ -874,6 +996,7 @@ class HomeFragment : Fragment() {
         applyLayoutSettings(root, homeSettings)
         updateLauncherViews()
         renderHome()
+        startHomeInfo()
 
         val appSettings = App.provide(requireContext()).settings
         if (requestDriverSelection) {
@@ -908,6 +1031,7 @@ class HomeFragment : Fragment() {
         super.onPause()
         driverCountdownTimer?.cancel()
         driverCountdownTimer = null
+        stopHomeInfo()
         activeDialog?.dismiss()
         activeDialog = null
         RenameNotice.dismiss()
@@ -1439,6 +1563,11 @@ class HomeFragment : Fragment() {
         private var hasCheckedNativeDriverSelection = false
         var forceSelfModeLaunch = false
         var requestDriverSelection = false
+        private const val MINUTE_MS = 60_000L
+        private const val CLOCK_SLACK_MS = 250L
+        private const val SPEED_INTERVAL_MS = 1_000L
+        /** Older than this and the speed is shown as unknown: a stale reading is worse than none. */
+        private const val SPEED_MAX_AGE_MS = 10_000L
         fun resetAutoStart() {
             hasAutoStarted = false
             hasCheckedNativeDriverSelection = false

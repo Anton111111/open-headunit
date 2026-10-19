@@ -39,6 +39,69 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
+        <!-- Date, time and GPS speed, when the driver asked for them. HomeUiHelper.applyInfoBlock
+             fills it in. It sits at the far end of the header and steps aside while the countdown
+             runs, which is the one moment the header is already saying something. -->
+        <LinearLayout
+            android:id="@+id/home_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="right"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/home_info_clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/home_info_time"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/home_info_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/home_info_date"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/home_info_speed_row"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/home_info_gap"
+                android:orientation="horizontal"
+                android:gravity="bottom"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/home_info_speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:textColor="@android:color/white"
+                    android:textSize="@dimen/home_info_speed"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/home_info_speed_unit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:maxLines="1"
+                    android:text="@string/home_speed_unit"
+                    android:textColor="@android:color/white"
+                    android:textSize="@dimen/home_info_date" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
         <TextView
             android:id="@+id/home_countdown"
             android:layout_width="@dimen/home_countdown_size"

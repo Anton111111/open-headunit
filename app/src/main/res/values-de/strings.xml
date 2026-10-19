@@ -1293,6 +1293,12 @@
     <string name="home_show_favorite_apps_description">Vier App-Verknüpfungen unter dem Hauptbutton, solange Open Headunit die Start-App ist</string>
     <string name="home_use_classic">Klassischer Startbildschirm</string>
     <string name="home_use_classic_description">Das bisherige Design mit vier gleichen Buttons</string>
+    <string name="home_show_clock">Datum und Uhrzeit auf dem Startbildschirm</string>
+    <string name="home_show_clock_description">Die Uhrzeit und das heutige Datum oben auf der Hauptschaltfläche</string>
+    <string name="home_show_speed">GPS-Geschwindigkeit auf dem Startbildschirm</string>
+    <string name="home_show_speed_description">Was das GPS dieses Geräts meldet, in km/h. Fragt nach der Standortberechtigung</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">Die Geschwindigkeit braucht die Standortberechtigung</string>
     <string name="home_design_notice_title">Ein neuer Startbildschirm</string>
     <string name="home_design_notice_message">Open Headunit hat einen neuen Startbildschirm: Deine Verbindung ist ein großer Button, der Rest liegt auf der Fahrerseite.\n\nMöchtest du ihn verwenden? Du kannst jederzeit unter Einstellungen, Anpassung zurückwechseln.</string>
     <string name="home_design_notice_use_new">Neues Design verwenden</string>

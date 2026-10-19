@@ -39,6 +39,8 @@ object HomeUiHelper {
     // Where black text starts to contrast better than white: (L + 0.05) / 0.05 = 1.05 / (L + 0.05).
     private const val DARK_TEXT_LUMINANCE = 0.179
     private const val NEAR_BLACK = 0xFF14100C.toInt()
+    /** Shown in place of the speed while the GPS has nothing current to say. */
+    private const val UNKNOWN_SPEED = "--"
 
     /** The rows a right-hand drive car reads from the other end. Vertical ones are left alone. */
     private val mirroredRows = listOf(
@@ -103,6 +105,8 @@ object HomeUiHelper {
         listOf(R.id.home_primary_kicker, R.id.home_primary_title, R.id.home_primary_subtitle).forEach {
             rootView.findViewById<TextView>(it)?.gravity = side
         }
+        // The date and the speed read inwards, so they line up with the edge they sit against.
+        rootView.findViewById<LinearLayout>(R.id.home_info)?.gravity = side
     }
 
     // The XML order is the left-hand drive one, kept on the row so applying twice is harmless.
@@ -435,6 +439,46 @@ object HomeUiHelper {
             rootView.findViewById<View>(it)?.visibility = if (showFavorites) View.VISIBLE else View.GONE
         }
     }
+
+    /**
+     * The date, the time and the speed the driver asked for, at the far end of the main button's
+     * header. The countdown owns the header while it runs, so the block steps aside there rather
+     * than the two fighting over the same space.
+     */
+    fun applyInfoBlock(
+        rootView: View,
+        settings: Settings,
+        palette: Palette,
+        clock: String,
+        date: String,
+        speed: String,
+        countdownVisible: Boolean
+    ) {
+        val block = rootView.findViewById<View>(R.id.home_info) ?: return
+        val showClock = settings.showHomeClock && !countdownVisible
+        val showSpeed = settings.showHomeSpeed && !countdownVisible
+        block.visibility = if (showClock || showSpeed) View.VISIBLE else View.GONE
+        rootView.findViewById<TextView>(R.id.home_info_clock)?.apply {
+            visibility = if (showClock) View.VISIBLE else View.GONE
+            text = clock
+            setTextColor(palette.text)
+        }
+        rootView.findViewById<TextView>(R.id.home_info_date)?.apply {
+            visibility = if (showClock) View.VISIBLE else View.GONE
+            text = date
+            setTextColor(palette.textMuted)
+        }
+        rootView.findViewById<View>(R.id.home_info_speed_row)?.visibility =
+            if (showSpeed) View.VISIBLE else View.GONE
+        rootView.findViewById<TextView>(R.id.home_info_speed)?.apply {
+            text = speed
+            setTextColor(palette.text)
+        }
+        rootView.findViewById<TextView>(R.id.home_info_speed_unit)?.setTextColor(palette.textMuted)
+    }
+
+    /** The speed readout: what the GPS last said, or a placeholder when it has nothing. */
+    fun speedText(kmh: Int?): String = kmh?.toString() ?: UNKNOWN_SPEED
 
     /**
      * The connection's color. At night the user's own colors are kept as accents (extreme dark

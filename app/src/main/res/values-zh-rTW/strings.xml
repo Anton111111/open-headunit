@@ -1288,6 +1288,12 @@
     <string name="home_show_favorite_apps_description">Open Headunit 作為主畫面應用程式時，在主按鈕下方顯示四個應用程式捷徑</string>
     <string name="home_use_classic">經典主畫面</string>
     <string name="home_use_classic_description">先前的設計，四個同樣大小的按鈕</string>
+    <string name="home_show_clock">在主畫面上顯示日期與時間</string>
+    <string name="home_show_clock_description">在主按鈕上方顯示時間與今天的日期</string>
+    <string name="home_show_speed">在主畫面上顯示 GPS 速度</string>
+    <string name="home_show_speed_description">此裝置 GPS 回報的速度，單位為 km/h。需要位置權限</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">速度需要位置權限</string>
     <string name="home_design_notice_title">全新的主畫面</string>
     <string name="home_design_notice_message">Open Headunit 推出了全新的主畫面：你使用的連線是一個大按鈕，其餘內容位於駕駛座一側。\n\n要使用新設計嗎？你隨時可以在「設定 > 個人化」中切換回來。</string>
     <string name="home_design_notice_use_new">使用新設計</string>

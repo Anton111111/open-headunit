@@ -1289,6 +1289,12 @@
     <string name="home_show_favorite_apps_description">Čtyři zkratky aplikací pod hlavním tlačítkem, když je Open Headunit domovskou aplikací</string>
     <string name="home_use_classic">Klasická domovská obrazovka</string>
     <string name="home_use_classic_description">Předchozí vzhled se čtyřmi stejnými tlačítky</string>
+    <string name="home_show_clock">Datum a čas na domovské obrazovce</string>
+    <string name="home_show_clock_description">Čas a dnešní datum nahoře na hlavním tlačítku</string>
+    <string name="home_show_speed">Rychlost GPS na domovské obrazovce</string>
+    <string name="home_show_speed_description">Co hlásí GPS tohoto zařízení, v km/h. Vyžádá si oprávnění k poloze</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">Rychlost vyžaduje oprávnění k poloze</string>
     <string name="home_design_notice_title">Nová domovská obrazovka</string>
     <string name="home_design_notice_message">Open Headunit má novou domovskou obrazovku: připojení, které používáte, je jedno velké tlačítko a zbytek je na straně řidiče.\n\nChcete ji používat? Kdykoli se můžete vrátit v Nastavení, Přizpůsobení.</string>
     <string name="home_design_notice_use_new">Použít nový vzhled</string>

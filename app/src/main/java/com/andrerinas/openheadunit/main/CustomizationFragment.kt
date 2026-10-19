@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.content.pm.PackageManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -24,6 +25,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -90,6 +92,8 @@ class CustomizationFragment : Fragment() {
     private var switchAutoMonochromeNight: SwitchMaterial? = null
     private var switchShowFavoriteApps: SwitchMaterial? = null
     private var switchUseClassicHome: SwitchMaterial? = null
+    private var switchShowClock: SwitchMaterial? = null
+    private var switchShowSpeed: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
     private var btnResetColors: MaterialButton? = null
 
@@ -124,6 +128,20 @@ class CustomizationFragment : Fragment() {
 
     private val imagePicker = registerForActivityResult(PickImageContract()) { uri ->
         uri?.let { handleImageSelected(it) }
+    }
+
+    /**
+     * The speed readout reads this unit's GPS, so the switch waits for the location permission
+     * instead of turning on and showing a placeholder with no way to know why.
+     */
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        settings.showHomeSpeed = granted
+        switchShowSpeed?.isChecked = granted
+        if (!granted) {
+            ToastUtils.showToast(requireContext(), R.string.home_speed_needs_location, Toast.LENGTH_LONG, force = true)
+        }
     }
 
     private val sliderTouchListener = object : com.google.android.material.slider.Slider.OnSliderTouchListener {
@@ -197,6 +215,8 @@ class CustomizationFragment : Fragment() {
         switchAutoMonochromeNight = view.findViewById(R.id.switch_auto_monochrome_night)
         switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
         switchUseClassicHome = view.findViewById(R.id.switch_use_classic_home)
+        switchShowClock = view.findViewById(R.id.switch_show_clock)
+        switchShowSpeed = view.findViewById(R.id.switch_show_speed)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
 
@@ -340,6 +360,22 @@ class CustomizationFragment : Fragment() {
             currentOverlayHomeView = null
         }
 
+        switchShowClock?.isChecked = settings.showHomeClock
+        switchShowClock?.setOnCheckedChangeListener { _, isChecked ->
+            settings.showHomeClock = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
+        switchShowSpeed?.isChecked = settings.showHomeSpeed
+        switchShowSpeed?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !hasLocationPermission()) {
+                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                return@setOnCheckedChangeListener
+            }
+            settings.showHomeSpeed = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
         switchAutoMonochromeNight?.setOnCheckedChangeListener { _, isChecked ->
             settings.autoMonochromeButtonsAtNight = isChecked
             settings.monochromeIcons = isChecked
@@ -393,6 +429,11 @@ class CustomizationFragment : Fragment() {
     private fun hideSamsungStyleOverlay() {
         overlayHomePreview?.postDelayed(hideOverlayRunnable, 600)
     }
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
     private fun updatePreviewScale(scalePercent: Int) {
         val ctx = context ?: return
@@ -477,6 +518,16 @@ class CustomizationFragment : Fragment() {
         HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections, palette)
         HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, palette)
         HomeUiHelper.applyFavoritesVisibility(homeView, settings.isCarLauncherActive, settings.showHomeFavoriteApps)
+        HomeUiHelper.applyInfoBlock(
+            homeView,
+            settings,
+            palette,
+            clock = android.text.format.DateFormat.getTimeFormat(ctx).format(java.util.Date()),
+            date = android.text.format.DateFormat.getMediumDateFormat(ctx).format(java.util.Date()),
+            // The preview has no GPS reading, which is exactly what the readout shows without one.
+            speed = HomeUiHelper.speedText(null),
+            countdownVisible = false
+        )
         HomeUiHelper.applyDriverSide(homeView, settings.rightHandDrive)
 
         // 3. Scale Home Buttons
