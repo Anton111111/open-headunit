@@ -1273,4 +1273,12 @@
     <string name="home_design_notice_message">Open Headunit-ს ახალი მთავარი ეკრანი აქვს: თქვენ მიერ გამოყენებული კავშირი ერთი დიდი ღილაკია, დანარჩენი კი მძღოლის მხარესაა.\n\nგსურთ მისი გამოყენება? ნებისმიერ დროს შეგიძლიათ დაბრუნება: პარამეტრები, პერსონალიზაცია.</string>
     <string name="home_design_notice_use_new">ახალი დიზაინის გამოყენება</string>
     <string name="home_design_notice_keep_classic">კლასიკურის დატოვება</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">მანქანის გამშვები</string>
+    <string name="onb_launcher_help">Open Headunit შეიძლება იყოს მოწყობილობის მთავარი ეკრანი, ამიტომ ის გამოჩნდება ჩართვისას და Home ღილაკზე დაჭერისას.</string>
+    <string name="onb_launcher_warning">დღევანდელი მთავარი ეკრანი ჩვეულებრივ არის ადგილი, სადაც კლიმატის მართვა, რადიო ან უკანა კამერაა. ჩართეთ მხოლოდ მაშინ, თუ მათი გახსნა სხვანაირადაც შესაძლებელია.</string>
+    <string name="onb_launcher_default_home">ნაგულისხმევ მთავარ აპად დაყენება</string>
+    <string name="onb_launcher_default_home_active">Open Headunit ნაგულისხმევი მთავარი აპია</string>
+    <string name="onb_summary_launcher_home">გამშვები: Open Headunit მთავარი აპია</string>
+    <string name="onb_summary_launcher_registered">გამშვები: რეგისტრირებულია მთავარ აპად</string>
 </resources>

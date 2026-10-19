@@ -656,7 +656,74 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 8: GPS / Location -->
+        <!-- Step 8: Car launcher -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onb_launcher_title"
+                    android:textAppearance="?attr/textAppearanceHeadline5"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onb_launcher_help"
+                    android:textAppearance="?attr/textAppearanceBody2" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="16dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/pref_enable_car_launcher_title"
+                        android:textAppearance="?attr/textAppearanceBody1" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/onb_launcher_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/onb_launcher_warning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_setting_single"
+                    android:text="@string/onb_launcher_warning"
+                    android:textColor="?attr/colorError"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/onb_launcher_default_button"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/onb_change_later"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Step 9: GPS / Location -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -707,7 +774,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 9: Car brand (vehicle identity sent to Android Auto) -->
+        <!-- Step 10: Car brand (vehicle identity sent to Android Auto) -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -866,7 +933,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 10: Permissions -->
+        <!-- Step 11: Permissions -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -901,7 +968,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 11: Ready -->
+        <!-- Step 12: Ready -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">

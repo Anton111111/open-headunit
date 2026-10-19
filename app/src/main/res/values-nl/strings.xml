@@ -1292,4 +1292,12 @@
     <string name="home_design_notice_message">Open Headunit heeft een nieuw startscherm: de verbinding die je gebruikt is één grote knop, en de rest staat aan de kant van de bestuurder.\n\nWil je het gebruiken? Je kunt altijd terugschakelen via Instellingen, Aanpassing.</string>
     <string name="home_design_notice_use_new">Nieuw ontwerp gebruiken</string>
     <string name="home_design_notice_keep_classic">Klassiek houden</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Auto-launcher</string>
+    <string name="onb_launcher_help">Open Headunit kan het startscherm van het apparaat zijn, dus wat verschijnt bij het opstarten en bij het indrukken van de Home-knop.</string>
+    <string name="onb_launcher_warning">Het huidige startscherm is meestal waar de klimaatregeling, de radio of de achteruitrijcamera zit. Zet dit alleen aan als je ze ook anders kunt openen.</string>
+    <string name="onb_launcher_default_home">Instellen als standaard start-app</string>
+    <string name="onb_launcher_default_home_active">Open Headunit is de standaard start-app</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit is het startscherm</string>
+    <string name="onb_summary_launcher_registered">Launcher: geregistreerd als startscherm</string>
 </resources>

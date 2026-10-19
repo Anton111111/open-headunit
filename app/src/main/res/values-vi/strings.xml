@@ -1295,4 +1295,12 @@
     <string name="home_design_notice_message">Open Headunit có màn hình chính mới: kết nối bạn dùng là một nút lớn, phần còn lại nằm ở phía người lái.\n\nBạn có muốn dùng không? Bạn có thể quay lại bất cứ lúc nào trong Cài đặt, Tùy chỉnh.</string>
     <string name="home_design_notice_use_new">Dùng thiết kế mới</string>
     <string name="home_design_notice_keep_classic">Giữ kiểu cổ điển</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Trình khởi chạy trên xe</string>
+    <string name="onb_launcher_help">Open Headunit có thể là màn hình chính của thiết bị, nên nó xuất hiện khi thiết bị khởi động và khi nhấn nút Home.</string>
+    <string name="onb_launcher_warning">Màn hình chính hiện tại thường là nơi có điều hòa, radio hoặc camera lùi. Chỉ bật mục này nếu bạn có cách khác để mở chúng.</string>
+    <string name="onb_launcher_default_home">Đặt làm ứng dụng màn hình chính mặc định</string>
+    <string name="onb_launcher_default_home_active">Open Headunit là ứng dụng màn hình chính mặc định</string>
+    <string name="onb_summary_launcher_home">Trình khởi chạy: Open Headunit là màn hình chính</string>
+    <string name="onb_summary_launcher_registered">Trình khởi chạy: đã đăng ký làm màn hình chính</string>
 </resources>

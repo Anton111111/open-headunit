@@ -1297,4 +1297,12 @@
     <string name="home_design_notice_message">Open Headunit のホーム画面が新しくなりました。使っている接続が1つの大きなボタンになり、その他は運転席側にまとまっています。\n\n新しいデザインを使いますか？いつでも 設定、カスタマイズ で元に戻せます。</string>
     <string name="home_design_notice_use_new">新しいデザインを使う</string>
     <string name="home_design_notice_keep_classic">クラシックのままにする</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">カーランチャー</string>
+    <string name="onb_launcher_help">Open Headunitを端末のホーム画面にできます。起動時やHomeボタンを押したときに表示されます。</string>
+    <string name="onb_launcher_warning">現在のホーム画面には、エアコン操作、ラジオ、バックカメラがあることが多いです。別の方法で開ける場合にのみオンにしてください。</string>
+    <string name="onb_launcher_default_home">デフォルトのホームアプリに設定</string>
+    <string name="onb_launcher_default_home_active">Open Headunitがデフォルトのホームアプリです</string>
+    <string name="onb_summary_launcher_home">ランチャー: Open Headunitがホームアプリです</string>
+    <string name="onb_summary_launcher_registered">ランチャー: ホームアプリとして登録済み</string>
 </resources>

@@ -1291,4 +1291,12 @@
     <string name="home_design_notice_message">В Open Headunit новый главный экран: ваше подключение теперь одна большая кнопка, а всё остальное находится со стороны водителя.\n\nИспользовать его? Вернуться можно в любой момент в разделе Настройки, Персонализация.</string>
     <string name="home_design_notice_use_new">Использовать новый дизайн</string>
     <string name="home_design_notice_keep_classic">Оставить классический</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Лаунчер авто</string>
+    <string name="onb_launcher_help">Open Headunit может быть домашним экраном устройства: он появляется при включении и при нажатии кнопки Home.</string>
+    <string name="onb_launcher_warning">На нынешнем домашнем экране обычно находятся климат-контроль, радио или камера заднего вида. Включайте это, только если их можно открыть иначе.</string>
+    <string name="onb_launcher_default_home">Сделать главным приложением по умолчанию</string>
+    <string name="onb_launcher_default_home_active">Open Headunit является главным приложением по умолчанию</string>
+    <string name="onb_summary_launcher_home">Лаунчер: Open Headunit является домашним экраном</string>
+    <string name="onb_summary_launcher_registered">Лаунчер: зарегистрирован как домашний экран</string>
 </resources>

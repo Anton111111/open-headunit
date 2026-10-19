@@ -1296,4 +1296,12 @@
     <string name="home_design_notice_message">Open Headunit hat einen neuen Startbildschirm: Deine Verbindung ist ein großer Button, der Rest liegt auf der Fahrerseite.\n\nMöchtest du ihn verwenden? Du kannst jederzeit unter Einstellungen, Anpassung zurückwechseln.</string>
     <string name="home_design_notice_use_new">Neues Design verwenden</string>
     <string name="home_design_notice_keep_classic">Klassisches behalten</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Car-Launcher</string>
+    <string name="onb_launcher_help">Open Headunit kann der Startbildschirm des Geräts sein, also das, was beim Start und beim Drücken der Home-Taste erscheint.</string>
+    <string name="onb_launcher_warning">Der heutige Startbildschirm ist meistens dort, wo Klimaanlage, Radio oder Rückfahrkamera liegen. Schalte das nur ein, wenn du sie auch anders öffnen kannst.</string>
+    <string name="onb_launcher_default_home">Als Standard-Start-App festlegen</string>
+    <string name="onb_launcher_default_home_active">Open Headunit ist die Standard-Start-App</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit ist die Start-App</string>
+    <string name="onb_summary_launcher_registered">Launcher: als Start-App registriert</string>
 </resources>

@@ -1295,4 +1295,12 @@
     <string name="home_design_notice_message">Open Headunit ha una nuova schermata Home: la connessione che usi è un unico pulsante grande e il resto si trova sul lato del guidatore.\n\nVuoi usarla? Puoi tornare indietro in qualsiasi momento in Impostazioni, Personalizzazione.</string>
     <string name="home_design_notice_use_new">Usa il nuovo design</string>
     <string name="home_design_notice_keep_classic">Mantieni quello classico</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Launcher auto</string>
+    <string name="onb_launcher_help">Open Headunit può essere la schermata iniziale del dispositivo: compare all\'avvio e quando si preme il tasto Home.</string>
+    <string name="onb_launcher_warning">La schermata iniziale attuale è di solito dove si trovano i comandi del clima, la radio o la telecamera posteriore. Attivalo solo se il dispositivo permette di aprirli in un altro modo.</string>
+    <string name="onb_launcher_default_home">Imposta come app Home predefinita</string>
+    <string name="onb_launcher_default_home_active">Open Headunit è l\'app Home predefinita</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit è la schermata iniziale</string>
+    <string name="onb_summary_launcher_registered">Launcher: registrato come schermata iniziale</string>
 </resources>

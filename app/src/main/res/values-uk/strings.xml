@@ -1293,4 +1293,12 @@
     <string name="home_design_notice_message">В Open Headunit новий головний екран: ваше підключення тепер одна велика кнопка, а все інше розташоване з боку водія.\n\nВикористовувати його? Повернутися можна будь-коли в розділі Налаштування, Персоналізація.</string>
     <string name="home_design_notice_use_new">Використовувати новий дизайн</string>
     <string name="home_design_notice_keep_classic">Залишити класичний</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Лаунчер авто</string>
+    <string name="onb_launcher_help">Open Headunit може бути головним екраном пристрою, тож він з\'являється при вмиканні та натисканні кнопки Home.</string>
+    <string name="onb_launcher_warning">На нинішньому головному екрані зазвичай розташовані клімат-контроль, радіо або камера заднього виду. Увімкніть це лише якщо їх можна відкрити інакше.</string>
+    <string name="onb_launcher_default_home">Зробити головною програмою за замовчуванням</string>
+    <string name="onb_launcher_default_home_active">Open Headunit є головною програмою за замовчуванням</string>
+    <string name="onb_summary_launcher_home">Лаунчер: Open Headunit є головним екраном</string>
+    <string name="onb_summary_launcher_registered">Лаунчер: зареєстровано як головний екран</string>
 </resources>

@@ -1337,4 +1337,12 @@
     <string name="home_design_notice_message">O Open Headunit tem um novo ecrã inicial: a ligação que utiliza é um único botão grande e o resto fica do lado do condutor.\n\nQuer utilizá-lo? Pode voltar atrás a qualquer momento em Definições, Personalização.</string>
     <string name="home_design_notice_use_new">Usar o novo design</string>
     <string name="home_design_notice_keep_classic">Manter o clássico</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Car Launcher</string>
+    <string name="onb_launcher_help">O Open Headunit pode ser o ecrã inicial do aparelho, por isso é o que aparece quando este liga e quando o botão Home é premido.</string>
+    <string name="onb_launcher_warning">O ecrã inicial de hoje é normalmente onde estão o ar condicionado, o rádio ou a câmara de marcha-atrás. Ative isto apenas se houver outra forma de os abrir.</string>
+    <string name="onb_launcher_default_home">Definir como aplicação de ecrã inicial predefinida</string>
+    <string name="onb_launcher_default_home_active">O Open Headunit é a aplicação de ecrã inicial predefinida</string>
+    <string name="onb_summary_launcher_home">Launcher: o Open Headunit é o ecrã inicial</string>
+    <string name="onb_summary_launcher_registered">Launcher: registado como ecrã inicial</string>
 </resources>

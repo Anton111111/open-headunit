@@ -1332,4 +1332,12 @@
     <string name="home_design_notice_message">Open Headunit a un nouvel écran d\'accueil : la connexion que vous utilisez est un seul grand bouton, et le reste se trouve côté conducteur.\n\nVoulez-vous l\'utiliser ? Vous pouvez revenir en arrière à tout moment dans Paramètres, Personnalisation.</string>
     <string name="home_design_notice_use_new">Utiliser le nouveau design</string>
     <string name="home_design_notice_keep_classic">Garder le classique</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Lanceur de voiture</string>
+    <string name="onb_launcher_help">Open Headunit peut être l\'écran d\'accueil de l\'appareil : il s\'affiche au démarrage et quand vous appuyez sur le bouton Accueil.</string>
+    <string name="onb_launcher_warning">L\'écran d\'accueil actuel est souvent là où se trouvent la climatisation, la radio ou la caméra de recul. Activez ceci seulement si l\'appareil permet de les ouvrir autrement.</string>
+    <string name="onb_launcher_default_home">Définir comme application d\'accueil par défaut</string>
+    <string name="onb_launcher_default_home_active">Open Headunit est l\'application d\'accueil par défaut</string>
+    <string name="onb_summary_launcher_home">Lanceur : Open Headunit est l\'application d\'accueil</string>
+    <string name="onb_summary_launcher_registered">Lanceur : enregistré comme application d\'accueil</string>
 </resources>

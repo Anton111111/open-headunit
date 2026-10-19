@@ -21,6 +21,7 @@ import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.AudioStreamTester
 import com.andrerinas.openheadunit.utils.AppThemeManager
+import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.utils.LocaleHelper
 import com.andrerinas.openheadunit.utils.PermissionRowBinder
 import com.andrerinas.openheadunit.utils.Settings
@@ -46,7 +47,7 @@ import com.google.android.material.textfield.TextInputEditText
  * is older than CURRENT_ONBOARDING_VERSION, and re-launchable from Settings.
  *
  * Steps: Welcome(+language) / Safety(mandatory) / Connection / Display scan /
- * Appearance / Audio streams / Automation / Location / Ready.
+ * Appearance / Audio streams / Automation / Car launcher / Location / Ready.
  *
  * Every step reuses the real settings and their strings, and deep-links into the
  * full settings sub-screens for advanced configuration.
@@ -137,6 +138,7 @@ class OnboardingActivity : BaseActivity() {
         // returning from a special-permission settings screen (overlay / modify system settings).
         updateThemeButtonText()
         updateNightButtonText()
+        updateLauncherStep()
         permissionBinder?.rebind()
         if (step == STEP_DPI) dpiPicker?.startDemo()
     }
@@ -320,6 +322,21 @@ class OnboardingActivity : BaseActivity() {
         }
         // --- Audio streams: which system stream each Android Auto channel plays on ---
         bindAudioStep()
+
+        // --- Car launcher: the unit's home screen, with the price of replacing the stock one ---
+        findViewById<SwitchMaterial>(R.id.onb_launcher_switch).apply {
+            isChecked = settings.enableCarLauncher
+            setOnCheckedChangeListener { _, checked ->
+                settings.enableCarLauncher = checked
+                CarLauncherManager.setLauncherEnabled(this@OnboardingActivity, checked)
+                updateLauncherStep()
+                // Flipping the switch is the request, so ask the system for the home role right away.
+                if (checked) promptDefaultLauncher()
+            }
+        }
+        findViewById<MaterialButton>(R.id.onb_launcher_default_button).setOnClickListener {
+            CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+        }
 
         // --- Location: this device's GPS vs the connected phone's GPS ---
         val gpsGroup = findViewById<MaterialButtonToggleGroup>(R.id.onb_gps_group)
@@ -535,6 +552,7 @@ class OnboardingActivity : BaseActivity() {
         if (step == STEP_READY) findViewById<TextView>(R.id.onb_ready_summary).text = summaryText()
         if (step == STEP_AUDIO) applyAudioStepVisibility()
         if (step == STEP_AUTOMATION) applyAutomationVisibility()
+        if (step == STEP_LAUNCHER) updateLauncherStep()
         if (step == STEP_PERMISSIONS) permissionBinder?.rebind()
         if (step == STEP_VEHICLE) applyVehicleTypeNote()
         if (step == STEP_DPI) {
@@ -568,6 +586,36 @@ class OnboardingActivity : BaseActivity() {
         // Auto-start on WiFi is a legacy path that only applies up to Android 12L (API 32).
         findViewById<View>(R.id.onb_as_wifi_row).visibility =
             if (settings.showsWifi() && Build.VERSION.SDK_INT <= 32) View.VISIBLE else View.GONE
+    }
+
+    // --- Car launcher ---
+
+    /**
+     * The switch state and the default-home button. The button only makes sense with the launcher
+     * registered, and its label flips once the system grants the home role, which can happen while
+     * the wizard is in the background, so this also runs from onResume.
+     */
+    private fun updateLauncherStep() {
+        val button = findViewById<MaterialButton>(R.id.onb_launcher_default_button) ?: return
+        button.visibility = if (settings.enableCarLauncher) View.VISIBLE else View.GONE
+        button.setText(
+            if (CarLauncherManager.isDefaultLauncher(this)) R.string.onb_launcher_default_home_active
+            else R.string.onb_launcher_default_home
+        )
+    }
+
+    /** Asks the system to make the app the home app, unless it already is. */
+    private fun promptDefaultLauncher() {
+        if (!CarLauncherManager.isDefaultLauncher(this)) {
+            CarLauncherManager.promptSetDefaultLauncher(this)
+        }
+    }
+
+    /** What the wizard ended up doing about the launcher, or null while the switch is off. */
+    private fun launcherSummaryLine(): String? = when {
+        CarLauncherManager.isDefaultLauncher(this) -> getString(R.string.onb_summary_launcher_home)
+        settings.enableCarLauncher -> getString(R.string.onb_summary_launcher_registered)
+        else -> null
     }
 
     private fun onNext() {
@@ -618,24 +666,31 @@ class OnboardingActivity : BaseActivity() {
     }
 
     private fun finishOnboarding() {
-        settings.hasAcceptedDisclaimer = true
-        settings.hasCompletedSetupWizard = true
-        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        settings.commit()
+        completeOnboarding()
         finish()
     }
 
     /** Complete the wizard and open a specific Settings sub-screen (e.g. the loading screen setup). */
     private fun finishOnboardingInto(destinationId: Int) {
-        settings.hasAcceptedDisclaimer = true
-        settings.hasCompletedSetupWizard = true
-        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        settings.commit()
+        completeOnboarding()
         startActivity(
             Intent(this, SettingsActivity::class.java)
                 .putExtra(SettingsActivity.EXTRA_DESTINATION, destinationId)
         )
         finish()
+    }
+
+    /**
+     * Marks the wizard as seen and applies the settings that only take effect when it ends. The
+     * launcher switch already enabled or disabled the home alias as it was flipped; syncing here
+     * also covers a value stored by an older build, which never touched the alias.
+     */
+    private fun completeOnboarding() {
+        settings.hasAcceptedDisclaimer = true
+        settings.hasCompletedSetupWizard = true
+        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
+        CarLauncherManager.syncWithSettings(this, settings.enableCarLauncher)
+        settings.commit()
     }
 
     // --- Language ---
@@ -854,7 +909,8 @@ class OnboardingActivity : BaseActivity() {
         val head = if (vehicle.isNotEmpty())
             getString(R.string.onb_summary_vehicle_format, vehicle) + "\n" + base
         else base
-        return head + "\n" + perms
+        val launcher = launcherSummaryLine()
+        return head + "\n" + perms + if (launcher == null) "" else "\n" + launcher
     }
 
     private fun resolveAttrColor(attr: Int): Int {
@@ -870,17 +926,18 @@ class OnboardingActivity : BaseActivity() {
         @Volatile
         var deferredThisSession = false
         private const val KEY_STEP = "onb_step"
-        private const val STEP_COUNT = 12
+        private const val STEP_COUNT = 13
         private const val STEP_SAFETY = 1
         private const val STEP_CONNECTION = 2
         private const val STEP_DISPLAY = 3
         private const val STEP_DPI = 4
         private const val STEP_AUDIO = 6
         private const val STEP_AUTOMATION = 7
-        private const val STEP_GPS = 8
-        private const val STEP_VEHICLE = 9
-        private const val STEP_PERMISSIONS = 10
-        private const val STEP_READY = 11
+        private const val STEP_LAUNCHER = 8
+        private const val STEP_GPS = 9
+        private const val STEP_VEHICLE = 10
+        private const val STEP_PERMISSIONS = 11
+        private const val STEP_READY = 12
 
         // The manufacturer half of the Desktop Head Unit identity we report by default.
         private const val DHU_MAKE = "Google"

@@ -1291,4 +1291,12 @@
     <string name="home_design_notice_message">Open Headunit ma nowy ekran główny: używane połączenie to jeden duży przycisk, a reszta znajduje się po stronie kierowcy.\n\nChcesz z niego korzystać? W każdej chwili możesz wrócić w Ustawienia, Personalizacja.</string>
     <string name="home_design_notice_use_new">Użyj nowego wyglądu</string>
     <string name="home_design_notice_keep_classic">Zostaw klasyczny</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Launcher samochodowy</string>
+    <string name="onb_launcher_help">Open Headunit może być ekranem głównym urządzenia, więc pojawi się po włączeniu i po naciśnięciu przycisku Home.</string>
+    <string name="onb_launcher_warning">Obecny ekran główny to zwykle miejsce z klimatyzacją, radiem i kamerą cofania. Włącz to tylko wtedy, gdy można je otworzyć inaczej.</string>
+    <string name="onb_launcher_default_home">Ustaw jako domyślną aplikację główną</string>
+    <string name="onb_launcher_default_home_active">Open Headunit jest domyślną aplikacją główną</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit jest ekranem głównym</string>
+    <string name="onb_summary_launcher_registered">Launcher: zarejestrowany jako ekran główny</string>
 </resources>

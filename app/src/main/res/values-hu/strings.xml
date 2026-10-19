@@ -1288,4 +1288,12 @@
     <string name="home_design_notice_message">Az Open Headunit új kezdőképernyőt kapott: a használt kapcsolat egyetlen nagy gomb, a többi a vezető oldalán van.\n\nSzeretnéd használni? Bármikor visszaválthatsz a Beállítások, Testreszabás menüben.</string>
     <string name="home_design_notice_use_new">Az új kialakítás használata</string>
     <string name="home_design_notice_keep_classic">A klasszikus megtartása</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Autós indító</string>
+    <string name="onb_launcher_help">Az Open Headunit lehet a készülék kezdőképernyője, így ez jelenik meg bekapcsoláskor és a Home gomb megnyomásakor.</string>
+    <string name="onb_launcher_warning">A mostani kezdőképernyőn szoktak lenni a klímavezérlés, a rádió vagy a tolatókamera. Csak akkor kapcsold be, ha ezeket máshonnan is eléred.</string>
+    <string name="onb_launcher_default_home">Beállítás alapértelmezett kezdőképernyőként</string>
+    <string name="onb_launcher_default_home_active">Az Open Headunit az alapértelmezett kezdőképernyő</string>
+    <string name="onb_summary_launcher_home">Indító: az Open Headunit a kezdőképernyő</string>
+    <string name="onb_summary_launcher_registered">Indító: kezdőképernyőként regisztrálva</string>
 </resources>

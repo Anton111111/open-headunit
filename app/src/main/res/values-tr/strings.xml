@@ -1287,4 +1287,12 @@
     <string name="home_design_notice_message">Open Headunit\'in yeni bir ana ekranı var: kullandığınız bağlantı tek bir büyük düğme, geri kalanı ise sürücü tarafında.\n\nKullanmak ister misiniz? İstediğiniz zaman Ayarlar, Özelleştirme bölümünden geri dönebilirsiniz.</string>
     <string name="home_design_notice_use_new">Yeni tasarımı kullan</string>
     <string name="home_design_notice_keep_classic">Klasik olanı koru</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Araç Başlatıcısı</string>
+    <string name="onb_launcher_help">Open Headunit cihazın ana ekranı olabilir; cihaz açıldığında ve Home düğmesine basıldığında görünen ekran olur.</string>
+    <string name="onb_launcher_warning">Şu anki ana ekranınız genellikle klima kontrollerinin, radyonun veya geri görüş kamerasının bulunduğu yerdir. Bunları başka bir yoldan açabiliyorsanız açın.</string>
+    <string name="onb_launcher_default_home">Varsayılan ana ekran uygulaması olarak ayarla</string>
+    <string name="onb_launcher_default_home_active">Open Headunit varsayılan ana ekran uygulamasıdır</string>
+    <string name="onb_summary_launcher_home">Başlatıcı: Open Headunit ana ekran uygulamasıdır</string>
+    <string name="onb_summary_launcher_registered">Başlatıcı: ana ekran uygulaması olarak kaydedildi</string>
 </resources>

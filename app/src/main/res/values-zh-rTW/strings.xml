@@ -1291,4 +1291,12 @@
     <string name="home_design_notice_message">Open Headunit 推出了全新的主畫面：你使用的連線是一個大按鈕，其餘內容位於駕駛座一側。\n\n要使用新設計嗎？你隨時可以在「設定 > 個人化」中切換回來。</string>
     <string name="home_design_notice_use_new">使用新設計</string>
     <string name="home_design_notice_keep_classic">保留經典設計</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">車載啟動器</string>
+    <string name="onb_launcher_help">Open Headunit 可以成為裝置的主畫面，開機或按下 Home 鍵時就會顯示它。</string>
+    <string name="onb_launcher_warning">目前的主畫面通常是空調控制、收音機或倒車顯影所在的位置。只有在能用其他方式開啟它們時才開啟。</string>
+    <string name="onb_launcher_default_home">設為預設主畫面應用程式</string>
+    <string name="onb_launcher_default_home_active">Open Headunit 是預設主畫面應用程式</string>
+    <string name="onb_summary_launcher_home">啟動器：Open Headunit 是主畫面應用程式</string>
+    <string name="onb_summary_launcher_registered">啟動器：已註冊為主畫面應用程式</string>
 </resources>

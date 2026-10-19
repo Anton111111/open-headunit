@@ -1290,4 +1290,12 @@
     <string name="home_design_notice_message">لدى Open Headunit شاشة رئيسية جديدة: الاتصال الذي تستخدمه أصبح زرًا كبيرًا واحدًا، والباقي في جهة السائق.\n\nهل تريد استخدامها؟ يمكنك العودة في أي وقت من الإعدادات، التخصيص.</string>
     <string name="home_design_notice_use_new">استخدام التصميم الجديد</string>
     <string name="home_design_notice_keep_classic">الإبقاء على الكلاسيكي</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">مشغل السيارة</string>
+    <string name="onb_launcher_help">يمكن أن يكون Open Headunit الشاشة الرئيسية للجهاز، فيظهر عند تشغيله وعند الضغط على زر Home.</string>
+    <string name="onb_launcher_warning">الشاشة الرئيسية لديك اليوم هي عادة مكان التحكم بالتكييف والراديو وكاميرا الرجوع. فعّل هذا فقط إذا كانت هناك طريقة أخرى لفتحها.</string>
+    <string name="onb_launcher_default_home">تعيين كتطبيق الصفحة الرئيسية الافتراضي</string>
+    <string name="onb_launcher_default_home_active">Open Headunit هو تطبيق الصفحة الرئيسية الافتراضي</string>
+    <string name="onb_summary_launcher_home">المشغل: Open Headunit هو تطبيق الصفحة الرئيسية</string>
+    <string name="onb_summary_launcher_registered">المشغل: مسجل كتطبيق الصفحة الرئيسية</string>
 </resources>

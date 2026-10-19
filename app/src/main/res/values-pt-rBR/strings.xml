@@ -1293,4 +1293,12 @@
     <string name="home_design_notice_message">O Open Headunit tem uma nova tela inicial: a conexão que você usa é um único botão grande, e o resto fica do lado do motorista.\n\nQuer usá-la? Você pode voltar quando quiser em Configurações, Personalização.</string>
     <string name="home_design_notice_use_new">Usar o novo design</string>
     <string name="home_design_notice_keep_classic">Manter o clássico</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Inicializador do carro</string>
+    <string name="onb_launcher_help">O Open Headunit pode ser a tela inicial do aparelho, então é o que aparece quando ele liga e quando o botão Home é pressionado.</string>
+    <string name="onb_launcher_warning">A tela inicial de hoje geralmente é onde ficam o ar-condicionado, o rádio ou a câmera de ré. Ative isto apenas se houver outra forma de abri-los.</string>
+    <string name="onb_launcher_default_home">Definir como app de início padrão</string>
+    <string name="onb_launcher_default_home_active">O Open Headunit é o app de início padrão</string>
+    <string name="onb_summary_launcher_home">Inicializador: o Open Headunit é a tela inicial</string>
+    <string name="onb_summary_launcher_registered">Inicializador: registrado como tela inicial</string>
 </resources>

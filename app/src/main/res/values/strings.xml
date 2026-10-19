@@ -168,6 +168,14 @@
     <!-- %1$d recommended DPI value -->
     <string name="onb_dpi_recommended">Recommended for your screen: %1$d dpi</string>
     <string name="onb_change_later">You can change this later in Settings.</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Car launcher</string>
+    <string name="onb_launcher_help">Open Headunit can be the unit\'s home screen, so it is what appears when the unit starts and when its Home button is pressed.</string>
+    <string name="onb_launcher_warning">The home screen you have today is usually where the climate controls, the radio or the reverse camera live. Set this only if the unit has another way to open them.</string>
+    <string name="onb_launcher_default_home">Set as the default home app</string>
+    <string name="onb_launcher_default_home_active">Open Headunit is the default home app</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit is the home app</string>
+    <string name="onb_summary_launcher_registered">Launcher: registered as a home app</string>
     <string name="dpi_automatic">Automatic</string>
     <string name="dpi_automatic_desc">Use the device density</string>
     <string name="dpi_widescreen_hint">%1$d DPI or lower: Android Auto shows the map with a media card beside it; text gets smaller.</string>

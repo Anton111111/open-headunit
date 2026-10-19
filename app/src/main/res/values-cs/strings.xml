@@ -1292,4 +1292,12 @@
     <string name="home_design_notice_message">Open Headunit má novou domovskou obrazovku: připojení, které používáte, je jedno velké tlačítko a zbytek je na straně řidiče.\n\nChcete ji používat? Kdykoli se můžete vrátit v Nastavení, Přizpůsobení.</string>
     <string name="home_design_notice_use_new">Použít nový vzhled</string>
     <string name="home_design_notice_keep_classic">Ponechat klasický</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Spouštěč v autě</string>
+    <string name="onb_launcher_help">Open Headunit může být domovskou obrazovkou jednotky, takže se zobrazí při jejím spuštění a po stisknutí tlačítka Domů.</string>
+    <string name="onb_launcher_warning">Domovská obrazovka, kterou máte nyní, je obvykle místem, kde najdete ovládání klimatizace, rádio nebo couvací kameru. Zapněte to jen tehdy, když se k nim dostanete i jinak.</string>
+    <string name="onb_launcher_default_home">Nastavit jako výchozí domovskou aplikaci</string>
+    <string name="onb_launcher_default_home_active">Open Headunit je výchozí domovská aplikace</string>
+    <string name="onb_summary_launcher_home">Spouštěč: Open Headunit je domovská aplikace</string>
+    <string name="onb_summary_launcher_registered">Spouštěč: zaregistrován jako domovská aplikace</string>
 </resources>

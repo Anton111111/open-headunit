@@ -1289,4 +1289,12 @@
     <string name="home_design_notice_message">Open Headunit are un nou ecran principal: conexiunea pe care o folosești este un singur buton mare, iar restul se află pe partea șoferului.\n\nVrei să îl folosești? Poți reveni oricând din Setări, Personalizare.</string>
     <string name="home_design_notice_use_new">Folosește noul design</string>
     <string name="home_design_notice_keep_classic">Păstrează varianta clasică</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Lansator auto</string>
+    <string name="onb_launcher_help">Open Headunit poate fi ecranul principal al dispozitivului, deci apare la pornire și când se apasă butonul Home.</string>
+    <string name="onb_launcher_warning">Ecranul principal de acum este de obicei locul unde se află climatizarea, radioul sau camera de marșarier. Activează asta doar dacă le poți deschide și altfel.</string>
+    <string name="onb_launcher_default_home">Setează ca aplicație principală implicită</string>
+    <string name="onb_launcher_default_home_active">Open Headunit este aplicația principală implicită</string>
+    <string name="onb_summary_launcher_home">Lansator: Open Headunit este ecranul principal</string>
+    <string name="onb_summary_launcher_registered">Lansator: înregistrat ca ecran principal</string>
 </resources>

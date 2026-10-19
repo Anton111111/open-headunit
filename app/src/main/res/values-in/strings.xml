@@ -1340,4 +1340,12 @@
     <string name="home_design_notice_message">Open Headunit punya layar beranda baru: koneksi yang Anda gunakan menjadi satu tombol besar, dan sisanya ada di sisi pengemudi.\n\nIngin menggunakannya? Anda bisa kembali kapan saja di Pengaturan, Kustomisasi.</string>
     <string name="home_design_notice_use_new">Gunakan desain baru</string>
     <string name="home_design_notice_keep_classic">Tetap pakai yang klasik</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Peluncur Mobil</string>
+    <string name="onb_launcher_help">Open Headunit bisa menjadi layar beranda perangkat, jadi inilah yang muncul saat perangkat menyala dan saat tombol Home ditekan.</string>
+    <string name="onb_launcher_warning">Layar beranda Anda saat ini biasanya berisi kontrol iklim, radio, atau kamera mundur. Aktifkan ini hanya jika ada cara lain untuk membukanya.</string>
+    <string name="onb_launcher_default_home">Jadikan aplikasi beranda default</string>
+    <string name="onb_launcher_default_home_active">Open Headunit adalah aplikasi beranda default</string>
+    <string name="onb_summary_launcher_home">Peluncur: Open Headunit adalah aplikasi beranda</string>
+    <string name="onb_summary_launcher_registered">Peluncur: terdaftar sebagai aplikasi beranda</string>
 </resources>
