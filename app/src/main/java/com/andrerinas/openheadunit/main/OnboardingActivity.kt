@@ -21,8 +21,6 @@ import com.andrerinas.openheadunit.App
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.VehicleTypePolicy
 import com.andrerinas.openheadunit.app.BaseActivity
-import com.andrerinas.openheadunit.decoder.audio.AudioOutputTester
-import com.andrerinas.openheadunit.decoder.audio.PlaybackFocusPolicy
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightClipOutcome
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightFailure
@@ -32,7 +30,6 @@ import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRecomme
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRun
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRunner
 import com.andrerinas.openheadunit.utils.AppPermissions
-import com.andrerinas.openheadunit.utils.AudioStreamTester
 import com.andrerinas.openheadunit.utils.AppThemeManager
 import com.andrerinas.openheadunit.utils.LocaleHelper
 import com.andrerinas.openheadunit.utils.PermissionRowBinder
@@ -97,7 +94,7 @@ class OnboardingActivity : BaseActivity() {
     private var videoRun: VideoPreflightRun? = null
     private var videoApply = false
     private var videoAttempted = false
-    private var audioTestJob: Job? = null
+    private var audioStep: OnboardingAudioStep? = null
 
     // Permissions step (registered here, before the activity is RESUMED).
     private var permissionBinder: PermissionRowBinder? = null
@@ -132,11 +129,14 @@ class OnboardingActivity : BaseActivity() {
         skipBtn = findViewById(R.id.onb_skip)
         stepper = findViewById(R.id.onb_stepper)
 
+        applyCompactChrome()
+
         selectedPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
         selectedSize = OnboardingDisplayPolicy.initialPreset(settings.displaySizePreset, estimateSizePreset())
 
         buildStepperDots()
         bindSteps()
+        audioStep?.restore(savedInstanceState)
         bindPermissionsStep()
 
         // Ready step: optional-extras card. Each row finishes the wizard and jumps straight into
@@ -161,6 +161,43 @@ class OnboardingActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(KEY_STEP, step)
+        audioStep?.save(outState)
+    }
+
+    /**
+     * Reclaim the wizard chrome's space on short panels.
+     *
+     * A 624x288 dp unit is a real target (a 720p panel at 400 dpi), and the standard 24 dp
+     * padding plus the tall footer leave less than a hundred dp for a step. Eight dp of padding
+     * and a tighter indicator keep the content usable without hiding any action.
+     */
+    private fun applyCompactChrome() {
+        val height = resources.configuration.screenHeightDp
+        if (height >= 400) return
+        val pad = dp(if (height < 300) 4 else 8)
+        flipper.setPadding(pad, pad, pad, pad)
+        if (height < 300) {
+            // A 240 dp panel has no room for a step indicator; the content is the step.
+            stepper.visibility = View.GONE
+        } else {
+            val indicator = stepper.layoutParams as LinearLayout.LayoutParams
+            indicator.topMargin = dp(4)
+            indicator.bottomMargin = dp(2)
+            stepper.layoutParams = indicator
+        }
+        val footer = findViewById<LinearLayout>(R.id.onb_footer)
+        footer.setPadding(dp(8), dp(2), dp(8), dp(4))
+        // Put "Do it later" on the same row as Back/Next. On a 288 dp panel the extra
+        // row costs almost half of the space the step has left; the design's footer is
+        // a single row for the same reason.
+        val primary = footer.getChildAt(1) as? LinearLayout ?: return
+        footer.removeView(skipBtn)
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        )
+        lp.gravity = Gravity.CENTER_VERTICAL
+        primary.addView(skipBtn, 1, lp)
     }
 
     override fun onResume() {
@@ -177,8 +214,7 @@ class OnboardingActivity : BaseActivity() {
     override fun onPause() {
         super.onPause()
         dpiPicker?.stopDemo()
-        audioTestJob?.cancel()
-        audioTestJob = null
+        audioStep?.onPause()
         // A codec and a surface must not outlive the visible wizard. The result is lost, which is
         // honest: the user can run the five second test again when they come back.
         if (step == STEP_VIDEO && videoJob?.isActive == true) {
@@ -191,8 +227,7 @@ class OnboardingActivity : BaseActivity() {
     override fun onDestroy() {
         videoJob?.cancel()
         videoJob = null
-        audioTestJob?.cancel()
-        audioTestJob = null
+        audioStep?.release()
         super.onDestroy()
     }
 
@@ -368,8 +403,10 @@ class OnboardingActivity : BaseActivity() {
                 Settings.syncAutoStartOnWifiToDeviceStorage(this@OnboardingActivity, v)
             }
         }
-        // --- Audio streams: which system stream each Android Auto channel plays on ---
-        bindAudioStep()
+        // --- Audio: a guided sound check, with the technical switches one level down ---
+        audioStep = OnboardingAudioStep(this, settings, findViewById(R.id.onb_audio_root)).also {
+            it.bind()
+        }
 
         // --- Location: this device's GPS vs the connected phone's GPS ---
         val gpsGroup = findViewById<MaterialButtonToggleGroup>(R.id.onb_gps_group)
@@ -391,198 +428,6 @@ class OnboardingActivity : BaseActivity() {
         findViewById<MaterialCheckBox>(R.id.onb_video_apply).setOnCheckedChangeListener { _, checked ->
             videoApply = checked
         }
-    }
-
-    /**
-     * Binds the audio-stream step: the separate-streams switch plus one picker per channel, each
-     * with a speaker button that plays a tone on the stream currently chosen.
-     *
-     * The tone is what makes this worth a wizard step: which stream a head unit's amplifier
-     * actually unmutes for is not knowable in advance, and finding out after the first drive is
-     * how people conclude the app has no sound.
-     */
-    private fun bindAudioStep() {
-        findViewById<SwitchMaterial>(R.id.onb_audio_separate_switch).apply {
-            isChecked = settings.separateAudioStreams
-            setOnCheckedChangeListener { _, checked ->
-                settings.separateAudioStreams = checked
-                applyAudioStepVisibility()
-            }
-        }
-
-        bindAudioStreamRow(
-            R.id.onb_audio_media_button, R.id.onb_audio_media_test,
-            { mediaPickerTitle() },
-            { settings.mediaAudioStream }, { settings.mediaAudioStream = it }
-        )
-        bindAudioStreamRow(
-            R.id.onb_audio_guidance_button, R.id.onb_audio_guidance_test,
-            { getString(R.string.audio_channel_guidance) },
-            { settings.guidanceAudioStream }, { settings.guidanceAudioStream = it }
-        )
-        bindAudioStreamRow(
-            R.id.onb_audio_system_button, R.id.onb_audio_system_test,
-            { getString(R.string.audio_channel_system) },
-            { settings.systemAudioStream }, { settings.systemAudioStream = it }
-        )
-
-        findViewById<SwitchMaterial>(R.id.onb_audio_aaudio_switch).apply {
-            isChecked = settings.useAAudioOutput
-            setOnCheckedChangeListener { _, checked -> settings.useAAudioOutput = checked }
-        }
-        findViewById<MaterialButton>(R.id.onb_audio_output_test).setOnClickListener {
-            playAudioOutputTest()
-        }
-        findViewById<SwitchMaterial>(R.id.onb_audio_static_focus_switch).apply {
-            isChecked = settings.staticAudioFocus
-            setOnCheckedChangeListener { _, checked ->
-                settings.staticAudioFocus = checked
-                updateAudioFocusUi()
-            }
-        }
-        findViewById<MaterialButton>(R.id.onb_audio_focus_button).setOnClickListener {
-            showFocusModeDialog()
-        }
-        updateAudioFocusUi()
-
-        applyAudioStepVisibility()
-    }
-
-    private fun bindAudioStreamRow(
-        buttonId: Int,
-        testId: Int,
-        title: () -> String,
-        get: () -> Int,
-        set: (Int) -> Unit
-    ) {
-        val button = findViewById<MaterialButton>(buttonId)
-        button.text = AudioStreamTester.label(this, get())
-        button.setOnClickListener {
-            val labels = AudioStreamTester.labels(this)
-            MaterialAlertDialogBuilder(this, R.style.DarkAlertDialog)
-                .setTitle(getString(R.string.audio_stream_pick_title, title()))
-                .setSingleChoiceItems(labels, AudioStreamTester.indexOf(this, get())) { dialog, which ->
-                    set(AudioStreamTester.streamAt(this, which))
-                    button.text = AudioStreamTester.label(this, get())
-                    dialog.dismiss()
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
-        }
-        findViewById<MaterialButton>(testId).setOnClickListener {
-            AudioStreamTester.play(this, get())
-        }
-    }
-
-    /** The picker title for the first row, which covers every channel while streams are shared. */
-    private fun mediaPickerTitle(): String = getString(
-        if (settings.separateAudioStreams) R.string.audio_channel_media
-        else R.string.audio_channel_all_short
-    )
-
-    /** With separate streams off every channel plays on the media stream, so hide the other two
-     *  and widen the heading above the one that remains to name all of them. */
-    private fun applyAudioStepVisibility() {
-        val separate = settings.separateAudioStreams
-        val vis = if (separate) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.onb_audio_guidance_row).visibility = vis
-        findViewById<View>(R.id.onb_audio_system_row).visibility = vis
-        findViewById<TextView>(R.id.onb_audio_media_label).setText(
-            if (separate) R.string.audio_channel_media else R.string.audio_channel_all
-        )
-    }
-
-    /**
-     * Plays a short PCM tone through the output backend the projection would use. The tone itself
-     * says little about music quality, but it opens AAudio for real and reads its underrun counter,
-     * which is what separates a backend that works from one that crackles.
-     */
-    private fun playAudioOutputTest() {
-        if (audioTestJob?.isActive == true) return
-        val button = findViewById<MaterialButton>(R.id.onb_audio_output_test)
-        val status = findViewById<TextView>(R.id.onb_audio_output_status)
-        button.isEnabled = false
-        status.text = getString(
-            R.string.onb_audio_output_testing,
-            if (settings.useAAudioOutput) AUDIO_BACKEND_AAUDIO else AUDIO_BACKEND_AUDIOTRACK,
-        )
-        audioTestJob = lifecycleScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) { AudioOutputTester.play(settings) }
-                val backend = if (result.backend == AudioOutputTester.Backend.AAUDIO) {
-                    AUDIO_BACKEND_AAUDIO
-                } else {
-                    AUDIO_BACKEND_AUDIOTRACK
-                }
-                status.text = when {
-                    result.fallbackReason != null -> getString(R.string.onb_audio_output_fallback)
-                    // The advice depends on what played: turning AAudio off is the fix for AAudio,
-                    // and AudioTrack is already what that would switch to. The count stays in the
-                    // tester's log; a number here needed plural forms that most locales lack.
-                    result.underruns > 0 && result.backend == AudioOutputTester.Backend.AAUDIO ->
-                        getString(R.string.onb_audio_output_skipped_aaudio)
-                    result.underruns > 0 -> getString(R.string.onb_audio_output_skipped)
-                    else -> getString(R.string.onb_audio_output_ok, backend)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                status.text = getString(
-                    R.string.onb_audio_output_failed,
-                    e.message ?: e.javaClass.simpleName,
-                )
-            } finally {
-                button.isEnabled = true
-                audioTestJob = null
-            }
-        }
-    }
-
-    private fun showFocusModeDialog() {
-        val modes = listOf(
-            PlaybackFocusPolicy.Mode.AUTO,
-            PlaybackFocusPolicy.Mode.ALWAYS,
-            PlaybackFocusPolicy.Mode.NEVER,
-        )
-        val labels = modes.map { focusModeLabel(it) }.toTypedArray()
-        MaterialAlertDialogBuilder(this, R.style.DarkAlertDialog)
-            .setTitle(R.string.playback_focus_mode)
-            .setSingleChoiceItems(
-                labels,
-                modes.indexOf(settings.playbackFocusMode).coerceAtLeast(0),
-            ) { dialog, which ->
-                val mode = modes[which]
-                if (settings.playbackFocusMode != mode) {
-                    settings.playbackFocusMode = mode
-                    // Re-picking the mode is the way back from an automatic veto.
-                    settings.playbackFocusSelfDefeating = false
-                }
-                updateAudioFocusUi()
-                dialog.dismiss()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun updateAudioFocusUi() {
-        val mode = settings.playbackFocusMode
-        findViewById<MaterialButton>(R.id.onb_audio_focus_button).text = focusModeLabel(mode)
-        findViewById<TextView>(R.id.onb_audio_focus_hint).setText(focusModeHint(mode))
-        findViewById<View>(R.id.onb_audio_static_focus_hint).visibility =
-            if (settings.staticAudioFocus) View.VISIBLE else View.GONE
-    }
-
-    private fun focusModeLabel(mode: PlaybackFocusPolicy.Mode): String = when (mode) {
-        PlaybackFocusPolicy.Mode.AUTO -> getString(R.string.playback_focus_mode_auto)
-        PlaybackFocusPolicy.Mode.ALWAYS -> getString(R.string.playback_focus_mode_always)
-        PlaybackFocusPolicy.Mode.NEVER -> getString(R.string.playback_focus_mode_never)
-    }
-
-    private fun focusModeHint(mode: PlaybackFocusPolicy.Mode): Int = when (mode) {
-        PlaybackFocusPolicy.Mode.ALWAYS -> R.string.playback_focus_mode_always_hint
-        PlaybackFocusPolicy.Mode.NEVER -> R.string.playback_focus_mode_never_hint
-        // Shorter than the Settings text: a setup step is read once, on the way to the next one.
-        else -> R.string.onb_audio_focus_auto_short
     }
 
     /**
@@ -704,7 +549,7 @@ class OnboardingActivity : BaseActivity() {
             else -> true
         }
         if (step == STEP_READY) findViewById<TextView>(R.id.onb_ready_summary).text = summaryText()
-        if (step == STEP_AUDIO) applyAudioStepVisibility()
+        if (step == STEP_AUDIO) audioStep?.onShown() else audioStep?.onHidden()
         if (step == STEP_AUTOMATION) applyAutomationVisibility()
         if (step == STEP_PERMISSIONS) permissionBinder?.rebind()
         if (step == STEP_VEHICLE) applyVehicleTypeNote()

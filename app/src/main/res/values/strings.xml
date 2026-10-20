@@ -647,11 +647,65 @@
     <string name="audio_stream_unavailable_format">Stream %1$d (not on this device)</string>
     <string name="audio_stream_vendor_info">This head unit has output streams that stock Android does not, listed below under the names its own system gives them. They are often the ones the car\'s amplifier is actually wired to, so try them with the speaker button if a channel stays silent.</string>
 
-    <!-- Onboarding: audio step -->
-    <string name="onb_audio_title">Audio</string>
-    <string name="onb_audio_help">Pick the system stream each Android Auto channel plays on, and tap the speaker to hear it. If a channel stays silent in the car, moving it to another stream is usually the fix.</string>
+    <!-- Onboarding: guided sound check -->
+    <string name="onb_audio_title">Sound</string>
+    <string name="onb_audio_help">Let\'s check that Android Auto sounds right on this unit. Turn the radio volume up before you start.</string>
+    <string name="onb_audio_play_test">Play a test sound</string>
+    <string name="onb_audio_play_test_sub">It plays for a few seconds, just like Android Auto music.</string>
+    <string name="onb_audio_question">How did it sound?</string>
+    <string name="onb_audio_play_again">Play again</string>
+    <string name="onb_audio_answer_ok">It sounded fine</string>
+    <string name="onb_audio_answer_silent">I heard nothing</string>
+    <string name="onb_audio_answer_crackle">It crackled or cut out</string>
+    <string name="onb_audio_answer_ok_short">Sounded fine</string>
+    <string name="onb_audio_answer_silent_short">No sound</string>
+    <string name="onb_audio_answer_crackle_short">Crackles</string>
+    <string name="onb_audio_silent_title">Let\'s try another sound channel</string>
+    <string name="onb_audio_silent_help">Some radios only unmute certain outputs. Tap each one to hear it, then use the first one that sounds.</string>
+    <string name="onb_audio_silent_play">Play a test tone on this channel</string>
+    <string name="onb_audio_silent_use">Use</string>
+    <string name="onb_audio_silent_recommended">Recommended</string>
+    <string name="onb_audio_crackle_title">Switched to standard sound</string>
+    <string name="onb_audio_crackle_title_already_standard">Already on standard sound</string>
+    <string name="onb_audio_crackle_help">Fast mode (AAudio) crackles on some radios. We turned it off. Play it again.</string>
+    <string name="onb_audio_crackle_help_already_standard">Fast mode is already off. Play it again; if it still crackles, lower the radio volume or try another channel.</string>
+    <string name="onb_audio_crackle_replay">Play again</string>
+    <string name="onb_audio_done_title">And the unit\'s radio?</string>
+    <string name="onb_audio_done_context">If you have the FM radio or music from the unit playing and Android Auto starts to sound, for example when navigation speaks:</string>
+    <string name="onb_audio_done_context_short">If the FM radio is playing and Android Auto starts to sound:</string>
+    <string name="onb_audio_focus_always">It always pauses</string>
+    <string name="onb_audio_focus_always_short">Pauses</string>
+    <string name="onb_audio_focus_always_hint">The radio stops while Android Auto sounds and comes back when it ends.</string>
+    <string name="onb_audio_focus_always_hint_short">Comes back when Android Auto ends.</string>
+    <string name="onb_audio_focus_never">It keeps playing</string>
+    <string name="onb_audio_focus_never_hint">You hear both at the same time.</string>
+    <string name="onb_audio_focus_never_hint_short">You hear both.</string>
+    <string name="onb_audio_focus_auto">Let the app decide</string>
+    <string name="onb_audio_focus_auto_short">App decides</string>
+    <string name="onb_audio_focus_auto_hint">It pauses, unless that also cuts your phone\'s music over Bluetooth.</string>
+    <string name="onb_audio_focus_auto_hint_short">Recommended. Unless it cuts your phone.</string>
+    <string name="onb_audio_focus_recommended">Recommended</string>
+    <string name="onb_audio_chip_ok">Sound works</string>
+    <string name="onb_audio_chip_through">Sound comes through %1$s</string>
+    <string name="onb_audio_chip_standard">Standard sound, no crackles</string>
+    <string name="onb_audio_more_options">More sound options</string>
+    <string name="onb_audio_more_options_short">More options</string>
+    <string name="onb_audio_advanced_title">More sound options</string>
+    <string name="onb_audio_advanced_back">Back to the sound test</string>
+    <string name="onb_audio_advanced_help">These options are only needed if something does not sound right. The sound test already sets them for you.</string>
+    <string name="onb_audio_advanced_test_ok">The sound works.</string>
+    <string name="onb_audio_separate_title">A different channel for each sound</string>
+    <string name="onb_audio_separate_help">Useful if music is heard but navigation or notifications are not.</string>
+    <string name="onb_audio_channels_help">Pick the system stream each channel plays on. Tap the speaker to hear it.</string>
+    <string name="onb_audio_aaudio_title">Fast output (experimental)</string>
+    <string name="onb_audio_aaudio_help">Uses AAudio so sound responds sooner. Turn it off if it crackles.</string>
+    <string name="onb_audio_static_focus_title">Hold on to the sound</string>
+    <string name="onb_audio_static_focus_help">Turn this on if Android Auto\'s sound drops out in the car. It also lowers the music while navigation speaks.</string>
+    <string name="onb_audio_testing">Playing a test sound…</string>
+    <string name="onb_audio_test_failed">Could not play the test sound: %1$s</string>
+
+    <!-- Onboarding: legacy audio labels, kept for the advanced screen and older layouts -->
     <string name="onb_audio_output_title">Output</string>
-    <string name="onb_audio_aaudio_help">AAudio can make playback snappier on units that support it. If the test tone crackles, turn it off.</string>
     <string name="onb_audio_output_test">Play a test tone</string>
     <string name="onb_audio_output_testing">Playing through %1$s...</string>
     <string name="onb_audio_output_ok">Played through %1$s.</string>
@@ -659,7 +713,6 @@
     <string name="onb_audio_output_skipped_aaudio">Played through AAudio, but the sound skipped. If it crackles, turn AAudio off.</string>
     <string name="onb_audio_output_skipped">Played through AudioTrack, but the sound skipped. Play it again to see if it happens every time.</string>
     <string name="onb_audio_static_focus_short">Turn this on if Android Auto\'s sound drops out in the car. It also lowers the music while navigation speaks.</string>
-    <string name="onb_audio_focus_auto_short">Pauses the radio or another player while Android Auto plays. If that pauses your phone instead, it stops trying.</string>
     <string name="onb_audio_output_failed">Could not play the test tone: %1$s</string>
     <string name="onb_audio_focus_title">Audio focus</string>
     <string name="onb_audio_more_hint">You can change these again later under Settings → Audio Streams.</string>
