@@ -1115,6 +1115,15 @@
     <string name="audio_stream_vendor_info">У этой магнитолы есть выходные потоки, которых нет в стандартном Android; ниже они показаны под именами, которые даёт им её собственная система. Часто именно к ним и подключён усилитель автомобиля, поэтому попробуйте их кнопкой динамика, если какой-то канал молчит.</string>
     <string name="onb_audio_title">Звук</string>
     <string name="onb_audio_help">Выберите системный поток, через который воспроизводится каждый канал Android Auto, и нажмите на динамик, чтобы услышать его. Если канал молчит в машине, обычно помогает перевести его на другой поток.</string>
+    <string name="onb_audio_output_title">Выход</string>
+    <string name="onb_audio_aaudio_help">AAudio может сделать воспроизведение плавнее на устройствах, которые его поддерживают. Если тестовый тон трещит, отключите его.</string>
+    <string name="onb_audio_output_test">Воспроизвести тестовый тон</string>
+    <string name="onb_audio_output_testing">Воспроизведение через %1$s...</string>
+    <string name="onb_audio_output_ok">Воспроизведено через %1$s.</string>
+    <string name="onb_audio_output_underruns">Воспроизведено через %1$s с %2$d сбоями. Если это повторяется, попробуйте AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio не открылся, поэтому тест использовал AudioTrack.</string>
+    <string name="onb_audio_output_failed">Не удалось воспроизвести тестовый тон: %1$s</string>
+    <string name="onb_audio_focus_title">Аудиофокус</string>
     <string name="onb_audio_more_hint">Это можно изменить позже в «Настройки → Аудиопотоки».</string>
     <string name="native_driver_selection_title">Выбор водителя</string>
     <string name="native_driver_selection_summary">Выберите, какой телефон подключать, когда в автомобиле несколько сопряжённых водителей</string>

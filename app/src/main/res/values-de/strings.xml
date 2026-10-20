@@ -1117,6 +1117,15 @@
     <string name="audio_stream_vendor_info">Dieses Headunit hat Ausgabestreams, die es im Standard-Android nicht gibt; sie stehen unten unter den Namen, die sein eigenes System ihnen gibt. Häufig sind genau sie mit dem Verstärker des Autos verbunden – probiere sie mit der Lautsprechertaste aus, wenn ein Kanal stumm bleibt.</string>
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Lege fest, über welchen Systemstream jeder Android-Auto-Kanal wiedergegeben wird, und tippe auf den Lautsprecher, um ihn zu hören. Bleibt ein Kanal im Auto stumm, hilft meist der Wechsel auf einen anderen Stream.</string>
+    <string name="onb_audio_output_title">Ausgabe</string>
+    <string name="onb_audio_aaudio_help">AAudio kann die Wiedergabe auf Geräten, die es unterstützen, flüssiger machen. Wenn der Testton knistert, schalte es aus.</string>
+    <string name="onb_audio_output_test">Testton abspielen</string>
+    <string name="onb_audio_output_testing">Wiedergabe über %1$s...</string>
+    <string name="onb_audio_output_ok">Über %1$s abgespielt.</string>
+    <string name="onb_audio_output_underruns">Über %1$s mit %2$d Aussetzern abgespielt. Wenn das bleibt, probiere AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio wurde nicht geöffnet, daher hat der Test AudioTrack verwendet.</string>
+    <string name="onb_audio_output_failed">Der Testton konnte nicht abgespielt werden: %1$s</string>
+    <string name="onb_audio_focus_title">Audiofokus</string>
     <string name="onb_audio_more_hint">Du kannst das später unter Einstellungen → Audio-Streams wieder ändern.</string>
     <string name="native_driver_selection_title">Fahrer-Auswahl</string>
     <string name="native_driver_selection_summary">Auswählen, welches Smartphone verbunden werden soll, wenn mehrere gekoppelte Fahrer im Auto sind</string>

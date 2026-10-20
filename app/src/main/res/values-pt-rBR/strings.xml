@@ -1117,6 +1117,15 @@
     <string name="audio_stream_vendor_info">Esta central multimídia tem fluxos de saída que o Android padrão não possui; eles aparecem abaixo com os nomes que o próprio sistema dela usa. Costumam ser aqueles em que o amplificador do carro está realmente ligado, então teste-os com o botão do alto-falante se algum canal ficar mudo.</string>
     <string name="onb_audio_title">Áudio</string>
     <string name="onb_audio_help">Escolha o fluxo do sistema em que cada canal do Android Auto toca e toque no alto-falante para ouvi-lo. Se um canal ficar mudo no carro, mudá-lo para outro fluxo costuma resolver.</string>
+    <string name="onb_audio_output_title">Saída</string>
+    <string name="onb_audio_aaudio_help">O AAudio pode deixar a reprodução mais fluida em aparelhos compatíveis. Se o tom de teste estalar, desligue.</string>
+    <string name="onb_audio_output_test">Reproduzir um tom de teste</string>
+    <string name="onb_audio_output_testing">Reproduzindo em %1$s...</string>
+    <string name="onb_audio_output_ok">Reproduzido em %1$s.</string>
+    <string name="onb_audio_output_underruns">Reproduzido em %1$s com %2$d falhas. Se isso continuar, tente AudioTrack.</string>
+    <string name="onb_audio_output_fallback">O AAudio não abriu, então o teste usou AudioTrack.</string>
+    <string name="onb_audio_output_failed">Não foi possível reproduzir o tom de teste: %1$s</string>
+    <string name="onb_audio_focus_title">Foco de áudio</string>
     <string name="onb_audio_more_hint">Você pode alterar isso depois em Configurações → Fluxos de áudio.</string>
     <string name="native_driver_selection_title">Seleção de motorista</string>
     <string name="native_driver_selection_summary">Escolha qual telefone conectar quando vários motoristas emparelhados estiverem no veículo</string>

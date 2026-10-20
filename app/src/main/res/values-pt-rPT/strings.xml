@@ -618,6 +618,15 @@
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">Áudio</string>
     <string name="onb_audio_help">Escolha o fluxo do sistema onde cada canal do Android Auto é reproduzido e toque no altifalante para o ouvir.</string>
+    <string name="onb_audio_output_title">Saída</string>
+    <string name="onb_audio_aaudio_help">O AAudio pode tornar a reprodução mais fluida em unidades compatíveis. Se o tom de teste estalar, desligue.</string>
+    <string name="onb_audio_output_test">Reproduzir um tom de teste</string>
+    <string name="onb_audio_output_testing">A reproduzir em %1$s...</string>
+    <string name="onb_audio_output_ok">Reproduzido em %1$s.</string>
+    <string name="onb_audio_output_underruns">Reproduzido em %1$s com %2$d falhas. Se continuar, experimente AudioTrack.</string>
+    <string name="onb_audio_output_fallback">O AAudio não abriu, por isso o teste usou AudioTrack.</string>
+    <string name="onb_audio_output_failed">Não foi possível reproduzir o tom de teste: %1$s</string>
+    <string name="onb_audio_focus_title">Foco de áudio</string>
     <string name="onb_audio_more_hint">Pode alterar estas definições mais tarde em Definições → Fluxos de áudio.</string>
     <string name="use_aac_audio">Utilizar áudio AAC</string>
     <string name="use_aac_audio_description">Utilizar o codec AAC para áudio para poupar largura de banda (Experimental). Numa sessão sem fios a 2.4 GHz, isto é ativado automaticamente.</string>

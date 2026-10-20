@@ -617,6 +617,15 @@
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Pilih aliran sistem tempat setiap saluran Android Auto diputar, dan ketuk speaker untuk mendengarkannya. Jika sebuah saluran tidak bersuara di mobil, memindahkannya ke aliran lain biasanya menjadi solusinya.</string>
+    <string name="onb_audio_output_title">Keluaran</string>
+    <string name="onb_audio_aaudio_help">AAudio dapat membuat pemutaran lebih lancar pada unit yang mendukungnya. Jika nada uji berderak, matikan.</string>
+    <string name="onb_audio_output_test">Putar nada uji</string>
+    <string name="onb_audio_output_testing">Memutar melalui %1$s...</string>
+    <string name="onb_audio_output_ok">Diputar melalui %1$s.</string>
+    <string name="onb_audio_output_underruns">Diputar melalui %1$s dengan %2$d gangguan. Jika terus terjadi, coba AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio tidak terbuka, jadi tes memakai AudioTrack.</string>
+    <string name="onb_audio_output_failed">Nada uji tidak dapat diputar: %1$s</string>
+    <string name="onb_audio_focus_title">Fokus audio</string>
     <string name="onb_audio_more_hint">Anda dapat mengubahnya lagi nanti di Pengaturan → Aliran Audio.</string>
     <string name="use_aac_audio">Gunakan Audio AAC</string>
     <string name="use_aac_audio_description">Gunakan kodek AAC untuk audio guna menghemat bandwidth (Eksperimental). Pada sesi nirkabel pada 2,4 GHz, ini aktif otomatis saat \"Turunkan video pada tautan 2,4 GHz\" aktif.</string>

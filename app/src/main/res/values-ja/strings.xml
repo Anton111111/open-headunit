@@ -1121,6 +1121,15 @@
     <string name="audio_stream_vendor_info">このヘッドユニットには標準の Android にない出力ストリームがあり、下にはその独自システムが付けた名前で表示されます。車のアンプが実際に接続されているのはこれらであることが多いため、チャンネルが無音のままならスピーカーボタンで試してください。</string>
     <string name="onb_audio_title">オーディオ</string>
     <string name="onb_audio_help">Android Auto の各チャンネルを再生するシステムストリームを選び、スピーカーをタップして音を確認します。車内でチャンネルが無音のままなら、別のストリームに変えると解決することがほとんどです。</string>
+    <string name="onb_audio_output_title">出力</string>
+    <string name="onb_audio_aaudio_help">AAudio に対応した機器では再生が滑らかになる場合があります。テスト音が割れる場合はオフにしてください。</string>
+    <string name="onb_audio_output_test">テスト音を再生</string>
+    <string name="onb_audio_output_testing">%1$s で再生しています...</string>
+    <string name="onb_audio_output_ok">%1$s で再生しました。</string>
+    <string name="onb_audio_output_underruns">%1$s で %2$d 回の途切れがありました。続く場合は AudioTrack を試してください。</string>
+    <string name="onb_audio_output_fallback">AAudio を開けなかったため、テストは AudioTrack を使用しました。</string>
+    <string name="onb_audio_output_failed">テスト音を再生できませんでした: %1$s</string>
+    <string name="onb_audio_focus_title">オーディオフォーカス</string>
     <string name="onb_audio_more_hint">この設定は後から「設定 → オーディオストリーム」で変更できます。</string>
     <string name="native_driver_selection_title">ドライバー選択</string>
     <string name="native_driver_selection_summary">車内に複数のペアリング済みドライバーがいる場合に接続するスマートフォンを選択します</string>

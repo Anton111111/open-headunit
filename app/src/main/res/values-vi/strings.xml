@@ -1119,6 +1119,15 @@
     <string name="audio_stream_vendor_info">Đầu phát này có những luồng đầu ra mà Android tiêu chuẩn không có; chúng được liệt kê bên dưới theo tên do chính hệ thống của nó đặt. Bộ khuếch đại của xe thường thực sự được đấu vào những luồng đó, nên hãy thử chúng bằng nút loa nếu một kênh vẫn im lặng.</string>
     <string name="onb_audio_title">Âm thanh</string>
     <string name="onb_audio_help">Chọn luồng hệ thống mà mỗi kênh Android Auto sẽ phát trên đó, rồi chạm vào loa để nghe thử. Nếu một kênh vẫn im lặng trong xe, chuyển nó sang luồng khác thường là cách khắc phục.</string>
+    <string name="onb_audio_output_title">Đầu ra</string>
+    <string name="onb_audio_aaudio_help">AAudio có thể làm phát mượt hơn trên các thiết bị hỗ trợ. Nếu âm thử bị rè, hãy tắt nó.</string>
+    <string name="onb_audio_output_test">Phát âm thử</string>
+    <string name="onb_audio_output_testing">Đang phát qua %1$s...</string>
+    <string name="onb_audio_output_ok">Đã phát qua %1$s.</string>
+    <string name="onb_audio_output_underruns">Đã phát qua %1$s với %2$d lần gián đoạn. Nếu tiếp diễn, hãy thử AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio không mở được, nên bài thử đã dùng AudioTrack.</string>
+    <string name="onb_audio_output_failed">Không thể phát âm thử: %1$s</string>
+    <string name="onb_audio_focus_title">Tiêu điểm âm thanh</string>
     <string name="onb_audio_more_hint">Bạn có thể thay đổi lại sau trong Cài đặt → Luồng âm thanh.</string>
     <string name="native_driver_selection_title">Chọn người lái</string>
     <string name="native_driver_selection_summary">Chọn điện thoại để kết nối khi có nhiều người lái đã ghép đôi trong xe</string>

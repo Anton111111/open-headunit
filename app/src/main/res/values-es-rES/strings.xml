@@ -1126,6 +1126,15 @@
     <string name="audio_stream_vendor_info">Esta unidad principal tiene flujos de salida que Android estándar no incluye; aparecen abajo con los nombres que les da su propio sistema. Suelen ser aquellos a los que está conectado realmente el amplificador del coche, así que pruébalos con el botón del altavoz si un canal se queda en silencio.</string>
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Elige el flujo del sistema en el que suena cada canal de Android Auto y toca el altavoz para oírlo. Si un canal se queda en silencio en el coche, cambiarlo a otro flujo suele ser la solución.</string>
+    <string name="onb_audio_output_title">Salida</string>
+    <string name="onb_audio_aaudio_help">AAudio puede hacer la reproducción más ágil en equipos que lo admiten. Si el tono de prueba cruje, desactívalo.</string>
+    <string name="onb_audio_output_test">Reproducir un tono de prueba</string>
+    <string name="onb_audio_output_testing">Reproduciendo por %1$s...</string>
+    <string name="onb_audio_output_ok">Reproducido por %1$s.</string>
+    <string name="onb_audio_output_underruns">Reproducido por %1$s con %2$d fallos. Si sigue pasando, prueba AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio no se abrió, así que la prueba usó AudioTrack.</string>
+    <string name="onb_audio_output_failed">No se ha podido reproducir el tono de prueba: %1$s</string>
+    <string name="onb_audio_focus_title">Enfoque de audio</string>
     <string name="onb_audio_more_hint">Puedes cambiar esto más adelante en Ajustes → Flujos de audio.</string>
     <string name="native_driver_selection_title">Selección de conductor</string>
     <string name="native_driver_selection_summary">Elige qué teléfono conectar cuando varios conductores emparejados están en el vehículo</string>

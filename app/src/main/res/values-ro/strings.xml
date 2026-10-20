@@ -1113,6 +1113,15 @@
     <string name="audio_stream_vendor_info">Această unitate auto are fluxuri de ieșire pe care Android standard nu le are; apar mai jos cu numele date de propriul ei sistem. Adesea tocmai la ele este conectat efectiv amplificatorul mașinii, așa că încearcă-le cu butonul difuzorului dacă un canal rămâne mut.</string>
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Alege fluxul de sistem pe care se redă fiecare canal Android Auto și atinge difuzorul ca să îl auzi. Dacă un canal rămâne mut în mașină, mutarea lui pe alt flux rezolvă de obicei problema.</string>
+    <string name="onb_audio_output_title">Ieșire</string>
+    <string name="onb_audio_aaudio_help">AAudio poate face redarea mai fluidă pe unitățile care îl acceptă. Dacă tonul de test pocnește, oprește-l.</string>
+    <string name="onb_audio_output_test">Redă un ton de test</string>
+    <string name="onb_audio_output_testing">Se redă prin %1$s...</string>
+    <string name="onb_audio_output_ok">Redat prin %1$s.</string>
+    <string name="onb_audio_output_underruns">Redat prin %1$s cu %2$d întreruperi. Dacă persistă, încearcă AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio nu s-a deschis, așa că testul a folosit AudioTrack.</string>
+    <string name="onb_audio_output_failed">Tonul de test nu a putut fi redat: %1$s</string>
+    <string name="onb_audio_focus_title">Focalizare audio</string>
     <string name="onb_audio_more_hint">Poți schimba acestea mai târziu din Setări → Fluxuri audio.</string>
     <string name="native_driver_selection_title">Selectare șofer</string>
     <string name="native_driver_selection_summary">Alegeți ce telefon să se conecteze când în vehicul sunt mai mulți șoferi asociați</string>

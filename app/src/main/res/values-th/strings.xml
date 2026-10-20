@@ -617,6 +617,15 @@
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">เสียง</string>
     <string name="onb_audio_help">เลือกระบบสตรีมที่แต่ละช่องของ Android Auto เล่น และแตะลำโพงเพื่อทดลองฟัง</string>
+    <string name="onb_audio_output_title">เอาต์พุต</string>
+    <string name="onb_audio_aaudio_help">AAudio ช่วยให้เล่นลื่นขึ้นบนอุปกรณ์ที่รองรับ หากเสียงทดสอบมีเสียงแตก ให้ปิด</string>
+    <string name="onb_audio_output_test">เล่นเสียงทดสอบ</string>
+    <string name="onb_audio_output_testing">กำลังเล่นผ่าน %1$s...</string>
+    <string name="onb_audio_output_ok">เล่นผ่าน %1$s แล้ว</string>
+    <string name="onb_audio_output_underruns">เล่นผ่าน %1$s โดยมีการสะดุด %2$d ครั้ง หากยังเกิด ให้ลอง AudioTrack</string>
+    <string name="onb_audio_output_fallback">AAudio เปิดไม่ได้ การทดสอบจึงใช้ AudioTrack</string>
+    <string name="onb_audio_output_failed">ไม่สามารถเล่นเสียงทดสอบได้: %1$s</string>
+    <string name="onb_audio_focus_title">โฟกัสเสียง</string>
     <string name="onb_audio_more_hint">คุณสามารถเปลี่ยนแปลงสิ่งเหล่านี้ได้ในภายหลังภายใต้ การตั้งค่า → สตรีมเสียง</string>
     <string name="use_aac_audio">ใช้เสียง AAC</string>
     <string name="use_aac_audio_description">ใช้ตัวแปลงสัญญาณ AAC สำหรับเสียงเพื่อประหยัดแบนด์วิธ (การทดลอง) บนเครือข่าย 2.4 GHz ตัวเลือกนี้จะเปิดโดยอัตโนมัติ</string>

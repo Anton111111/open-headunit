@@ -1111,6 +1111,15 @@
     <string name="audio_stream_vendor_info">Bu teypte standart Android’de bulunmayan çıkış akışları var; aşağıda kendi sisteminin verdiği adlarla listeleniyorlar. Aracın amplifikatörü çoğu zaman gerçekte bunlara bağlıdır; bir kanal sessiz kalıyorsa hoparlör düğmesiyle bunları deneyin.</string>
     <string name="onb_audio_title">Ses</string>
     <string name="onb_audio_help">Her Android Auto kanalının hangi sistem akışında çalacağını seçin ve duymak için hoparlöre dokunun. Araçta bir kanal sessiz kalıyorsa, onu başka bir akışa taşımak genellikle sorunu çözer.</string>
+    <string name="onb_audio_output_title">Çıkış</string>
+    <string name="onb_audio_aaudio_help">AAudio, destekleyen birimlerde oynatmayı daha akıcı hale getirebilir. Test tonu cızırdıyorsa kapatın.</string>
+    <string name="onb_audio_output_test">Test tonu çal</string>
+    <string name="onb_audio_output_testing">%1$s üzerinden çalınıyor...</string>
+    <string name="onb_audio_output_ok">%1$s üzerinden çalındı.</string>
+    <string name="onb_audio_output_underruns">%1$s üzerinden %2$d kesintiyle çalındı. Bu devam ederse AudioTrack\'i deneyin.</string>
+    <string name="onb_audio_output_fallback">AAudio açılmadı, bu yüzden test AudioTrack kullandı.</string>
+    <string name="onb_audio_output_failed">Test tonu çalınamadı: %1$s</string>
+    <string name="onb_audio_focus_title">Ses odağı</string>
     <string name="onb_audio_more_hint">Bunları daha sonra Ayarlar → Ses akışları bölümünden değiştirebilirsiniz.</string>
     <string name="native_driver_selection_title">Sürücü Seçimi</string>
     <string name="native_driver_selection_summary">Araçta birden fazla eşleşmiş sürücü olduğunda hangi telefonun bağlanacağını seçin</string>

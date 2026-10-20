@@ -1114,6 +1114,15 @@
     <string name="audio_stream_vendor_info">这台主机有标准 Android 没有的输出串流，下方以其系统自定义的名称列出。车上的扩大机往往实际接在这些串流上，因此若某个频道一直没有声音，请用喇叭按钮试试看。</string>
     <string name="onb_audio_title">音频</string>
     <string name="onb_audio_help">选择每个 Android Auto 频道要在哪个系统串流上播放，并点按喇叭试听。如果某个频道在车上一直没有声音，改到另一个串流通常就能解决。</string>
+    <string name="onb_audio_output_title">输出</string>
+    <string name="onb_audio_aaudio_help">在支持的设备上，AAudio 可以让播放更流畅。如果测试音有杂音，请关闭它。</string>
+    <string name="onb_audio_output_test">播放测试音</string>
+    <string name="onb_audio_output_testing">正在通过 %1$s 播放...</string>
+    <string name="onb_audio_output_ok">已通过 %1$s 播放。</string>
+    <string name="onb_audio_output_underruns">已通过 %1$s 播放，出现 %2$d 次中断。如果持续出现，请尝试 AudioTrack。</string>
+    <string name="onb_audio_output_fallback">AAudio 未能打开，因此测试使用了 AudioTrack。</string>
+    <string name="onb_audio_output_failed">无法播放测试音：%1$s</string>
+    <string name="onb_audio_focus_title">音频焦点</string>
     <string name="onb_audio_more_hint">之后可以在“设置 → 音频串流”中再修改。</string>
     <string name="native_driver_selection_title">驾驶选择</string>
     <string name="native_driver_selection_summary">当车内有多位已配对驾驶时，选择要连接的手机</string>

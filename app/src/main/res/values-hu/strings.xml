@@ -1112,6 +1112,15 @@
     <string name="audio_stream_vendor_info">Ennek a fejegységnek olyan kimeneti folyamai vannak, amelyek a gyári Androidban nincsenek meg; alább a saját rendszere által adott néven szerepelnek. Gyakran éppen ezekre van kötve az autó erősítője, ezért próbáld ki őket a hangszóró gombbal, ha egy csatorna néma marad.</string>
     <string name="onb_audio_title">Hang</string>
     <string name="onb_audio_help">Válaszd ki, melyik rendszerfolyamon szóljon az egyes Android Auto-csatornák hangja, és koppints a hangszóróra a meghallgatásához. Ha egy csatorna néma marad az autóban, általában segít másik folyamra tenni.</string>
+    <string name="onb_audio_output_title">Kimenet</string>
+    <string name="onb_audio_aaudio_help">Az AAudio simábbá teheti a lejátszást az ezt támogató egységeken. Ha a teszthang sistereg, kapcsolja ki.</string>
+    <string name="onb_audio_output_test">Teszt hang lejátszása</string>
+    <string name="onb_audio_output_testing">Lejátszás %1$s útvonalon...</string>
+    <string name="onb_audio_output_ok">Lejátszva %1$s útvonalon.</string>
+    <string name="onb_audio_output_underruns">Lejátszva %1$s útvonalon, %2$d megszakítással. Ha ez folytatódik, próbálja az AudioTracket.</string>
+    <string name="onb_audio_output_fallback">Az AAudio nem nyílt meg, ezért a teszt az AudioTracket használta.</string>
+    <string name="onb_audio_output_failed">A teszthangot nem sikerült lejátszani: %1$s</string>
+    <string name="onb_audio_focus_title">Hangfókusz</string>
     <string name="onb_audio_more_hint">Ezeket később a Beállítások → Hangfolyamok alatt módosíthatod.</string>
     <string name="native_driver_selection_title">Vezetőválasztás</string>
     <string name="native_driver_selection_summary">Válassza ki, melyik telefon csatlakozzon, ha több párosított vezető tartózkodik a járműben</string>

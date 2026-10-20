@@ -18,6 +18,8 @@ import com.andrerinas.openheadunit.App
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.VehicleTypePolicy
 import com.andrerinas.openheadunit.app.BaseActivity
+import com.andrerinas.openheadunit.decoder.audio.AudioOutputTester
+import com.andrerinas.openheadunit.decoder.audio.PlaybackFocusPolicy
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightNote
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightProgress
@@ -47,8 +49,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Intelligent, device-aware first-run wizard. Replaces the old
@@ -84,6 +88,7 @@ class OnboardingActivity : BaseActivity() {
     private var videoRun: VideoPreflightRun? = null
     private var videoApply = false
     private var videoAttempted = false
+    private var audioTestJob: Job? = null
 
     // Permissions step (registered here, before the activity is RESUMED).
     private var permissionBinder: PermissionRowBinder? = null
@@ -163,6 +168,8 @@ class OnboardingActivity : BaseActivity() {
     override fun onPause() {
         super.onPause()
         dpiPicker?.stopDemo()
+        audioTestJob?.cancel()
+        audioTestJob = null
         // A codec and a surface must not outlive the visible wizard. The result is lost, which is
         // honest: the user can run the five second test again when they come back.
         if (step == STEP_VIDEO && videoJob?.isActive == true) {
@@ -175,6 +182,8 @@ class OnboardingActivity : BaseActivity() {
     override fun onDestroy() {
         videoJob?.cancel()
         videoJob = null
+        audioTestJob?.cancel()
+        audioTestJob = null
         super.onDestroy()
     }
 
@@ -408,6 +417,25 @@ class OnboardingActivity : BaseActivity() {
             { settings.systemAudioStream }, { settings.systemAudioStream = it }
         )
 
+        findViewById<SwitchMaterial>(R.id.onb_audio_aaudio_switch).apply {
+            isChecked = settings.useAAudioOutput
+            setOnCheckedChangeListener { _, checked -> settings.useAAudioOutput = checked }
+        }
+        findViewById<MaterialButton>(R.id.onb_audio_output_test).setOnClickListener {
+            playAudioOutputTest()
+        }
+        findViewById<SwitchMaterial>(R.id.onb_audio_static_focus_switch).apply {
+            isChecked = settings.staticAudioFocus
+            setOnCheckedChangeListener { _, checked ->
+                settings.staticAudioFocus = checked
+                updateAudioFocusUi()
+            }
+        }
+        findViewById<MaterialButton>(R.id.onb_audio_focus_button).setOnClickListener {
+            showFocusModeDialog()
+        }
+        updateAudioFocusUi()
+
         applyAudioStepVisibility()
     }
 
@@ -453,6 +481,94 @@ class OnboardingActivity : BaseActivity() {
         findViewById<TextView>(R.id.onb_audio_media_label).setText(
             if (separate) R.string.audio_channel_media else R.string.audio_channel_all
         )
+    }
+
+    /**
+     * Plays a short PCM tone through the output backend the projection would use. The tone itself
+     * says little about music quality, but it opens AAudio for real and reads its underrun counter,
+     * which is what separates a backend that works from one that crackles.
+     */
+    private fun playAudioOutputTest() {
+        if (audioTestJob?.isActive == true) return
+        val button = findViewById<MaterialButton>(R.id.onb_audio_output_test)
+        val status = findViewById<TextView>(R.id.onb_audio_output_status)
+        button.isEnabled = false
+        status.text = getString(
+            R.string.onb_audio_output_testing,
+            if (settings.useAAudioOutput) AUDIO_BACKEND_AAUDIO else AUDIO_BACKEND_AUDIOTRACK,
+        )
+        audioTestJob = lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) { AudioOutputTester.play(settings) }
+                val backend = if (result.backend == AudioOutputTester.Backend.AAUDIO) {
+                    AUDIO_BACKEND_AAUDIO
+                } else {
+                    AUDIO_BACKEND_AUDIOTRACK
+                }
+                status.text = when {
+                    result.fallbackReason != null -> getString(R.string.onb_audio_output_fallback)
+                    result.underruns > 0 ->
+                        getString(R.string.onb_audio_output_underruns, backend, result.underruns)
+                    else -> getString(R.string.onb_audio_output_ok, backend)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                status.text = getString(
+                    R.string.onb_audio_output_failed,
+                    e.message ?: e.javaClass.simpleName,
+                )
+            } finally {
+                button.isEnabled = true
+                audioTestJob = null
+            }
+        }
+    }
+
+    private fun showFocusModeDialog() {
+        val modes = listOf(
+            PlaybackFocusPolicy.Mode.AUTO,
+            PlaybackFocusPolicy.Mode.ALWAYS,
+            PlaybackFocusPolicy.Mode.NEVER,
+        )
+        val labels = modes.map { focusModeLabel(it) }.toTypedArray()
+        MaterialAlertDialogBuilder(this, R.style.DarkAlertDialog)
+            .setTitle(R.string.playback_focus_mode)
+            .setSingleChoiceItems(
+                labels,
+                modes.indexOf(settings.playbackFocusMode).coerceAtLeast(0),
+            ) { dialog, which ->
+                val mode = modes[which]
+                if (settings.playbackFocusMode != mode) {
+                    settings.playbackFocusMode = mode
+                    // Re-picking the mode is the way back from an automatic veto.
+                    settings.playbackFocusSelfDefeating = false
+                }
+                updateAudioFocusUi()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateAudioFocusUi() {
+        val mode = settings.playbackFocusMode
+        findViewById<MaterialButton>(R.id.onb_audio_focus_button).text = focusModeLabel(mode)
+        findViewById<TextView>(R.id.onb_audio_focus_hint).setText(focusModeHint(mode))
+        findViewById<View>(R.id.onb_audio_static_focus_hint).visibility =
+            if (settings.staticAudioFocus) View.VISIBLE else View.GONE
+    }
+
+    private fun focusModeLabel(mode: PlaybackFocusPolicy.Mode): String = when (mode) {
+        PlaybackFocusPolicy.Mode.AUTO -> getString(R.string.playback_focus_mode_auto)
+        PlaybackFocusPolicy.Mode.ALWAYS -> getString(R.string.playback_focus_mode_always)
+        PlaybackFocusPolicy.Mode.NEVER -> getString(R.string.playback_focus_mode_never)
+    }
+
+    private fun focusModeHint(mode: PlaybackFocusPolicy.Mode): Int = when (mode) {
+        PlaybackFocusPolicy.Mode.ALWAYS -> R.string.playback_focus_mode_always_hint
+        PlaybackFocusPolicy.Mode.NEVER -> R.string.playback_focus_mode_never_hint
+        else -> R.string.playback_focus_mode_auto_hint
     }
 
     /**
@@ -1141,6 +1257,9 @@ class OnboardingActivity : BaseActivity() {
 
         // The manufacturer half of the Desktop Head Unit identity we report by default.
         private const val DHU_MAKE = "Google"
+        // Names for the two output backends, as product names rather than translated words.
+        private const val AUDIO_BACKEND_AAUDIO = "AAudio"
+        private const val AUDIO_BACKEND_AUDIOTRACK = "AudioTrack"
         // Names the car step offers that are not car brands: the head unit make itself and
         // the app's own name. Lowercase, compared against a lowercased input.
         private val NOT_A_MANUFACTURER = setOf("google", "open headunit")

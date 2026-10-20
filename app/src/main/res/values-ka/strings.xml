@@ -1097,6 +1097,15 @@
     <string name="audio_stream_vendor_info">ამ მაგნიტოლას აქვს გამომავალი ნაკადები, რომლებიც სტანდარტულ Android-ს არ აქვს; ქვემოთ ისინი მისივე სისტემის მიერ მინიჭებული სახელებით არის ჩამოთვლილი. ხშირად სწორედ მათზეა რეალურად მიერთებული ავტომობილის გამაძლიერებელი, ამიტომ სცადეთ ისინი დინამიკის ღილაკით, თუ რომელიმე არხი დუმს.</string>
     <string name="onb_audio_title">აუდიო</string>
     <string name="onb_audio_help">აირჩიეთ სისტემური ნაკადი, რომელზეც უკრავს Android Auto-ს თითოეული არხი, და შეეხეთ დინამიკს მოსასმენად. თუ არხი მანქანაში დუმს, ჩვეულებრივ სხვა ნაკადზე გადატანა შველის.</string>
+    <string name="onb_audio_output_title">გამოსვლა</string>
+    <string name="onb_audio_aaudio_help">AAudio-ს შეუძლია დაკვრა უფრო გლუვი გახადოს მის მხარდამჭერ მოწყობილობებზე. თუ ტესტის ბგერა ხრაშუნებს, გამორთეთ.</string>
+    <string name="onb_audio_output_test">ტესტის ბგერის დაკვრა</string>
+    <string name="onb_audio_output_testing">მიმდინარეობს დაკვრა %1$s-ით...</string>
+    <string name="onb_audio_output_ok">დაკრულია %1$s-ით.</string>
+    <string name="onb_audio_output_underruns">დაკრულია %1$s-ით, %2$d შეწყვეტით. თუ გრძელდება, სცადეთ AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio არ გაიხსნა, ამიტომ ტესტმა გამოიყენა AudioTrack.</string>
+    <string name="onb_audio_output_failed">ტესტის ბგერის დაკვრა ვერ მოხერხდა: %1$s</string>
+    <string name="onb_audio_focus_title">აუდიო ფოკუსი</string>
     <string name="onb_audio_more_hint">ამის შეცვლა მოგვიანებით შეგიძლიათ: პარამეტრები → აუდიონაკადები.</string>
     <string name="native_driver_selection_title">მძღოლის არჩევა</string>
     <string name="native_driver_selection_summary">აირჩიეთ დასაკავშირებელი ტელეფონი, როდესაც ავტომობილში რამდენიმე დაწყვილებული მძღოლია</string>

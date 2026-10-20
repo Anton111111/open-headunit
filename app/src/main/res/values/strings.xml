@@ -636,6 +636,15 @@
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Pick the system stream each Android Auto channel plays on, and tap the speaker to hear it. If a channel stays silent in the car, moving it to another stream is usually the fix.</string>
+    <string name="onb_audio_output_title">Output</string>
+    <string name="onb_audio_aaudio_help">AAudio can make playback snappier on units that support it. If the test tone crackles, turn it off.</string>
+    <string name="onb_audio_output_test">Play a test tone</string>
+    <string name="onb_audio_output_testing">Playing through %1$s...</string>
+    <string name="onb_audio_output_ok">Played through %1$s.</string>
+    <string name="onb_audio_output_underruns">Played through %1$s with %2$d glitches. If this keeps happening, try AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio did not open, so the test used AudioTrack.</string>
+    <string name="onb_audio_output_failed">Could not play the test tone: %1$s</string>
+    <string name="onb_audio_focus_title">Audio focus</string>
     <string name="onb_audio_more_hint">You can change these again later under Settings → Audio Streams.</string>
     <string name="use_aac_audio">Use AAC Audio</string>
     <string name="use_aac_audio_description">Use AAC codec for audio to save bandwidth (Experimental). On a wireless session running on 2.4 GHz this is on automatically while \"Lower video on a 2.4 GHz link\" is on.</string>

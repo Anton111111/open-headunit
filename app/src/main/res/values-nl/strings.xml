@@ -1116,6 +1116,15 @@
     <string name="audio_stream_vendor_info">Deze headunit heeft uitvoerstreams die het standaard-Android niet kent; ze staan hieronder onder de namen die zijn eigen systeem eraan geeft. Vaak zijn juist die op de versterker van de auto aangesloten, dus probeer ze met de luidsprekerknop als een kanaal stil blijft.</string>
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Kies via welke systeemstream elk Android Auto-kanaal wordt afgespeeld en tik op de luidspreker om het te horen. Blijft een kanaal stil in de auto, dan helpt het meestal om het naar een andere stream te verplaatsen.</string>
+    <string name="onb_audio_output_title">Uitvoer</string>
+    <string name="onb_audio_aaudio_help">AAudio kan het afspelen soepeler maken op toestellen die het ondersteunen. Als de testtoon krast, schakel het uit.</string>
+    <string name="onb_audio_output_test">Testtoon afspelen</string>
+    <string name="onb_audio_output_testing">Afspelen via %1$s...</string>
+    <string name="onb_audio_output_ok">Afgespeeld via %1$s.</string>
+    <string name="onb_audio_output_underruns">Afgespeeld via %1$s met %2$d haperingen. Als dit blijft gebeuren, probeer AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio ging niet open, dus de test gebruikte AudioTrack.</string>
+    <string name="onb_audio_output_failed">De testtoon kon niet worden afgespeeld: %1$s</string>
+    <string name="onb_audio_focus_title">Audiofocus</string>
     <string name="onb_audio_more_hint">Je kunt dit later aanpassen bij Instellingen → Audiostreams.</string>
     <string name="native_driver_selection_title">Bestuurdersselectie</string>
     <string name="native_driver_selection_summary">Kies welke telefoon verbinding maakt wanneer meerdere gekoppelde bestuurders in het voertuig zijn</string>

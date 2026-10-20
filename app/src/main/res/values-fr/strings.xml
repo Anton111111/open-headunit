@@ -1163,6 +1163,15 @@
     <string name="audio_stream_vendor_info">Cet autoradio possède des flux de sortie absents d\'Android standard ; ils figurent ci-dessous sous les noms que lui donne son propre système. Ce sont souvent ceux auxquels l\'amplificateur de la voiture est réellement raccordé : essayez-les avec le bouton haut-parleur si un canal reste muet.</string>
     <string name="onb_audio_title">Audio</string>
     <string name="onb_audio_help">Choisissez le flux système sur lequel joue chaque canal Android Auto, puis appuyez sur le haut-parleur pour l\'entendre. Si un canal reste muet dans la voiture, le basculer sur un autre flux règle généralement le problème.</string>
+    <string name="onb_audio_output_title">Sortie</string>
+    <string name="onb_audio_aaudio_help">AAudio peut rendre la lecture plus fluide sur les appareils qui le prennent en charge. Si le son de test grésille, désactive-le.</string>
+    <string name="onb_audio_output_test">Lire un son de test</string>
+    <string name="onb_audio_output_testing">Lecture via %1$s...</string>
+    <string name="onb_audio_output_ok">Lu via %1$s.</string>
+    <string name="onb_audio_output_underruns">Lu via %1$s avec %2$d coupures. Si cela continue, essaie AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio ne s\'est pas ouvert, le test a donc utilisé AudioTrack.</string>
+    <string name="onb_audio_output_failed">Impossible de lire le son de test : %1$s</string>
+    <string name="onb_audio_focus_title">Focus audio</string>
     <string name="onb_audio_more_hint">Vous pourrez modifier ces réglages plus tard dans Paramètres → Flux audio.</string>
     <string name="native_driver_selection_title">Sélection du conducteur</string>
     <string name="native_driver_selection_summary">Choisir le téléphone à connecter lorsque plusieurs conducteurs appairés sont dans le véhicule</string>

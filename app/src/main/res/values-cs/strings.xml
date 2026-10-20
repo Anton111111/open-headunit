@@ -1116,6 +1116,15 @@
     <string name="audio_stream_vendor_info">Toto autorádio má výstupní streamy, které standardní Android nemá; níže jsou uvedeny pod názvy, které jim dává jeho vlastní systém. Právě k nim bývá zesilovač vozu skutečně připojen, takže je vyzkoušejte tlačítkem reproduktoru, pokud některý kanál mlčí.</string>
     <string name="onb_audio_title">Zvuk</string>
     <string name="onb_audio_help">Vyberte systémový stream, na kterém hraje každý kanál Android Auto, a klepnutím na reproduktor si jej poslechněte. Pokud některý kanál v autě mlčí, obvykle pomůže přesunout jej na jiný stream.</string>
+    <string name="onb_audio_output_title">Výstup</string>
+    <string name="onb_audio_aaudio_help">AAudio může zrychlit přehrávání na zařízeních, která ho podporují. Pokud testovací tón praská, vypněte ho.</string>
+    <string name="onb_audio_output_test">Přehrát testovací tón</string>
+    <string name="onb_audio_output_testing">Přehrávání přes %1$s...</string>
+    <string name="onb_audio_output_ok">Přehráno přes %1$s.</string>
+    <string name="onb_audio_output_underruns">Přehráno přes %1$s s %2$d výpadky. Pokud to pokračuje, zkuste AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio se neotevřelo, proto test použil AudioTrack.</string>
+    <string name="onb_audio_output_failed">Testovací tón se nepodařilo přehrát: %1$s</string>
+    <string name="onb_audio_focus_title">Fokus audia</string>
     <string name="onb_audio_more_hint">Toto můžete později změnit v Nastavení → Zvukové streamy.</string>
     <string name="native_driver_selection_title">Výběr řidiče</string>
     <string name="native_driver_selection_summary">Vyberte, který telefon se má připojit, když je ve vozidle více spárovaných řidičů</string>

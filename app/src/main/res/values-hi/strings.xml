@@ -617,6 +617,15 @@
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">ऑडियो</string>
     <string name="onb_audio_help">प्रत्येक Android Auto चैनल जिस सिस्टम स्ट्रीम पर चलता है उसे चुनें, और इसे सुनने के लिए स्पीकर पर टैप करें।</string>
+    <string name="onb_audio_output_title">आउटपुट</string>
+    <string name="onb_audio_aaudio_help">AAudio इसे सपोर्ट करने वाली यूनिट में प्लेबैक को तेज़ बना सकता है। अगर टेस्ट टोन में खरखराहट हो, तो इसे बंद करें।</string>
+    <string name="onb_audio_output_test">टेस्ट टोन चलाएँ</string>
+    <string name="onb_audio_output_testing">%1$s से चला रहे हैं...</string>
+    <string name="onb_audio_output_ok">%1$s से चलाया गया।</string>
+    <string name="onb_audio_output_underruns">%1$s से %2$d रुकावटों के साथ चलाया गया। अगर ऐसा होता रहे, तो AudioTrack आज़माएँ।</string>
+    <string name="onb_audio_output_fallback">AAudio नहीं खुला, इसलिए टेस्ट ने AudioTrack इस्तेमाल किया।</string>
+    <string name="onb_audio_output_failed">टेस्ट टोन नहीं चल सका: %1$s</string>
+    <string name="onb_audio_focus_title">ऑडियो फ़ोकस</string>
     <string name="onb_audio_more_hint">आप इन्हें बाद में सेटिंग्स → ऑडियो स्ट्रीम के अंतर्गत फिर से बदल सकते हैं।</string>
     <string name="use_aac_audio">AAC ऑडियो का उपयोग करें</string>
     <string name="use_aac_audio_description">बैंडविड्थ बचाने के लिए ऑडियो के लिए AAC कोडेक का उपयोग करें (प्रायोगिक)। 2.4 GHz पर चलने वाले वायरलेस सत्र पर यह स्वचालित रूप से चालू होता है।</string>

@@ -1115,6 +1115,15 @@
     <string name="audio_stream_vendor_info">To radio samochodowe ma strumienie wyjściowe, których nie ma w standardowym Androidzie; poniżej widnieją pod nazwami nadanymi przez jego własny system. Często to właśnie do nich jest faktycznie podłączony wzmacniacz samochodu, więc wypróbuj je przyciskiem głośnika, jeśli któryś kanał milczy.</string>
     <string name="onb_audio_title">Dźwięk</string>
     <string name="onb_audio_help">Wybierz strumień systemowy, na którym odtwarzany jest każdy kanał Android Auto, i dotknij głośnika, aby go usłyszeć. Jeśli w samochodzie któryś kanał milczy, zwykle pomaga przeniesienie go na inny strumień.</string>
+    <string name="onb_audio_output_title">Wyjście</string>
+    <string name="onb_audio_aaudio_help">AAudio może przyspieszyć odtwarzanie na urządzeniach, które je obsługują. Jeśli ton testowy trzeszczy, wyłącz je.</string>
+    <string name="onb_audio_output_test">Odtwórz ton testowy</string>
+    <string name="onb_audio_output_testing">Odtwarzanie przez %1$s...</string>
+    <string name="onb_audio_output_ok">Odtworzono przez %1$s.</string>
+    <string name="onb_audio_output_underruns">Odtworzono przez %1$s z %2$d przerwami. Jeśli to się powtarza, spróbuj AudioTrack.</string>
+    <string name="onb_audio_output_fallback">AAudio nie otworzyło się, więc test użył AudioTrack.</string>
+    <string name="onb_audio_output_failed">Nie udało się odtworzyć tonu testowego: %1$s</string>
+    <string name="onb_audio_focus_title">Fokus audio</string>
     <string name="onb_audio_more_hint">Możesz to później zmienić w Ustawienia → Strumienie dźwięku.</string>
     <string name="native_driver_selection_title">Wybór kierowcy</string>
     <string name="native_driver_selection_summary">Wybierz, który telefon ma się połączyć, gdy w pojeździe znajduje się kilku sparowanych kierowców</string>

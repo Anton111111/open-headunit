@@ -1114,6 +1114,15 @@
     <string name="audio_stream_vendor_info">تحتوي وحدة الرأس هذه على تدفقات إخراج لا توجد في أندرويد القياسي؛ وهي مدرجة أدناه بالأسماء التي يمنحها لها نظامها الخاص. غالبًا ما يكون مكبر صوت السيارة موصولًا بها فعليًا، فجرّبها بزر السماعة إذا ظلت إحدى القنوات صامتة.</string>
     <string name="onb_audio_title">الصوت</string>
     <string name="onb_audio_help">اختر تدفق النظام الذي تُشغَّل عليه كل قناة من قنوات Android Auto، والمس السماعة لسماعه. إذا ظلت قناة صامتة في السيارة، فنقلها إلى تدفق آخر هو الحل عادةً.</string>
+    <string name="onb_audio_output_title">الإخراج</string>
+    <string name="onb_audio_aaudio_help">يمكن أن يجعل AAudio التشغيل أكثر سلاسة على الوحدات التي تدعمه. إذا كان صوت الاختبار يطقطق، فأوقفه.</string>
+    <string name="onb_audio_output_test">تشغيل نغمة اختبار</string>
+    <string name="onb_audio_output_testing">التشغيل عبر %1$s...</string>
+    <string name="onb_audio_output_ok">تم التشغيل عبر %1$s.</string>
+    <string name="onb_audio_output_underruns">تم التشغيل عبر %1$s مع %2$d انقطاعات. إذا استمر ذلك، جرّب AudioTrack.</string>
+    <string name="onb_audio_output_fallback">لم يُفتح AAudio، لذلك استخدم الاختبار AudioTrack.</string>
+    <string name="onb_audio_output_failed">تعذّر تشغيل نغمة الاختبار: %1$s</string>
+    <string name="onb_audio_focus_title">تركيز الصوت</string>
     <string name="onb_audio_more_hint">يمكنك تغيير ذلك لاحقًا من الإعدادات ← تدفقات الصوت.</string>
     <string name="native_driver_selection_title">اختيار السائق</string>
     <string name="native_driver_selection_summary">اختر الهاتف المراد الاتصال به عند وجود عدة هواتف مقترنة داخل السيارة</string>

@@ -1124,6 +1124,15 @@
     <string name="audio_stream_vendor_info">이 헤드유닛에는 표준 Android에 없는 출력 스트림이 있으며, 아래에 자체 시스템이 붙인 이름으로 표시됩니다. 차량 앰프는 실제로 이런 스트림에 연결된 경우가 많으므로, 어떤 채널이 계속 무음이면 스피커 버튼으로 시험해 보세요.</string>
     <string name="onb_audio_title">오디오</string>
     <string name="onb_audio_help">각 Android Auto 채널이 재생될 시스템 스트림을 선택하고 스피커를 눌러 들어 보세요. 차에서 어떤 채널이 무음이면 대개 다른 스트림으로 옮기면 해결됩니다.</string>
+    <string name="onb_audio_output_title">출력</string>
+    <string name="onb_audio_aaudio_help">AAudio는 이를 지원하는 기기에서 재생을 더 부드럽게 만들 수 있습니다. 테스트 음이 지직거리면 끄세요.</string>
+    <string name="onb_audio_output_test">테스트 음 재생</string>
+    <string name="onb_audio_output_testing">%1$s(으)로 재생 중...</string>
+    <string name="onb_audio_output_ok">%1$s(으)로 재생했습니다.</string>
+    <string name="onb_audio_output_underruns">%1$s(으)로 %2$d회 끊기며 재생했습니다. 계속되면 AudioTrack을 사용해 보세요.</string>
+    <string name="onb_audio_output_fallback">AAudio가 열리지 않아 테스트에서 AudioTrack을 사용했습니다.</string>
+    <string name="onb_audio_output_failed">테스트 음을 재생할 수 없습니다: %1$s</string>
+    <string name="onb_audio_focus_title">오디오 포커스</string>
     <string name="onb_audio_more_hint">설정 → 오디오 스트림에서 나중에 다시 변경할 수 있습니다.</string>
     <string name="native_driver_selection_title">운전자 선택</string>
     <string name="native_driver_selection_summary">차량에 페어링된 운전자가 여러 명 있을 때 연결할 스마트폰을 선택합니다</string>
