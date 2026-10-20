@@ -271,6 +271,16 @@ class SettingsFragment : Fragment() {
     private var hasChanges = false
     private var pendingStorageAction: (() -> Unit)? = null
 
+    // The preferred-phone row lists paired devices, which needs BLUETOOTH_CONNECT on API 31+.
+    private val preferredDevicePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            updateSettingsList()
+            showPreferredDevicePicker()
+        } else {
+            ToastUtils.showToast(requireContext(), R.string.bt_permission_denied, Toast.LENGTH_LONG, force = true)
+        }
+    }
+
     private val bluetoothPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             handleNativeAaSelection()
@@ -633,6 +643,38 @@ class SettingsFragment : Fragment() {
             } while (zbtProbeJob?.isActive == true)
             updateSettingsList()
         }
+    }
+
+    /** The phone Native AA prefers when several are paired. Needs BLUETOOTH_CONNECT on API 31+. */
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun showPreferredDevicePicker() {
+        val currentPrefMac = pendingNativePreferredDeviceMac.orEmpty()
+        val bonded = BluetoothHelper.pairedDevicesOrEmpty(requireContext())
+        // Only a phone can be the preferred phone: a watch chosen here used to
+        // count as one everywhere. A stored non-phone is cleared with None.
+        val likelyPhones = bonded.filter {
+            BluetoothHelper.isLikelyPhone(it, preferredMac = currentPrefMac)
+        }
+
+        val options = mutableListOf<Pair<String, String>>()
+        options.add("" to getString(R.string.driver_none))
+        for (dev in likelyPhones) {
+            val name = dev.name ?: "Unknown"
+            options.add(dev.address to "$name (${dev.address})")
+        }
+        val labels = options.map { it.second }.toTypedArray()
+        val selectedIdx = options.indexOfFirst { it.first.equals(currentPrefMac, ignoreCase = true) }.coerceAtLeast(0)
+
+        MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
+            .setTitle(R.string.native_driver_preferred_device)
+            .setSingleChoiceItems(labels, selectedIdx) { dialog, which ->
+                dialog.dismiss()
+                pendingNativePreferredDeviceMac = options[which].first
+                checkChanges()
+                updateSettingsList()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun handleBackPress() {
@@ -1353,8 +1395,9 @@ class SettingsFragment : Fragment() {
                 ))
 
                 val currentPrefMac = pendingNativePreferredDeviceMac.orEmpty()
-                val adapter = BluetoothHelper.getBluetoothAdapter(requireContext())
-                val bonded = adapter?.bondedDevices?.toList() ?: emptyList()
+                // Empty without BLUETOOTH_CONNECT: the row then shows the stored address, and
+                // tapping it asks for the permission instead of crashing the screen on open.
+                val bonded = BluetoothHelper.pairedDevicesOrEmpty(requireContext())
                 val prefDeviceName = bonded.firstOrNull { it.address.equals(currentPrefMac, ignoreCase = true) }?.name
                     ?: if (currentPrefMac.isNotEmpty()) currentPrefMac else getString(R.string.driver_none)
 
@@ -1363,31 +1406,11 @@ class SettingsFragment : Fragment() {
                     nameResId = R.string.native_driver_preferred_device,
                     value = prefDeviceName,
                     onClick = { _ ->
-                        // Only a phone can be the preferred phone: a watch chosen here used to
-                        // count as one everywhere. A stored non-phone is cleared with None.
-                        val likelyPhones = bonded.filter {
-                            BluetoothHelper.isLikelyPhone(it, preferredMac = currentPrefMac)
+                        if (BluetoothHelper.canReadPairedDevices(requireContext())) {
+                            showPreferredDevicePicker()
+                        } else {
+                            preferredDevicePermissionLauncher.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
                         }
-
-                        val options = mutableListOf<Pair<String, String>>()
-                        options.add("" to getString(R.string.driver_none))
-                        likelyPhones.forEach { dev ->
-                            val name = dev.name ?: "Unknown"
-                            options.add(dev.address to "$name (${dev.address})")
-                        }
-                        val labels = options.map { it.second }.toTypedArray()
-                        val selectedIdx = options.indexOfFirst { it.first.equals(currentPrefMac, ignoreCase = true) }.coerceAtLeast(0)
-
-                        MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
-                            .setTitle(R.string.native_driver_preferred_device)
-                            .setSingleChoiceItems(labels, selectedIdx) { dialog, which ->
-                                dialog.dismiss()
-                                pendingNativePreferredDeviceMac = options[which].first
-                                checkChanges()
-                                updateSettingsList()
-                            }
-                            .setNegativeButton(R.string.cancel, null)
-                            .show()
                     }
                 ))
             }
