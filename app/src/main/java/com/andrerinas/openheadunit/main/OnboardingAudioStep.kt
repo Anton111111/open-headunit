@@ -762,6 +762,10 @@ class OnboardingAudioStep(
             button.insetBottom = 0
             button.iconSize = dp(if (compactRow) 20 else 24)
             button.iconPadding = dp(if (compactRow) 6 else 10)
+            // Three answers side by side on a 480 dp panel leave no room for the default
+            // padding: "Sounded fine" wrapped and the row grew past the card.
+            val side = dp(if (compactRow) 8 else 16)
+            button.setPadding(side, button.paddingTop, side, button.paddingBottom)
         }
     }
 
@@ -834,7 +838,9 @@ class OnboardingAudioStep(
 
     private fun applyDoneLayout(compactRow: Boolean, widthDp: Int) {
         val veryTiny = lastHeightDp < 120
-        focusContext.isVisible = !veryTiny
+        // On TINY the header already asks about the radio; the context line pushed the
+        // options under the footer.
+        focusContext.isVisible = !veryTiny && tier != Tier.TINY
         focusContext.setText(
             if (compactRow) R.string.onb_audio_done_context_short
             else R.string.onb_audio_done_context
@@ -896,7 +902,9 @@ class OnboardingAudioStep(
         )
         focusAlwaysHint.isVisible = !short
         focusNeverHint.isVisible = !short
-        focusAutoHint.isVisible = true
+        // On TINY the option is already selected by default, and "Recommended" broke mid-word
+        // in a 150 dp card.
+        focusAutoHint.isVisible = !tiny
     }
 
     private fun stageTitleRes(): Int = when (stage) {
