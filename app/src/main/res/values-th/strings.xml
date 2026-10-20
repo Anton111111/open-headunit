@@ -630,7 +630,7 @@
 
     <!-- Onboarding: audio step -->
     <string name="onb_audio_title">เสียง</string>
-    <string name="onb_audio_help">เลือกระบบสตรีมที่แต่ละช่องของ Android Auto เล่น และแตะลำโพงเพื่อทดลองฟัง</string>
+    <string name="onb_audio_help">เรามาตรวจสอบว่าเสียงของ Android Auto ตรงกับอุปกรณ์นี้หรือไม่ เพิ่มระดับเสียงวิทยุก่อนที่จะเริ่ม</string>
     <string name="onb_audio_output_title">เอาต์พุต</string>
     <string name="onb_audio_aaudio_help">AAudio ช่วยให้เล่นลื่นขึ้นบนอุปกรณ์ที่รองรับ หากเสียงทดสอบมีเสียงแตก ให้ปิด</string>
     <string name="onb_audio_output_test">เล่นเสียงทดสอบ</string>
@@ -640,7 +640,7 @@
     <string name="onb_audio_output_skipped_aaudio">เล่นผ่าน AAudio แต่เสียงขาดเป็นช่วง ถ้ามีเสียงแตก ให้ปิด AAudio</string>
     <string name="onb_audio_output_skipped">เล่นผ่าน AudioTrack แต่เสียงขาดเป็นช่วง ลองเล่นอีกครั้งเพื่อดูว่าเกิดทุกครั้งหรือไม่</string>
     <string name="onb_audio_static_focus_short">เปิดไว้หากเสียงของ Android Auto ขาดหายในรถ และยังลดเสียงเพลงขณะระบบนำทางพูดด้วย</string>
-    <string name="onb_audio_focus_auto_short">หยุดวิทยุหรือเครื่องเล่นอื่นชั่วคราวขณะ Android Auto เล่น หากกลับไปหยุดโทรศัพท์ของคุณแทน ระบบจะเลิกทำ</string>
+    <string name="onb_audio_focus_auto_short">แอปตัดสินใจ</string>
     <string name="onb_audio_output_failed">ไม่สามารถเล่นเสียงทดสอบได้: %1$s</string>
     <string name="onb_audio_focus_title">โฟกัสเสียง</string>
     <string name="onb_audio_more_hint">คุณสามารถเปลี่ยนแปลงสิ่งเหล่านี้ได้ในภายหลังภายใต้ การตั้งค่า → สตรีมเสียง</string>
@@ -1349,4 +1349,57 @@
     <string name="debug_video_fault_budget">งบประมาณข้อผิดพลาด</string>
     <string name="debug_force_memory_profile">บังคับโปรไฟล์หน่วยความจำ</string>
 
+    <string name="onb_audio_play_test">เล่นเสียงทดสอบ</string>
+    <string name="onb_audio_play_test_sub">โดยจะเล่นไม่กี่วินาที เช่นเดียวกับเพลงใน Android Auto</string>
+    <string name="onb_audio_question">มันฟังดูเป็นยังไงบ้าง?</string>
+    <string name="onb_audio_play_again">เล่นอีกครั้ง</string>
+    <string name="onb_audio_answer_ok">มันฟังดูดี</string>
+    <string name="onb_audio_answer_silent">ฉันไม่ได้ยินอะไรเลย</string>
+    <string name="onb_audio_answer_crackle">มันแตกหรือตัดออก</string>
+    <string name="onb_audio_answer_ok_short">ฟังดูดี</string>
+    <string name="onb_audio_answer_silent_short">ไม่มีเสียง</string>
+    <string name="onb_audio_answer_crackle_short">เสียงแตก</string>
+    <string name="onb_audio_silent_title">มาลองช่องเสียงอื่นกัน</string>
+    <string name="onb_audio_silent_help">วิทยุบางเครื่องจะเปิดเสียงเฉพาะบางช่องเท่านั้น แตะแต่ละรายการเพื่อฟัง จากนั้นใช้อันแรกที่มีเสียง</string>
+    <string name="onb_audio_silent_play">เล่นเสียงทดสอบในช่องนี้</string>
+    <string name="onb_audio_silent_use">ใช้</string>
+    <string name="onb_audio_silent_recommended">แนะนำ</string>
+    <string name="onb_audio_crackle_title">เปลี่ยนเป็นเสียงมาตรฐานแล้ว</string>
+    <string name="onb_audio_crackle_title_already_standard">อยู่ในเสียงมาตรฐานแล้ว</string>
+    <string name="onb_audio_crackle_help">โหมดเร็ว (AAudio) เกิดเสียงแตกบนวิทยุบางรุ่น เราปิดมันแล้ว เล่นอีกครั้ง</string>
+    <string name="onb_audio_crackle_help_already_standard">โหมดเร็วปิดอยู่แล้ว เล่นอีกครั้ง; หากยังคงเสียงแตก ให้ลดระดับเสียงวิทยุลงหรือลองใช้ช่องอื่น</string>
+    <string name="onb_audio_crackle_replay">เล่นอีกครั้ง</string>
+    <string name="onb_audio_done_title">แล้ววิทยุของเครื่องล่ะ?</string>
+    <string name="onb_audio_done_context">หากคุณมีวิทยุ FM หรือเพลงจากตัวเครื่องที่กำลังเล่นอยู่ และ Android Auto เริ่มส่งเสียง เช่น เมื่อระบบนำทางพูด:</string>
+    <string name="onb_audio_done_context_short">หากวิทยุ FM กำลังเล่นอยู่และ Android Auto เริ่มส่งเสียง:</string>
+    <string name="onb_audio_focus_always">มันก็หยุดอยู่เสมอ</string>
+    <string name="onb_audio_focus_always_short">หยุดชั่วคราว</string>
+    <string name="onb_audio_focus_always_hint">วิทยุจะหยุดในขณะที่ Android Auto ส่งเสียงและกลับมาอีกครั้งเมื่อสิ้นสุด</string>
+    <string name="onb_audio_focus_always_hint_short">กลับมาอีกครั้งเมื่อ Android Auto สิ้นสุด</string>
+    <string name="onb_audio_focus_never">มันเล่นต่อไป</string>
+    <string name="onb_audio_focus_never_hint">คุณจะได้ยินทั้งสองอย่างพร้อมกัน</string>
+    <string name="onb_audio_focus_never_hint_short">คุณได้ยินทั้งสองอย่าง</string>
+    <string name="onb_audio_focus_auto">ให้แอปตัดสินใจ</string>
+    <string name="onb_audio_focus_auto_hint">จะหยุดชั่วคราว เว้นแต่จะเป็นการตัดเพลงในโทรศัพท์ผ่านบลูทูธด้วย</string>
+    <string name="onb_audio_focus_auto_hint_short">ที่แนะนำ. เว้นแต่มันจะตัดโทรศัพท์ของคุณ</string>
+    <string name="onb_audio_focus_recommended">แนะนำ</string>
+    <string name="onb_audio_chip_ok">เสียงใช้งานได้</string>
+    <string name="onb_audio_chip_through">เสียงเข้ามาทาง %1$s</string>
+    <string name="onb_audio_chip_standard">เสียงมาตรฐานไม่มีเสียงแตก</string>
+    <string name="onb_audio_more_options">ตัวเลือกเสียงเพิ่มเติม</string>
+    <string name="onb_audio_more_options_short">ตัวเลือกเพิ่มเติม</string>
+    <string name="onb_audio_advanced_title">ตัวเลือกเสียงเพิ่มเติม</string>
+    <string name="onb_audio_advanced_back">กลับมาที่การทดสอบเสียง</string>
+    <string name="onb_audio_advanced_help">ตัวเลือกเหล่านี้จำเป็นเฉพาะในกรณีที่มีบางอย่างฟังดูไม่ถูกต้องเท่านั้น การทดสอบเสียงได้ตั้งค่าไว้สำหรับคุณแล้ว</string>
+    <string name="onb_audio_advanced_test_ok">เสียงใช้งานได้</string>
+    <string name="onb_audio_separate_title">ช่องที่แตกต่างกันสำหรับแต่ละเสียง</string>
+    <string name="onb_audio_separate_help">มีประโยชน์หากได้ยินเสียงเพลงแต่ไม่ได้ยินเสียงการนำทางหรือการโทร</string>
+    <string name="onb_audio_channels_help">เลือกระบบสตรีมที่แต่ละช่องเล่น แตะลำโพงเพื่อฟัง</string>
+    <string name="onb_audio_aaudio_title">ผลผลิตที่รวดเร็ว (ทดลอง)</string>
+    <string name="onb_audio_static_focus_title">ยึดมั่นในเสียง</string>
+    <string name="onb_audio_static_focus_help">เปิดการตั้งค่านี้หากเสียงของ Android Auto หลุดไปในรถ นอกจากนี้ยังลดเสียงเพลงในขณะที่ระบบนำทางพูดอีกด้วย</string>
+    <string name="onb_audio_testing">กำลังเล่นเสียงทดสอบ...</string>
+    <string name="onb_audio_test_failed">ไม่สามารถเล่นเสียงทดสอบ: %1$s</string>
+    <string name="aaudio_output">เอาต์พุต AAudio (ทดลอง)</string>
+    <string name="aaudio_output_description">ลองใช้เอาต์พุตสื่อที่มีความหน่วงต่ำ ใช้ AudioTrack โดยอัตโนมัติหากไม่พร้อมใช้งาน</string>
 </resources>
