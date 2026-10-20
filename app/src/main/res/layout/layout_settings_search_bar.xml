@@ -15,8 +15,8 @@
     android:paddingRight="2dp">
 
     <ImageView
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="@dimen/settings_search_icon_size"
+        android:layout_height="@dimen/settings_search_icon_size"
         android:importantForAccessibility="no"
         app:srcCompat="@drawable/ic_sym_search"
         app:tint="?attr/settingsOnSurfaceVariant"
@@ -37,13 +37,13 @@
         android:maxLines="1"
         android:textColor="?attr/settingsOnSurface"
         android:textColorHint="?attr/settingsOnSurfaceVariant"
-        android:textSize="16sp"
+        android:textSize="@dimen/settings_search_text_size"
         tools:targetApi="o" />
 
     <ImageButton
         android:id="@+id/settingsSearchClear"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="@dimen/settings_search_clear_size"
+        android:layout_height="@dimen/settings_search_clear_size"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/settings_search_clear"
         android:scaleType="center"

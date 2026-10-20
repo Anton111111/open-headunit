@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.drawable.DrawableCompat
+import com.andrerinas.openheadunit.R
 
 /**
  * Builds the settings screen's backgrounds from a [SettingsPalette].
@@ -28,11 +29,7 @@ object SettingsDrawables {
     private const val OUTLINE_DP = 1f
     private const val PRESSED_OVERLAY_ALPHA = 0x1F
 
-    private const val SWITCH_TRACK_WIDTH_DP = 52
-    private const val SWITCH_TRACK_HEIGHT_DP = 32
     private const val SWITCH_TRACK_OUTLINE_DP = 2f
-    private const val SWITCH_THUMB_ON_DP = 24
-    private const val SWITCH_THUMB_OFF_DP = 16
 
     /** One row of a connected group: large outer corners, small inner ones, pressed feedback. */
     fun groupItem(
@@ -68,15 +65,20 @@ object SettingsDrawables {
     fun searchField(context: Context, palette: SettingsPalette, radiusPx: Float): Drawable =
         box(context, palette.containerHigh, radiusPx, palette)
 
-    /** Material 3 switch track: filled when on, outlined when off. */
+    /**
+     * Material 3 switch track: filled when on, outlined when off. Its size comes from
+     * dimens_settings.xml, so it grows with the rest of the row on car panels.
+     */
     fun switchTrack(context: Context, palette: SettingsPalette): Drawable {
-        val radius = dp(context, SWITCH_TRACK_HEIGHT_DP / 2f)
+        val res = context.resources
+        val width = res.getDimensionPixelSize(R.dimen.settings_switch_track_width)
+        val height = res.getDimensionPixelSize(R.dimen.settings_switch_track_height)
         fun track(@ColorInt fill: Int, @ColorInt outline: Int) = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = radius
+            cornerRadius = height / 2f
             setColor(fill)
             setStroke(dp(context, SWITCH_TRACK_OUTLINE_DP).toInt(), outline)
-            setSize(dp(context, SWITCH_TRACK_WIDTH_DP.toFloat()).toInt(), dp(context, SWITCH_TRACK_HEIGHT_DP.toFloat()).toInt())
+            setSize(width, height)
         }
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_checked), track(palette.primary, palette.primary))
@@ -87,25 +89,25 @@ object SettingsDrawables {
     /**
      * Material 3 switch thumb: a large dot when on, a small one when off. Both are inset into one
      * slot (track height tall, half the track wide) so the switch keeps its size: SwitchCompat
-     * makes the track twice the thumb's width, which gives Material's 52dp.
+     * makes the track twice the thumb's width.
      */
     fun switchThumb(context: Context, palette: SettingsPalette): Drawable {
-        val slotWidth = SWITCH_TRACK_WIDTH_DP / 2f
-        val slotHeight = SWITCH_TRACK_HEIGHT_DP.toFloat()
-        fun dot(@ColorInt color: Int, sizeDp: Int): Drawable {
-            val size = dp(context, sizeDp.toFloat()).toInt()
+        val res = context.resources
+        val slotWidth = res.getDimensionPixelSize(R.dimen.settings_switch_track_width) / 2
+        val slotHeight = res.getDimensionPixelSize(R.dimen.settings_switch_track_height)
+        fun dot(@ColorInt color: Int, size: Int): Drawable {
             val oval = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(color)
                 setSize(size, size)
             }
-            val insetX = dp(context, (slotWidth - sizeDp) / 2f).toInt()
-            val insetY = dp(context, (slotHeight - sizeDp) / 2f).toInt()
+            val insetX = (slotWidth - size) / 2
+            val insetY = (slotHeight - size) / 2
             return InsetDrawable(oval, insetX, insetY, insetX, insetY)
         }
         return StateListDrawable().apply {
-            addState(intArrayOf(android.R.attr.state_checked), dot(palette.onPrimary, SWITCH_THUMB_ON_DP))
-            addState(intArrayOf(), dot(palette.outline, SWITCH_THUMB_OFF_DP))
+            addState(intArrayOf(android.R.attr.state_checked), dot(palette.onPrimary, res.getDimensionPixelSize(R.dimen.settings_switch_thumb_on_size)))
+            addState(intArrayOf(), dot(palette.outline, res.getDimensionPixelSize(R.dimen.settings_switch_thumb_off_size)))
         }
     }
 

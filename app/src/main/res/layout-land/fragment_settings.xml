@@ -90,8 +90,9 @@
             android:paddingRight="20dp"
             android:text="@string/save"
             android:textAllCaps="false"
+            android:textSize="@dimen/settings_control_text_size"
             app:iconPadding="6dp"
-            app:iconSize="18dp" />
+            app:iconSize="@dimen/settings_control_icon_size" />
 
     </LinearLayout>
 

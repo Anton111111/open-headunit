@@ -34,7 +34,7 @@
             android:layout_marginStart="12dp"
             android:layout_marginLeft="12dp"
             android:textColor="?attr/settingsOnSurfaceVariant"
-            android:textSize="14sp"
+            android:textSize="@dimen/settings_row_value_size"
             tools:text="10 s" />
 
     </LinearLayout>

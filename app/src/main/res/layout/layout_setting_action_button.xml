@@ -11,11 +11,10 @@
         android:id="@+id/action_button"
         style="@style/Widget.Material3.Button"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="@dimen/settings_action_button_height"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/save"
-        android:textSize="15sp"
-        app:cornerRadius="28dp" />
+        android:textSize="@dimen/settings_action_button_text_size" />
 
 </FrameLayout>

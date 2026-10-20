@@ -57,12 +57,12 @@
         android:maxWidth="@dimen/settings_inline_value_max_width"
         android:maxLines="1"
         android:textColor="?attr/settingsOnSurfaceVariant"
-        android:textSize="14sp"
+        android:textSize="@dimen/settings_row_value_size"
         tools:text="USB" />
 
     <ImageView
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="@dimen/settings_row_icon_size"
+        android:layout_height="@dimen/settings_row_icon_size"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
         android:importantForAccessibility="no"

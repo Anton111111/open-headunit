@@ -19,8 +19,8 @@
 
     <ImageView
         android:id="@+id/scopeIcon"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="@dimen/settings_row_icon_size"
+        android:layout_height="@dimen/settings_row_icon_size"
         android:importantForAccessibility="no"
         app:tint="?attr/settingsOnSecondaryContainer"
         tools:ignore="ContentDescription"
@@ -43,8 +43,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:minWidth="0dp"
-        android:minHeight="40dp"
+        android:minHeight="@dimen/settings_text_button_min_height"
         android:textColor="?attr/settingsPrimary"
+        android:textSize="@dimen/settings_control_text_size"
         tools:text="Change" />
 
 </LinearLayout>

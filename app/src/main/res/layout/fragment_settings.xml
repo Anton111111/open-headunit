@@ -59,7 +59,7 @@
             android:id="@+id/settingsSave"
             style="@style/Widget.Material3.Button"
             android:layout_width="wrap_content"
-            android:layout_height="44dp"
+            android:layout_height="@dimen/settings_header_control_height"
             android:layout_marginStart="4dp"
             android:layout_marginLeft="4dp"
             android:enabled="false"
@@ -71,8 +71,9 @@
             android:paddingRight="20dp"
             android:text="@string/save"
             android:textAllCaps="false"
+            android:textSize="@dimen/settings_control_text_size"
             app:iconPadding="6dp"
-            app:iconSize="18dp" />
+            app:iconSize="@dimen/settings_control_icon_size" />
 
     </LinearLayout>
 

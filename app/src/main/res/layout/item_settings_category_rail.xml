@@ -17,8 +17,8 @@
 
     <ImageView
         android:id="@+id/categoryIcon"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
+        android:layout_width="@dimen/settings_rail_icon_size"
+        android:layout_height="@dimen/settings_rail_icon_size"
         android:importantForAccessibility="no"
         tools:ignore="ContentDescription" />
 

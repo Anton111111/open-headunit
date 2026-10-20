@@ -132,8 +132,6 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
         /** Rebind payload that only refreshes a row's group corners. */
         private const val PAYLOAD_GROUP_SHAPE = "groupShape"
 
-        private const val SCOPE_NOTICE_RADIUS_DP = 16f
-        private const val SEGMENT_RADIUS_DP = 20f
     }
 
     // Resolved from the first parent's theme; every screen using this adapter shares one theme.
@@ -338,6 +336,8 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
 
         init {
             styleFilledButton(button, colors)
+            // A full pill at whatever height the panel size gives the button.
+            button.cornerRadius = itemView.resources.getDimensionPixelSize(R.dimen.settings_action_button_height) / 2
         }
 
         fun bind(item: SettingItem.ActionButton) {
@@ -353,7 +353,7 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
         private val action: TextView = itemView.findViewById(R.id.scopeAction)
 
         init {
-            val radius = SettingsDrawables.dp(itemView.context, SCOPE_NOTICE_RADIUS_DP)
+            val radius = itemView.resources.getDimension(R.dimen.settings_scope_notice_radius)
             itemView.background = SettingsDrawables.box(itemView.context, colors.secondaryContainer, radius, colors)
         }
 
@@ -443,7 +443,7 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
             }
 
             // Pill ends on the outer buttons, square joints between them.
-            val radius = SettingsDrawables.dp(itemView.context, SEGMENT_RADIUS_DP)
+            val radius = itemView.resources.getDimension(R.dimen.settings_segment_radius)
             visibleButtons.forEachIndexed { index, button ->
                 val start = if (index == 0) radius else 0f
                 val end = if (index == visibleButtons.size - 1) radius else 0f

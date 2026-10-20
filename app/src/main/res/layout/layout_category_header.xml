@@ -14,5 +14,5 @@
     android:paddingRight="@dimen/settings_row_padding_start"
     android:paddingBottom="@dimen/settings_section_title_padding_bottom"
     android:textColor="?attr/settingsPrimary"
-    android:textSize="14sp"
+    android:textSize="@dimen/settings_section_title_size"
     tools:text="General" />

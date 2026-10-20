@@ -16,8 +16,8 @@
     android:paddingBottom="12dp">
 
     <ImageView
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="@dimen/settings_row_icon_size"
+        android:layout_height="@dimen/settings_row_icon_size"
         android:layout_marginTop="1dp"
         android:layout_marginEnd="12dp"
         android:layout_marginRight="12dp"

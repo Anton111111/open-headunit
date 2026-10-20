@@ -10,7 +10,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.andrerinas.openheadunit.R
@@ -75,7 +74,6 @@ class SettingsHeaderController(
         updateTabIcons()
         wireControls()
         setUpCategories()
-        capContentWidth()
         title.visibility = if (res.getBoolean(R.bool.settings_show_title)) View.VISIBLE else View.GONE
         applySearchMode()
     }
@@ -199,23 +197,6 @@ class SettingsHeaderController(
                 if (!categoryPinned) syncActiveCategory()
             }
         })
-    }
-
-    /**
-     * Keeps the list at Material's comfortable reading width on very wide panels (1280dp and up)
-     * by growing the trailing padding, instead of stretching every row across the screen.
-     */
-    private fun capContentWidth() {
-        val maxWidth = res.getDimensionPixelSize(R.dimen.settings_content_max_width)
-        val baseEnd = ViewCompat.getPaddingEnd(contentList)
-        contentList.addOnLayoutChangeListener { view, left, _, right, _, _, _, _, _ ->
-            val start = ViewCompat.getPaddingStart(view)
-            val end = maxOf(baseEnd, (right - left) - start - maxWidth)
-            if (end != ViewCompat.getPaddingEnd(view)) {
-                // Posted: changing padding inside a layout pass would be ignored until the next one.
-                view.post { ViewCompat.setPaddingRelative(view, start, view.paddingTop, end, view.paddingBottom) }
-            }
-        }
     }
 
     // --- Search ---

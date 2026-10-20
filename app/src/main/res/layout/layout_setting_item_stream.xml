@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textColor="?attr/settingsOnSurfaceVariant"
-            android:textSize="14sp"
+            android:textSize="@dimen/settings_row_value_size"
             tools:text="Media (music)" />
 
         <TextView
