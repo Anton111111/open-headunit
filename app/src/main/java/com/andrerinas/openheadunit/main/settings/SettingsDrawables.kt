@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Build
@@ -19,7 +19,7 @@ import com.andrerinas.openheadunit.R
 /**
  * Builds the settings screen's backgrounds from a [SettingsPalette].
  *
- * Everything is made in code from GradientDrawable, InsetDrawable and StateListDrawable, which
+ * Everything is made in code from GradientDrawable, LayerDrawable and StateListDrawable, which
  * exist on every API this app supports. Shape XML would need theme attributes (API 21) to follow
  * extreme dark, and vector drawables inside selectors are unsafe before API 21.
  */
@@ -90,6 +90,10 @@ object SettingsDrawables {
      * Material 3 switch thumb: a large dot when on, a small one when off. Both are inset into one
      * slot (track height tall, half the track wide) so the switch keeps its size: SwitchCompat
      * makes the track twice the thumb's width.
+     *
+     * The inset is a LayerDrawable layer inset, not an InsetDrawable: before API 21 an
+     * InsetDrawable leaves its insets out of its intrinsic size, so the switch measured only the
+     * dot and was drawn narrow and clipped on Android 4.x. A LayerDrawable counts them everywhere.
      */
     fun switchThumb(context: Context, palette: SettingsPalette): Drawable {
         val res = context.resources
@@ -103,7 +107,9 @@ object SettingsDrawables {
             }
             val insetX = (slotWidth - size) / 2
             val insetY = (slotHeight - size) / 2
-            return InsetDrawable(oval, insetX, insetY, insetX, insetY)
+            return LayerDrawable(arrayOf<Drawable>(oval)).apply {
+                setLayerInset(0, insetX, insetY, insetX, insetY)
+            }
         }
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_checked), dot(palette.onPrimary, res.getDimensionPixelSize(R.dimen.settings_switch_thumb_on_size)))

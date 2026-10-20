@@ -1,7 +1,7 @@
 package com.andrerinas.openheadunit.main.settings
 
 import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.StateListDrawable
 import android.app.Application
@@ -85,14 +85,27 @@ class SettingsDrawablesTest {
         val thumb = SettingsDrawables.switchThumb(context, palette)
 
         thumb.state = intArrayOf(android.R.attr.state_checked)
-        val on = (thumb.current as InsetDrawable).drawable as GradientDrawable
+        val on = (thumb.current as LayerDrawable).getDrawable(0) as GradientDrawable
         assertEquals(SettingsDrawables.dp(context, 24f).toInt(), on.intrinsicWidth)
         assertEquals(palette.onPrimary, on.color?.defaultColor)
 
         thumb.state = intArrayOf()
-        val off = (thumb.current as InsetDrawable).drawable as GradientDrawable
+        val off = (thumb.current as LayerDrawable).getDrawable(0) as GradientDrawable
         assertEquals(SettingsDrawables.dp(context, 16f).toInt(), off.intrinsicWidth)
         assertEquals(palette.outline, off.color?.defaultColor)
+    }
+
+    @Test
+    fun `the switch thumb keeps one slot size so the track is not drawn narrow`() {
+        val thumb = SettingsDrawables.switchThumb(context, palette)
+        val slotWidth = SettingsDrawables.dp(context, 52f).toInt() / 2
+        val slotHeight = SettingsDrawables.dp(context, 32f).toInt()
+
+        for (state in listOf(intArrayOf(android.R.attr.state_checked), intArrayOf())) {
+            thumb.state = state
+            assertEquals(slotWidth, thumb.current.intrinsicWidth)
+            assertEquals(slotHeight, thumb.current.intrinsicHeight)
+        }
     }
 
     @Test
