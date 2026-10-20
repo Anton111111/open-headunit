@@ -805,7 +805,11 @@ class HomeFragment : Fragment() {
 
     private fun refreshProjectionHealthSuggestion() {
         val card = healthCard ?: return
-        if (commManager.isConnected) {
+        // The connection issue banner sits in the same place and says what stops the next
+        // connection, which matters more than a setting for the next projection.
+        val issueBannerUp = activity?.findViewById<View>(R.id.connection_issue_banner)
+            ?.visibility == View.VISIBLE
+        if (commManager.isConnected || issueBannerUp) {
             pendingHealthAction = null
             card.visibility = View.GONE
             return
@@ -820,11 +824,34 @@ class HomeFragment : Fragment() {
             return
         }
         pendingHealthAction = action
-        healthMessage?.text = getString(
-            R.string.projection_health_suggestion,
-            healthActionLabel(action),
-        )
+        healthMessage?.text = getString(healthMessageRes(action))
         card.visibility = View.VISIBLE
+    }
+
+    /**
+     * Follows the connection issue banner: it comes and goes on its own, and this one has to step
+     * aside while it is up and come back once it is gone. A layout pass is the one signal both have.
+     */
+    private val issueBannerWatcher = ViewTreeObserver.OnGlobalLayoutListener {
+        val up = activity?.findViewById<View>(R.id.connection_issue_banner)?.visibility == View.VISIBLE
+        if (up != lastIssueBannerUp) {
+            lastIssueBannerUp = up
+            refreshProjectionHealthSuggestion()
+        }
+    }
+    private var lastIssueBannerUp: Boolean? = null
+
+    override fun onStart() {
+        super.onStart()
+        activity?.window?.decorView?.viewTreeObserver?.addOnGlobalLayoutListener(issueBannerWatcher)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        activity?.window?.decorView?.viewTreeObserver?.let {
+            if (it.isAlive) it.removeOnGlobalLayoutListener(issueBannerWatcher)
+        }
+        lastIssueBannerUp = null
     }
 
     private fun applyProjectionHealthSuggestion() {
@@ -875,11 +902,12 @@ class HomeFragment : Fragment() {
         healthCard?.visibility = View.GONE
     }
 
-    private fun healthActionLabel(action: ProjectionHealthPolicy.Action): String = when (action) {
-        ProjectionHealthPolicy.Action.CODEC_H264 -> "H.264"
-        ProjectionHealthPolicy.Action.RENDERER_SURFACE -> "SurfaceView"
-        ProjectionHealthPolicy.Action.FPS_30 -> "30 fps"
-        ProjectionHealthPolicy.Action.RESOLUTION_720 -> Settings.Resolution._1280x720.resName
+    /** What went wrong and what the button changes, in the words Settings uses for it. */
+    private fun healthMessageRes(action: ProjectionHealthPolicy.Action): Int = when (action) {
+        ProjectionHealthPolicy.Action.CODEC_H264 -> R.string.projection_health_suggest_h264
+        ProjectionHealthPolicy.Action.RENDERER_SURFACE -> R.string.projection_health_suggest_surface
+        ProjectionHealthPolicy.Action.FPS_30 -> R.string.projection_health_suggest_fps30
+        ProjectionHealthPolicy.Action.RESOLUTION_720 -> R.string.projection_health_suggest_720p
     }
 
     /** The offered phones an automatic pick may name, from the same wake list the poke loop reads. */

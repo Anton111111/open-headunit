@@ -212,12 +212,50 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:textAppearance="?attr/textAppearanceBody2" />
-                <TextView
-                    android:id="@+id/onb_video_result"
+                <!-- The verdict first, so the driver reads what the unit plays before any detail.
+                     OnboardingActivity.renderVideoResult tints it for a pass or for nothing passing. -->
+                <LinearLayout
+                    android:id="@+id/onb_video_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="14dp"
+                    android:visibility="gone">
+                    <ImageView
+                        android:id="@+id/onb_video_summary_icon"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no" />
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="14dp"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/onb_video_summary_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceSubtitle1"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/onb_video_summary_detail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textAppearance="?attr/textAppearanceBody2" />
+                    </LinearLayout>
+                </LinearLayout>
+                <!-- One row per clip, grouped by view mode when more than one was tried. -->
+                <LinearLayout
+                    android:id="@+id/onb_video_rows"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textAppearance="?attr/textAppearanceBody2" />
+                    android:orientation="vertical" />
                 <com.google.android.material.checkbox.MaterialCheckBox
                     android:id="@+id/onb_video_apply"
                     android:layout_width="match_parent"
@@ -658,7 +696,7 @@
                     android:id="@+id/onb_audio_static_focus_help"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/static_audio_focus_description"
+                    android:text="@string/onb_audio_static_focus_short"
                     android:textAppearance="?attr/textAppearanceCaption" />
                 <TextView
                     android:layout_width="match_parent"

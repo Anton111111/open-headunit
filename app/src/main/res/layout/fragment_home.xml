@@ -190,55 +190,69 @@
         app:cornerRadius="8dp"
         android:visibility="gone" />
 
-    <com.google.android.material.card.MaterialCardView
+    <!-- A setting the last projections point to, offered once they agree (ProjectionHealthPolicy).
+         The same shape and place as the connection issue banner in activity_main, which comes
+         first: HomeFragment holds this one back while that banner is up. Up here it stays clear of
+         the status pill at the bottom and of the Apps and Exit buttons. -->
+    <LinearLayout
         android:id="@+id/projection_health_card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="52dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginRight="16dp"
+        android:background="@drawable/bg_info_banner"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="8dp"
+        android:paddingRight="8dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="8dp"
         android:visibility="gone"
-        app:cardBackgroundColor="?attr/colorSurface"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/exit_button"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginRight="12dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no"
+            app:srcCompat="@drawable/ic_settings_white"
+            app:tint="?android:attr/textColorSecondary" />
+
+        <TextView
+            android:id="@+id/projection_health_message"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_weight="1"
+            android:lineSpacingExtra="2dp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:textSize="14sp" />
 
-            <TextView
-                android:id="@+id/projection_health_message"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceBody1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/projection_health_later"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:layout_marginStart="8dp"
+            android:text="@string/projection_health_later" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="end"
-                android:orientation="horizontal">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/projection_health_apply"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="4dp"
+            android:layout_marginStart="4dp"
+            android:text="@string/projection_health_apply" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/projection_health_later"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:text="@string/projection_health_later" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/projection_health_apply"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:text="@string/projection_health_apply" />
-            </LinearLayout>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/exit_button"

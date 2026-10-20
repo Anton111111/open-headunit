@@ -3,10 +3,13 @@ package com.andrerinas.openheadunit.main
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.util.DisplayMetrics
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
@@ -21,6 +24,8 @@ import com.andrerinas.openheadunit.app.BaseActivity
 import com.andrerinas.openheadunit.decoder.audio.AudioOutputTester
 import com.andrerinas.openheadunit.decoder.audio.PlaybackFocusPolicy
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightClipOutcome
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightFailure
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightNote
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightProgress
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRecommendation
@@ -37,6 +42,10 @@ import com.andrerinas.openheadunit.utils.OnboardingDisplayPolicy
 import com.andrerinas.openheadunit.utils.SystemOptimizer
 import com.andrerinas.openheadunit.view.VideoPreviewLayout
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.widget.TextViewCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -507,8 +516,12 @@ class OnboardingActivity : BaseActivity() {
                 }
                 status.text = when {
                     result.fallbackReason != null -> getString(R.string.onb_audio_output_fallback)
-                    result.underruns > 0 ->
-                        getString(R.string.onb_audio_output_underruns, backend, result.underruns)
+                    // The advice depends on what played: turning AAudio off is the fix for AAudio,
+                    // and AudioTrack is already what that would switch to. The count stays in the
+                    // tester's log; a number here needed plural forms that most locales lack.
+                    result.underruns > 0 && result.backend == AudioOutputTester.Backend.AAUDIO ->
+                        getString(R.string.onb_audio_output_skipped_aaudio)
+                    result.underruns > 0 -> getString(R.string.onb_audio_output_skipped)
                     else -> getString(R.string.onb_audio_output_ok, backend)
                 }
             } catch (e: CancellationException) {
@@ -568,7 +581,8 @@ class OnboardingActivity : BaseActivity() {
     private fun focusModeHint(mode: PlaybackFocusPolicy.Mode): Int = when (mode) {
         PlaybackFocusPolicy.Mode.ALWAYS -> R.string.playback_focus_mode_always_hint
         PlaybackFocusPolicy.Mode.NEVER -> R.string.playback_focus_mode_never_hint
-        else -> R.string.playback_focus_mode_auto_hint
+        // Shorter than the Settings text: a setup step is read once, on the way to the next one.
+        else -> R.string.onb_audio_focus_auto_short
     }
 
     /**
@@ -891,8 +905,11 @@ class OnboardingActivity : BaseActivity() {
             } catch (e: Exception) {
                 setVideoRunning(false)
                 showVideoIdle()
-                findViewById<TextView>(R.id.onb_video_result).text =
-                    getString(R.string.onb_video_error, e.message ?: e.javaClass.simpleName)
+                showVideoSummary(
+                    passed = false,
+                    title = getString(R.string.onb_video_error, e.message ?: e.javaClass.simpleName),
+                    detail = null,
+                )
             } finally {
                 videoJob = null
             }
@@ -924,7 +941,7 @@ class OnboardingActivity : BaseActivity() {
             visibility = View.VISIBLE
             text = getString(R.string.onb_video_idle)
         }
-        findViewById<TextView>(R.id.onb_video_result).text = ""
+        clearVideoResult()
         findViewById<MaterialCheckBox>(R.id.onb_video_apply).visibility = View.GONE
         findViewById<MaterialButton>(R.id.onb_video_run).apply {
             visibility = View.VISIBLE
@@ -945,7 +962,7 @@ class OnboardingActivity : BaseActivity() {
             if (running) View.VISIBLE else View.GONE
         if (running) {
             findViewById<MaterialCheckBox>(R.id.onb_video_apply).visibility = View.GONE
-            findViewById<TextView>(R.id.onb_video_result).text = ""
+            clearVideoResult()
         }
         nextBtn.isEnabled = !running
     }
@@ -967,44 +984,38 @@ class OnboardingActivity : BaseActivity() {
             it.removeAllViews()
         }
         val recommendation = run.recommendation
-        val body = StringBuilder()
-        for (backend in run.backends) {
-            if (backend.clips.isEmpty()) continue
-            if (run.backends.size > 1) body.append(viewModeLabel(backend.viewMode)).append('\n')
-            for (outcome in backend.clips) {
-                val frames = if (outcome.drawnFrames >= 0) outcome.drawnFrames else outcome.renderedFrames
-                body.append(
-                    if (outcome.passed) {
-                        getString(
-                            R.string.onb_video_clip_ok,
-                            outcome.clip.label,
-                            frames,
-                            outcome.clip.frameCount,
-                        )
-                    } else {
-                        getString(
-                            R.string.onb_video_clip_failed,
-                            outcome.clip.label,
-                            frames,
-                            outcome.clip.frameCount,
-                        )
-                    },
-                ).append('\n')
-            }
-            body.append('\n')
+        val passed = VideoPreflightNote.NOT_TESTED !in recommendation.notes
+        // The verdict leads. A recommendation is only named when something passed: saying one next
+        // to "nothing passed" read as a contradiction.
+        val notes = recommendation.notes
+            .filter { it != VideoPreflightNote.NOT_TESTED }
+            .sortedBy { it.ordinal }
+            .map { noteText(it, recommendation, run) }
+        if (passed) {
+            showVideoSummary(
+                passed = true,
+                title = getString(
+                    R.string.onb_video_summary_pass,
+                    recommendation.codec.settingsValue,
+                    recommendation.resolution.resName,
+                ),
+                detail = (listOf(getString(R.string.onb_video_summary_view_mode, viewModeLabel(recommendation.viewMode))) + notes)
+                    .joinToString("\n"),
+            )
+        } else {
+            showVideoSummary(
+                passed = false,
+                title = getString(R.string.onb_video_summary_none),
+                detail = (listOf(getString(R.string.onb_video_note_not_tested)) + notes).joinToString("\n"),
+            )
         }
-        body.append(
-            getString(
-                R.string.onb_video_recommendation,
-                recommendation.codec.settingsValue,
-                recommendation.resolution.resName,
-                viewModeLabel(recommendation.viewMode),
-            ),
-        )
-        for (note in recommendation.notes.sortedBy { it.ordinal }) {
-            body.append('\n').append(noteText(note, recommendation, run))
+        val rows = findViewById<LinearLayout>(R.id.onb_video_rows)
+        rows.removeAllViews()
+        val tried = run.backends.filter { it.clips.isNotEmpty() }
+        for (backend in tried) {
+            if (tried.size > 1) rows.addView(videoGroupHeader(viewModeLabel(backend.viewMode)))
+            for (outcome in backend.clips) rows.addView(videoRow(outcome))
         }
-        findViewById<TextView>(R.id.onb_video_result).text = body.toString().trimEnd()
         findViewById<TextView>(R.id.onb_video_status).visibility = View.GONE
         findViewById<ProgressBar>(R.id.onb_video_progress).visibility = View.GONE
         findViewById<MaterialButton>(R.id.onb_video_skip).visibility = View.GONE
@@ -1019,11 +1030,111 @@ class OnboardingActivity : BaseActivity() {
         nextBtn.isEnabled = true
     }
 
-    private fun viewModeLabel(mode: Settings.ViewMode): String = when (mode) {
-        Settings.ViewMode.SURFACE -> "SurfaceView"
-        Settings.ViewMode.TEXTURE -> "TextureView"
-        Settings.ViewMode.GLES -> "GLES20"
+    /** The same names View mode shows in Settings, so a recommendation can be found there. */
+    private fun viewModeLabel(mode: Settings.ViewMode): String = getString(
+        when (mode) {
+            Settings.ViewMode.SURFACE -> R.string.surface_view
+            Settings.ViewMode.TEXTURE -> R.string.texture_view
+            Settings.ViewMode.GLES -> R.string.gles_view
+        }
+    )
+
+    private fun clearVideoResult() {
+        findViewById<View>(R.id.onb_video_summary).visibility = View.GONE
+        findViewById<LinearLayout>(R.id.onb_video_rows).removeAllViews()
     }
+
+    /** The verdict box: a check on a green wash when something passed, a cross on red otherwise. */
+    private fun showVideoSummary(passed: Boolean, title: String, detail: String?) {
+        val accent = ContextCompat.getColor(this, if (passed) R.color.material_green_700 else R.color.material_red_700)
+        findViewById<View>(R.id.onb_video_summary).apply {
+            visibility = View.VISIBLE
+            background = GradientDrawable().apply {
+                cornerRadius = dp(12).toFloat()
+                setColor(withAlpha(accent, SUMMARY_WASH_ALPHA))
+            }
+        }
+        findViewById<ImageView>(R.id.onb_video_summary_icon).setImageDrawable(resultIcon(passed, accent))
+        findViewById<TextView>(R.id.onb_video_summary_title).text = title
+        findViewById<TextView>(R.id.onb_video_summary_detail).apply {
+            text = detail
+            visibility = if (detail.isNullOrEmpty()) View.GONE else View.VISIBLE
+        }
+    }
+
+    private fun videoGroupHeader(label: String): View = TextView(this).apply {
+        TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_MaterialComponents_Overline)
+        text = label
+        setPadding(0, dp(10), 0, dp(2))
+    }
+
+    /** One clip: whether it passed, what it was, what went wrong in plain words, and the count. */
+    private fun videoRow(outcome: VideoPreflightClipOutcome): View {
+        val passed = outcome.passed
+        // Played, but this Android cannot read the picture back: not a failure, so not a red cross.
+        val unchecked = outcome.failure == VideoPreflightFailure.UNREADABLE
+        val accent = ContextCompat.getColor(
+            this,
+            when {
+                passed -> R.color.material_green_700
+                unchecked -> R.color.material_orange_700
+                else -> R.color.material_red_700
+            }
+        )
+        val frames = if (outcome.drawnFrames >= 0) outcome.drawnFrames else outcome.renderedFrames
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, dp(6))
+            addView(ImageView(context).apply {
+                setImageDrawable(
+                    if (unchecked) tinted(R.drawable.ic_warning_white, accent) else resultIcon(passed, accent)
+                )
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(dp(20), dp(20)))
+            addView(TextView(context).apply {
+                TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle2)
+                text = outcome.clip.label
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                leftMargin = dp(12)
+            })
+            addView(TextView(context).apply {
+                TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_MaterialComponents_Body2)
+                text = getString(failureLabel(outcome.failure))
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                leftMargin = dp(12)
+            })
+            addView(TextView(context).apply {
+                TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_MaterialComponents_Caption)
+                text = getString(R.string.onb_video_frames, frames, outcome.clip.frameCount)
+            })
+        }
+    }
+
+    private fun failureLabel(failure: VideoPreflightFailure): Int = when (failure) {
+        VideoPreflightFailure.NONE -> R.string.onb_video_row_ok
+        VideoPreflightFailure.NO_SURFACE,
+        VideoPreflightFailure.NO_FIRST_FRAME,
+        VideoPreflightFailure.NO_DRAWN_FRAMES -> R.string.onb_video_row_no_picture
+        VideoPreflightFailure.DECODER_ERROR -> R.string.onb_video_row_decoder
+        VideoPreflightFailure.FEW_FRAMES -> R.string.onb_video_row_few_frames
+        VideoPreflightFailure.BAD_MARKER -> R.string.onb_video_row_bad_picture
+        VideoPreflightFailure.UNREADABLE -> R.string.onb_video_row_unverified
+    }
+
+    /** Vectors go through AppCompatResources so they also load on Android 4. */
+    private fun resultIcon(passed: Boolean, color: Int) =
+        tinted(if (passed) R.drawable.ic_check else R.drawable.ic_close_white, color)
+
+    private fun tinted(drawableRes: Int, color: Int) =
+        AppCompatResources.getDrawable(this, drawableRes)
+            ?.mutate()
+            ?.let { DrawableCompat.wrap(it).apply { DrawableCompat.setTint(this, color) } }
+
+    private fun withAlpha(color: Int, alpha: Int): Int =
+        Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
 
     private fun noteText(
         note: VideoPreflightNote,
@@ -1243,6 +1354,8 @@ class OnboardingActivity : BaseActivity() {
         var deferredThisSession = false
         private const val KEY_STEP = "onb_step"
         private const val STEP_COUNT = 13
+        /** The verdict box's wash: enough to tell pass from fail, light enough for its text. */
+        private const val SUMMARY_WASH_ALPHA = 0x24
         private const val STEP_SAFETY = 1
         private const val STEP_CONNECTION = 2
         private const val STEP_VIDEO = 3
