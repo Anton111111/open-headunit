@@ -43,6 +43,7 @@ import com.andrerinas.openheadunit.connection.ConnectionNetworkDetailPolicy
 import com.andrerinas.openheadunit.connection.ConnectionStage
 import com.andrerinas.openheadunit.connection.ConnectionStageTracker
 import com.andrerinas.openheadunit.connection.PhoneExitQuietPolicy
+import com.andrerinas.openheadunit.connection.StatusPillPolicy
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.CarLauncherManager
@@ -502,13 +503,18 @@ class MainActivity : BaseActivity() {
 
     private fun showAutoConnectPill() {
         val pill = findViewById<View>(R.id.auto_connect_pill) ?: return
-        val pillText = findViewById<TextView>(R.id.auto_connect_pill_text)
-        pillText?.text = autoConnectStatusText ?: getString(R.string.android_auto_starting)
-        if (pill.visibility == View.VISIBLE) return
+        val stage = ConnectionStageTracker.stage.value
+        val title = applyPillTitle(stage)
+        if (pill.visibility == View.VISIBLE) {
+            // An attempt that starts while the pill only waited turns the step back into the
+            // second line; nothing else would bring it back until the next step.
+            applyStageText(stage.takeIf { title != StatusPillPolicy.Title.STEP }, animate = true)
+            return
+        }
 
         // After the guard, so a pill that is merely changing step still gets the crossfade below.
         // Reading the tracker here is what restores the step line after an activity recreate.
-        applyStageText(ConnectionStageTracker.stage.value, animate = false)
+        applyStageText(stage.takeIf { title != StatusPillPolicy.Title.STEP }, animate = false)
         applyNetworkText(ConnectionStageTracker.network.value, animate = false)
         pill.visibility = View.VISIBLE
         pill.bringToFront()
@@ -518,6 +524,24 @@ class MainActivity : BaseActivity() {
                 splash.bringToFront()
             }
         }
+    }
+
+    /**
+     * The pill's first line and its spinner. A stack that only waits for the phone shows the step
+     * there, without the spinner, so the pill does not claim a start that is not happening (#1147).
+     */
+    private fun applyPillTitle(stage: ConnectionStage?): StatusPillPolicy.Title {
+        val title = stage?.let {
+            StatusPillPolicy.title(it, autoConnectInProgress, hasCustomText = autoConnectStatusText != null)
+        } ?: StatusPillPolicy.Title.STARTING
+        findViewById<TextView>(R.id.auto_connect_pill_text)?.text = when (title) {
+            StatusPillPolicy.Title.CUSTOM -> autoConnectStatusText
+            StatusPillPolicy.Title.STEP -> stage?.let { getString(it.label) }
+            StatusPillPolicy.Title.STARTING -> getString(R.string.android_auto_starting)
+        }
+        findViewById<View>(R.id.auto_connect_pill_spinner)?.visibility =
+            if (title == StatusPillPolicy.Title.STEP) View.GONE else View.VISIBLE
+        return title
     }
 
     private fun hideAutoConnectPill() {
@@ -539,6 +563,14 @@ class MainActivity : BaseActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 ConnectionStageTracker.network.collect { renderNetworkLine(it) }
+            }
+        }
+        // The session coming up does not move the tracker, so the pill has to be asked again then.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                App.provide(this@MainActivity).commManager.connectionState.collect {
+                    renderStagePill(ConnectionStageTracker.stage.value)
+                }
             }
         }
     }
@@ -590,9 +622,14 @@ class MainActivity : BaseActivity() {
         val now = SystemClock.elapsedRealtime()
         val phoneLeftQuiet =
             PhoneExitQuietPolicy.suppressesPill(ConnectionStageTracker.phoneLeftAtMs, now)
+        // The tracker keeps the last step for the whole session, which read "Starting Android
+        // Auto" over a home that Android Auto had left for the background (#1147).
+        val sessionLive = App.provide(this).commManager.connectionState.value.let {
+            it is CommManager.ConnectionState.HandshakeComplete || it is CommManager.ConnectionState.TransportStarted
+        }
         // PILL_THEN_OVERLAY hands the screen to the overlay part-way through an attempt.
         // Re-raising the pill under it would undo that promotion.
-        val shown = if (stage == null || overlayOwnsScreen() || phoneLeftQuiet) null else stage
+        val shown = StatusPillPolicy.shownStage(stage, overlayOwnsScreen(), phoneLeftQuiet, sessionLive)
         // What the user is actually being told, which no other line records. A reporter's
         // screenshot and their log can then be read against each other. A step the overlay hides
         // is still named: without that, a session where an auto-connect happened to be in flight
@@ -603,6 +640,7 @@ class MainActivity : BaseActivity() {
             val step = when {
                 shown != null -> shown.name
                 stage != null && phoneLeftQuiet -> "${stage.name} (not shown, the phone ended the session)"
+                stage != null && sessionLive -> "${stage.name} (not shown, the session is up)"
                 stage != null -> "${stage.name} (not shown, the overlay owns the screen)"
                 else -> "hidden"
             }
@@ -622,7 +660,9 @@ class MainActivity : BaseActivity() {
             hideAutoConnectPill()
         } else {
             showAutoConnectPill()
-            applyStageText(shown, animate = true)
+            // Already the first line when the stack only waits, so not repeated under it.
+            val title = applyPillTitle(shown)
+            applyStageText(shown.takeIf { title != StatusPillPolicy.Title.STEP }, animate = true)
         }
     }
 

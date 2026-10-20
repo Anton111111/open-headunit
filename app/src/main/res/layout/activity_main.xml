@@ -227,7 +227,9 @@
         android:visibility="gone"
         tools:visibility="visible">
 
+        <!-- Hidden while the stack only waits for the phone: nothing is on its way then. -->
         <ProgressBar
+            android:id="@+id/auto_connect_pill_spinner"
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:indeterminate="true"
