@@ -12,6 +12,7 @@ import android.widget.RadioGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.view.MarginLayoutParamsCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.andrerinas.openheadunit.R
@@ -28,7 +29,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runInterruptible
 
 /**
  * The wizard's sound step, as a guided check instead of a wall of switches.
@@ -189,6 +190,7 @@ class OnboardingAudioStep(
     private var fixLabel: String? = null
     private var standardFix = false
     private var crackleWasAaudio = false
+    private var lastBackend: AudioOutputTester.Backend? = null
     private var lastWidthDp = 0
     private var lastHeightDp = 0
 
@@ -235,6 +237,7 @@ class OnboardingAudioStep(
         aaudioSwitch.setOnCheckedChangeListener { _, checked ->
             if (binding) return@setOnCheckedChangeListener
             settings.useAAudioOutput = checked
+            aaudioStatus.isVisible = false
         }
 
         staticSwitch.isChecked = settings.staticAudioFocus
@@ -302,13 +305,16 @@ class OnboardingAudioStep(
     }
 
     private fun onCrackle() {
-        val wasAaudio = settings.useAAudioOutput
+        // What the tone actually played through, not the setting: the projection only uses
+        // AAudio on some streams and Android versions, and the tester follows the same rule.
+        val wasAaudio = lastBackend == AudioOutputTester.Backend.AAUDIO
         crackleWasAaudio = wasAaudio
         if (wasAaudio) {
             settings.useAAudioOutput = false
             binding = true
             aaudioSwitch.isChecked = false
             binding = false
+            aaudioStatus.isVisible = false
         }
         standardFix = true
         stage = Stage.CRACKLE
@@ -332,9 +338,14 @@ class OnboardingAudioStep(
         settings.guidanceAudioStream = row.stream
         settings.systemAudioStream = row.stream
         settings.separateAudioStreams = false
+        // The channels were heard through the standard output. Keep the projection on it, or
+        // AAudio could still carry music on the very stream that was just picked.
+        settings.useAAudioOutput = false
         binding = true
         separateSwitch.isChecked = false
+        aaudioSwitch.isChecked = false
         binding = false
+        aaudioStatus.isVisible = false
         fixLabel = activity.getString(row.labelRes)
         standardFix = false
         updateChannelRows()
@@ -347,8 +358,11 @@ class OnboardingAudioStep(
         fixLabel = null
         setToneBusy(true, activity.getString(R.string.onb_audio_testing))
         job = activity.lifecycleScope.launch {
+            val self = coroutineContext[Job]
             try {
-                val result = withContext(Dispatchers.IO) { AudioOutputTester.play(settings) }
+                // Interruptible, so leaving the step stops the tone instead of letting it play out.
+                val result = runInterruptible(Dispatchers.IO) { AudioOutputTester.play(settings) }
+                lastBackend = result.backend
                 showOutputResult(result)
                 status.isVisible = false
                 stage = Stage.ASK
@@ -362,8 +376,12 @@ class OnboardingAudioStep(
                 )
                 status.isVisible = true
             } finally {
-                setToneBusy(false, null)
-                job = null
+                // A tone cancelled from onHidden can finish after a new one started. Only the
+                // current job may clear the busy state, or the new tone could be started twice.
+                if (job === self) {
+                    setToneBusy(false, null)
+                    job = null
+                }
             }
         }
     }
@@ -402,6 +420,7 @@ class OnboardingAudioStep(
         advancedOpen = open
         if (open) updateAdvanced()
         render()
+        if (!open) applyLayout()
         activity.findViewById<View>(R.id.onb_audio_scroll)?.scrollTo(0, 0)
     }
 
@@ -533,6 +552,9 @@ class OnboardingAudioStep(
         lastWidthDp = w
         lastHeightDp = h
         tier = detectTier(w, h)
+        // The advanced screen sizes itself in render(); restyling the main layout under it
+        // would undo that. Closing it runs this again.
+        if (advancedOpen) return
 
         val columns = tier == Tier.LARGE || tier == Tier.MEDIUM
         val compactRow = (tier == Tier.SHORT || tier == Tier.TINY) && w >= 420
@@ -561,7 +583,7 @@ class OnboardingAudioStep(
             if (columns) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
             if (columns) 2f else 0f,
         ).apply {
-            if (columns) marginStart = dp(24) else topMargin = dp(10)
+            if (columns) MarginLayoutParamsCompat.setMarginStart(this, dp(24)) else topMargin = dp(10)
         }
 
         introSpacer.isVisible = columns
@@ -571,7 +593,10 @@ class OnboardingAudioStep(
         askHeader.isVisible = tier != Tier.TINY
         doneTitle.isVisible = tier != Tier.TINY
         silentTitle.isVisible = tier != Tier.TINY
-        chip.isVisible = stage == Stage.DONE && tier != Tier.TINY &&
+        crackleTitle.isVisible = tier != Tier.TINY
+        // On short panels the chip takes a line of its own and pushes the options below the
+        // fold; the question that follows already says the sound worked.
+        chip.isVisible = stage == Stage.DONE && tier != Tier.TINY && tier != Tier.SHORT &&
             !(tier == Tier.PORTRAIT && h < 600)
 
         val showDesc = columns ||
@@ -663,7 +688,7 @@ class OnboardingAudioStep(
             else -> 72
         }
         playCircle.layoutParams = LinearLayout.LayoutParams(dp(circle), dp(circle)).apply {
-            if (compactRow) marginEnd = dp(14)
+            if (compactRow) MarginLayoutParamsCompat.setMarginEnd(this, dp(14))
         }
         playCircle.cornerRadius = dp(circle / 2)
         playCircle.iconSize = dp((circle * 0.4f).toInt())
@@ -687,7 +712,7 @@ class OnboardingAudioStep(
         playLabel.layoutParams = LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).apply { if (compactRow) marginEnd = 0 }
+        ).apply { if (compactRow) MarginLayoutParamsCompat.setMarginEnd(this, 0) }
     }
 
     private fun applyAskLayout(compactRow: Boolean) {
@@ -719,7 +744,7 @@ class OnboardingAudioStep(
                 if (compactRow) 1f else 0f,
             ).apply {
                 if (compactRow) {
-                    if (index > 0) marginStart = dp(6)
+                    if (index > 0) MarginLayoutParamsCompat.setMarginStart(this, dp(6))
                 } else if (index > 0) {
                     topMargin = dp(8)
                 }
@@ -755,6 +780,9 @@ class OnboardingAudioStep(
 
     private fun applySilentLayout(compactRow: Boolean, widthDp: Int) {
         silentHelp.setTextSize(TypedValue.COMPLEX_UNIT_SP, if (compactRow) 12f else 14f)
+        // On short panels the help line pushes the second row of channels below the fold, which
+        // reads as cut off. The title already says what to do, as in the approved design.
+        silentHelp.isVisible = tier != Tier.SHORT && tier != Tier.TINY
         silentTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, if (compactRow) 17f else 20f)
         val twoColumns = when {
             tier == Tier.LARGE || tier == Tier.MEDIUM -> widthDp >= 900
@@ -793,7 +821,7 @@ class OnboardingAudioStep(
             ).apply {
                 when {
                     twoColumns -> {
-                        if (index % 2 == 0) marginEnd = dp(4) else marginStart = dp(4)
+                        if (index % 2 == 0) MarginLayoutParamsCompat.setMarginEnd(this, dp(4)) else MarginLayoutParamsCompat.setMarginStart(this, dp(4))
                         if (index >= 2) topMargin = dp(8)
                     }
                     else -> {
@@ -823,7 +851,7 @@ class OnboardingAudioStep(
                 if (rowOfOptions) 1f else 0f,
             ).apply {
                 if (rowOfOptions) {
-                    if (index > 0) marginStart = dp(6)
+                    if (index > 0) MarginLayoutParamsCompat.setMarginStart(this, dp(6))
                 } else if (index > 0) {
                     topMargin = dp(8)
                 }
@@ -875,7 +903,11 @@ class OnboardingAudioStep(
         Stage.IDLE -> R.string.onb_audio_title
         Stage.ASK -> R.string.onb_audio_question
         Stage.SILENT -> R.string.onb_audio_silent_title
-        Stage.CRACKLE -> R.string.onb_audio_crackle_title
+        Stage.CRACKLE -> if (crackleWasAaudio) {
+            R.string.onb_audio_crackle_title
+        } else {
+            R.string.onb_audio_crackle_title_already_standard
+        }
         Stage.DONE -> R.string.onb_audio_done_title
     }
 

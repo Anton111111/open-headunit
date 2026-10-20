@@ -1,12 +1,14 @@
 package com.andrerinas.openheadunit.decoder.audio
 
+import android.os.Build
 import android.os.SystemClock
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.Settings
 import kotlin.math.min
 
 /**
- * Plays a short PCM tone through the output backend the projection would use.
+ * Plays a short PCM tone through the output backend the projection would use, chosen by the
+ * same [AudioOutputPolicy] rule.
  *
  * The tone says little about music quality, but it opens AAudio for real, writes through it and
  * reads its underrun counter. That is enough to tell a backend that starts and keeps up from one
@@ -20,7 +22,13 @@ object AudioOutputTester {
 
     fun play(settings: Settings): Result {
         val tone = AudioTestTone.stereo()
-        if (settings.useAAudioOutput) {
+        val useAAudio = AudioOutputPolicy.useAAudio(
+            Build.VERSION.SDK_INT,
+            settings.mediaAudioStream,
+            settings.attachHwDspEqualizer,
+            settings.useAAudioOutput,
+        )
+        if (useAAudio) {
             try {
                 return playWith(AAudioPcmOutput(), Backend.AAUDIO, tone, null)
             } catch (e: Exception) {
@@ -70,6 +78,7 @@ object AudioOutputTester {
         var offset = 0
         val deadline = SystemClock.elapsedRealtime() + WRITE_TIMEOUT_MS
         while (offset < tone.size && SystemClock.elapsedRealtime() < deadline) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedException()
             val count = min(CHUNK_SHORTS, tone.size - offset)
             val written = output.write(tone, offset, count)
             if (written < 0) error("the output rejected audio (code $written)")

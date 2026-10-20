@@ -81,7 +81,7 @@
                 android:layout_marginTop="12dp"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/onb_audio_chip_bg"
-                app:cardCornerRadius="999dp"
+                app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="0dp"
                 tools:visibility="visible">

@@ -922,8 +922,10 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
                             android:paddingStart="16dp"
+                            android:paddingLeft="16dp"
                             android:paddingTop="14dp"
                             android:paddingEnd="16dp"
+                            android:paddingRight="16dp"
                             android:paddingBottom="14dp">
                             <ImageView
                                 android:layout_width="24dp"
@@ -935,7 +937,9 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="16dp"
+                                android:layout_marginLeft="16dp"
                                 android:layout_marginEnd="12dp"
+                                android:layout_marginRight="12dp"
                                 android:layout_weight="1"
                                 android:orientation="vertical">
                                 <TextView
@@ -964,6 +968,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:layout_marginStart="56dp"
+                            android:layout_marginLeft="56dp"
                             android:alpha="0.12"
                             android:background="?attr/colorOnSurface" />
 
@@ -978,8 +983,10 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
                             android:paddingStart="16dp"
+                            android:paddingLeft="16dp"
                             android:paddingTop="14dp"
                             android:paddingEnd="16dp"
+                            android:paddingRight="16dp"
                             android:paddingBottom="14dp">
                             <ImageView
                                 android:layout_width="24dp"
@@ -991,7 +998,9 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="16dp"
+                                android:layout_marginLeft="16dp"
                                 android:layout_marginEnd="12dp"
+                                android:layout_marginRight="12dp"
                                 android:layout_weight="1"
                                 android:orientation="vertical">
                                 <TextView
@@ -1020,6 +1029,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:layout_marginStart="56dp"
+                            android:layout_marginLeft="56dp"
                             android:alpha="0.12"
                             android:background="?attr/colorOnSurface" />
 
@@ -1034,8 +1044,10 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
                             android:paddingStart="16dp"
+                            android:paddingLeft="16dp"
                             android:paddingTop="14dp"
                             android:paddingEnd="16dp"
+                            android:paddingRight="16dp"
                             android:paddingBottom="14dp">
                             <ImageView
                                 android:layout_width="24dp"
@@ -1047,7 +1059,9 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="16dp"
+                                android:layout_marginLeft="16dp"
                                 android:layout_marginEnd="12dp"
+                                android:layout_marginRight="12dp"
                                 android:layout_weight="1"
                                 android:orientation="vertical">
                                 <TextView
@@ -1086,7 +1100,9 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="16dp"
+        android:paddingLeft="16dp"
         android:paddingEnd="16dp"
+        android:paddingRight="16dp"
         android:paddingTop="4dp"
         android:paddingBottom="12dp">
 
