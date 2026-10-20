@@ -6,7 +6,19 @@
     <color name="adaptive_text_color">#FFFFFF</color>
     <color name="text_primary">#f7f7f7</color>
     <color name="text_shadow">#00000000</color>
-    <color name="segmented_button_stroke">#CCCCCC</color>
     <color name="splash_background">@color/setting_background_color</color>
     <color name="splash_text_revived">@color/color_projection_blue</color>
+
+    <color name="md_surface">#111318</color>
+    <color name="md_surface_container">#1D2024</color>
+    <color name="md_surface_container_high">#282A2F</color>
+    <color name="md_surface_container_highest">#33353A</color>
+    <color name="md_on_surface">#E1E2E8</color>
+    <color name="md_on_surface_variant">#C4C6CF</color>
+    <color name="md_outline">#8E9099</color>
+    <color name="md_outline_variant">#43474E</color>
+    <color name="md_primary">#A8C8FF</color>
+    <color name="md_on_primary">#05305F</color>
+    <color name="md_secondary_container">#284777</color>
+    <color name="md_on_secondary_container">#D6E3FF</color>
 </resources>
