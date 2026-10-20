@@ -91,8 +91,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:paddingStart="10dp"
+                    android:paddingLeft="10dp"
                     android:paddingTop="5dp"
                     android:paddingEnd="10dp"
+                    android:paddingRight="10dp"
                     android:paddingBottom="5dp"
                     android:textColor="@color/onb_audio_chip_text"
                     android:textSize="14sp"
@@ -120,6 +122,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_marginStart="24dp"
+            android:layout_marginLeft="24dp"
             android:layout_weight="2"
             app:cardBackgroundColor="@color/onb_audio_card"
             app:cardCornerRadius="24dp"
@@ -204,7 +207,7 @@
                                 android:layout_height="24dp"
                                 android:layout_gravity="center"
                                 android:contentDescription="@null"
-                                android:src="@drawable/ic_volume_up"
+                                app:srcCompat="@drawable/ic_volume_up"
                                 app:tint="@android:color/white" />
                         </FrameLayout>
 
@@ -213,6 +216,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"
+                            android:layout_marginLeft="12dp"
                             android:layout_weight="1"
                             android:text="@string/onb_audio_question"
                             android:textAppearance="?attr/textAppearanceTitleMedium" />
@@ -315,6 +319,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="4dp"
+                            android:layout_marginRight="4dp"
                             android:layout_weight="1"
                             app:cardBackgroundColor="?attr/colorSurface"
                             app:cardCornerRadius="14dp"
@@ -328,8 +333,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="12dp"
+                                android:paddingLeft="12dp"
                                 android:paddingTop="6dp"
                                 android:paddingEnd="4dp"
+                                android:paddingRight="4dp"
                                 android:paddingBottom="6dp">
 
                                 <LinearLayout
@@ -380,6 +387,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
+                            android:layout_marginLeft="4dp"
                             android:layout_weight="1"
                             app:cardBackgroundColor="?attr/colorSurface"
                             app:cardCornerRadius="14dp"
@@ -393,8 +401,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="12dp"
+                                android:paddingLeft="12dp"
                                 android:paddingTop="6dp"
                                 android:paddingEnd="4dp"
+                                android:paddingRight="4dp"
                                 android:paddingBottom="6dp">
 
                                 <LinearLayout
@@ -453,6 +463,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="4dp"
+                            android:layout_marginRight="4dp"
                             android:layout_weight="1"
                             app:cardBackgroundColor="?attr/colorSurface"
                             app:cardCornerRadius="14dp"
@@ -466,8 +477,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="12dp"
+                                android:paddingLeft="12dp"
                                 android:paddingTop="6dp"
                                 android:paddingEnd="4dp"
+                                android:paddingRight="4dp"
                                 android:paddingBottom="6dp">
 
                                 <LinearLayout
@@ -518,6 +531,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="4dp"
+                            android:layout_marginLeft="4dp"
                             android:layout_weight="1"
                             app:cardBackgroundColor="?attr/colorSurface"
                             app:cardCornerRadius="14dp"
@@ -531,8 +545,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="12dp"
+                                android:paddingLeft="12dp"
                                 android:paddingTop="6dp"
                                 android:paddingEnd="4dp"
+                                android:paddingRight="4dp"
                                 android:paddingBottom="6dp">
 
                                 <LinearLayout
@@ -660,8 +676,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="10dp"
+                                android:paddingLeft="10dp"
                                 android:paddingTop="8dp"
                                 android:paddingEnd="14dp"
+                                android:paddingRight="14dp"
                                 android:paddingBottom="8dp">
 
                                 <com.google.android.material.radiobutton.MaterialRadioButton
@@ -675,6 +693,7 @@
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="4dp"
+                                    android:layout_marginLeft="4dp"
                                     android:layout_weight="1"
                                     android:orientation="vertical">
 
@@ -712,8 +731,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="10dp"
+                                android:paddingLeft="10dp"
                                 android:paddingTop="8dp"
                                 android:paddingEnd="14dp"
+                                android:paddingRight="14dp"
                                 android:paddingBottom="8dp">
 
                                 <com.google.android.material.radiobutton.MaterialRadioButton
@@ -727,6 +748,7 @@
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="4dp"
+                                    android:layout_marginLeft="4dp"
                                     android:layout_weight="1"
                                     android:orientation="vertical">
 
@@ -764,8 +786,10 @@
                                 android:gravity="center_vertical"
                                 android:orientation="horizontal"
                                 android:paddingStart="10dp"
+                                android:paddingLeft="10dp"
                                 android:paddingTop="8dp"
                                 android:paddingEnd="14dp"
+                                android:paddingRight="14dp"
                                 android:paddingBottom="8dp">
 
                                 <com.google.android.material.radiobutton.MaterialRadioButton
@@ -779,6 +803,7 @@
                                     android:layout_width="0dp"
                                     android:layout_height="wrap_content"
                                     android:layout_marginStart="4dp"
+                                    android:layout_marginLeft="4dp"
                                     android:layout_weight="1"
                                     android:orientation="vertical">
 
@@ -888,7 +913,8 @@
                 android:id="@+id/onb_audio_separate_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp" />
+                android:layout_marginStart="12dp"
+                android:layout_marginLeft="12dp" />
         </LinearLayout>
 
         <TextView
@@ -932,6 +958,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_marginStart="4dp"
+                    android:layout_marginLeft="4dp"
                     android:contentDescription="@string/audio_stream_test"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -968,6 +995,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_marginStart="4dp"
+                    android:layout_marginLeft="4dp"
                     android:contentDescription="@string/audio_stream_test"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -1004,6 +1032,7 @@
                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:layout_marginStart="4dp"
+                    android:layout_marginLeft="4dp"
                     android:contentDescription="@string/audio_stream_test"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -1042,7 +1071,8 @@
                 android:id="@+id/onb_audio_aaudio_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp" />
+                android:layout_marginStart="12dp"
+                android:layout_marginLeft="12dp" />
         </LinearLayout>
 
         <TextView
@@ -1093,7 +1123,8 @@
                 android:id="@+id/onb_audio_static_focus_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp" />
+                android:layout_marginStart="12dp"
+                android:layout_marginLeft="12dp" />
         </LinearLayout>
 
         <TextView
