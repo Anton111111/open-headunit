@@ -180,6 +180,27 @@ class SettingsFilterPolicyTest {
         assertEquals(listOf("scopeNotice", "bottomSaveButton"), withSave)
     }
 
+    @Test
+    fun `the bottom save action does not bring a section header with it`() {
+        val rows = SettingsFilterPolicy.filter(
+            items = listOf(
+                SettingItem.CategoryHeader(stableId = "input", titleResId = INPUT),
+                libusb,
+                bottomSave
+            ),
+            query = "",
+            advanced = false,
+            showsUsb = false,
+            showsWifi = true,
+            basicIds = basicIds,
+            text = ::text
+        ).map { it.stableId }
+
+        // The section's only row is hidden by the connection choice; the save action still shows,
+        // but without a header for a section that has nothing left.
+        assertEquals(listOf("bottomSaveButton"), rows)
+    }
+
     private companion object {
         const val GENERAL = 1
         const val LANGUAGE = 2

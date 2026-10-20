@@ -48,8 +48,10 @@ object SettingsFilterPolicy {
             if (!shows(item, search, headerMatches, advanced, showsUsb, showsWifi, basicIds, categoryId, text)) {
                 continue
             }
-            pendingHeader?.let { result.add(it) }
-            pendingHeader = null
+            if (!standsAlone(item)) {
+                pendingHeader?.let { result.add(it) }
+                pendingHeader = null
+            }
             result.add(item)
         }
         return result
@@ -81,6 +83,15 @@ object SettingsFilterPolicy {
 
         return item.stableId in basicIds
     }
+
+    /**
+     * Rows that stand outside the sections: they never bring a category header with them. The
+     * scope note sits above the list and the bottom Save action below it, so a section whose rows
+     * were all filtered out does not come back just to hold them.
+     */
+    private fun standsAlone(item: SettingItem): Boolean =
+        item is SettingItem.ScopeNotice ||
+            (item is SettingItem.ActionButton && item.stableId == BOTTOM_SAVE_ID)
 
     /**
      * Hides the settings the chosen connection types make irrelevant, in both tabs and while
