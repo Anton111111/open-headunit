@@ -28,6 +28,25 @@
     <string name="onb_connection_cable_detail">Ponsel terhubung langsung ke head unit dengan kabel USB. Opsi nirkabel disembunyikan.</string>
     <string name="onb_connection_adapter_detail">Dongle USB menjembatani kabel ke sambungan nirkabel. Opsi nirkabel ditampilkan.</string>
     <string name="onb_connection_wifi_detail">Ponsel terhubung melalui Wi-Fi.</string>
+    <string name="onb_video_title">Tes video</string>
+    <string name="onb_video_help">Aplikasi memutar beberapa klip pendek melalui dekoder dan perender yang akan digunakannya. Ini menunjukkan apa yang benar-benar diputar unit ini, bukan sekadar mempercayai klaimnya.</string>
+    <string name="onb_video_preparing">Menyiapkan tes...</string>
+    <string name="onb_video_running">Menguji %1$s di %2$s...</string>
+    <string name="onb_video_idle">Tes belum dijalankan.</string>
+    <string name="onb_video_clip_ok">%1$s: %2$d dari %3$d frame, gambar baik</string>
+    <string name="onb_video_clip_failed">%1$s: %2$d dari %3$d frame, tidak lulus</string>
+    <string name="onb_video_recommendation">Disarankan: %1$s pada %2$s di %3$s.</string>
+    <string name="onb_video_note_h265_failed">H.265 tidak berhasil, jadi tes menyarankan H.264.</string>
+    <string name="onb_video_note_resolution_capped">Panel meminta lebih dari yang dapat didekode unit ini, jadi tes membatasi resolusi ke %1$s.</string>
+    <string name="onb_video_note_renderer_changed">%1$s tidak menggambar gambar, jadi tes menyarankan %2$s.</string>
+    <string name="onb_video_note_high_res_unverified">H.265 berhasil pada 1080p. Resolusi panel yang lebih tinggi belum diuji.</string>
+    <string name="onb_video_note_unverified">Dekoder menghasilkan frame, tetapi versi Android ini tidak dapat membaca gambar kembali, jadi tes tidak dapat memverifikasinya.</string>
+    <string name="onb_video_note_not_tested">Tidak ada yang lulus, jadi pengaturan saat ini tidak berubah.</string>
+    <string name="onb_video_apply">Terapkan pengaturan yang disarankan</string>
+    <string name="onb_video_run">Jalankan tes</string>
+    <string name="onb_video_again">Jalankan tes lagi</string>
+    <string name="onb_video_skip">Lewati tes</string>
+    <string name="onb_video_error">Tes tidak dapat dijalankan: %1$s</string>
     <string name="onb_display_title">Layar</string>
     <!-- %1$d width, %2$d height, %3$d dpi, %4$s codec -->
     <string name="onb_display_detected">Panel terdeteksi: %1$d x %2$d px, %3$d dpi, perangkat keras %4$s.</string>

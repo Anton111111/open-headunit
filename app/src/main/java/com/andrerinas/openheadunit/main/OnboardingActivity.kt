@@ -11,6 +11,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.ViewFlipper
 import com.andrerinas.openheadunit.App
@@ -18,6 +19,11 @@ import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.VehicleTypePolicy
 import com.andrerinas.openheadunit.app.BaseActivity
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightNote
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightProgress
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRecommendation
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRun
+import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRunner
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.AudioStreamTester
 import com.andrerinas.openheadunit.utils.AppThemeManager
@@ -27,8 +33,11 @@ import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.AnnouncedDensityPolicy
 import com.andrerinas.openheadunit.utils.OnboardingDisplayPolicy
 import com.andrerinas.openheadunit.utils.SystemOptimizer
+import com.andrerinas.openheadunit.view.VideoPreviewLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.checkbox.MaterialCheckBox
@@ -37,6 +46,9 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /**
  * Intelligent, device-aware first-run wizard. Replaces the old
@@ -66,6 +78,12 @@ class OnboardingActivity : BaseActivity() {
     private var selectedSize = SystemOptimizer.DisplaySizePreset.STANDARD_9_10
     private var selectedPortrait = false
     private var dpiPicker: com.andrerinas.openheadunit.view.DpiPickerView? = null
+
+    private var videoPreview: VideoPreviewLayout? = null
+    private var videoJob: Job? = null
+    private var videoRun: VideoPreflightRun? = null
+    private var videoApply = false
+    private var videoAttempted = false
 
     // Permissions step (registered here, before the activity is RESUMED).
     private var permissionBinder: PermissionRowBinder? = null
@@ -139,11 +157,25 @@ class OnboardingActivity : BaseActivity() {
         updateNightButtonText()
         permissionBinder?.rebind()
         if (step == STEP_DPI) dpiPicker?.startDemo()
+        if (step == STEP_VIDEO) showVideoStep()
     }
 
     override fun onPause() {
         super.onPause()
         dpiPicker?.stopDemo()
+        // A codec and a surface must not outlive the visible wizard. The result is lost, which is
+        // honest: the user can run the five second test again when they come back.
+        if (step == STEP_VIDEO && videoJob?.isActive == true) {
+            stopVideoTest()
+            videoAttempted = true
+            showVideoIdle()
+        }
+    }
+
+    override fun onDestroy() {
+        videoJob?.cancel()
+        videoJob = null
+        super.onDestroy()
     }
 
     /**
@@ -333,6 +365,14 @@ class OnboardingActivity : BaseActivity() {
 
         // --- Car brand: the display name sent to Android Auto, and the manufacturer with it ---
         bindVehicleStep()
+
+        // --- Video test: the clips are played through the decoder and the renderer ---
+        videoPreview = findViewById(R.id.onb_video_preview)
+        findViewById<MaterialButton>(R.id.onb_video_run).setOnClickListener { startVideoTest() }
+        findViewById<MaterialButton>(R.id.onb_video_skip).setOnClickListener { skipVideoTest() }
+        findViewById<MaterialCheckBox>(R.id.onb_video_apply).setOnCheckedChangeListener { _, checked ->
+            videoApply = checked
+        }
     }
 
     /**
@@ -530,6 +570,7 @@ class OnboardingActivity : BaseActivity() {
         nextBtn.isEnabled = when (step) {
             STEP_SAFETY -> findViewById<MaterialCheckBox>(R.id.onb_safety_accept).isChecked
             STEP_CONNECTION -> settings.connectionModes.isNotEmpty()
+            STEP_VIDEO -> videoJob?.isActive != true
             else -> true
         }
         if (step == STEP_READY) findViewById<TextView>(R.id.onb_ready_summary).text = summaryText()
@@ -537,6 +578,7 @@ class OnboardingActivity : BaseActivity() {
         if (step == STEP_AUTOMATION) applyAutomationVisibility()
         if (step == STEP_PERMISSIONS) permissionBinder?.rebind()
         if (step == STEP_VEHICLE) applyVehicleTypeNote()
+        if (step == STEP_VIDEO) showVideoStep() else stopVideoTest()
         if (step == STEP_DPI) {
             findViewById<TextView>(R.id.onb_dpi_recommended).text =
                 getString(R.string.onb_dpi_recommended, recommendedDpi())
@@ -572,6 +614,13 @@ class OnboardingActivity : BaseActivity() {
 
     private fun onNext() {
         if (step == STEP_SAFETY) settings.hasAcceptedDisclaimer = true
+        if (step == STEP_VIDEO) {
+            val run = videoRun
+            videoApply = run != null &&
+                VideoPreflightNote.NOT_TESTED !in run.recommendation.notes &&
+                findViewById<MaterialCheckBox>(R.id.onb_video_apply).isChecked
+            stopVideoTest()
+        }
         // Apply the display recommendation + chosen DPI on Next, so the user does not
         // have to press "Apply recommended settings" for it to take effect.
         if (step == STEP_DISPLAY || step == STEP_DPI) applyDisplaySettings()
@@ -682,6 +731,202 @@ class OnboardingActivity : BaseActivity() {
         return parts.joinToString(", ")
     }
 
+    // --- Video test ---
+
+    private fun showVideoStep() {
+        // The preview needs a real window and a laid out surface. onCreate can restore the video
+        // step before the activity is resumed, and starting there spent the whole surface timeout
+        // on a view nobody could see; onResume calls this again once the window exists.
+        if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
+        if (videoJob?.isActive == true) return
+        when {
+            videoRun != null -> renderVideoResult()
+            videoAttempted -> showVideoIdle()
+            else -> startVideoTest()
+        }
+    }
+
+    private fun startVideoTest() {
+        if (videoJob?.isActive == true) return
+        val preview = videoPreview ?: return
+        preview.visibility = View.VISIBLE
+        preview.removeAllViews()
+        videoRun = null
+        videoAttempted = true
+        videoApply = !isUpgrader()
+        setVideoRunning(true)
+        findViewById<TextView>(R.id.onb_video_status).text = getString(R.string.onb_video_preparing)
+        val runner = VideoPreflightRunner(
+            context = this,
+            settings = settings,
+            sizePreset = selectedSize,
+            portrait = selectedPortrait,
+            container = preview,
+            onProgress = { progress -> runOnUiThread { showVideoProgress(progress) } },
+        )
+        videoJob = lifecycleScope.launch {
+            try {
+                videoRun = runner.run()
+                videoApply = !isUpgrader()
+                setVideoRunning(false)
+                renderVideoResult()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                setVideoRunning(false)
+                showVideoIdle()
+                findViewById<TextView>(R.id.onb_video_result).text =
+                    getString(R.string.onb_video_error, e.message ?: e.javaClass.simpleName)
+            } finally {
+                videoJob = null
+            }
+        }
+    }
+
+    private fun skipVideoTest() {
+        videoAttempted = true
+        videoRun = null
+        videoApply = false
+        stopVideoTest()
+        showVideoIdle()
+        nextBtn.isEnabled = true
+    }
+
+    private fun stopVideoTest() {
+        videoJob?.cancel()
+        videoJob = null
+        videoPreview?.removeAllViews()
+    }
+
+    private fun showVideoIdle() {
+        videoPreview?.let {
+            it.visibility = View.GONE
+            it.removeAllViews()
+        }
+        findViewById<ProgressBar>(R.id.onb_video_progress).visibility = View.GONE
+        findViewById<TextView>(R.id.onb_video_status).apply {
+            visibility = View.VISIBLE
+            text = getString(R.string.onb_video_idle)
+        }
+        findViewById<TextView>(R.id.onb_video_result).text = ""
+        findViewById<MaterialCheckBox>(R.id.onb_video_apply).visibility = View.GONE
+        findViewById<MaterialButton>(R.id.onb_video_run).apply {
+            visibility = View.VISIBLE
+            text = getString(R.string.onb_video_run)
+        }
+        findViewById<MaterialButton>(R.id.onb_video_skip).visibility = View.GONE
+        nextBtn.isEnabled = true
+    }
+
+    private fun setVideoRunning(running: Boolean) {
+        findViewById<ProgressBar>(R.id.onb_video_progress).visibility =
+            if (running) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.onb_video_status).visibility =
+            if (running) View.VISIBLE else View.GONE
+        findViewById<MaterialButton>(R.id.onb_video_run).visibility =
+            if (running) View.GONE else View.VISIBLE
+        findViewById<MaterialButton>(R.id.onb_video_skip).visibility =
+            if (running) View.VISIBLE else View.GONE
+        if (running) {
+            findViewById<MaterialCheckBox>(R.id.onb_video_apply).visibility = View.GONE
+            findViewById<TextView>(R.id.onb_video_result).text = ""
+        }
+        nextBtn.isEnabled = !running
+    }
+
+    private fun showVideoProgress(progress: VideoPreflightProgress) {
+        findViewById<TextView>(R.id.onb_video_status).text = getString(
+            R.string.onb_video_running,
+            progress.clip.label,
+            viewModeLabel(progress.backend),
+        )
+    }
+
+    private fun renderVideoResult() {
+        val run = videoRun ?: return
+        // The clips have already played; leaving a SurfaceView inside the scroll view would make
+        // the result harder to read on older units, and the last frame adds nothing to it.
+        videoPreview?.let {
+            it.visibility = View.GONE
+            it.removeAllViews()
+        }
+        val recommendation = run.recommendation
+        val body = StringBuilder()
+        for (backend in run.backends) {
+            if (backend.clips.isEmpty()) continue
+            if (run.backends.size > 1) body.append(viewModeLabel(backend.viewMode)).append('\n')
+            for (outcome in backend.clips) {
+                val frames = if (outcome.drawnFrames >= 0) outcome.drawnFrames else outcome.renderedFrames
+                body.append(
+                    if (outcome.passed) {
+                        getString(
+                            R.string.onb_video_clip_ok,
+                            outcome.clip.label,
+                            frames,
+                            outcome.clip.frameCount,
+                        )
+                    } else {
+                        getString(
+                            R.string.onb_video_clip_failed,
+                            outcome.clip.label,
+                            frames,
+                            outcome.clip.frameCount,
+                        )
+                    },
+                ).append('\n')
+            }
+            body.append('\n')
+        }
+        body.append(
+            getString(
+                R.string.onb_video_recommendation,
+                recommendation.codec.settingsValue,
+                recommendation.resolution.resName,
+                viewModeLabel(recommendation.viewMode),
+            ),
+        )
+        for (note in recommendation.notes.sortedBy { it.ordinal }) {
+            body.append('\n').append(noteText(note, recommendation, run))
+        }
+        findViewById<TextView>(R.id.onb_video_result).text = body.toString().trimEnd()
+        findViewById<TextView>(R.id.onb_video_status).visibility = View.GONE
+        findViewById<ProgressBar>(R.id.onb_video_progress).visibility = View.GONE
+        findViewById<MaterialButton>(R.id.onb_video_skip).visibility = View.GONE
+        val apply = findViewById<MaterialCheckBox>(R.id.onb_video_apply)
+        val canApply = VideoPreflightNote.NOT_TESTED !in recommendation.notes
+        apply.visibility = if (canApply) View.VISIBLE else View.GONE
+        apply.isChecked = videoApply
+        findViewById<MaterialButton>(R.id.onb_video_run).apply {
+            visibility = View.VISIBLE
+            text = getString(R.string.onb_video_again)
+        }
+        nextBtn.isEnabled = true
+    }
+
+    private fun viewModeLabel(mode: Settings.ViewMode): String = when (mode) {
+        Settings.ViewMode.SURFACE -> "SurfaceView"
+        Settings.ViewMode.TEXTURE -> "TextureView"
+        Settings.ViewMode.GLES -> "GLES20"
+    }
+
+    private fun noteText(
+        note: VideoPreflightNote,
+        recommendation: VideoPreflightRecommendation,
+        run: VideoPreflightRun,
+    ): String = when (note) {
+        VideoPreflightNote.H265_FAILED -> getString(R.string.onb_video_note_h265_failed)
+        VideoPreflightNote.RESOLUTION_CAPPED ->
+            getString(R.string.onb_video_note_resolution_capped, recommendation.resolution.resName)
+        VideoPreflightNote.RENDERER_CHANGED -> getString(
+            R.string.onb_video_note_renderer_changed,
+            viewModeLabel(run.staticViewMode),
+            viewModeLabel(recommendation.viewMode),
+        )
+        VideoPreflightNote.HIGH_RES_UNVERIFIED -> getString(R.string.onb_video_note_high_res_unverified)
+        VideoPreflightNote.PICTURE_UNVERIFIED -> getString(R.string.onb_video_note_unverified)
+        VideoPreflightNote.NOT_TESTED -> getString(R.string.onb_video_note_not_tested)
+    }
+
     // --- Display scan ---
 
     private fun realMetrics(): DisplayMetrics {
@@ -728,7 +973,7 @@ class OnboardingActivity : BaseActivity() {
     /** What Automatic will send for the stored resolution, after the margins, as connect decides it. */
     private fun recommendedDpi(): Int {
         val m = realMetrics()
-        val chosen = Settings.Resolution.fromId(settings.resolutionId)
+        val chosen = preflightToApply()?.resolution ?: Settings.Resolution.fromId(settings.resolutionId)
         val r = if (chosen == null || chosen == Settings.Resolution.AUTO) {
             SystemOptimizer.recommendedResolution(m.widthPixels, m.heightPixels)
         } else chosen
@@ -766,22 +1011,30 @@ class OnboardingActivity : BaseActivity() {
         settings.hasCompletedSetupWizard ||
             settings.onboardingVersion in 1 until CURRENT_ONBOARDING_VERSION
 
+    /** The recommendation the test produced, but only when the user chose to apply it. */
+    private fun preflightToApply(): VideoPreflightRecommendation? =
+        videoRun?.recommendation?.takeIf {
+            videoApply && VideoPreflightNote.NOT_TESTED !in it.notes
+        }
+
     /** Writes the recommended display settings plus the DPI chosen in the picker. Called when
      * leaving the Display and Android Auto size steps, so no separate Apply tap is needed. */
     private fun applyDisplaySettings() {
         val result = SystemOptimizer(this).calculateOptimalSettings(selectedSize, selectedPortrait)
         val panel = realMetrics()
+        val preflight = preflightToApply()
         // Only auto-apply the video setup on a genuinely fresh install. Upgraders already have a
         // working config (view mode, codec, resolution, orientation), and silently overwriting it
         // has stranded users on a black screen (issue #767), so we leave those untouched and only
-        // apply the DPI the user set in the picker.
-        if (!isUpgrader()) {
+        // apply the DPI the user set in the picker. A test they chose to apply is the exception.
+        if (!isUpgrader() || preflight != null) {
             val previousViewMode = settings.viewMode
             // Set the resolution the panel warrants (the shared panel ceiling; mild downscaling of a
             // slightly-larger standard resolution is allowed, heavy downscaling is not — see panelCeiling).
-            settings.resolutionId = SystemOptimizer.recommendedResolution(panel.widthPixels, panel.heightPixels).id
-            settings.videoCodec = result.recommendedVideoCodec
-            settings.viewMode = result.recommendedViewMode
+            settings.resolutionId = preflight?.resolution?.id
+                ?: SystemOptimizer.recommendedResolution(panel.widthPixels, panel.heightPixels).id
+            settings.videoCodec = preflight?.codec?.settingsValue ?: result.recommendedVideoCodec
+            settings.viewMode = preflight?.viewMode ?: result.recommendedViewMode
             settings.screenOrientation = result.suggestedOrientation
             // If we changed the renderer, confirm the picture on the first projection.
             if (settings.viewMode != previousViewMode) settings.pendingRendererConfirm = true
@@ -873,17 +1126,18 @@ class OnboardingActivity : BaseActivity() {
         @Volatile
         var deferredThisSession = false
         private const val KEY_STEP = "onb_step"
-        private const val STEP_COUNT = 12
+        private const val STEP_COUNT = 13
         private const val STEP_SAFETY = 1
         private const val STEP_CONNECTION = 2
-        private const val STEP_DISPLAY = 3
-        private const val STEP_DPI = 4
-        private const val STEP_AUDIO = 6
-        private const val STEP_AUTOMATION = 7
-        private const val STEP_GPS = 8
-        private const val STEP_VEHICLE = 9
-        private const val STEP_PERMISSIONS = 10
-        private const val STEP_READY = 11
+        private const val STEP_VIDEO = 3
+        private const val STEP_DISPLAY = 4
+        private const val STEP_DPI = 5
+        private const val STEP_AUDIO = 7
+        private const val STEP_AUTOMATION = 8
+        private const val STEP_GPS = 9
+        private const val STEP_VEHICLE = 10
+        private const val STEP_PERMISSIONS = 11
+        private const val STEP_READY = 12
 
         // The manufacturer half of the Desktop Head Unit identity we report by default.
         private const val DHU_MAKE = "Google"

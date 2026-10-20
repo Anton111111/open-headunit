@@ -28,6 +28,25 @@
     <string name="onb_connection_cable_detail">फ़ोन USB केबल से सीधे हेड यूनिट से जुड़ा हुआ है। वायरलेस विकल्प छिपे रहेंगे।</string>
     <string name="onb_connection_adapter_detail">एक USB डोंगल केबल को वायरलेस लिंक से जोड़ता है। वायरलेस विकल्प दिखाए जाते हैं।</string>
     <string name="onb_connection_wifi_detail">फ़ोन वाई-फ़ाई पर कनेक्ट होता है।</string>
+    <string name="onb_video_title">वीडियो परीक्षण</string>
+    <string name="onb_video_help">ऐप कुछ छोटे क्लिप उस डिकोडर और रेंडरर से चलाता है जिन्हें वह अभी इस्तेमाल करेगा। इससे पता चलता है कि यह यूनिट असल में क्या चलाती है, न कि जो वह बताती है।</string>
+    <string name="onb_video_preparing">परीक्षण की तैयारी हो रही है...</string>
+    <string name="onb_video_running">%1$s को %2$s पर जाँचा जा रहा है...</string>
+    <string name="onb_video_idle">परीक्षण नहीं चला।</string>
+    <string name="onb_video_clip_ok">%1$s: %3$d में से %2$d फ़्रेम, तस्वीर ठीक है</string>
+    <string name="onb_video_clip_failed">%1$s: %3$d में से %2$d फ़्रेम, पास नहीं हुआ</string>
+    <string name="onb_video_recommendation">सुझाव: %1$s, %2$s पर, %3$s पर।</string>
+    <string name="onb_video_note_h265_failed">H.265 नहीं चला, इसलिए परीक्षण H.264 का सुझाव देता है।</string>
+    <string name="onb_video_note_resolution_capped">पैनल इस यूनिट की डिकोड क्षमता से ज़्यादा माँगता है, इसलिए परीक्षण रिज़ॉल्यूशन को %1$s तक सीमित करता है।</string>
+    <string name="onb_video_note_renderer_changed">%1$s ने तस्वीर नहीं बनाई, इसलिए परीक्षण %2$s का सुझाव देता है।</string>
+    <string name="onb_video_note_high_res_unverified">H.265 ने 1080p पर काम किया। पैनल का ज़्यादा रिज़ॉल्यूशन जाँचा नहीं गया।</string>
+    <string name="onb_video_note_unverified">डिकोडर ने फ़्रेम बनाए, लेकिन Android का यह संस्करण तस्वीर वापस पढ़ नहीं सकता, इसलिए परीक्षण उन्हें सत्यापित नहीं कर सका।</string>
+    <string name="onb_video_note_not_tested">कुछ भी पास नहीं हुआ, इसलिए मौजूदा सेटिंग्स नहीं बदलीं।</string>
+    <string name="onb_video_apply">सुझाई गई सेटिंग्स लागू करें</string>
+    <string name="onb_video_run">परीक्षण चलाएँ</string>
+    <string name="onb_video_again">परीक्षण फिर चलाएँ</string>
+    <string name="onb_video_skip">परीक्षण छोड़ें</string>
+    <string name="onb_video_error">परीक्षण नहीं चल सका: %1$s</string>
     <string name="onb_display_title">डिस्प्ले</string>
     <!-- %1$d width, %2$d height, %3$d dpi, %4$s codec -->
     <string name="onb_display_detected">पहचाना गया पैनल: %1$d x %2$d px, %3$d dpi, हार्डवेयर %4$s।</string>

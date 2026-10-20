@@ -28,6 +28,25 @@
     <string name="onb_connection_cable_detail">Phone plugged straight into the head unit with a USB cable. Wireless options stay out of the way.</string>
     <string name="onb_connection_adapter_detail">A USB dongle bridges the cable to a wireless link. Wireless options are shown.</string>
     <string name="onb_connection_wifi_detail">Phone connects over WiFi.</string>
+    <string name="onb_video_title">Video test</string>
+    <string name="onb_video_help">The app plays a few short clips through the decoder and the renderer it is about to use. This shows what this unit actually plays instead of trusting what it reports.</string>
+    <string name="onb_video_preparing">Preparing the test...</string>
+    <string name="onb_video_running">Testing %1$s on %2$s...</string>
+    <string name="onb_video_idle">The test has not run.</string>
+    <string name="onb_video_clip_ok">%1$s: %2$d of %3$d frames, picture OK</string>
+    <string name="onb_video_clip_failed">%1$s: %2$d of %3$d frames, did not pass</string>
+    <string name="onb_video_recommendation">Recommended: %1$s at %2$s on %3$s.</string>
+    <string name="onb_video_note_h265_failed">H.265 did not come through, so the test recommends H.264.</string>
+    <string name="onb_video_note_resolution_capped">The panel asks for more than this unit decoded, so the test caps the resolution at %1$s.</string>
+    <string name="onb_video_note_renderer_changed">%1$s did not draw the picture, so the test recommends %2$s.</string>
+    <string name="onb_video_note_high_res_unverified">H.265 played at 1080p. The panel\'s higher resolution was not tested.</string>
+    <string name="onb_video_note_unverified">The decoder produced frames, but this Android version cannot read the picture back, so the test could not verify them.</string>
+    <string name="onb_video_note_not_tested">Nothing passed, so the current settings are unchanged.</string>
+    <string name="onb_video_apply">Apply the recommended settings</string>
+    <string name="onb_video_run">Run the test</string>
+    <string name="onb_video_again">Run the test again</string>
+    <string name="onb_video_skip">Skip the test</string>
+    <string name="onb_video_error">The test could not run: %1$s</string>
     <string name="onb_display_title">Display</string>
     <!-- %1$d width, %2$d height, %3$d dpi, %4$s codec -->
     <string name="onb_display_detected">Detected panel: %1$d x %2$d px, %3$d dpi, hardware %4$s.</string>

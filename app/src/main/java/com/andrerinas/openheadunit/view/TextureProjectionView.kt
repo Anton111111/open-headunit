@@ -1,6 +1,7 @@
 package com.andrerinas.openheadunit.view
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.os.SystemClock
 import android.util.AttributeSet
@@ -14,6 +15,13 @@ class TextureProjectionView @JvmOverloads constructor(
 
     private val callbacks = mutableListOf<IProjectionView.Callbacks>()
     private var surface: Surface? = null
+
+    /**
+     * When false the view fills its parent as it is and skips [ProjectionViewScaler]. The
+     * onboarding video test shows a small preview instead of the projection layout, and its
+     * marker geometry is read in that preview's own coordinates.
+     */
+    var appliesProjectionScale: Boolean = true
 
     private var videoWidth = 0
     private var videoHeight = 0
@@ -40,6 +48,9 @@ class TextureProjectionView @JvmOverloads constructor(
     private var lastDrawLogMs: Long = 0L
     private val drawLogIntervalMs = 5000L
 
+    @Volatile
+    private var drawnFramesValue: Long = 0L
+
     init {
         surfaceTextureListener = this
     }
@@ -55,7 +66,14 @@ class TextureProjectionView @JvmOverloads constructor(
         AppLog.i("TextureProjectionView: Video size set to ${width}x$height")
         videoWidth = width
         videoHeight = height
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        } else {
+            scaleX = 1f
+            scaleY = 1f
+            translationX = 0f
+            translationY = 0f
+        }
     }
 
     override fun setVideoScale(scaleX: Float, scaleY: Float) {
@@ -78,12 +96,16 @@ class TextureProjectionView @JvmOverloads constructor(
             // use the actual video dimensions it parses from the SPS.
             callbacks.forEach { cb -> cb.onSurfaceChanged(it, width, height) }
         }
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        }
     }
 
     override fun onSurfaceTextureSizeChanged(surfaceTexture: SurfaceTexture, width: Int, height: Int) {
         AppLog.i("TextureProjectionView: Surface size changed: ${width}x$height")
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        }
     }
 
     override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
@@ -106,6 +128,7 @@ class TextureProjectionView @JvmOverloads constructor(
         }
         prevDrawMs = now
         lastFrameDrawnMsValue = now
+        drawnFramesValue++
 
         drawnSinceLogValue++
         if (lastDrawLogMs == 0L) {
@@ -124,6 +147,16 @@ class TextureProjectionView @JvmOverloads constructor(
     override fun lastFrameDrawnMs(): Long = lastFrameDrawnMsValue
 
     override fun longFrameEvents(): Long = longFrameEventsValue
+
+    override fun drawnFrames(): Long = drawnFramesValue
+
+    /**
+     * A copy of what this view is showing right now, or null before the surface exists.
+     *
+     * TextureView has had this since API 14, which is why the video test can read the picture
+     * back on Android 4.x. Call it on the UI thread.
+     */
+    fun captureBitmap(): Bitmap? = if (isAvailable) runCatching { getBitmap() }.getOrNull() else null
 
     // ----------------------------------------------------------------
     // Callbacks

@@ -171,7 +171,84 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 3: Display auto-scan -->
+        <!-- Step 3: Video test -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onb_video_title"
+                    android:textAppearance="?attr/textAppearanceHeadline5"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onb_video_help"
+                    android:textAppearance="?attr/textAppearanceBody2" />
+                <com.andrerinas.openheadunit.view.VideoPreviewLayout
+                    android:id="@+id/onb_video_preview"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:background="@android:color/black" />
+                <ProgressBar
+                    android:id="@+id/onb_video_progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/onb_video_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBody2" />
+                <TextView
+                    android:id="@+id/onb_video_result"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBody2" />
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/onb_video_apply"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/onb_video_apply"
+                    android:visibility="gone" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/onb_video_run"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/onb_video_run" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/onb_video_skip"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onb_video_skip"
+                    android:visibility="gone" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/onb_change_later"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Step 4: Display auto-scan -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -265,7 +342,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 4: Android Auto size (DPI) -->
+        <!-- Step 5: Android Auto size (DPI) -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -313,7 +390,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 5: Appearance -->
+        <!-- Step 6: Appearance -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -362,7 +439,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 6: Audio streams -->
+        <!-- Step 7: Audio streams -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -519,7 +596,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 7: Automation -->
+        <!-- Step 8: Automation -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -656,7 +733,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 8: GPS / Location -->
+        <!-- Step 9: GPS / Location -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -707,7 +784,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 9: Car brand (vehicle identity sent to Android Auto) -->
+        <!-- Step 10: Car brand (vehicle identity sent to Android Auto) -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -866,7 +943,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 10: Permissions -->
+        <!-- Step 11: Permissions -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -901,7 +978,7 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 11: Ready -->
+        <!-- Step 12: Ready -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent">
