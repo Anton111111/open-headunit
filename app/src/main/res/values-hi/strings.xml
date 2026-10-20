@@ -12,6 +12,7 @@
     <string name="settings_scope_usb_wifi_hidden">सेल्फ़ मोड सेटिंग्स दिखाई जा रही हैं। USB और WiFi सेटिंग्स छिपी हैं।</string>
     <string name="settings_scope_change">बदलें</string>
     <string name="settings_search_clear">खोज साफ़ करें</string>
+    <string name="settings_search_no_results">\"%1$s\" से कोई सेटिंग मेल नहीं खाती।</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">कनेक्शन मोड</string>

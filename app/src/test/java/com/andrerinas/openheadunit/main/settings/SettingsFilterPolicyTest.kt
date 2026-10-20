@@ -201,6 +201,33 @@ class SettingsFilterPolicyTest {
         assertEquals(listOf("bottomSaveButton"), rows)
     }
 
+    private val noResults = SettingItem.InfoBanner(stableId = "searchNoResults", textResId = 0, text = "No settings match")
+
+    @Test
+    fun `a search with no matches says so right after the scope note`() {
+        val filtered = listOf(notice, bottomSave)
+        assertEquals(
+            listOf("scopeNotice", "searchNoResults", "bottomSaveButton"),
+            SettingsFilterPolicy.withNoResultsNote(filtered, "zzz", noResults).map { it.stableId }
+        )
+    }
+
+    @Test
+    fun `the no results note also shows when there is no scope note`() {
+        assertEquals(
+            listOf("searchNoResults"),
+            SettingsFilterPolicy.withNoResultsNote(emptyList(), "zzz", noResults).map { it.stableId }
+        )
+    }
+
+    @Test
+    fun `no note while there are matches or no search`() {
+        val withMatch = listOf(notice, SettingItem.CategoryHeader(stableId = "general", titleResId = GENERAL), language)
+        assertEquals(withMatch, SettingsFilterPolicy.withNoResultsNote(withMatch, "english", noResults))
+        val empty = listOf(notice)
+        assertEquals(empty, SettingsFilterPolicy.withNoResultsNote(empty, "  ", noResults))
+    }
+
     private companion object {
         const val GENERAL = 1
         const val LANGUAGE = 2

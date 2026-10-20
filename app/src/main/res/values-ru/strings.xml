@@ -722,6 +722,7 @@
     <string name="settings_scope_usb_wifi_hidden">Показаны настройки автономного режима. Настройки USB и WiFi скрыты.</string>
     <string name="settings_scope_change">Изменить</string>
     <string name="settings_search_clear">Очистить поиск</string>
+    <string name="settings_search_no_results">Нет настроек по запросу «%1$s».</string>
     <string name="connection_mode">Режим подключения</string>
     <string name="connection_kind_usb_cable">USB-кабель (напрямую)</string>
     <string name="connection_kind_usb_wireless_adapter">Беспроводной USB-адаптер</string>

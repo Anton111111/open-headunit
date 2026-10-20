@@ -728,6 +728,7 @@
     <string name="settings_scope_usb_wifi_hidden">Đang hiện cài đặt chế độ độc lập. Cài đặt USB và WiFi đang bị ẩn.</string>
     <string name="settings_scope_change">Thay đổi</string>
     <string name="settings_search_clear">Xóa tìm kiếm</string>
+    <string name="settings_search_no_results">Không có cài đặt nào khớp với \"%1$s\".</string>
     <string name="connection_mode">Chế độ kết nối</string>
     <string name="connection_kind_usb_cable">Cáp USB (trực tiếp)</string>
     <string name="connection_kind_usb_wireless_adapter">Bộ chuyển không dây USB</string>

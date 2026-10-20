@@ -12,6 +12,7 @@
     <string name="settings_scope_usb_wifi_hidden">กำลังแสดงการตั้งค่าโหมดตนเอง การตั้งค่า USB และ WiFi ถูกซ่อนอยู่</string>
     <string name="settings_scope_change">เปลี่ยน</string>
     <string name="settings_search_clear">ล้างการค้นหา</string>
+    <string name="settings_search_no_results">ไม่มีการตั้งค่าที่ตรงกับ \"%1$s\"</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">โหมดการเชื่อมต่อ</string>

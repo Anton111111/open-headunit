@@ -3240,7 +3240,12 @@ class SettingsFragment : Fragment() {
     private fun renderSettings(scrollState: android.os.Parcelable? = null) {
         // While searching, the tab has no effect (search spans both tiers), so hint that.
         header?.setSearching(searchQuery.isNotBlank())
-        val visible = filterSettings(fullSettingsList)
+        val noResults = SettingItem.InfoBanner(
+            stableId = "searchNoResults",
+            textResId = R.string.settings_search_no_results,
+            text = getString(R.string.settings_search_no_results, searchQuery.trim())
+        )
+        val visible = SettingsFilterPolicy.withNoResultsNote(filterSettings(fullSettingsList), searchQuery, noResults)
         settingsAdapter.submitList(visible) {
             scrollState?.let { settingsRecyclerView.layoutManager?.onRestoreInstanceState(it) }
             header?.submitCategories(categoriesOf(visible))

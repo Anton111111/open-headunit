@@ -219,6 +219,15 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
         val fill = if (item is SettingItem.InfoBanner) colors.containerHighest else colors.container
         val radius = view.resources.getDimension(R.dimen.settings_group_radius)
         view.background = SettingsDrawables.groupItem(view.context, colors, groupPosition, radius, fill)
+        // A group right under the scope note (the "no results" note, say) has no section header
+        // to space it, so it takes the header's gap itself. Reset otherwise: holders are recycled.
+        (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let { params ->
+            val top = if (prev is SettingItem.ScopeNotice) view.resources.getDimensionPixelSize(R.dimen.settings_section_spacing) else 0
+            if (params.topMargin != top) {
+                params.topMargin = top
+                view.layoutParams = params
+            }
+        }
     }
 
     /** Rows that join their neighbours into one rounded group; headers and buttons break it. */

@@ -57,6 +57,17 @@ object SettingsFilterPolicy {
         return result
     }
 
+    /**
+     * The list with [note] added when a search matched no setting, so the screen says so instead
+     * of showing only the scope note. The note goes right after the scope note, above the bottom
+     * Save action. Without a query, or with matches, [filtered] comes back unchanged.
+     */
+    fun withNoResultsNote(filtered: List<SettingItem>, query: String, note: SettingItem): List<SettingItem> {
+        if (query.isBlank() || filtered.any { !standsAlone(it) }) return filtered
+        val at = filtered.indexOfFirst { it !is SettingItem.ScopeNotice }.let { if (it < 0) filtered.size else it }
+        return filtered.toMutableList().apply { add(at, note) }
+    }
+
     private fun shows(
         item: SettingItem,
         search: String,
