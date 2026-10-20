@@ -53,4 +53,25 @@ object SettingsLayoutPolicy {
         }
         return active
     }
+
+    /**
+     * The corners of one row of a group, in GradientDrawable's order: [outerRadiusPx] at the ends
+     * of the card and [innerRadiusPx] where rows meet.
+     */
+    fun groupCornerRadii(position: GroupPosition, outerRadiusPx: Float, innerRadiusPx: Float): FloatArray {
+        val top = if (position == GroupPosition.TOP || position == GroupPosition.SINGLE) outerRadiusPx else innerRadiusPx
+        val bottom = if (position == GroupPosition.BOTTOM || position == GroupPosition.SINGLE) outerRadiusPx else innerRadiusPx
+        return floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
+    }
+
+    /** Rows that join their neighbours into one card; headers, buttons and notices break it. */
+    fun joinsGroup(item: SettingItem?): Boolean = when (item) {
+        is SettingItem.SettingEntry,
+        is SettingItem.ToggleSettingEntry,
+        is SettingItem.SliderSettingEntry,
+        is SettingItem.InfoBanner,
+        is SettingItem.SegmentedButtonSettingEntry,
+        is SettingItem.StreamSettingEntry -> true
+        else -> false
+    }
 }

@@ -2,6 +2,7 @@ package com.andrerinas.openheadunit.main.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,5 +58,73 @@ class SettingsLayoutPolicyTest {
     @Test
     fun `no sections means no active category`() {
         assertEquals(-1, SettingsLayoutPolicy.activeCategoryIndex(IntArray(0), 3))
+    }
+
+    @Test
+    fun `a single row is round on all four corners`() {
+        assertArrayEquals(
+            floatArrayOf(OUTER, OUTER, OUTER, OUTER, OUTER, OUTER, OUTER, OUTER),
+            SettingsLayoutPolicy.groupCornerRadii(GroupPosition.SINGLE, OUTER, INNER),
+            0f
+        )
+    }
+
+    @Test
+    fun `only the ends of a group take the outer radius`() {
+        assertArrayEquals(
+            floatArrayOf(OUTER, OUTER, OUTER, OUTER, INNER, INNER, INNER, INNER),
+            SettingsLayoutPolicy.groupCornerRadii(GroupPosition.TOP, OUTER, INNER),
+            0f
+        )
+        assertArrayEquals(
+            floatArrayOf(INNER, INNER, INNER, INNER, INNER, INNER, INNER, INNER),
+            SettingsLayoutPolicy.groupCornerRadii(GroupPosition.MIDDLE, OUTER, INNER),
+            0f
+        )
+        assertArrayEquals(
+            floatArrayOf(INNER, INNER, INNER, INNER, OUTER, OUTER, OUTER, OUTER),
+            SettingsLayoutPolicy.groupCornerRadii(GroupPosition.BOTTOM, OUTER, INNER),
+            0f
+        )
+    }
+
+    @Test
+    fun `only card rows join a group`() {
+        assertTrue(SettingsLayoutPolicy.joinsGroup(SettingItem.SettingEntry("a", 0, "", onClick = {})))
+        assertTrue(
+            SettingsLayoutPolicy.joinsGroup(
+                SettingItem.ToggleSettingEntry("b", 0, descriptionResId = null, isChecked = false, onCheckedChanged = {})
+            )
+        )
+        assertTrue(
+            SettingsLayoutPolicy.joinsGroup(
+                SettingItem.SliderSettingEntry("c", 0, "", 0f, 0f, 1f, 0.1f, onValueChanged = {})
+            )
+        )
+        assertTrue(SettingsLayoutPolicy.joinsGroup(SettingItem.InfoBanner("d", 0)))
+        assertTrue(
+            SettingsLayoutPolicy.joinsGroup(
+                SettingItem.SegmentedButtonSettingEntry("e", 0, listOf("A", "B", "C"), 0, onOptionSelected = {})
+            )
+        )
+        assertTrue(
+            SettingsLayoutPolicy.joinsGroup(
+                SettingItem.StreamSettingEntry("f", 0, "", onClick = {}, onTest = {})
+            )
+        )
+
+        assertFalse(SettingsLayoutPolicy.joinsGroup(null))
+        assertFalse(SettingsLayoutPolicy.joinsGroup(SettingItem.CategoryHeader("g", 0)))
+        assertFalse(SettingsLayoutPolicy.joinsGroup(SettingItem.ActionButton("h", 0, onClick = {})))
+        assertFalse(
+            SettingsLayoutPolicy.joinsGroup(
+                SettingItem.ScopeNotice("i", "", 0, 0, 0, onAction = {})
+            )
+        )
+    }
+
+    private companion object {
+        const val OUTER = 16f
+        const val INNER = 4f
     }
 }

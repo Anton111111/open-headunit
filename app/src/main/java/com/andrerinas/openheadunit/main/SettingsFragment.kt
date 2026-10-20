@@ -62,6 +62,7 @@ import com.andrerinas.openheadunit.decoder.video.DeviceMemoryProfile
 import com.andrerinas.openheadunit.main.settings.SettingItem
 import com.andrerinas.openheadunit.main.settings.SettingsAdapter
 import com.andrerinas.openheadunit.main.settings.SettingsCategory
+import com.andrerinas.openheadunit.main.settings.SettingsFilterPolicy
 import com.andrerinas.openheadunit.main.settings.SettingsHeaderController
 import com.andrerinas.openheadunit.main.settings.SettingsLayoutPolicy
 import com.andrerinas.openheadunit.utils.AppLog
@@ -3251,88 +3252,24 @@ class SettingsFragment : Fragment() {
         )
     }
 
-    // Filters the full list by active tab / search query, keeping category headers only when
-    // at least one of their children survives (so no empty sections show).
-    private fun filterSettings(full: List<SettingItem>): List<SettingItem> {
-        val query = searchQuery.trim()
-        val result = mutableListOf<SettingItem>()
-        var pendingHeader: SettingItem.CategoryHeader? = null
-        var currentCategoryId: String? = null
-        var headerMatchesQuery = false
-
-        for (item in full) {
-            if (item is SettingItem.CategoryHeader) {
-                pendingHeader = item
-                currentCategoryId = item.stableId
-                headerMatchesQuery = query.isNotEmpty() &&
-                    getString(item.titleResId).contains(query, ignoreCase = true)
-                continue
-            }
-            if (shouldShowItem(item, currentCategoryId, query, headerMatchesQuery)) {
-                pendingHeader?.let { result.add(it); pendingHeader = null }
-                result.add(item)
-            }
-        }
-        return result
-    }
-
-    private fun shouldShowItem(
-        item: SettingItem,
-        categoryId: String?,
-        query: String,
-        headerMatchesQuery: Boolean
-    ): Boolean {
-        // The bottom Save action is always relevant when present.
-        if (item is SettingItem.ActionButton && item.stableId == "bottomSaveButton") return true
-        // So is the note about what the connection choice hides, in both tabs and in search.
-        if (item is SettingItem.ScopeNotice) return true
-
-        // Connection-type filter: hide settings that do not apply to the chosen connection,
-        // in BOTH tabs and in search. USB hides WiFi settings, WiFi hides USB settings,
-        // Self Mode hides both, All/unset show everything.
-        if (isHiddenByConnection(item, categoryId)) return false
-
-        if (query.isNotEmpty()) {
-            return headerMatchesQuery || searchableText(item).contains(query, ignoreCase = true)
-        }
-
-        if (pendingAdvancedSettings == true) return true
-
-        return item.stableId in basicSettingIds
-    }
-
-    // Items scoped to a USB connection (the Wireless Connection category is the WiFi scope).
-    private val usbScopedIds = setOf("useLibusb")
+    // The rules live in SettingsFilterPolicy so they can be tested without the views.
+    private fun filterSettings(full: List<SettingItem>): List<SettingItem> =
+        SettingsFilterPolicy.filter(
+            items = full,
+            query = searchQuery,
+            advanced = pendingAdvancedSettings == true,
+            showsUsb = settings.showsUsb(),
+            showsWifi = settings.showsWifi(),
+            basicIds = basicSettingIds,
+            text = { getString(it) }
+        )
 
     // Resolutions this wide or more (1440p, 4K) are flagged as high-bandwidth.
     private val HIGH_BANDWIDTH_WIDTH = 2560
 
-    private fun isHiddenByConnection(item: SettingItem, categoryId: String?): Boolean {
-        if (categoryId == "wirelessConnection") return !settings.showsWifi()
-        if (item.stableId in usbScopedIds) return !settings.showsUsb()
-        return false
-    }
-
     // Text used for search matching (title + description/value where applicable).
     // Joins localized labels into a keyword blob for the settings search.
     private fun kw(vararg ids: Int): String = ids.joinToString(" ") { getString(it) }
-
-    private fun searchableText(item: SettingItem): String = when (item) {
-        is SettingItem.SettingEntry ->
-            "${item.nameOverride ?: getString(item.nameResId)} ${item.value} ${item.searchKeywords ?: ""}"
-        is SettingItem.ToggleSettingEntry ->
-            "${item.nameOverride ?: getString(item.nameResId)} ${if (item.descriptionResId != null) getString(item.descriptionResId) else ""} ${item.searchKeywords ?: ""}"
-        is SettingItem.StreamSettingEntry ->
-            "${getString(item.nameResId)} ${item.value} ${if (item.descriptionResId != null) getString(item.descriptionResId) else ""} ${item.searchKeywords ?: ""}"
-        is SettingItem.SliderSettingEntry ->
-            "${getString(item.nameResId)} ${item.value}"
-        is SettingItem.SegmentedButtonSettingEntry ->
-            "${getString(item.nameResId)} ${item.options.joinToString(" ")}"
-        is SettingItem.InfoBanner -> item.text ?: getString(item.textResId)
-        is SettingItem.ActionButton -> getString(item.textResId)
-        is SettingItem.CategoryHeader -> getString(item.titleResId)
-        is SettingItem.ScopeNotice -> item.text
-    }
 
     /** The chosen connection types as a readable label ("USB, WiFi"); empty shows all. */
     private fun connectionModesLabel(): String {

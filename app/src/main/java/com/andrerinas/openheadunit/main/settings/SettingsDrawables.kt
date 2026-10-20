@@ -42,10 +42,7 @@ object SettingsDrawables {
         outerRadiusPx: Float,
         @ColorInt fill: Int = palette.container
     ): Drawable {
-        val inner = dp(context, INNER_CORNER_DP)
-        val top = if (position == GroupPosition.TOP || position == GroupPosition.SINGLE) outerRadiusPx else inner
-        val bottom = if (position == GroupPosition.BOTTOM || position == GroupPosition.SINGLE) outerRadiusPx else inner
-        val radii = floatArrayOf(top, top, top, top, bottom, bottom, bottom, bottom)
+        val radii = SettingsLayoutPolicy.groupCornerRadii(position, outerRadiusPx, dp(context, INNER_CORNER_DP))
         val stroke = if (palette.outlinedGroups) palette.outlineVariant else null
         val rest = roundedRect(context, fill, radii, stroke)
         return pressable(rest, palette) {

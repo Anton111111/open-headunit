@@ -224,15 +224,7 @@ class SettingsAdapter : ListAdapter<SettingItem, RecyclerView.ViewHolder>(Settin
     }
 
     /** Rows that join their neighbours into one rounded group; headers and buttons break it. */
-    private fun isGroupRow(item: SettingItem?): Boolean = when (item) {
-        is SettingItem.SettingEntry,
-        is SettingItem.ToggleSettingEntry,
-        is SettingItem.SliderSettingEntry,
-        is SettingItem.InfoBanner,
-        is SettingItem.SegmentedButtonSettingEntry,
-        is SettingItem.StreamSettingEntry -> true
-        else -> false
-    }
+    private fun isGroupRow(item: SettingItem?): Boolean = SettingsLayoutPolicy.joinsGroup(item)
 
     // --- ViewHolder implementations ---
 
