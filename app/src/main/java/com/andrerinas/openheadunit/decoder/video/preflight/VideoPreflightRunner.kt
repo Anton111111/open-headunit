@@ -323,13 +323,14 @@ class VideoPreflightRunner(
 
     private fun readMarker(bitmap: Bitmap, clip: VideoPreflightClip): Int? {
         if (bitmap.width <= 0 || bitmap.height <= 0) return null
-        val rect = FrameMarker.fitRect(clip.width, clip.height, bitmap.width, bitmap.height)
-        val geometry = clip.marker.scaledTo(rect, clip.width, clip.height)
+        // Stretched like the preview draws it, not fitted: see FrameMarker.
         val reading = FrameMarker.read(
             luma = { x, y -> luma(bitmap[x, y]) },
-            geometry = geometry,
+            geometry = clip.marker,
             maxX = bitmap.width,
             maxY = bitmap.height,
+            scaleX = bitmap.width.toDouble() / clip.width,
+            scaleY = bitmap.height.toDouble() / clip.height,
         ) ?: return null
         return reading.frame.takeIf { it in 0 until clip.frameCount }
     }

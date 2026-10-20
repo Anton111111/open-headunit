@@ -44,43 +44,52 @@ class FrameMarkerTest {
     }
 
     @Test
-    fun `the marker scales into a preview bitmap`() {
-        val sourceWidth = 1920
-        val sourceHeight = 1080
-        val targetWidth = 320
-        val targetHeight = 180
-        val rect = FrameMarker.fitRect(sourceWidth, sourceHeight, targetWidth, targetHeight)
-        val geometry = FrameMarker.geometryFor(sourceWidth, sourceHeight)
-            .scaledTo(rect, sourceWidth, sourceHeight)
-
-        val reading = FrameMarker.read(
-            sampler(149, geometry),
-            geometry,
-            targetWidth,
-            targetHeight,
-        )
-
-        assertEquals(149, reading?.frame)
+    fun `a clip stretched into the preview reads back at every size`() {
+        for ((width, height) in listOf(800 to 480, 1280 to 720, 1920 to 1080)) {
+            for ((targetWidth, targetHeight) in listOf(320 to 180, 480 to 270, 256 to 144)) {
+                val geometry = FrameMarker.geometryFor(width, height)
+                val scaleX = targetWidth.toDouble() / width
+                val scaleY = targetHeight.toDouble() / height
+                for (frame in 0 until 150) {
+                    val reading = FrameMarker.read(
+                        stretchedSampler(frame, geometry, scaleX, scaleY),
+                        geometry, targetWidth, targetHeight, scaleX, scaleY,
+                    )
+                    assertEquals("${width}x$height in ${targetWidth}x$targetHeight", frame, reading?.frame)
+                }
+            }
+        }
     }
 
     @Test
-    fun `a 16 by 9 picture fills a 16 by 9 bitmap`() {
-        assertEquals(
-            FrameMarker.Rect(0, 0, 320, 180),
-            FrameMarker.fitRect(1920, 1080, 320, 180),
-        )
+    fun `a 5 by 3 clip in a 16 by 9 preview is read where it was stretched to`() {
+        // The 480p clip is 800x480 and the preview 320x180: 0.4 across and 0.375 down. Fitting it
+        // put the samples about three pixels left of the blocks.
+        val geometry = FrameMarker.geometryFor(800, 480)
+        val reading = FrameMarker.read(stretchedSampler(130, geometry, 0.4, 0.375), geometry, 320, 180, 0.4, 0.375)
+
+        assertEquals(130, reading?.frame)
     }
 
-    @Test
-    fun `a 16 by 9 picture is letterboxed in a 4 by 3 bitmap`() {
-        assertEquals(
-            FrameMarker.Rect(0, 30, 320, 210),
-            FrameMarker.fitRect(1920, 1080, 320, 240),
-        )
-        assertEquals(
-            FrameMarker.Rect(0, 22, 240, 157),
-            FrameMarker.fitRect(1920, 1080, 240, 180),
-        )
+    /** The marker drawn the way the preview stretches it: each block scaled on both axes. */
+    private fun stretchedSampler(
+        frame: Int,
+        geometry: FrameMarker.Geometry,
+        scaleX: Double,
+        scaleY: Double,
+    ): (Int, Int) -> Int = { x, y ->
+        var lit = false
+        for (bit in 0 until 8) {
+            if ((frame shr bit) and 1 == 0) continue
+            val left = (geometry.x + (bit % 4) * geometry.gap) * scaleX
+            val top = (geometry.y + (bit / 4) * geometry.gap) * scaleY
+            if (x + 0.5 >= left && x + 0.5 < left + geometry.block * scaleX &&
+                y + 0.5 >= top && y + 0.5 < top + geometry.block * scaleY
+            ) {
+                lit = true
+            }
+        }
+        if (lit) 255 else 0
     }
 
     private fun sampler(

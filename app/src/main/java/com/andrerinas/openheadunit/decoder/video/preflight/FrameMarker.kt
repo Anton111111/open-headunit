@@ -16,29 +16,17 @@ import kotlin.math.roundToInt
  * The geometry is the generator's: a 44 pixel block and a 48 pixel gap on a 1080 line picture,
  * with the grid anchored 260 pixels from the right edge and 330 from the bottom. Every smaller
  * clip is the same layout scaled by its height, which is why one formula covers all of them.
+ *
+ * The preview stretches every clip to fill its 16:9 frame, so a 5:3 clip such as 800x480 is wider
+ * on screen than it is tall. The reader follows that with separate horizontal and vertical scales.
+ * Fitting the clip instead put the samples about three pixels to the side of the 8 pixel blocks of
+ * a 320x180 preview, on the edge between two of them, and failed a clip that had played every
+ * frame.
  */
 object FrameMarker {
 
-    data class Geometry(val x: Int, val y: Int, val block: Int, val gap: Int) {
-        /** Moves the marker from clip coordinates into the video rectangle of a captured bitmap. */
-        fun scaledTo(rect: Rect, sourceWidth: Int, sourceHeight: Int): Geometry {
-            if (sourceWidth <= 0 || sourceHeight <= 0) return this
-            val scale = min(rect.width.toDouble() / sourceWidth, rect.height.toDouble() / sourceHeight)
-            fun scaled(value: Int) = (value * scale).roundToInt()
-            return Geometry(
-                x = rect.left + scaled(x),
-                y = rect.top + scaled(y),
-                block = max(1, scaled(block)),
-                gap = max(1, scaled(gap)),
-            )
-        }
-    }
-
-    /** A rectangle in pixels, independent of android.graphics.Rect so the reader stays testable. */
-    data class Rect(val left: Int, val top: Int, val right: Int, val bottom: Int) {
-        val width: Int get() = right - left
-        val height: Int get() = bottom - top
-    }
+    /** The marker in the clip's own pixels. */
+    data class Geometry(val x: Int, val y: Int, val block: Int, val gap: Int)
 
     data class Reading(val frame: Int, val contrast: Int)
 
@@ -57,27 +45,12 @@ object FrameMarker {
         )
     }
 
-    /** The area a source picture actually occupies inside a target bitmap. */
-    fun fitRect(sourceWidth: Int, sourceHeight: Int, targetWidth: Int, targetHeight: Int): Rect {
-        if (sourceWidth <= 0 || sourceHeight <= 0 || targetWidth <= 0 || targetHeight <= 0) {
-            return Rect(0, 0, targetWidth.coerceAtLeast(0), targetHeight.coerceAtLeast(0))
-        }
-        val sourceAspect = sourceWidth.toDouble() / sourceHeight
-        val targetAspect = targetWidth.toDouble() / targetHeight
-        return if (targetAspect > sourceAspect) {
-            val width = (targetHeight * sourceAspect).roundToInt()
-            val left = (targetWidth - width) / 2
-            Rect(left, 0, left + width, targetHeight)
-        } else {
-            val height = (targetWidth / sourceAspect).roundToInt()
-            val top = (targetHeight - height) / 2
-            Rect(0, top, targetWidth, top + height)
-        }
-    }
-
     /**
      * Reads the marker, averaging a small patch at the centre of each block so a single bad pixel
-     * does not flip a bit. [luma] returns the brightness of one pixel, 0 to 255.
+     * does not flip a bit. [luma] returns the brightness of one pixel, 0 to 255. [geometry] is in
+     * clip pixels; [scaleX] and [scaleY] take it into the bitmap the way the preview stretched the
+     * clip. Each centre is placed from the unrounded position, so the rounding of the block and the
+     * gap does not add up across the row.
      *
      * Returns null when the blocks do not have enough contrast to tell white from black. An all
      * dark grid is frame zero, which is a real frame and is left to the caller to judge against
@@ -88,9 +61,12 @@ object FrameMarker {
         geometry: Geometry,
         maxX: Int,
         maxY: Int,
+        scaleX: Double = 1.0,
+        scaleY: Double = 1.0,
     ): Reading? {
         if (geometry.block <= 0 || geometry.gap <= 0 || maxX <= 0 || maxY <= 0) return null
-        val radius = max(1, geometry.block / 4)
+        if (scaleX <= 0.0 || scaleY <= 0.0) return null
+        val radius = max(1, (geometry.block * min(scaleX, scaleY) / 4).toInt())
         var value = 0
         var minOn = 255
         var maxOff = 0
@@ -98,8 +74,8 @@ object FrameMarker {
         var sawOff = false
 
         for (bit in 0 until 8) {
-            val centerX = geometry.x + (bit % 4) * geometry.gap + geometry.block / 2
-            val centerY = geometry.y + (bit / 4) * geometry.gap + geometry.block / 2
+            val centerX = ((geometry.x + (bit % 4) * geometry.gap + geometry.block / 2.0) * scaleX).toInt()
+            val centerY = ((geometry.y + (bit / 4) * geometry.gap + geometry.block / 2.0) * scaleY).toInt()
             var sum = 0
             var count = 0
             for (dy in -radius..radius) {
