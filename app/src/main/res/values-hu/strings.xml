@@ -9,6 +9,10 @@
     <string name="allowed">Engedélyezett</string>
     <string name="ignored">Ignorált</string>
     <string name="exit">Kilépés</string>
+    <string name="projection_health_suggestion">A legutóbbi vetítéseknél probléma volt. Kipróbálod: %1$s?</string>
+    <string name="projection_health_apply">Alkalmaz</string>
+    <string name="projection_health_later">Most nem</string>
+    <string name="projection_health_applied">Alkalmazva. A következő vetítés ezt használja.</string>
     <string name="apps">Alkalmazások</string>
     <string name="no_apps_found">Nem találhatók alkalmazások</string>
     <string name="video">Android Auto</string>

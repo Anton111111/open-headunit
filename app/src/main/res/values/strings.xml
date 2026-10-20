@@ -214,6 +214,10 @@
     <string name="usb_device_action_title">USB Device Action</string>
     <string name="exit">Exit</string>
     <string name="apps">Apps</string>
+    <string name="projection_health_suggestion">Your last projections had trouble. Try %1$s?</string>
+    <string name="projection_health_apply">Apply</string>
+    <string name="projection_health_later">Not now</string>
+    <string name="projection_health_applied">Applied. The next projection will use it.</string>
     <string name="no_apps_found">No applications found</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>

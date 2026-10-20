@@ -9,6 +9,10 @@
     <string name="allowed">許可</string>
     <string name="ignored">無視</string>
     <string name="exit">終了</string>
+    <string name="projection_health_suggestion">最近の投影で問題が発生しました。%1$s を試しますか?</string>
+    <string name="projection_health_apply">適用</string>
+    <string name="projection_health_later">後で</string>
+    <string name="projection_health_applied">適用しました。次回の投影で使います。</string>
     <string name="apps">アプリ</string>
     <string name="no_apps_found">アプリが見つかりません</string>
     <string name="video">Android Auto</string>

@@ -207,6 +207,10 @@
     <string name="allowed">Autorisé</string>
     <string name="ignored">Ignoré</string>
     <string name="exit">Quitter</string>
+    <string name="projection_health_suggestion">Tes dernières projections ont eu des problèmes. Essayer %1$s ?</string>
+    <string name="projection_health_apply">Appliquer</string>
+    <string name="projection_health_later">Plus tard</string>
+    <string name="projection_health_applied">Appliqué. La prochaine projection l\'utilisera.</string>
     <string name="apps">Applications</string>
     <string name="no_apps_found">Aucune application trouvée</string>
     <string name="video">Android Auto</string>

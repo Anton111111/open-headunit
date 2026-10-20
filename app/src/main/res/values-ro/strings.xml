@@ -9,6 +9,10 @@
     <string name="allowed">Permis</string>
     <string name="ignored">Ignorat</string>
     <string name="exit">Ieșire</string>
+    <string name="projection_health_suggestion">Ultimele tale proiecții au avut probleme. Încerci %1$s?</string>
+    <string name="projection_health_apply">Aplică</string>
+    <string name="projection_health_later">Nu acum</string>
+    <string name="projection_health_applied">Aplicat. Următoarea proiecție îl va folosi.</string>
     <string name="apps">Aplicații</string>
     <string name="no_apps_found">Nicio aplicație găsită</string>
     <string name="video">Android Auto</string>

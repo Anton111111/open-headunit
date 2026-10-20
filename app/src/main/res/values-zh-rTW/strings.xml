@@ -8,6 +8,10 @@
     <string name="allowed">已允許</string>
     <string name="ignored">已忽略</string>
     <string name="exit">離開</string>
+    <string name="projection_health_suggestion">最近的投影發生問題。要試試 %1$s 嗎？</string>
+    <string name="projection_health_apply">套用</string>
+    <string name="projection_health_later">稍後</string>
+    <string name="projection_health_applied">已套用。下次投影會使用它。</string>
     <string name="apps">應用程式</string>
     <string name="no_apps_found">找不到應用程式</string>
     <string name="video">Android Auto</string>

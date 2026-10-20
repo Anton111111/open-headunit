@@ -48,7 +48,10 @@ import kotlinx.coroutines.launch
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.ColorUtils
 import com.andrerinas.openheadunit.utils.HomeUiHelper
+import com.andrerinas.openheadunit.utils.ProjectionHealthPolicy
+import com.andrerinas.openheadunit.utils.ProjectionHealthStore
 import com.andrerinas.openheadunit.utils.ToastUtils
+import com.google.android.material.button.MaterialButton
 import com.andrerinas.openheadunit.utils.VpnControl
 import com.andrerinas.openheadunit.connection.self.SelfLaunchPath
 import com.andrerinas.openheadunit.connection.self.SelfLaunchRoutePolicy
@@ -98,6 +101,9 @@ class HomeFragment : Fragment() {
     private var activeDialog: androidx.appcompat.app.AlertDialog? = null
     private var driverCountdownTimer: CountDownTimer? = null
     private var portraitLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var healthCard: View? = null
+    private var healthMessage: TextView? = null
+    private var pendingHealthAction: ProjectionHealthPolicy.Action? = null
 
     private fun updateWifiButtonFeedback(scanning: Boolean) {
         if (scanning) {
@@ -124,6 +130,15 @@ class HomeFragment : Fragment() {
         exitButton = view.findViewById(R.id.exit_button)
         appsButton = view.findViewById(R.id.apps_button)
         self_mode_text = view.findViewById(R.id.self_mode_text)
+
+        healthCard = view.findViewById(R.id.projection_health_card)
+        healthMessage = view.findViewById(R.id.projection_health_message)
+        view.findViewById<MaterialButton>(R.id.projection_health_apply).setOnClickListener {
+            applyProjectionHealthSuggestion()
+        }
+        view.findViewById<MaterialButton>(R.id.projection_health_later).setOnClickListener {
+            dismissProjectionHealthSuggestion()
+        }
 
         // Portrait layout: cap grid width so square buttons never overflow
         // into the WiFi-pill or Exit-button areas on compact/square devices.
@@ -765,6 +780,7 @@ class HomeFragment : Fragment() {
                 Aa174Notice.maybeShow(act, App.provide(requireContext()).settings)
             }
         }
+        refreshProjectionHealthSuggestion()
     }
 
     override fun onPause() {
@@ -785,6 +801,85 @@ class HomeFragment : Fragment() {
             }
             portraitLayoutListener = null
         }
+    }
+
+    private fun refreshProjectionHealthSuggestion() {
+        val card = healthCard ?: return
+        if (commManager.isConnected) {
+            pendingHealthAction = null
+            card.visibility = View.GONE
+            return
+        }
+        val appSettings = App.provide(requireContext()).settings
+        val action = ProjectionHealthPolicy.evaluate(
+            ProjectionHealthStore(requireContext()).state(appSettings)
+        )
+        if (action == null) {
+            pendingHealthAction = null
+            card.visibility = View.GONE
+            return
+        }
+        pendingHealthAction = action
+        healthMessage?.text = getString(
+            R.string.projection_health_suggestion,
+            healthActionLabel(action),
+        )
+        card.visibility = View.VISIBLE
+    }
+
+    private fun applyProjectionHealthSuggestion() {
+        val action = pendingHealthAction ?: return
+        val appSettings = App.provide(requireContext()).settings
+        when (action) {
+            ProjectionHealthPolicy.Action.CODEC_H264 -> {
+                appSettings.videoCodec = "H.264"
+                // Android Auto forces H.265 above Full HD, so H.264 only takes effect if the
+                // resolution comes down with it.
+                val stored = Settings.Resolution.fromId(appSettings.resolutionId)
+                when {
+                    stored == null || stored == Settings.Resolution.AUTO -> {
+                        val panel = ProjectionHealthStore(requireContext())
+                            .state(appSettings)
+                            .panelCeiling
+                        if (panel.width > Settings.Resolution._1920x1080.width) {
+                            appSettings.resolutionId = Settings.Resolution._1920x1080.id
+                        }
+                    }
+                    stored.width > Settings.Resolution._1920x1080.width ->
+                        appSettings.resolutionId = Settings.Resolution._1920x1080.id
+                }
+            }
+            ProjectionHealthPolicy.Action.RENDERER_SURFACE -> {
+                appSettings.viewMode = Settings.ViewMode.SURFACE
+                appSettings.pendingRendererConfirm = true
+            }
+            ProjectionHealthPolicy.Action.FPS_30 -> appSettings.fpsLimit = 30
+            ProjectionHealthPolicy.Action.RESOLUTION_720 ->
+                appSettings.resolutionId = Settings.Resolution._1280x720.id
+        }
+        appSettings.commit()
+        ProjectionHealthStore(requireContext()).dismiss(action)
+        pendingHealthAction = null
+        healthCard?.visibility = View.GONE
+        ToastUtils.showToast(
+            requireContext(),
+            R.string.projection_health_applied,
+            force = true,
+        )
+    }
+
+    private fun dismissProjectionHealthSuggestion() {
+        val action = pendingHealthAction ?: return
+        ProjectionHealthStore(requireContext()).dismiss(action)
+        pendingHealthAction = null
+        healthCard?.visibility = View.GONE
+    }
+
+    private fun healthActionLabel(action: ProjectionHealthPolicy.Action): String = when (action) {
+        ProjectionHealthPolicy.Action.CODEC_H264 -> "H.264"
+        ProjectionHealthPolicy.Action.RENDERER_SURFACE -> "SurfaceView"
+        ProjectionHealthPolicy.Action.FPS_30 -> "30 fps"
+        ProjectionHealthPolicy.Action.RESOLUTION_720 -> Settings.Resolution._1280x720.resName
     }
 
     /** The offered phones an automatic pick may name, from the same wake list the poke loop reads. */

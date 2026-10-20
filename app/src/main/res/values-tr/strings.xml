@@ -10,6 +10,10 @@
     <string name="allowed">İzin Verildi</string>
     <string name="ignored">Yoksayıldı</string>
     <string name="exit">Çıkış</string>
+    <string name="projection_health_suggestion">Son projeksiyonlarında sorun oldu. %1$s denensin mi?</string>
+    <string name="projection_health_apply">Uygula</string>
+    <string name="projection_health_later">Şimdi değil</string>
+    <string name="projection_health_applied">Uygulandı. Sonraki projeksiyon bunu kullanacak.</string>
     <string name="apps">Uygulamalar</string>
     <string name="no_apps_found">Uygulama bulunamadı</string>
     <string name="video">Android Auto</string>

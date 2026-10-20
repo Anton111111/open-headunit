@@ -9,6 +9,10 @@
     <string name="allowed">Разрешить</string>
     <string name="ignored">Игнорировать</string>
     <string name="exit">Выход</string>
+    <string name="projection_health_suggestion">В последних проекциях были проблемы. Попробовать %1$s?</string>
+    <string name="projection_health_apply">Применить</string>
+    <string name="projection_health_later">Не сейчас</string>
+    <string name="projection_health_applied">Применено. Следующая проекция будет это использовать.</string>
     <string name="apps">Приложения</string>
     <string name="no_apps_found">Приложения не найдены</string>
     <string name="video">Android Auto</string>

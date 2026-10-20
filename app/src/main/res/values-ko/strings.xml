@@ -11,6 +11,10 @@
     <string name="allowed">허용됨</string>
     <string name="ignored">무시됨</string>
     <string name="exit">종료</string>
+    <string name="projection_health_suggestion">최근 프로젝션에 문제가 있었습니다. %1$s을(를) 사용해 볼까요?</string>
+    <string name="projection_health_apply">적용</string>
+    <string name="projection_health_later">나중에</string>
+    <string name="projection_health_applied">적용했습니다. 다음 프로젝션에서 사용합니다.</string>
     <string name="apps">앱</string>
     <string name="no_apps_found">애플리케이션을 찾을 수 없습니다</string>
     <string name="video">Android Auto</string>

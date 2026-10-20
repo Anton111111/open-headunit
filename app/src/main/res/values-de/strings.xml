@@ -9,6 +9,10 @@
     <string name="allowed">Erlaubt</string>
     <string name="ignored">Ignoriert</string>
     <string name="exit">Beenden</string>
+    <string name="projection_health_suggestion">Deine letzten Projektionen hatten Probleme. %1$s versuchen?</string>
+    <string name="projection_health_apply">Anwenden</string>
+    <string name="projection_health_later">Jetzt nicht</string>
+    <string name="projection_health_applied">Angewendet. Die nächste Projektion verwendet es.</string>
     <string name="apps">Apps</string>
     <string name="no_apps_found">Keine Anwendungen gefunden</string>
     <string name="video">Android Auto</string>

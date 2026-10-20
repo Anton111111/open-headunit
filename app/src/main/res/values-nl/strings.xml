@@ -8,6 +8,10 @@
     <string name="allowed">Toegestaan</string>
     <string name="ignored">Genegeerd</string>
     <string name="exit">Exit</string>
+    <string name="projection_health_suggestion">Je laatste projecties hadden problemen. %1$s proberen?</string>
+    <string name="projection_health_apply">Toepassen</string>
+    <string name="projection_health_later">Niet nu</string>
+    <string name="projection_health_applied">Toegepast. De volgende projectie gebruikt het.</string>
     <string name="apps">Apps</string>
     <string name="no_apps_found">Geen applicaties gevonden</string>
     <string name="video">Android Auto</string>

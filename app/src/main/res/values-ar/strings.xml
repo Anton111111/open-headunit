@@ -9,6 +9,10 @@
     <string name="allowed">مسموح</string>
     <string name="ignored">تجاهل</string>
     <string name="exit">خروج</string>
+    <string name="projection_health_suggestion">واجهت آخر عمليات العرض مشكلات. هل تجرّب %1$s؟</string>
+    <string name="projection_health_apply">تطبيق</string>
+    <string name="projection_health_later">ليس الآن</string>
+    <string name="projection_health_applied">تم التطبيق. سيستخدمه العرض التالي.</string>
     <string name="apps">التطبيقات</string>
     <string name="no_apps_found">لم يتم العثور على تطبيقات</string>
     <string name="video">Android Auto</string>

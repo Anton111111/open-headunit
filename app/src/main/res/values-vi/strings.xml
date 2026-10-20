@@ -9,6 +9,10 @@
     <string name="allowed">Đã cho phép</string>
     <string name="ignored">Bị bỏ qua</string>
     <string name="exit">Thoát</string>
+    <string name="projection_health_suggestion">Các lần chiếu gần đây gặp sự cố. Thử %1$s?</string>
+    <string name="projection_health_apply">Áp dụng</string>
+    <string name="projection_health_later">Để sau</string>
+    <string name="projection_health_applied">Đã áp dụng. Lần chiếu tới sẽ dùng nó.</string>
     <string name="apps">Ứng dụng</string>
     <string name="no_apps_found">Không tìm thấy ứng dụng nào</string>
     <string name="video">Android Auto</string>

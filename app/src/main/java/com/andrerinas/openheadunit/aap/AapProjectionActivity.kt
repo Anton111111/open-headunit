@@ -55,6 +55,7 @@ import com.andrerinas.openheadunit.utils.ToastUtils
 import com.andrerinas.openheadunit.view.OverlayTouchView
 import com.andrerinas.openheadunit.view.PerformanceOverlay
 import com.andrerinas.openheadunit.utils.HeadUnitScreenConfig
+import com.andrerinas.openheadunit.utils.ProjectionHealthRecorder
 import com.andrerinas.openheadunit.utils.SystemUI
 import com.andrerinas.openheadunit.aap.AapService
 import android.content.IntentFilter
@@ -699,6 +700,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val shouldFallBack = displayStallRecoveries >= 2 &&
             effectiveMode != Settings.ViewMode.SURFACE &&
             !videoDecoder.usingBundledSoftwareHevc
+        ProjectionHealthRecorder.noteRendererRecovery(shouldFallBack)
         if (shouldFallBack) {
             AppLog.w("Display stall ($reason) again on $effectiveMode. Falling back to SurfaceView for this session. See issue #650.")
             forcedViewModeOverride = Settings.ViewMode.SURFACE

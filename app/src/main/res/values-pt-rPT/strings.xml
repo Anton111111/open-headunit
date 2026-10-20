@@ -208,6 +208,10 @@
     <string name="remove_from_blacklist">Remover da lista negra</string>
     <string name="usb_device_action_title">Ação do dispositivo USB</string>
     <string name="exit">Sair</string>
+    <string name="projection_health_suggestion">As suas últimas projeções tiveram problemas. Experimentar %1$s?</string>
+    <string name="projection_health_apply">Aplicar</string>
+    <string name="projection_health_later">Agora não</string>
+    <string name="projection_health_applied">Aplicado. A próxima projeção vai usá-lo.</string>
     <string name="apps">Aplicações</string>
     <string name="no_apps_found">Nenhuma aplicação encontrada</string>
     <string name="video">Android Auto</string>

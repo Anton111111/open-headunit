@@ -8,6 +8,10 @@
     <string name="allowed">已允许</string>
     <string name="ignored">已忽略</string>
     <string name="exit">退出</string>
+    <string name="projection_health_suggestion">最近的投屏出现了问题。要试试 %1$s 吗？</string>
+    <string name="projection_health_apply">应用</string>
+    <string name="projection_health_later">以后再说</string>
+    <string name="projection_health_applied">已应用。下次投屏会使用它。</string>
     <string name="apps">应用</string>
     <string name="no_apps_found">未找到应用程序</string>
     <string name="video">Android Auto</string>

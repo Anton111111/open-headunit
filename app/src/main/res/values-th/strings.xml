@@ -207,6 +207,10 @@
     <string name="remove_from_blacklist">ลบออกจากบัญชีดำ</string>
     <string name="usb_device_action_title">การกระทำของอุปกรณ์ USB</string>
     <string name="exit">ออก</string>
+    <string name="projection_health_suggestion">การฉายล่าสุดมีปัญหา ลอง %1$s ไหม?</string>
+    <string name="projection_health_apply">ใช้</string>
+    <string name="projection_health_later">ไว้ก่อน</string>
+    <string name="projection_health_applied">ใช้แล้ว การฉายครั้งหน้าจะใช้ค่านี้</string>
     <string name="apps">แอปพลิเคชัน</string>
     <string name="no_apps_found">ไม่พบแอปพลิเคชัน</string>
     <string name="video">Android Auto</string>
