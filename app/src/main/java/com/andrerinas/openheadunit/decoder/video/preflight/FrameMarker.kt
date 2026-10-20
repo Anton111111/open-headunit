@@ -49,8 +49,9 @@ object FrameMarker {
      * Reads the marker, averaging a small patch at the centre of each block so a single bad pixel
      * does not flip a bit. [luma] returns the brightness of one pixel, 0 to 255. [geometry] is in
      * clip pixels; [scaleX] and [scaleY] take it into the bitmap the way the preview stretched the
-     * clip. Each centre is placed from the unrounded position, so the rounding of the block and the
-     * gap does not add up across the row.
+     * clip, and [offsetX] and [offsetY] move it to where the picture starts inside the bitmap. Each
+     * centre is placed from the unrounded position, so the rounding of the block and the gap does
+     * not add up across the row.
      *
      * Returns null when the blocks do not have enough contrast to tell white from black. An all
      * dark grid is frame zero, which is a real frame and is left to the caller to judge against
@@ -63,6 +64,8 @@ object FrameMarker {
         maxY: Int,
         scaleX: Double = 1.0,
         scaleY: Double = 1.0,
+        offsetX: Int = 0,
+        offsetY: Int = 0,
     ): Reading? {
         if (geometry.block <= 0 || geometry.gap <= 0 || maxX <= 0 || maxY <= 0) return null
         if (scaleX <= 0.0 || scaleY <= 0.0) return null
@@ -74,8 +77,8 @@ object FrameMarker {
         var sawOff = false
 
         for (bit in 0 until 8) {
-            val centerX = ((geometry.x + (bit % 4) * geometry.gap + geometry.block / 2.0) * scaleX).toInt()
-            val centerY = ((geometry.y + (bit / 4) * geometry.gap + geometry.block / 2.0) * scaleY).toInt()
+            val centerX = offsetX + ((geometry.x + (bit % 4) * geometry.gap + geometry.block / 2.0) * scaleX).toInt()
+            val centerY = offsetY + ((geometry.y + (bit / 4) * geometry.gap + geometry.block / 2.0) * scaleY).toInt()
             var sum = 0
             var count = 0
             for (dy in -radius..radius) {

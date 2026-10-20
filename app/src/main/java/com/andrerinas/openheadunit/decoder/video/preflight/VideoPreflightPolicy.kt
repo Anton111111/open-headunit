@@ -151,6 +151,53 @@ object VideoPreflightPolicy {
         )
     }
 
+    /** Frames the decoder may lose over a clip before it counts as a fault. */
+    const val ALLOWED_DROPS = 5
+
+    /** The smallest advance the frame markers must show across a clip. */
+    const val MIN_SAMPLE_ADVANCE = 10
+
+    /**
+     * Judges one clip from what the decoder rendered and what the view put on screen.
+     *
+     * [drawn] is -1 when the view cannot count its draws. A view that drew nothing is "no
+     * picture"; one that drew most of what the decoder rendered is not. A TextureView merges
+     * frames that arrive between two draws of a busy UI thread, so a slow unit draws a few frames
+     * fewer than it decoded while the picture plays fine. Only losing more than a tenth of them
+     * counts, and then as missing frames, which is what the user would see.
+     */
+    fun classifyClip(
+        frameCount: Int,
+        rendered: Long,
+        drawn: Long,
+        observesDraws: Boolean,
+        samples: List<Int>,
+        badSamples: Int,
+        decoderError: String?,
+    ): VideoPreflightFailure {
+        if (decoderError != null) return VideoPreflightFailure.DECODER_ERROR
+        if (rendered == 0L) return VideoPreflightFailure.NO_FIRST_FRAME
+        if (rendered < frameCount - ALLOWED_DROPS) return VideoPreflightFailure.FEW_FRAMES
+        if (observesDraws && drawn >= 0) {
+            if (drawn == 0L) return VideoPreflightFailure.NO_DRAWN_FRAMES
+            if (drawn < rendered - displayAllowance(frameCount)) return VideoPreflightFailure.FEW_FRAMES
+        }
+        if (badSamples > 0) return VideoPreflightFailure.BAD_MARKER
+        if (!markersPlausible(samples, frameCount)) return VideoPreflightFailure.BAD_MARKER
+        return VideoPreflightFailure.NONE
+    }
+
+    private fun displayAllowance(frameCount: Int): Int = maxOf(ALLOWED_DROPS, frameCount / 10)
+
+    private fun markersPlausible(samples: List<Int>, frameCount: Int): Boolean {
+        if (samples.size < 3) return true
+        if (samples.any { it !in 0 until frameCount }) return false
+        for (index in 1 until samples.size) {
+            if (samples[index] < samples[index - 1]) return false
+        }
+        return samples.last() - samples.first() >= MIN_SAMPLE_ADVANCE
+    }
+
     /** The resolution a clip of this width represents. Higher panels keep their own ceiling. */
     fun resolutionForWidth(width: Int): Settings.Resolution = when {
         width <= Settings.Resolution._800x480.width -> Settings.Resolution._800x480

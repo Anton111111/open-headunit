@@ -107,6 +107,55 @@ class AnnexBAccessUnitsTest {
         }
     }
 
+    @Test
+    fun `the parameter sets at the head of the first unit are measured`() {
+        val (data, starts) = stream(nal(7, 0x67), nal(8, 0x68), nal(6, 0x06), nal(5, 0x65), nal(1, 0x41))
+        val first = AnnexBAccessUnits.split(data, h264).first()
+
+        assertEquals(starts[2] - starts[0], AnnexBAccessUnits.parameterSetPrefix(data, first, h264))
+    }
+
+    @Test
+    fun `a unit without leading parameter sets has no prefix`() {
+        val (data, _) = stream(nal(5, 0x65), nal(1, 0x41))
+        val first = AnnexBAccessUnits.split(data, h264).first()
+
+        assertEquals(0, AnnexBAccessUnits.parameterSetPrefix(data, first, h264))
+    }
+
+    @Test
+    fun `a unit of parameter sets only has no prefix to split off`() {
+        val (data, _) = stream(nal(7, 0x67), nal(8, 0x68))
+        val whole = AnnexBAccessUnits.Unit(0, data.size)
+
+        assertEquals(0, AnnexBAccessUnits.parameterSetPrefix(data, whole, h264))
+    }
+
+    @Test
+    fun `h265 counts vps sps and pps`() {
+        val (data, starts) = stream(nal(32, 0x40), nal(33, 0x42), nal(34, 0x44), nal(19, 0x26))
+        val first = AnnexBAccessUnits.split(data, h265).first()
+
+        assertEquals(starts[3] - starts[0], AnnexBAccessUnits.parameterSetPrefix(data, first, h265))
+    }
+
+    @Test
+    fun `every bundled clip splits into configuration and a picture`() {
+        for ((name, codec) in listOf(
+            "preflight_h264_480p.h264" to h264,
+            "preflight_h264_720p.h264" to h264,
+            "preflight_h264_1080p.h264" to h264,
+            "preflight_h265_1080p.h265" to h265,
+        )) {
+            val data = File("src/main/res/raw/$name").readBytes()
+            val first = AnnexBAccessUnits.split(data, codec).first()
+            val prefix = AnnexBAccessUnits.parameterSetPrefix(data, first, codec)
+
+            assertTrue("$name has no configuration prefix", prefix > 0)
+            assertTrue("$name keeps no picture after it", prefix < first.length)
+        }
+    }
+
     private fun nalType(data: ByteArray, offset: Int, codec: VideoDecoder.CodecType): Int {
         if (offset + 3 > data.size) return -1
         val startCode = if (data[offset + 2] == 1.toByte()) 3 else 4

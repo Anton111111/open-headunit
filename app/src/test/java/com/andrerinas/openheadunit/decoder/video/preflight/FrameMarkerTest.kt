@@ -92,6 +92,19 @@ class FrameMarkerTest {
         if (lit) 255 else 0
     }
 
+    @Test
+    fun `an offset moves the read to where the picture starts`() {
+        val geometry = FrameMarker.geometryFor(800, 480)
+        val shifted = sampler(87, geometry)
+        val inPadding: (Int, Int) -> Int = { x, y -> shifted(x - 30, y - 12) }
+
+        val reading = FrameMarker.read(inPadding, geometry, 900, 500, offsetX = 30, offsetY = 12)
+        val unshifted = FrameMarker.read(inPadding, geometry, 900, 500)
+
+        assertEquals(87, reading?.frame)
+        assertEquals(false, unshifted?.frame == 87)
+    }
+
     private fun sampler(
         frame: Int,
         geometry: FrameMarker.Geometry,

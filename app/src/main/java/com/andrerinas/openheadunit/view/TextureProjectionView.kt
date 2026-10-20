@@ -158,6 +158,15 @@ class TextureProjectionView @JvmOverloads constructor(
      */
     fun captureBitmap(): Bitmap? = if (isAvailable) runCatching { getBitmap() }.getOrNull() else null
 
+    /**
+     * The transform of the frame on screen, which carries the decoder's crop. [captureBitmap]
+     * ignores it, so a padded buffer shows its padding there. Call it on the UI thread.
+     */
+    fun textureTransform(): FloatArray? {
+        val texture = surfaceTexture ?: return null
+        return runCatching { FloatArray(16).also { texture.getTransformMatrix(it) } }.getOrNull()
+    }
+
     // ----------------------------------------------------------------
     // Callbacks
     // ----------------------------------------------------------------

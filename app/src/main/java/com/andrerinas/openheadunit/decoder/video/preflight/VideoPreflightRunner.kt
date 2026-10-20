@@ -190,9 +190,20 @@ class VideoPreflightRunner(
         try {
             // Configure the codec on the IDR before the clock starts. A slow first frame is a
             // warm-up, not a dropped frame, and counting it would fail an otherwise healthy unit.
-            decoder.decode(data, units[0].offset, units[0].length, false, clip.codec.settingsValue)
-            fed = 1
-            if (!waitForFirstFrame(decoder, FIRST_FRAME_TIMEOUT_MS)) {
+            // The parameter sets go first and on their own, the way Android Auto sends them, so
+            // the codec is started and fed exactly as in a projection.
+            val first = units[0]
+            val config = AnnexBAccessUnits.parameterSetPrefix(data, first, clip.codec)
+            if (config > 0) {
+                decoder.decode(data, first.offset, config, false, clip.codec.settingsValue)
+            }
+            decoder.decode(data, first.offset + config, first.length - config, false, clip.codec.settingsValue)
+            // The warm-up keeps feeding at the clip's rate. Plenty of decoders (MediaTek's OMX one,
+            // Android's own software AVC) hold their first picture until more input arrives, which
+            // the phone always provides. Waiting on a lone IDR read as "no picture" on units that
+            // play Android Auto fine.
+            fed = warmUp(decoder, data, units, clip, FIRST_FRAME_TIMEOUT_MS)
+            if (decoder.framesRenderedThisSession == 0L) {
                 return@withContext failed(
                     clip,
                     VideoPreflightFailure.NO_FIRST_FRAME,
@@ -201,8 +212,9 @@ class VideoPreflightRunner(
                 )
             }
 
-            val startNs = System.nanoTime()
-            for (index in 1 until units.size) {
+            // Continue the warm-up's cadence rather than restarting it.
+            val startNs = System.nanoTime() - (fed - 1) * 1_000_000_000L / clip.fps
+            for (index in fed until units.size) {
                 val dueNs = startNs + (index - 1) * 1_000_000_000L / clip.fps
                 val waitMs = (dueNs - System.nanoTime()) / 1_000_000L
                 if (waitMs > 0) delay(waitMs)
@@ -219,8 +231,8 @@ class VideoPreflightRunner(
             val rendered = decoder.framesRenderedThisSession
             val drawnAfter = if (preview.observesDraws) preview.drawnFrames() else -1L
             val drawn = if (drawnBefore >= 0 && drawnAfter >= 0) drawnAfter - drawnBefore else -1L
-            val failure = classify(
-                clip = clip,
+            val failure = VideoPreflightPolicy.classifyClip(
+                frameCount = clip.frameCount,
                 rendered = rendered,
                 drawn = drawn,
                 observesDraws = preview.observesDraws,
@@ -258,20 +270,37 @@ class VideoPreflightRunner(
     ) {
         val bitmap = preview.capture() ?: return
         try {
-            val value = readMarker(bitmap, clip)
+            val value = readMarker(bitmap, clip, preview.contentArea(bitmap))
             if (value == null) onBad() else samples += value
         } finally {
             bitmap.recycle()
         }
     }
 
-    private suspend fun waitForFirstFrame(decoder: VideoDecoder, timeoutMs: Long): Boolean {
-        val deadline = System.nanoTime() + timeoutMs * 1_000_000L
-        while (System.nanoTime() < deadline) {
-            if (decoder.framesRenderedThisSession > 0L) return true
-            delay(25)
+    /**
+     * Feeds the clip at its own rate until the first picture renders or [timeoutMs] runs out.
+     * Unit 0 is already in the codec; returns how many units have been fed in total.
+     */
+    private suspend fun warmUp(
+        decoder: VideoDecoder,
+        data: ByteArray,
+        units: List<AnnexBAccessUnits.Unit>,
+        clip: VideoPreflightClip,
+        timeoutMs: Long,
+    ): Int {
+        var fed = 1
+        val startNs = System.nanoTime()
+        val deadline = startNs + timeoutMs * 1_000_000L
+        while (System.nanoTime() < deadline && decoder.framesRenderedThisSession == 0L) {
+            val dueNs = startNs + fed * 1_000_000_000L / clip.fps
+            if (fed < units.size && System.nanoTime() >= dueNs) {
+                val unit = units[fed]
+                decoder.decode(data, unit.offset, unit.length, false, clip.codec.settingsValue)
+                fed++
+            }
+            delay(5)
         }
-        return decoder.framesRenderedThisSession > 0L
+        return fed
     }
 
     private suspend fun drain(decoder: VideoDecoder) {
@@ -291,47 +320,37 @@ class VideoPreflightRunner(
         }
     }
 
-    private fun classify(
+    /**
+     * Reads the frame number. [area] is where the picture sits when the capture also shows the
+     * decoder's padding (see [TextureContentArea]). Its mirror is tried too, because whether the
+     * padding rows land below or above the picture depends on how the buffer was flipped, and the
+     * whole capture last, in case this device's getBitmap honours the crop after all.
+     *
+     * A misplaced read lands on map pixels or on the marker's black panel and comes back unreadable
+     * or as frame zero, so the first reading that saw a lit block wins.
+     */
+    private fun readMarker(
+        bitmap: Bitmap,
         clip: VideoPreflightClip,
-        rendered: Long,
-        drawn: Long,
-        observesDraws: Boolean,
-        samples: List<Int>,
-        badSamples: Int,
-        decoderError: String?,
-    ): VideoPreflightFailure {
-        if (decoderError != null) return VideoPreflightFailure.DECODER_ERROR
-        if (rendered == 0L) return VideoPreflightFailure.NO_FIRST_FRAME
-        val minimumFrames = clip.frameCount - ALLOWED_DROPS
-        if (rendered < minimumFrames) return VideoPreflightFailure.FEW_FRAMES
-        if (observesDraws && drawn >= 0 && drawn < minimumFrames) {
-            return VideoPreflightFailure.NO_DRAWN_FRAMES
-        }
-        if (badSamples > 0) return VideoPreflightFailure.BAD_MARKER
-        if (!markersPlausible(samples, clip.frameCount)) return VideoPreflightFailure.BAD_MARKER
-        return VideoPreflightFailure.NONE
-    }
-
-    private fun markersPlausible(samples: List<Int>, frameCount: Int): Boolean {
-        if (samples.size < 3) return true
-        if (samples.any { it !in 0 until frameCount }) return false
-        for (index in 1 until samples.size) {
-            if (samples[index] < samples[index - 1]) return false
-        }
-        return samples.last() - samples.first() >= MIN_SAMPLE_ADVANCE
-    }
-
-    private fun readMarker(bitmap: Bitmap, clip: VideoPreflightClip): Int? {
+        area: TextureContentArea.Area?,
+    ): Int? {
         if (bitmap.width <= 0 || bitmap.height <= 0) return null
-        // Stretched like the preview draws it, not fitted: see FrameMarker.
-        val reading = FrameMarker.read(
-            luma = { x, y -> luma(bitmap[x, y]) },
-            geometry = clip.marker,
-            maxX = bitmap.width,
-            maxY = bitmap.height,
-            scaleX = bitmap.width.toDouble() / clip.width,
-            scaleY = bitmap.height.toDouble() / clip.height,
-        ) ?: return null
+        val whole = TextureContentArea.Area(0, 0, bitmap.width, bitmap.height)
+        val mirrored = area?.copy(top = bitmap.height - area.top - area.height)
+        val readings = listOfNotNull(area, mirrored, whole).distinct().mapNotNull { box ->
+            // Stretched like the preview draws it, not fitted: see FrameMarker.
+            FrameMarker.read(
+                luma = { x, y -> luma(bitmap[x, y]) },
+                geometry = clip.marker,
+                maxX = bitmap.width,
+                maxY = bitmap.height,
+                scaleX = box.width.toDouble() / clip.width,
+                scaleY = box.height.toDouble() / clip.height,
+                offsetX = box.left,
+                offsetY = box.top,
+            )
+        }
+        val reading = readings.firstOrNull { it.frame > 0 } ?: readings.firstOrNull() ?: return null
         return reading.frame.takeIf { it in 0 until clip.frameCount }
     }
 
@@ -376,12 +395,22 @@ class VideoPreflightRunner(
             val view = TextureProjectionView(container.context).apply {
                 appliesProjectionScale = false
             }
+            // Read with the bitmap, on the same thread, so both describe the same frame.
+            var transform: FloatArray? = null
             preview(
                 view = view,
                 projection = view,
                 observesDraws = true,
-                capture = { withContext(Dispatchers.Main) { view.captureBitmap() } },
+                capture = {
+                    withContext(Dispatchers.Main) {
+                        transform = view.textureTransform()
+                        view.captureBitmap()
+                    }
+                },
                 drawn = { view.drawnFrames() },
+                contentArea = { bitmap ->
+                    transform?.let { TextureContentArea.fromTransform(it, bitmap.width, bitmap.height) }
+                },
             )
         }
         Settings.ViewMode.GLES -> {
@@ -415,6 +444,7 @@ class VideoPreflightRunner(
         observesDraws: Boolean,
         capture: suspend () -> Bitmap?,
         drawn: () -> Long,
+        contentArea: (Bitmap) -> TextureContentArea.Area? = { null },
     ): PreflightPreview {
         val surface = CompletableDeferred<Surface?>()
         val callbacks = object : IProjectionView.Callbacks {
@@ -433,6 +463,7 @@ class VideoPreflightRunner(
             view = view,
             observesDraws = observesDraws,
             capture = capture,
+            contentArea = contentArea,
             drawnFrames = drawn,
             awaitSurface = {
                 withTimeoutOrNull(SURFACE_TIMEOUT_MS) { surface.await() }
@@ -475,6 +506,7 @@ class VideoPreflightRunner(
         val view: View,
         val observesDraws: Boolean,
         val capture: suspend () -> Bitmap?,
+        val contentArea: (Bitmap) -> TextureContentArea.Area?,
         val drawnFrames: () -> Long,
         val awaitSurface: suspend () -> Surface?,
         val release: () -> Unit,
@@ -485,7 +517,5 @@ class VideoPreflightRunner(
         private const val FIRST_FRAME_TIMEOUT_MS = 5_000L
         private const val DRAIN_TIMEOUT_MS = 2_000L
         private const val SAMPLE_EVERY = 10
-        private const val ALLOWED_DROPS = 5
-        private const val MIN_SAMPLE_ADVANCE = 10
     }
 }

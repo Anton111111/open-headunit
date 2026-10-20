@@ -60,6 +60,28 @@ object AnnexBAccessUnits {
         return units
     }
 
+    /**
+     * How many bytes at the start of [unit] are parameter sets (SPS and PPS, plus VPS for H.265),
+     * or 0 when the unit does not start with them or holds nothing else.
+     *
+     * Android Auto sends the parameter sets as a message of their own and the first picture after
+     * them, so the decoder starts on a configuration buffer and then an IDR. The clips carry both
+     * in their first unit; splitting it here lets the test start the decoder the same way.
+     */
+    fun parameterSetPrefix(data: ByteArray, unit: Unit, codec: VideoDecoder.CodecType): Int {
+        if (unit.length <= 0 || unit.offset < 0 || unit.offset + unit.length > data.size) return 0
+        val slice = data.copyOfRange(unit.offset, unit.offset + unit.length)
+        var end = 0
+        for (nal in findNals(slice, codec)) {
+            if (!isParameterSet(nal.type, codec)) break
+            end = nal.endOffset
+        }
+        return if (end in 1 until slice.size) end else 0
+    }
+
+    private fun isParameterSet(type: Int, codec: VideoDecoder.CodecType): Boolean =
+        if (codec == VideoDecoder.CodecType.H264) type == 7 || type == 8 else type in 32..34
+
     private fun findNals(data: ByteArray, codec: VideoDecoder.CodecType): List<Nal> {
         val starts = mutableListOf<Pair<Int, Int>>()
         var i = 0
