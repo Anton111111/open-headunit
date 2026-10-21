@@ -1321,5 +1321,5 @@
     <string name="home_pages_hint_title">Chạm và giữ vào chỗ trống</string>
     <string name="home_pages_hint_body">Đó là cách thêm trang cho tiện ích, hoặc xóa một trang.</string>
     <string name="home_pages_hint_got_it">Đã hiểu</string>
-    <string name="home_pages_hint_body_anywhere">Chạm và giữ vào phần trống của màn hình chính để thêm trang cho tiện ích, hoặc xóa một trang.</string>
+    <string name="home_pages_hint_body_anywhere">Phần trống nào của màn hình chính cũng được. Đó là cách thêm trang cho tiện ích, hoặc xóa một trang.</string>
 </resources>

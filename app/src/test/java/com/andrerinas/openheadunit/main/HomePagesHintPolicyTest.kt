@@ -226,4 +226,27 @@ class HomePagesHintPolicyTest {
         assertEquals(16, box.left)
         assertEquals(16, box.top)
     }
+
+    @Test
+    fun `the small callout comes before a spotlight under the preferred size`() {
+        // A compact card: the regular callout only fits beside a tiny spotlight, the small one
+        // beside a readable one.
+        val card = Box(0, 0, 600, 340)
+        val spot = Box(380, 100, 590, 330)
+        val callouts = listOf(Size(460, 200), Size(330, 180))
+        val placed = HomePagesHintPolicy.place(
+            spot = spot, maxWidth = 360, maxHeight = 290, minSize = 64,
+            bounds = listOf(card), callouts = callouts,
+            gap = 18, arrowInset = 32, rightHandDrive = false, preferredSize = 120,
+        )!!
+        assertEquals(1, placed.calloutSize)
+        assertTrue(placed.hole.width >= 120)
+        // Only when no callout fits that way does the spotlight go below it.
+        val tight = HomePagesHintPolicy.place(
+            spot = spot, maxWidth = 360, maxHeight = 290, minSize = 64,
+            bounds = listOf(card), callouts = listOf(Size(460, 200)),
+            gap = 18, arrowInset = 32, rightHandDrive = false, preferredSize = 120,
+        )!!
+        assertTrue(tight.hole.width < 120)
+    }
 }

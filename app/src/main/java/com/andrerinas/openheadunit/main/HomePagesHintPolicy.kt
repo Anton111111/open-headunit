@@ -158,7 +158,8 @@ object HomePagesHintPolicy {
     /**
      * The spotlight and its callout. The spotlight starts as large as the spot allows up to the
      * maximum, and shrinks, kept against the spot's far side, until a callout fits beside it
-     * (towards the driver first), below or above it. [bounds] are tried in order, the card first;
+     * (towards the driver first), below or above it, keeping [preferredSize] while any callout
+     * fits that way. [bounds] are tried in order, the card first;
      * [callouts] are the sizes to try, the regular one first.
      */
     fun place(
@@ -171,12 +172,17 @@ object HomePagesHintPolicy {
         gap: Int,
         arrowInset: Int,
         rightHandDrive: Boolean,
+        preferredSize: Int = minSize,
     ): Placement? {
-        for (area in bounds) for ((index, size) in callouts.withIndex()) {
-            for (scale in HOLE_SCALES) {
-                val hole = sizedHole(spot, maxWidth, maxHeight, minSize, scale, rightHandDrive)
-                calloutFor(hole, area, size, gap, arrowInset, rightHandDrive)?.let { (box, side) ->
-                    return Placement(hole, box, side, index)
+        // First every bounds and callout size with the spotlight no smaller than [preferredSize],
+        // so a smaller callout comes before a spotlight too small to read; then down to [minSize].
+        for (floor in listOf(preferredSize, minSize).distinct()) {
+            for (area in bounds) for ((index, size) in callouts.withIndex()) {
+                for (scale in HOLE_SCALES) {
+                    val hole = sizedHole(spot, maxWidth, maxHeight, floor, scale, rightHandDrive)
+                    calloutFor(hole, area, size, gap, arrowInset, rightHandDrive)?.let { (box, side) ->
+                        return Placement(hole, box, side, index)
+                    }
                 }
             }
         }

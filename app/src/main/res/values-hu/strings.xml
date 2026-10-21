@@ -1314,5 +1314,5 @@
     <string name="home_pages_hint_title">Tarts nyomva egy üres helyet</string>
     <string name="home_pages_hint_body">Így adhatsz hozzá oldalt a widgeteidnek, vagy távolíthatsz el egyet.</string>
     <string name="home_pages_hint_got_it">Értem</string>
-    <string name="home_pages_hint_body_anywhere">Tarts nyomva a kezdőképernyő egy üres részét, hogy oldalt adj hozzá a widgeteidnek, vagy eltávolíts egyet.</string>
+    <string name="home_pages_hint_body_anywhere">A kezdőképernyő bármely üres része megfelel. Így adhatsz hozzá oldalt a widgeteidnek, vagy távolíthatsz el egyet.</string>
 </resources>

@@ -1888,6 +1888,7 @@ class HomeFragment : Fragment() {
                 maxWidth = maxWidth,
                 maxHeight = maxHeight,
                 minSize = minSize,
+                preferredSize = (PAGES_HINT_PREFERRED_SPOT_DP * density).toInt(),
                 bounds = pagesHintBounds(root, cardBox, margin),
                 callouts = pagesHintCallouts(ctx, root.width - 2 * margin),
                 gap = (18 * density).toInt(),
@@ -2585,6 +2586,8 @@ class HomeFragment : Fragment() {
         private const val PAGES_HINT_MIN_CALLOUT_DP = 240
         /** The smallest empty spot the hint lights up; the hand and ring shrink to fit it. */
         private const val PAGES_HINT_MIN_SPOT_DP = 64
+        /** Below this the spotlight only shrinks when no callout, small or narrow, fits otherwise. */
+        private const val PAGES_HINT_PREFERRED_SPOT_DP = 120
 
         private const val COMPACT_WIDTH_DP = 400
         /** Where the unit is wide enough for the card and the favorites side by side. */

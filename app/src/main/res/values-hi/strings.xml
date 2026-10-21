@@ -1364,5 +1364,5 @@
     <string name="home_pages_hint_title">किसी खाली जगह को दबाकर रखें</string>
     <string name="home_pages_hint_body">इसी तरह आप अपने विजेट के लिए पेज जोड़ते या हटाते हैं।</string>
     <string name="home_pages_hint_got_it">समझ गया</string>
-    <string name="home_pages_hint_body_anywhere">अपने विजेट के लिए पेज जोड़ने या हटाने के लिए होम के किसी खाली हिस्से को दबाकर रखें।</string>
+    <string name="home_pages_hint_body_anywhere">होम का कोई भी खाली हिस्सा चलेगा। इसी तरह आप अपने विजेट के लिए पेज जोड़ते या हटाते हैं।</string>
 </resources>

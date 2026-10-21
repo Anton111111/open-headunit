@@ -1317,5 +1317,5 @@
     <string name="home_pages_hint_title">按住空白處</string>
     <string name="home_pages_hint_body">這樣就能為小工具新增頁面，或移除頁面。</string>
     <string name="home_pages_hint_got_it">知道了</string>
-    <string name="home_pages_hint_body_anywhere">按住主畫面的空白處，即可為小工具新增頁面，或移除頁面。</string>
+    <string name="home_pages_hint_body_anywhere">主畫面的任何空白處都可以。這樣就能為小工具新增頁面，或移除頁面。</string>
 </resources>

@@ -1319,5 +1319,5 @@
     <string name="home_pages_hint_title">Натисніть і утримуйте порожнє місце</string>
     <string name="home_pages_hint_body">Так можна додати сторінку для віджетів або видалити її.</string>
     <string name="home_pages_hint_got_it">Зрозуміло</string>
-    <string name="home_pages_hint_body_anywhere">Натисніть і утримуйте порожню частину головного екрана, щоб додати сторінку для віджетів або видалити її.</string>
+    <string name="home_pages_hint_body_anywhere">Підійде будь-яка порожня частина головного екрана. Так можна додати сторінку для віджетів або видалити її.</string>
 </resources>

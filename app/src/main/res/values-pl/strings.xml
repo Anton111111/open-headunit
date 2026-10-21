@@ -1317,5 +1317,5 @@
     <string name="home_pages_hint_title">Przytrzymaj puste miejsce</string>
     <string name="home_pages_hint_body">Tak dodasz stronę na widżety albo ją usuniesz.</string>
     <string name="home_pages_hint_got_it">Rozumiem</string>
-    <string name="home_pages_hint_body_anywhere">Przytrzymaj pustą część ekranu głównego, aby dodać stronę na widżety albo ją usunąć.</string>
+    <string name="home_pages_hint_body_anywhere">Działa każde puste miejsce ekranu głównego. Tak dodasz stronę na widżety albo ją usuniesz.</string>
 </resources>

@@ -1327,5 +1327,5 @@
     <string name="home_pages_hint_title">Mantén pulsado un espacio vacío</string>
     <string name="home_pages_hint_body">Así añades una página para tus widgets, o quitas una.</string>
     <string name="home_pages_hint_got_it">Entendido</string>
-    <string name="home_pages_hint_body_anywhere">Mantén pulsada una parte vacía del inicio para añadir una página para tus widgets, o quitar una.</string>
+    <string name="home_pages_hint_body_anywhere">Sirve cualquier parte vacía del inicio. Así añades una página para tus widgets, o quitas una.</string>
 </resources>

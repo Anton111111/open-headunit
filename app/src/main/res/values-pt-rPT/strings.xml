@@ -1363,5 +1363,5 @@
     <string name="home_pages_hint_title">Toque sem soltar num espaço vazio</string>
     <string name="home_pages_hint_body">É assim que adiciona uma página para os seus widgets, ou remove uma.</string>
     <string name="home_pages_hint_got_it">Percebi</string>
-    <string name="home_pages_hint_body_anywhere">Toque sem soltar numa parte vazia do ecrã inicial para adicionar uma página para os seus widgets, ou remover uma.</string>
+    <string name="home_pages_hint_body_anywhere">Serve qualquer parte vazia do ecrã inicial. É assim que adiciona uma página para os seus widgets, ou remove uma.</string>
 </resources>
