@@ -67,6 +67,28 @@ class HomePagesPolicyTest {
     }
 
     @Test
+    fun `with the favorites switch off the home has no widget page and no widget row page`() {
+        assertEquals(
+            listOf(Page(Kind.HOME)),
+            HomePagesPolicy.pages(compact = false, widgetPages = 3, widgetRowOverflows = true, widgetsShown = false)
+        )
+    }
+
+    @Test
+    fun `with the favorites switch off a small screen still gives the all apps tile its page`() {
+        assertEquals(
+            listOf(Kind.HOME, Kind.APPS),
+            HomePagesPolicy.pages(compact = true, widgetPages = 2, widgetsShown = false).map { it.kind }
+        )
+    }
+
+    @Test
+    fun `with the favorites switch off no page can be added`() {
+        assertFalse(HomePagesPolicy.canAddPage(compact = false, widgetPages = 0, widgetsShown = false))
+        assertFalse(HomePagesPolicy.canAddPage(compact = true, widgetPages = 0, widgetsShown = false))
+    }
+
+    @Test
     fun `stored pages keep their order and an empty page survives`() {
         assertEquals(listOf(listOf(12, 13), emptyList(), listOf(40)), HomePagesPolicy.decode("p12,13|p|p40"))
     }

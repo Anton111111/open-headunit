@@ -683,9 +683,11 @@ class HomeFragment : Fragment() {
      */
     private fun renderPages(root: View, appSettings: Settings, isLauncherActive: Boolean, area: View, main: LinearLayout) {
         val pager = root.findViewById<HomePager>(R.id.home_pager) ?: return
-        val stored = if (isLauncherActive) prunePages(root.context, appSettings.homeWidgetPages) else emptyList()
+        // With the favorites switch off the stored pages are left as they are, not even pruned.
+        val widgetsShown = appSettings.showHomeFavoriteApps
+        val stored = if (isLauncherActive && widgetsShown) prunePages(root.context, appSettings.homeWidgetPages) else emptyList()
         val pages = if (isLauncherActive) {
-            HomePagesPolicy.pages(compactHome, stored.size, widgetRowOnItsOwnPage(appSettings))
+            HomePagesPolicy.pages(compactHome, stored.size, widgetRowOnItsOwnPage(appSettings), widgetsShown)
         } else {
             HomePagesPolicy.pages(compact = false, widgetPages = 0)
         }
@@ -721,7 +723,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun widgetRowOnItsOwnPage(appSettings: Settings): Boolean =
-        widgetRowOverflows && !ultrawideHome && appSettings.homeWidgets.isNotEmpty()
+        widgetRowOverflows && !ultrawideHome && appSettings.showHomeFavoriteApps && appSettings.homeWidgets.isNotEmpty()
 
     private fun appsPage(ctx: Context, area: View): View = LinearLayout(ctx).apply {
         id = R.id.home_page_apps
@@ -870,7 +872,12 @@ class HomeFragment : Fragment() {
         val appSettings = App.provide(ctx).settings
         if (!appSettings.isCarLauncherActive) return false
         val canAdd = HomeWidgets.supported() &&
-            HomePagesPolicy.canAddPage(compactHome, appSettings.homeWidgetPages.size, widgetRowOnItsOwnPage(appSettings))
+            HomePagesPolicy.canAddPage(
+                compactHome,
+                appSettings.homeWidgetPages.size,
+                widgetRowOnItsOwnPage(appSettings),
+                widgetsShown = appSettings.showHomeFavoriteApps
+            )
         val actions = mutableListOf<HomeActionDialog.Action>()
         if (canAdd) {
             actions.add(
@@ -1006,7 +1013,8 @@ class HomeFragment : Fragment() {
         row.removeAllViews()
         val appSettings = App.provide(ctx).settings
         // A widget can only be drawn in one place, and on this screen that place is its own page.
-        if (!appSettings.isCarLauncherActive || widgetRowOnItsOwnPage(appSettings)) {
+        // The favorites switch turns the widgets off with the favorites, add tile included.
+        if (!appSettings.isCarLauncherActive || !appSettings.showHomeFavoriteApps || widgetRowOnItsOwnPage(appSettings)) {
             scroll.visibility = View.GONE
             return
         }

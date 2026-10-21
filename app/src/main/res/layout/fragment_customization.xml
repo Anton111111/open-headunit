@@ -545,7 +545,7 @@
                 android:text="@string/btn_reset_scale"
                 android:textColor="?android:attr/textColorPrimary" />
 
-            <!-- Favorite Apps Toggle (only used while Open Headunit is the launcher) -->
+            <!-- Favorite apps and widgets toggle (only used while Open Headunit is the launcher) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

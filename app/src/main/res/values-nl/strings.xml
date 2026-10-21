@@ -1287,8 +1287,8 @@
     <string name="home_favorites_full">Alle vier favorieten zijn bezet. Houd er een ingedrukt op het startscherm om hem te wijzigen.</string>
     <string name="home_choose_favorite_app">Kies een app of snelkoppeling</string>
     <string name="home_shortcut_badge">Snelkoppeling</string>
-    <string name="home_show_favorite_apps">Favoriete apps op het startscherm</string>
-    <string name="home_show_favorite_apps_description">Vier app-snelkoppelingen onder de hoofdknop zolang Open Headunit de start-app is</string>
+    <string name="home_show_favorite_apps">Apps en widgets op het startscherm</string>
+    <string name="home_show_favorite_apps_description">Favoriete apps en widgets onder de hoofdknop zolang Open Headunit de start-app is</string>
     <string name="home_show_clock">Datum en tijd op het startscherm</string>
     <string name="home_show_clock_description">De tijd en de datum van vandaag, boven aan de hoofdknoop</string>
     <string name="home_show_speed">GPS-snelheid op het startscherm</string>

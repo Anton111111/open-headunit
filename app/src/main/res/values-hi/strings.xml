@@ -1333,8 +1333,8 @@
     <string name="home_favorites_full">चारों पसंदीदा भरे हुए हैं। बदलने के लिए होम स्क्रीन पर किसी एक को दबाकर रखें।</string>
     <string name="home_choose_favorite_app">ऐप या शॉर्टकट चुनें</string>
     <string name="home_shortcut_badge">शॉर्टकट</string>
-    <string name="home_show_favorite_apps">होम स्क्रीन पर पसंदीदा ऐप्स</string>
-    <string name="home_show_favorite_apps_description">जब Open Headunit होम ऐप हो, तब मुख्य बटन के नीचे चार ऐप शॉर्टकट</string>
+    <string name="home_show_favorite_apps">होम स्क्रीन पर ऐप्स और विजेट</string>
+    <string name="home_show_favorite_apps_description">जब Open Headunit होम ऐप हो, तब मुख्य बटन के नीचे पसंदीदा ऐप्स और विजेट</string>
     <string name="home_show_clock">होम स्क्रीन पर तारीख़ और समय</string>
     <string name="home_show_clock_description">मुख्य बटन के ऊपर समय और आज की तारीख़</string>
     <string name="home_show_speed">होम स्क्रीन पर GPS गति</string>

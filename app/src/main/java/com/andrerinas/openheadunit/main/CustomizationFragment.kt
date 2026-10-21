@@ -335,6 +335,7 @@ class CustomizationFragment : Fragment() {
         switchShowFavoriteApps?.isChecked = settings.showHomeFavoriteApps
         switchShowFavoriteApps?.setOnCheckedChangeListener { _, isChecked ->
             settings.showHomeFavoriteApps = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
         }
 
         switchShowClock?.isChecked = settings.showHomeClock

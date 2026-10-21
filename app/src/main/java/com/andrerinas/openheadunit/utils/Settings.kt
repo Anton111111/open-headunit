@@ -1571,6 +1571,7 @@ class Settings(private val context: Context) {
         get() = FavoriteAppsPolicy.decode(prefs.getString("home-favorite-apps", "") ?: "")
         set(value) { prefs.edit().putString("home-favorite-apps", FavoriteAppsPolicy.encode(value)).apply() }
 
+    /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
     var showHomeFavoriteApps: Boolean
         get() = prefs.getBoolean("show-home-favorite-apps", true)
         set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }

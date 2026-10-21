@@ -1335,8 +1335,8 @@
     <string name="home_favorites_full">Keempat favorit sudah terisi. Tekan lama salah satunya di layar beranda untuk menggantinya.</string>
     <string name="home_choose_favorite_app">Pilih aplikasi atau pintasan</string>
     <string name="home_shortcut_badge">Pintasan</string>
-    <string name="home_show_favorite_apps">Aplikasi favorit di layar beranda</string>
-    <string name="home_show_favorite_apps_description">Empat pintasan aplikasi di bawah tombol utama saat Open Headunit menjadi aplikasi beranda</string>
+    <string name="home_show_favorite_apps">Aplikasi dan widget di layar beranda</string>
+    <string name="home_show_favorite_apps_description">Aplikasi favorit dan widget di bawah tombol utama saat Open Headunit menjadi aplikasi beranda</string>
     <string name="home_show_clock">Tanggal dan waktu di layar utama</string>
     <string name="home_show_clock_description">Waktu dan tanggal hari ini di atas tombol utama</string>
     <string name="home_show_speed">Kecepatan GPS di layar utama</string>

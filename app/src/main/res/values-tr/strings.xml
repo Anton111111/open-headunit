@@ -1282,8 +1282,8 @@
     <string name="home_favorites_full">Dört favorinin hepsi dolu. Değiştirmek için ana ekranda birine basılı tut.</string>
     <string name="home_choose_favorite_app">Bir uygulama veya kısayol seç</string>
     <string name="home_shortcut_badge">Kısayol</string>
-    <string name="home_show_favorite_apps">Ana ekranda favori uygulamalar</string>
-    <string name="home_show_favorite_apps_description">Open Headunit ana ekran uygulaması olduğunda ana düğmenin altında dört uygulama kısayolu</string>
+    <string name="home_show_favorite_apps">Ana ekranda uygulamalar ve widget\'lar</string>
+    <string name="home_show_favorite_apps_description">Open Headunit ana ekran uygulaması olduğunda ana düğmenin altında favori uygulamalar ve widget\'lar</string>
     <string name="home_show_clock">Ana ekranda tarih ve saat</string>
     <string name="home_show_clock_description">Saat ve bugünün tarihi, ana düğmenin üstünde</string>
     <string name="home_show_speed">Ana ekranda GPS hızı</string>

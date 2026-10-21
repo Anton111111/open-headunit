@@ -43,19 +43,32 @@ object HomePagesPolicy {
      * @param widgetRowOverflows the row under the favorites has widgets and no room on this screen,
      *   so they get a page instead of disappearing. Meaningless on the compact home, where that row
      *   already has the favorites' page to itself.
+     * @param widgetsShown the favorites switch is on. Off, the home has no widget row and no widget
+     *   page, whatever is stored; the stored widgets are kept for when it is turned back on.
      */
-    fun pages(compact: Boolean, widgetPages: Int, widgetRowOverflows: Boolean = false): List<Page> {
+    fun pages(
+        compact: Boolean,
+        widgetPages: Int,
+        widgetRowOverflows: Boolean = false,
+        widgetsShown: Boolean = true
+    ): List<Page> {
         val base = when {
             compact -> listOf(Page(Kind.HOME), Page(Kind.APPS))
-            widgetRowOverflows -> listOf(Page(Kind.HOME), Page(Kind.WIDGET_ROW))
+            widgetRowOverflows && widgetsShown -> listOf(Page(Kind.HOME), Page(Kind.WIDGET_ROW))
             else -> listOf(Page(Kind.HOME))
         }
-        val shown = widgetPages.coerceIn(0, MAX_PAGES - base.size)
+        val shown = if (widgetsShown) widgetPages.coerceIn(0, MAX_PAGES - base.size) else 0
         return base + (0 until shown).map { Page(Kind.WIDGETS, it) }
     }
 
-    fun canAddPage(compact: Boolean, widgetPages: Int, widgetRowOverflows: Boolean = false): Boolean =
-        pages(compact, widgetPages + 1, widgetRowOverflows).size > pages(compact, widgetPages, widgetRowOverflows).size
+    fun canAddPage(
+        compact: Boolean,
+        widgetPages: Int,
+        widgetRowOverflows: Boolean = false,
+        widgetsShown: Boolean = true
+    ): Boolean =
+        pages(compact, widgetPages + 1, widgetRowOverflows, widgetsShown).size >
+            pages(compact, widgetPages, widgetRowOverflows, widgetsShown).size
 
     /** Whatever was stored, so a corrupt value never breaks the home: unknown parts are dropped. */
     fun decode(stored: String): List<List<Int>> = stored.split(PAGE_SEPARATOR)

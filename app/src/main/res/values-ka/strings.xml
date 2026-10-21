@@ -1268,8 +1268,8 @@
     <string name="home_favorites_full">ოთხივე რჩეული დაკავებულია. შესაცვლელად დიდხანს დააჭირეთ ერთ-ერთს მთავარ ეკრანზე.</string>
     <string name="home_choose_favorite_app">აირჩიეთ აპი ან მალსახმობი</string>
     <string name="home_shortcut_badge">მალსახმობი</string>
-    <string name="home_show_favorite_apps">რჩეული აპები მთავარ ეკრანზე</string>
-    <string name="home_show_favorite_apps_description">აპების ოთხი მალსახმობი მთავარი ღილაკის ქვემოთ, როცა Open Headunit მთავარი აპია</string>
+    <string name="home_show_favorite_apps">აპები და ვიჯეტები მთავარ ეკრანზე</string>
+    <string name="home_show_favorite_apps_description">რჩეული აპები და ვიჯეტები მთავარი ღილაკის ქვემოთ, როცა Open Headunit მთავარი აპია</string>
     <string name="home_show_clock">თარიღი და დრო მთავარ ეკრანზე</string>
     <string name="home_show_clock_description">დრო და დღევანდელი თარიღი მთავარი ღილაკის ზემოთ</string>
     <string name="home_show_speed">GPS სიჩქარე მთავარ ეკრანზე</string>

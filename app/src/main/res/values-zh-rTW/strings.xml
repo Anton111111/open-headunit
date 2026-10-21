@@ -1286,8 +1286,8 @@
     <string name="home_favorites_full">四個最愛位置都已滿。在主畫面上長按其中一個即可更換。</string>
     <string name="home_choose_favorite_app">選擇應用程式或捷徑</string>
     <string name="home_shortcut_badge">捷徑</string>
-    <string name="home_show_favorite_apps">主畫面上的最愛應用程式</string>
-    <string name="home_show_favorite_apps_description">Open Headunit 作為主畫面應用程式時，在主按鈕下方顯示四個應用程式捷徑</string>
+    <string name="home_show_favorite_apps">主畫面上的應用程式與小工具</string>
+    <string name="home_show_favorite_apps_description">Open Headunit 作為主畫面應用程式時，在主按鈕下方顯示最愛應用程式與小工具</string>
     <string name="home_show_clock">在主畫面上顯示日期與時間</string>
     <string name="home_show_clock_description">在主按鈕上方顯示時間與今天的日期</string>
     <string name="home_show_speed">在主畫面上顯示 GPS 速度</string>
