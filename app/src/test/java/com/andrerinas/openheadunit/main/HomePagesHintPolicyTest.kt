@@ -2,9 +2,9 @@ package com.andrerinas.openheadunit.main
 
 import com.andrerinas.openheadunit.main.HomePagesHintPolicy.Box
 import com.andrerinas.openheadunit.main.HomePagesHintPolicy.Side
+import com.andrerinas.openheadunit.main.HomePagesHintPolicy.Size
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -67,64 +67,112 @@ class HomePagesHintPolicyTest {
         assertFalse(HomePagesHintPolicy.shouldShow(ready.copy(onMainPage = false)))
     }
 
-    // A card of 800 by 400 with its content on the driver's side.
+    // A landscape card of 800 by 400 with its content on the driver's side.
     private val interior = Box(100, 50, 900, 450)
     private val title = Box(100, 200, 400, 260)
     private val action = Box(100, 330, 360, 400)
     private val clock = Box(780, 50, 900, 100)
 
-    @Test
-    fun `the spotlight goes on the far side, clear of the content and the clock`() {
-        val hole = HomePagesHintPolicy.hole(interior, listOf(title, action, clock), false, 150, 200, 10)
-        assertNotNull(hole)
-        hole!!
-        assertTrue(hole.left >= title.right + 10)
-        assertTrue(hole.right <= interior.right)
-        assertTrue(hole.top >= clock.bottom + 10)
-        assertTrue(hole.bottom <= interior.bottom)
-        assertEquals(200, hole.width)
+    private fun clear(hole: Box, of: List<Box>, gap: Int) = of.none {
+        it.left - gap < hole.right && it.right + gap > hole.left && it.top - gap < hole.bottom && it.bottom + gap > hole.top
     }
 
     @Test
-    fun `with right-hand drive the spotlight mirrors to the left`() {
+    fun `the spot is the empty part beside the text, clear of the content and the clock`() {
+        val spot = HomePagesHintPolicy.emptySpot(interior, listOf(title, action, clock), false, 150, 360, 290, 10)!!
+        assertTrue(clear(spot, listOf(title, action, clock), 10))
+        assertTrue(spot.left >= title.right + 10)
+        assertTrue(spot.right <= interior.right && spot.bottom <= interior.bottom)
+        // Bigger than the old fixed square: it takes the empty part of the card.
+        assertTrue(spot.width > 200 && spot.height > 200)
+    }
+
+    @Test
+    fun `with right-hand drive the spot mirrors to the left`() {
         val mirror = { b: Box -> Box(1000 - b.right, b.top, 1000 - b.left, b.bottom) }
-        val hole = HomePagesHintPolicy.hole(
-            interior, listOf(title, action, clock).map(mirror), true, 150, 200, 10
-        )!!
-        assertTrue(hole.right <= mirror(title).left - 10)
-        assertTrue(hole.left >= interior.left)
+        val content = listOf(title, action, clock).map(mirror)
+        val spot = HomePagesHintPolicy.emptySpot(interior, content, true, 150, 360, 290, 10)!!
+        assertTrue(spot.right <= mirror(title).left - 10)
+        assertTrue(clear(spot, content, 10))
     }
 
     @Test
     fun `a card with no empty spot gets no hint`() {
-        val crowded = Box(100, 50, 900, 450)
-        assertNull(HomePagesHintPolicy.hole(interior, listOf(crowded), false, 150, 200, 10))
+        assertNull(HomePagesHintPolicy.emptySpot(interior, listOf(Box(100, 50, 900, 450)), false, 150, 360, 290, 10))
+        assertNull(HomePagesHintPolicy.emptySpot(Box(100, 50, 900, 190), emptyList(), false, 150, 360, 290, 10))
+    }
+
+    // A tall portrait card: the kicker, title and subtitle in the middle, the button at the bottom,
+    // text running nearly the whole width, so there is no room beside it.
+    private val tall = Box(40, 40, 1040, 1900)
+    private val kicker = Box(40, 900, 300, 960)
+    private val portraitTitle = Box(40, 980, 1000, 1080)
+    private val subtitle = Box(40, 1100, 900, 1160)
+    private val button = Box(40, 1700, 1040, 1860)
+
+    @Test
+    fun `in portrait the spot is a band above the text or between it and the button`() {
+        val content = listOf(kicker, portraitTitle, subtitle, button)
+        val spot = HomePagesHintPolicy.emptySpot(tall, content, false, 150, 900, 720, 10)!!
+        assertTrue(clear(spot, content, 10))
+        assertTrue(spot.bottom <= kicker.top - 10 || (spot.top >= subtitle.bottom + 10 && spot.bottom <= button.top - 10))
+        assertTrue(spot.width > 900)
+    }
+
+    private val screen = Box(16, 16, 1264, 704)
+
+    @Test
+    fun `the callout goes beside the spotlight towards the driver, inside the bounds`() {
+        val placed = HomePagesHintPolicy.place(
+            spot = Box(500, 120, 880, 440), maxWidth = 360, maxHeight = 290, minSize = 150,
+            bounds = listOf(Box(100, 50, 900, 450)), callouts = listOf(Size(300, 200)),
+            gap = 18, arrowInset = 32, rightHandDrive = false,
+        )!!
+        assertEquals(Side.LEFT, placed.side)
+        assertTrue(placed.callout.right + 18 <= placed.hole.left)
+        assertTrue(placed.callout.left >= 100)
+        assertTrue(placed.hole.width >= 150)
     }
 
     @Test
-    fun `a short card takes a smaller spotlight down to the minimum`() {
-        val short = Box(100, 50, 900, 220)
-        val hole = HomePagesHintPolicy.hole(short, listOf(title.copy(top = 60, bottom = 120)), false, 150, 200, 10)!!
-        assertTrue(hole.height in 150..170)
-        assertNull(HomePagesHintPolicy.hole(Box(100, 50, 900, 190), emptyList(), false, 150, 200, 10))
+    fun `the spotlight shrinks before the callout leaves the card`() {
+        val placed = HomePagesHintPolicy.place(
+            spot = Box(110, 60, 890, 440), maxWidth = 360, maxHeight = 290, minSize = 150,
+            bounds = listOf(Box(100, 50, 900, 450)), callouts = listOf(Size(380, 200)),
+            gap = 18, arrowInset = 32, rightHandDrive = false,
+        )!!
+        assertTrue(placed.hole.width < 360)
+        assertTrue(placed.callout.left >= 100 && placed.callout.right <= 900)
     }
 
     @Test
-    fun `the callout goes towards the driver and switches sides when there is no room`() {
-        val screen = Box(0, 0, 1280, 720)
-        val hole = Box(900, 300, 1100, 500)
-        assertEquals(Side.LEFT, HomePagesHintPolicy.calloutSide(hole, screen, 380, 18, rightHandDrive = false))
-        val leftHole = Box(100, 300, 300, 500)
-        assertEquals(Side.RIGHT, HomePagesHintPolicy.calloutSide(leftHole, screen, 380, 18, rightHandDrive = false))
-        assertEquals(Side.RIGHT, HomePagesHintPolicy.calloutSide(leftHole, screen, 380, 18, rightHandDrive = true))
-        assertNull(HomePagesHintPolicy.calloutSide(Box(500, 300, 700, 500), Box(0, 0, 800, 720), 600, 18, false))
+    fun `in portrait the callout goes below or above the spotlight`() {
+        val placed = HomePagesHintPolicy.place(
+            spot = Box(40, 1170, 1040, 1690), maxWidth = 900, maxHeight = 720, minSize = 150,
+            bounds = listOf(tall), callouts = listOf(Size(900, 260)),
+            gap = 18, arrowInset = 32, rightHandDrive = false,
+        )!!
+        assertTrue(placed.side == Side.BELOW || placed.side == Side.ABOVE)
+        assertTrue(placed.callout.top >= tall.top && placed.callout.bottom <= tall.bottom)
+        assertTrue(placed.hole.centerX in placed.callout.left + 32..placed.callout.right - 32)
     }
 
     @Test
-    fun `the callout stays level with the spotlight and inside the screen`() {
-        val screen = Box(0, 0, 1280, 720)
-        assertEquals(300, HomePagesHintPolicy.calloutTop(Box(900, 300, 1100, 500), screen, 200, 12))
-        assertEquals(12, HomePagesHintPolicy.calloutTop(Box(900, 0, 1100, 100), screen, 300, 12))
-        assertEquals(720 - 12 - 300, HomePagesHintPolicy.calloutTop(Box(900, 620, 1100, 720), screen, 300, 12))
+    fun `the small callout and then the wider bounds are tried before giving up`() {
+        val cardOnly = Box(300, 50, 900, 450)
+        val placed = HomePagesHintPolicy.place(
+            spot = Box(700, 60, 890, 440), maxWidth = 360, maxHeight = 290, minSize = 150,
+            bounds = listOf(cardOnly, screen), callouts = listOf(Size(500, 300), Size(380, 200)),
+            gap = 18, arrowInset = 32, rightHandDrive = false,
+        )!!
+        assertEquals(1, placed.calloutSize)
+        assertTrue(placed.callout.left >= cardOnly.left)
+        assertNull(
+            HomePagesHintPolicy.place(
+                spot = Box(700, 60, 890, 440), maxWidth = 360, maxHeight = 290, minSize = 150,
+                bounds = listOf(Box(650, 50, 900, 450)), callouts = listOf(Size(380, 200)),
+                gap = 18, arrowInset = 32, rightHandDrive = false,
+            )
+        )
     }
 }

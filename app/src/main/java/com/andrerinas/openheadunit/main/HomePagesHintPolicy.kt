@@ -57,91 +57,131 @@ object HomePagesHintPolicy {
         val height: Int get() = bottom - top
         val centerX: Int get() = (left + right) / 2
         val centerY: Int get() = (top + bottom) / 2
-
-        fun overlapsX(from: Int, to: Int): Boolean = left < to && right > from
-        fun overlapsY(from: Int, to: Int): Boolean = top < to && bottom > from
     }
 
-    enum class Side { LEFT, RIGHT }
+    /** Where the callout sits, seen from the spotlight. */
+    enum class Side { LEFT, RIGHT, ABOVE, BELOW }
+
+    data class Size(val width: Int, val height: Int)
+
+    /** The spotlight, the callout and which of the given callout sizes it took (0 is the first). */
+    data class Placement(val hole: Box, val callout: Box, val side: Side, val calloutSize: Int)
 
     /**
-     * The spotlight: a square on the card's far side from the driver, where the content leaves
-     * room, as large as fits up to [maxSize]. Null when no square of [minSize] fits, so the hint
-     * waits rather than covering the card's content.
+     * The empty part of the card the spotlight goes on: of the free rectangles between what is
+     * drawn on it, the one with the most room, counted up to [maxWidth] by [maxHeight] so a
+     * huge one does not win over one that is merely big enough. Beside the text in landscape, a
+     * band above it or between it and the button in portrait. On a tie, the one further from
+     * the driver. Null when no rectangle of [minSize] by [minSize] is free.
      *
      * @param interior the card inside its padding.
      * @param occupied what is drawn on the card: text by its real extent, buttons, the clock.
      * @param gap the room kept between the spotlight and anything on the card.
      */
-    fun hole(
+    fun emptySpot(
         interior: Box,
         occupied: List<Box>,
         rightHandDrive: Boolean,
         minSize: Int,
-        maxSize: Int,
+        maxWidth: Int,
+        maxHeight: Int,
         gap: Int,
     ): Box? {
-        if (minSize <= 0 || maxSize < minSize) return null
-        val step = ((maxSize - minSize) / 8).coerceAtLeast(1)
-        var size = maxSize
-        while (size > minSize) {
-            place(interior, occupied, rightHandDrive, size, gap)?.let { return it }
-            size -= step
-        }
-        return place(interior, occupied, rightHandDrive, minSize, gap)
-    }
-
-    private fun place(interior: Box, occupied: List<Box>, rightHandDrive: Boolean, size: Int, gap: Int): Box? {
-        if (interior.width < size || interior.height < size) return null
-        // A column of the spotlight's width against the far edge.
-        val columnFrom = if (rightHandDrive) interior.left else interior.right - size
-        val columnTo = columnFrom + size
-        val inColumn = occupied.filter { it.overlapsX(columnFrom - gap, columnTo + gap) }
-        // The tallest free stretch of that column.
-        var best: Pair<Int, Int>? = null
-        var cursor = interior.top
-        for (box in inColumn.sortedBy { it.top } + Box(0, interior.bottom + gap, 0, interior.bottom + gap)) {
-            val end = box.top - gap
-            if (end - cursor >= size && (best == null || end - cursor > best.second - best.first)) {
-                best = cursor to end
+        val blocked = occupied.map { Box(it.left - gap, it.top - gap, it.right + gap, it.bottom + gap) }
+        val xs = (listOf(interior.left, interior.right) + blocked.flatMap { listOf(it.left, it.right) })
+            .map { it.coerceIn(interior.left, interior.right) }.distinct().sorted()
+        val ys = (listOf(interior.top, interior.bottom) + blocked.flatMap { listOf(it.top, it.bottom) })
+            .map { it.coerceIn(interior.top, interior.bottom) }.distinct().sorted()
+        var best: Box? = null
+        var bestScore = 0L
+        for (left in xs) for (right in xs) {
+            if (right - left < minSize) continue
+            for (top in ys) for (bottom in ys) {
+                if (bottom - top < minSize) continue
+                if (blocked.any { it.left < right && it.right > left && it.top < bottom && it.bottom > top }) continue
+                val candidate = Box(left, top, right, bottom)
+                val score = minOf(candidate.width, maxWidth).toLong() * minOf(candidate.height, maxHeight)
+                val further = best != null && score == bestScore &&
+                    if (rightHandDrive) candidate.centerX < best.centerX else candidate.centerX > best.centerX
+                if (score > bestScore || further) {
+                    best = candidate
+                    bestScore = score
+                }
             }
-            cursor = maxOf(cursor, box.bottom + gap)
         }
-        val (freeTop, freeBottom) = best ?: return null
-        val top = (freeTop + freeBottom - size) / 2
-        // Then as far from the content as the row it sits in allows, centred in that room.
-        val inRow = occupied.filter { it.overlapsY(top - gap, top + size + gap) }
-        val left = if (rightHandDrive) {
-            val limit = inRow.minOfOrNull { it.left - gap }?.coerceAtMost(interior.right) ?: interior.right
-            interior.left + ((limit - interior.left - size) / 2).coerceAtLeast(0)
-        } else {
-            val limit = inRow.maxOfOrNull { it.right + gap }?.coerceAtLeast(interior.left) ?: interior.left
-            limit + ((interior.right - limit - size) / 2).coerceAtLeast(0)
-        }
-        return Box(left, top, left + size, top + size)
+        return best
     }
 
     /**
-     * Which side of the spotlight the callout goes: towards the driver, where the card's content
-     * is, and the other side when that has no room. Null when neither has.
+     * The spotlight and its callout. The spotlight starts as large as the spot allows up to the
+     * maximum, and shrinks, kept against the spot's far side, until a callout fits beside it
+     * (towards the driver first), below or above it. [bounds] are tried in order, the card first;
+     * [callouts] are the sizes to try, the regular one first.
      */
-    fun calloutSide(hole: Box, screen: Box, calloutWidth: Int, gap: Int, rightHandDrive: Boolean): Side? {
-        val leftFits = hole.left - gap - calloutWidth >= screen.left
-        val rightFits = hole.right + gap + calloutWidth <= screen.right
-        val preferred = if (rightHandDrive) Side.RIGHT else Side.LEFT
-        val fits = { side: Side -> if (side == Side.LEFT) leftFits else rightFits }
-        return when {
-            fits(preferred) -> preferred
-            fits(if (preferred == Side.LEFT) Side.RIGHT else Side.LEFT) ->
-                if (preferred == Side.LEFT) Side.RIGHT else Side.LEFT
-            else -> null
+    fun place(
+        spot: Box,
+        maxWidth: Int,
+        maxHeight: Int,
+        minSize: Int,
+        bounds: List<Box>,
+        callouts: List<Size>,
+        gap: Int,
+        arrowInset: Int,
+        rightHandDrive: Boolean,
+    ): Placement? {
+        for (area in bounds) for ((index, size) in callouts.withIndex()) {
+            for (scale in HOLE_SCALES) {
+                val hole = sizedHole(spot, maxWidth, maxHeight, minSize, scale, rightHandDrive)
+                calloutFor(hole, area, size, gap, arrowInset, rightHandDrive)?.let { (box, side) ->
+                    return Placement(hole, box, side, index)
+                }
+            }
         }
+        return null
     }
 
-    /** Where the callout's top goes: level with the spotlight, inside the screen. */
-    fun calloutTop(hole: Box, screen: Box, calloutHeight: Int, margin: Int): Int {
-        val wanted = hole.centerY - calloutHeight / 2
-        val max = screen.bottom - margin - calloutHeight
-        return if (max < screen.top + margin) screen.top + margin else wanted.coerceIn(screen.top + margin, max)
+    private val HOLE_SCALES = listOf(1f, 0.85f, 0.7f, 0.55f, 0.4f, 0f)
+
+    private fun sizedHole(spot: Box, maxWidth: Int, maxHeight: Int, minSize: Int, scale: Float, rightHandDrive: Boolean): Box {
+        val fullWidth = minOf(spot.width, maxWidth)
+        val fullHeight = minOf(spot.height, maxHeight)
+        val width = maxOf(minSize, (fullWidth * scale).toInt()).coerceAtMost(fullWidth)
+        val height = maxOf(minSize, (fullHeight * scale).toInt()).coerceAtMost(fullHeight)
+        // Centred in the spot while it is full size, then held against the far side as it shrinks,
+        // which leaves the room towards the driver to the callout.
+        val centredLeft = spot.left + (spot.width - fullWidth) / 2
+        val left = if (rightHandDrive) centredLeft else centredLeft + fullWidth - width
+        val top = spot.top + (spot.height - height) / 2
+        return Box(left, top, left + width, top + height)
+    }
+
+    private fun calloutFor(hole: Box, area: Box, size: Size, gap: Int, arrowInset: Int, rightHandDrive: Boolean): Pair<Box, Side>? {
+        val w = size.width
+        val h = size.height
+        if (w > area.width || h > area.height) return null
+        val towardsDriver = if (rightHandDrive) Side.RIGHT else Side.LEFT
+        val away = if (rightHandDrive) Side.LEFT else Side.RIGHT
+        for (side in listOf(towardsDriver, away, Side.BELOW, Side.ABOVE)) {
+            val box = when (side) {
+                Side.LEFT, Side.RIGHT -> {
+                    val left = if (side == Side.LEFT) hole.left - gap - w else hole.right + gap
+                    val top = (hole.centerY - h / 2).coerceIn(area.top, area.bottom - h)
+                    Box(left, top, left + w, top + h)
+                }
+                Side.ABOVE, Side.BELOW -> {
+                    val top = if (side == Side.ABOVE) hole.top - gap - h else hole.bottom + gap
+                    val left = (hole.centerX - w / 2).coerceIn(area.left, area.right - w)
+                    Box(left, top, left + w, top + h)
+                }
+            }
+            val inside = box.left >= area.left && box.right <= area.right && box.top >= area.top && box.bottom <= area.bottom
+            // The arrow has to reach the hand from a straight part of the callout's edge.
+            val pointsAtHand = when (side) {
+                Side.LEFT, Side.RIGHT -> hole.centerY in (box.top + arrowInset)..(box.bottom - arrowInset)
+                Side.ABOVE, Side.BELOW -> hole.centerX in (box.left + arrowInset)..(box.right - arrowInset)
+            }
+            if (inside && pointsAtHand) return box to side
+        }
+        return null
     }
 }
