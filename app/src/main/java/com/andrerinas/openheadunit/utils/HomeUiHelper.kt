@@ -347,8 +347,7 @@ object HomeUiHelper {
             if (state != TileState.CONNECTING) stopTileShine(tile)
         }
 
-        // Color on the bar means a connection, so Settings stays neutral. Its custom color is the
-        // classic grid's, and Customization only offers it there.
+        // Color on the bar means a connection, so Settings stays neutral.
         val settingsTile = rootView.findViewById<ViewGroup>(R.id.settings_button) ?: return
         paintTile(settingsTile, tileBackground(context, palette), palette.text, palette.text)
     }

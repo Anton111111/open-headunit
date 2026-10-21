@@ -240,107 +240,21 @@
 
             <!-- Button Colors Section -->
             <TextView
-                android:id="@+id/txt_button_colors_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/home_button_colors"
+                android:text="@string/home_connection_colors"
                 android:textColor="?android:attr/textColorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
             <TextView
-                android:id="@+id/txt_button_colors_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/home_button_colors_description"
+                android:text="@string/home_connection_colors_description"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp" />
-
-            <!-- Live Button Preview Card -->
-            <LinearLayout
-                android:id="@+id/preview_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:background="@drawable/bg_setting_single"
-                android:padding="16dp"
-                android:gravity="center">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/preview_btn_self_mode"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginHorizontal="8dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/gradient_blue"
-                    app:icon="@drawable/ic_launch_white"
-                    app:iconTint="#FFFFFF"
-                    app:iconGravity="textStart"
-                    app:iconSize="28dp"
-                    app:iconPadding="0dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/preview_btn_usb"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginHorizontal="8dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/gradient_orange"
-                    app:icon="@drawable/ic_usb_white"
-                    app:iconTint="#FFFFFF"
-                    app:iconGravity="textStart"
-                    app:iconSize="28dp"
-                    app:iconPadding="0dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/preview_btn_wifi"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginHorizontal="8dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/gradient_purple"
-                    app:icon="@drawable/ic_network_wifi_white"
-                    app:iconTint="#FFFFFF"
-                    app:iconGravity="textStart"
-                    app:iconSize="28dp"
-                    app:iconPadding="0dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/preview_btn_settings"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_marginHorizontal="8dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/gradient_darkblue"
-                    app:icon="@drawable/ic_settings_white"
-                    app:iconTint="#FFFFFF"
-                    app:iconGravity="textStart"
-                    app:iconSize="28dp"
-                    app:iconPadding="0dp"
-                    android:padding="0dp"
-                    android:insetLeft="0dp"
-                    android:insetTop="0dp"
-                    android:insetRight="0dp"
-                    android:insetBottom="0dp" />
-
-            </LinearLayout>
 
             <!-- The new home's preview: the real home layout, scaled down. Filled in code. -->
             <FrameLayout
@@ -348,8 +262,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_setting_single"
-                android:padding="@dimen/customization_home_preview_padding"
-                android:visibility="gone" />
+                android:padding="@dimen/customization_home_preview_padding" />
 
             <!-- Button Color Pickers List -->
             <LinearLayout
@@ -477,47 +390,6 @@
 
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?android:attr/listDivider" />
-
-                <!-- Settings Button Color Row -->
-                <LinearLayout
-                    android:id="@+id/row_color_settings"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?android:attr/selectableItemBackground"
-                    android:gravity="center_vertical">
-
-                    <View
-                        android:id="@+id/indicator_settings"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:background="@drawable/gradient_darkblue"
-                        android:layout_marginEnd="16dp"
-                        android:layout_marginRight="16dp" />
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/btn_color_settings"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:textSize="16sp" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        app:srcCompat="@drawable/ic_chevron_right"
-                        app:tint="?android:attr/textColorSecondary" />
-
-                </LinearLayout>
-
             </LinearLayout>
 
             <!-- Auto Monochrome at Night Toggle -->
@@ -612,10 +484,9 @@
                 android:layout_marginBottom="8dp" />
 
             <TextView
-                android:id="@+id/txt_button_scale_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/home_button_scale_description"
+                android:text="@string/home_bar_scale_description"
                 android:textColor="?android:attr/textColorSecondary"
                 android:textSize="14sp"
                 android:layout_marginBottom="16dp" />
@@ -711,48 +582,6 @@
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/switch_show_favorite_apps"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-            </LinearLayout>
-
-            <!-- Classic Home Toggle (the 2x2 grid from before the redesign) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:background="@drawable/bg_setting_single"
-                android:padding="16dp"
-                android:gravity="center_vertical">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginEnd="12dp"
-                    android:layout_marginRight="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/home_use_classic"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/home_use_classic_description"
-                        android:textColor="?android:attr/textColorSecondary"
-                        android:textSize="13sp"
-                        android:layout_marginTop="2dp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switch_use_classic_home"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 

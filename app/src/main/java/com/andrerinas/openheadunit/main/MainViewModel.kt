@@ -25,7 +25,7 @@ class MainViewModel(application: Application): AndroidViewModel(application), Us
     val homePressed = MutableLiveData<Long>()
 
     /**
-     * True while the new home is on screen. Its main button and its connection tiles tell the
+     * True while the home is on screen. Its main button and its connection tiles tell the
      * bring-up there, so the status pill would only cover the favorites row with the same words.
      */
     val homeShowsBringUp = MutableLiveData(false)

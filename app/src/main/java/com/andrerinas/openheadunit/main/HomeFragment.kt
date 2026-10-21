@@ -16,7 +16,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.ViewTreeObserver
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.pm.PackageManager
@@ -61,7 +60,6 @@ import kotlinx.coroutines.launch
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.ColorUtils
 import com.andrerinas.openheadunit.utils.HomeUiHelper
-import com.andrerinas.openheadunit.utils.ClassicHomeUiHelper
 import com.andrerinas.openheadunit.utils.ToastUtils
 import com.andrerinas.openheadunit.utils.VpnControl
 import com.andrerinas.openheadunit.connection.self.SelfLaunchPath
@@ -120,8 +118,6 @@ class HomeFragment : Fragment() {
     private var primaryAction: View? = null
     private var primaryCancel: View? = null
     private lateinit var favoriteSlots: List<View>
-    private var isClassicHome = false
-    private var classicGridListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var decision: HomePrimaryPolicy.Decision? = null
     private var cachedPalette: HomeUiHelper.Palette? = null
     private var reconnectCountdown: Job? = null
@@ -173,19 +169,12 @@ class HomeFragment : Fragment() {
         }
     }
 
-    // A fixed container whose content is swapped when the user changes design. Swapping the
-    // fragment instead restores the old design's saved view state into the new one, whose views
-    // share ids but not types, and that crashes.
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         FrameLayout(inflater.context).also { inflateHomeContent(it) }
 
     private fun inflateHomeContent(container: FrameLayout) {
-        isClassicHome = App.provide(container.context).settings.useClassicHome
-        AppLog.i("HomeFragment: inflating the ${if (isClassicHome) "classic" else "new"} home")
         cachedPalette = null
-        container.removeAllViews()
-        LayoutInflater.from(container.context)
-            .inflate(if (isClassicHome) R.layout.fragment_home_classic else R.layout.fragment_home, container, true)
+        LayoutInflater.from(container.context).inflate(R.layout.fragment_home, container, true)
         selfModeTile = container.findViewById(R.id.self_mode_button)
         usbTile = container.findViewById(R.id.usb_button)
         settingsTile = container.findViewById(R.id.settings_button)
@@ -356,10 +345,6 @@ class HomeFragment : Fragment() {
         val ctx = context ?: return
         val root = view ?: return
         val appSettings = App.provide(ctx).settings
-        if (isClassicHome) {
-            renderClassicHome(ctx, root, appSettings)
-            return
-        }
         val usbPhone = detectedUsbPhone(ctx)
         val chosen = HomeUiHelper.chosenConnections(appSettings)
         val decision = HomePrimaryPolicy.decide(
@@ -463,7 +448,6 @@ class HomeFragment : Fragment() {
     private fun renderHomeInfo() {
         val ctx = context ?: return
         val root = view ?: return
-        if (isClassicHome) return
         HomeUiHelper.applyInfoBlock(
             rootView = root,
             settings = App.provide(ctx).settings,
@@ -566,13 +550,6 @@ class HomeFragment : Fragment() {
 
     private fun kmh(metersPerSecond: Float): Int = (metersPerSecond * 3.6f).roundToInt()
 
-    private fun renderClassicHome(ctx: Context, root: View, appSettings: Settings) {
-        val isConnected = commManager.isConnected
-        ClassicHomeUiHelper.applyConnectionState(ctx, root, isConnected, AapService.scanningState.value)
-        ClassicHomeUiHelper.applyButtonVisibility(root, appSettings, isConnected)
-        ClassicHomeUiHelper.applyButtonStyles(ctx, root, appSettings, isNightActive(), isConnected)
-    }
-
     private fun detectedUsbPhone(ctx: Context): UsbDevice? =
         mainViewModel.usbDevices.value.orEmpty().map { it.wrappedDevice }
             .firstOrNull { UsbDeviceCompat.isConnectable(ctx, it) }
@@ -601,22 +578,16 @@ class HomeFragment : Fragment() {
             isDefaultLauncher = CarLauncherManager.isDefaultLauncher(ctx)
         )
         exitButton.visibility = if (shouldShowExit) View.VISIBLE else View.GONE
-        if (isClassicHome) {
-            appsButton.visibility = if (isLauncherActive) View.VISIBLE else View.GONE
-        } else {
-            HomeUiHelper.applyFavoritesVisibility(root, isLauncherActive, appSettings.showHomeFavoriteApps)
-        }
+        HomeUiHelper.applyFavoritesVisibility(root, isLauncherActive, appSettings.showHomeFavoriteApps)
         if (isLauncherActive) {
             AppDrawerFragment.preload(ctx)
-            if (!isClassicHome && appSettings.showHomeFavoriteApps) loadFavorites()
+            if (appSettings.showHomeFavoriteApps) loadFavorites()
         }
-        if (!isClassicHome) {
-            applyHomeLayout(root, appSettings, isLauncherActive)
-            renderWidgets()
-            // After the layout pass that sizes the card, not inside it: hiding a line asks for
-            // another one.
-            root.findViewById<View>(R.id.home_primary_card)?.doOnLayout { root.post { fitCardText(root) } }
-        }
+        applyHomeLayout(root, appSettings, isLauncherActive)
+        renderWidgets()
+        // After the layout pass that sizes the card, not inside it: hiding a line asks for
+        // another one.
+        root.findViewById<View>(R.id.home_primary_card)?.doOnLayout { root.post { fitCardText(root) } }
     }
 
     /**
@@ -1030,7 +1001,6 @@ class HomeFragment : Fragment() {
     private fun renderWidgets() {
         val ctx = context ?: return
         val root = view ?: return
-        if (isClassicHome) return
         val scroll = root.findViewById<HorizontalScrollView>(R.id.home_widgets_scroll) ?: return
         val row = root.findViewById<LinearLayout>(R.id.home_widgets_row) ?: return
         row.removeAllViews()
@@ -1803,7 +1773,6 @@ class HomeFragment : Fragment() {
         AppLog.i("HomeFragment: onResume. isConnected=${commManager.isConnected}")
         val root = requireView()
         val homeSettings = App.provide(requireContext()).settings
-        if (homeSettings.useClassicHome != isClassicHome) reloadHomeLayout()
         applyLayoutSettings(root, homeSettings)
         updateLauncherViews()
         renderHome()
@@ -1828,12 +1797,6 @@ class HomeFragment : Fragment() {
             if (!act.isFinishing && !isDestroyed) {
                 RenameNotice.maybeShow(act, App.provide(requireContext()).settings)
                 Aa174Notice.maybeShow(act, App.provide(requireContext()).settings)
-                HomeDesignNotice.maybeShow(act, App.provide(requireContext()).settings) {
-                    reloadHomeLayout()
-                    view?.let { applyLayoutSettings(it, App.provide(requireContext()).settings) }
-                    updateLauncherViews()
-                    renderHome()
-                }
             }
         }
     }
@@ -1843,8 +1806,7 @@ class HomeFragment : Fragment() {
         // A host that is not listening holds an empty widget view, so this runs before the row is
         // built in onResume.
         HomeWidgets.startListening(requireContext())
-        // The classic home has no card, so the pill keeps telling the bring-up there.
-        mainViewModel.homeShowsBringUp.value = !isClassicHome
+        mainViewModel.homeShowsBringUp.value = true
     }
 
     override fun onStop() {
@@ -1866,45 +1828,14 @@ class HomeFragment : Fragment() {
         actionDialog = null
         RenameNotice.dismiss()
         Aa174Notice.dismiss()
-        HomeDesignNotice.dismiss()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        removeClassicGridListener()
-    }
-
-    private fun removeClassicGridListener() {
-        classicGridListener?.let { listener ->
-            view?.findViewById<View>(R.id.main_buttons_layout)?.viewTreeObserver
-                ?.takeIf { it.isAlive }?.removeOnGlobalLayoutListener(listener)
-        }
-        classicGridListener = null
     }
 
     private fun applyLayoutSettings(root: View, homeSettings: Settings) {
-        if (isClassicHome) {
-            val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-            ClassicHomeUiHelper.applyButtonScale(root, homeSettings.homeButtonScalePercent, isPortrait, resources.displayMetrics.density)
-            ClassicHomeUiHelper.applyTextColors(root, homeSettings)
-            if (isPortrait && classicGridListener == null) {
-                classicGridListener = ClassicHomeUiHelper.constrainPortraitGridWidth(root)
-            }
-        } else {
-            HomeUiHelper.applyDriverSide(root, homeSettings.rightHandDrive)
-            HomeUiHelper.applyButtonScale(root, homeSettings.homeButtonScalePercent)
-            HomeUiHelper.applyTheme(root.context, root, homePalette(root.context))
-            // The bar can only be fitted once it has a height to fit into.
-            root.doOnLayout { HomeUiHelper.fitDriverBar(it, homeSettings.homeButtonScalePercent) }
-        }
-    }
-
-    /** Swaps in the other design after the user switched between the new and the classic one. */
-    private fun reloadHomeLayout() {
-        val container = view as? FrameLayout ?: return
-        AppLog.i("HomeFragment: switching to the ${if (App.provide(container.context).settings.useClassicHome) "classic" else "new"} home design")
-        removeClassicGridListener()
-        inflateHomeContent(container)
+        HomeUiHelper.applyDriverSide(root, homeSettings.rightHandDrive)
+        HomeUiHelper.applyButtonScale(root, homeSettings.homeButtonScalePercent)
+        HomeUiHelper.applyTheme(root.context, root, homePalette(root.context))
+        // The bar can only be fitted once it has a height to fit into.
+        root.doOnLayout { HomeUiHelper.fitDriverBar(it, homeSettings.homeButtonScalePercent) }
     }
 
     /** The offered phones an automatic pick may name, from the same wake list the poke loop reads. */

@@ -1555,10 +1555,6 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("custom-wifi-button-color", 0)
         set(value) { prefs.edit().putInt("custom-wifi-button-color", value).apply() }
 
-    var customSettingsButtonColor: Int
-        get() = prefs.getInt("custom-settings-button-color", 0)
-        set(value) { prefs.edit().putInt("custom-settings-button-color", value).apply() }
-
     // Custom button scaling percentage for Home screen (default = 100%, valid range 60..120)
     var homeButtonScalePercent: Int
         get() {
@@ -1605,15 +1601,6 @@ class Settings(private val context: Context) {
     var homeWidgetHostId: Int
         get() = prefs.getInt("home-widget-host-id", 0)
         set(value) { prefs.edit().putInt("home-widget-host-id", value).apply() }
-
-    /** The 2x2 grid from before the redesign, kept while users get used to the new home screen. */
-    var useClassicHome: Boolean
-        get() = prefs.getBoolean("use-classic-home", false)
-        set(value) { prefs.edit().putBoolean("use-classic-home", value).apply() }
-
-    var homeDesignNoticeShown: Boolean
-        get() = prefs.getBoolean("home-design-notice-shown", false)
-        set(value) { prefs.edit().putBoolean("home-design-notice-shown", value).apply() }
 
     @SuppressLint("ApplySharedPref")
     fun commit() {
