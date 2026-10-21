@@ -35,6 +35,13 @@ object ConnectionStageTracker {
         _stage.value = opening
     }
 
+    /** The unit could not bring its own network up and will not try again by itself. */
+    fun networkAbandoned() {
+        val current = _stage.value
+        val next = ConnectionStagePolicy.afterNetworkAbandoned(current)
+        if (next != current) _stage.compareAndSet(current, next)
+    }
+
     /** The session or attempt is over. The network line is left to whoever owns the group, which a
      *  session that ends without removing it still has. */
     fun endAttempt() {
