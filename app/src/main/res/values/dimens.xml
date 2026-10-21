@@ -56,4 +56,8 @@
     <dimen name="home_widget_padding">6dp</dimen>
     <dimen name="home_widget_strip_min">64dp</dimen>
     <dimen name="home_widget_strip_max">180dp</dimen>
+
+    <!-- Customization: the scaled-down new home that previews the connection colors. -->
+    <dimen name="customization_home_preview_padding">8dp</dimen>
+    <dimen name="customization_home_preview_max_height">220dp</dimen>
 </resources>

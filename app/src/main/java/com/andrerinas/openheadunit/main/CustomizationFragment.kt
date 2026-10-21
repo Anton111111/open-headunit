@@ -18,6 +18,7 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -26,6 +27,8 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.doOnLayout
 import androidx.core.widget.doOnTextChanged
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
@@ -56,11 +59,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class CustomizationFragment : Fragment() {
-
-    private companion object {
-        /** The new home's tiles are rounded squares, so its previews are too, not the classic circles. */
-        const val NEW_HOME_PREVIEW_RADIUS_DP = 16f
-    }
 
     private lateinit var settings: Settings
     private var bgDefaultView: View? = null
@@ -107,6 +105,14 @@ class CustomizationFragment : Fragment() {
     private var txtButtonColorsTitle: TextView? = null
     private var txtButtonColorsDescription: TextView? = null
     private var txtButtonScaleDescription: TextView? = null
+
+    // The new home's color preview: the real home layout, scaled down
+    private var homeColorPreview: FrameLayout? = null
+    private var miniHomeStage: FrameLayout? = null
+    private var miniHomeBackground: ImageView? = null
+    private var miniHomeView: View? = null
+    /** The connection the preview puts on the main button: the last one whose color was picked. */
+    private var previewConnection: Connection? = null
 
     // Button Scale views
     private var previewContainer: View? = null
@@ -233,6 +239,7 @@ class CustomizationFragment : Fragment() {
         txtButtonColorsTitle = view.findViewById(R.id.txt_button_colors_title)
         txtButtonColorsDescription = view.findViewById(R.id.txt_button_colors_description)
         txtButtonScaleDescription = view.findViewById(R.id.txt_button_scale_description)
+        homeColorPreview = view.findViewById(R.id.home_color_preview)
 
         // Button Scale views
         previewContainer = view.findViewById(R.id.preview_container)
@@ -520,19 +527,26 @@ class CustomizationFragment : Fragment() {
             ClassicHomeUiHelper.applyButtonScale(homeView, validScale, isPortrait, resources.displayMetrics.density)
             return
         }
+        paintNewHome(ctx, homeView, validScale, null)
+        renderMiniHome(ctx)
+    }
+
+    /**
+     * Paints [homeView] as the new home looks at rest. [primary] puts that connection on the main
+     * button, as the home does for the last one used; null leaves the home's own choice.
+     */
+    private fun paintNewHome(ctx: Context, homeView: View, scalePercent: Int, primary: Connection?) {
         val decision = HomePrimaryPolicy.decide(
             HomePrimaryPolicy.Input(
                 chosen = HomeUiHelper.chosenConnections(settings),
-                lastConnection = HomeUiHelper.lastConnection(settings),
+                lastConnection = primary ?: HomeUiHelper.lastConnection(settings),
                 usbPhoneDetected = false,
                 sessionActive = false,
                 reconnectTarget = null,
                 wifiScanning = false
             )
         )
-        val palette = HomeUiHelper.palette(
-            ctx, HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive)
-        )
+        val palette = homePalette(ctx)
         HomeUiHelper.applyTheme(ctx, homeView, palette)
         HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections, palette)
         HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, palette)
@@ -548,9 +562,107 @@ class CustomizationFragment : Fragment() {
             countdownVisible = false
         )
         HomeUiHelper.applyDriverSide(homeView, settings.rightHandDrive)
+        HomeUiHelper.applyButtonScale(homeView, scalePercent)
+    }
 
-        // 3. Scale Home Buttons
-        HomeUiHelper.applyButtonScale(homeView, validScale)
+    /**
+     * The color section's preview on the new home: the home layout at this screen's size, scaled
+     * down to fit the card, so the colors land where the home really puts them.
+     */
+    private fun renderMiniHome(ctx: Context) {
+        val frame = homeColorPreview ?: return
+        if (settings.useClassicHome) return
+        val homeWidth = resources.displayMetrics.widthPixels
+        val homeHeight = resources.displayMetrics.heightPixels
+        if (miniHomeStage == null) {
+            val stage = FrameLayout(ctx).apply {
+                pivotX = 0f
+                pivotY = 0f
+                // A picture of the home, not a second one: D-pad focus must not wander into it.
+                descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                // Nor should TalkBack read its buttons out as if they could be pressed here.
+                importantForAccessibility = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                } else {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }
+            }
+            val background = ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+            stage.addView(background, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            val home = layoutInflater.inflate(R.layout.fragment_home, stage, false)
+            stage.addView(home)
+            frame.addView(stage, FrameLayout.LayoutParams(homeWidth, homeHeight))
+            // Takes the touches, so the tiles in the picture do not press.
+            frame.addView(View(ctx).apply {
+                isClickable = true
+                // Android 8 makes a clickable view focusable on its own; the D-pad must skip this one.
+                isFocusable = false
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            miniHomeStage = stage
+            miniHomeBackground = background
+            miniHomeView = home
+        }
+        val stage = miniHomeStage ?: return
+        val home = miniHomeView ?: return
+        miniHomeBackground?.let { paintHomeBackground(ctx, it) }
+        paintNewHome(ctx, home, settings.homeButtonScalePercent, previewConnection)
+        home.doOnLayout { HomeUiHelper.fitDriverBar(it, settings.homeButtonScalePercent) }
+        frame.doOnLayout { fitMiniHome(it, stage, homeWidth, homeHeight) }
+    }
+
+    private fun fitMiniHome(frame: View, stage: View, homeWidth: Int, homeHeight: Int) {
+        val roomWidth = frame.width - frame.paddingLeft - frame.paddingRight
+        if (roomWidth <= 0 || homeWidth <= 0 || homeHeight <= 0) return
+        val maxHeight = resources.getDimension(R.dimen.customization_home_preview_max_height)
+        val scale = minOf(roomWidth.toFloat() / homeWidth, maxHeight / homeHeight)
+        stage.scaleX = scale
+        stage.scaleY = scale
+        stage.translationX = (roomWidth - homeWidth * scale) / 2f
+        val height = (homeHeight * scale).toInt() + frame.paddingTop + frame.paddingBottom
+        if (frame.layoutParams.height == height) return
+        // Posted: this runs inside a layout pass, and Android 4.1 drops a layout request made there.
+        frame.post {
+            val params = frame.layoutParams
+            params.height = height
+            frame.layoutParams = params
+        }
+    }
+
+    /**
+     * The home's own background behind the preview, by the rules BaseActivity.applyWindowBackground
+     * uses for the real one: pure black, the custom image, or the default, dimmed at night if asked.
+     */
+    private fun paintHomeBackground(ctx: Context, target: ImageView) {
+        val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val nightMode = settings.homeBackgroundNightMode
+        val path = settings.homeBackgroundImagePath
+        val hasImage = path.isNotEmpty() && File(path).exists() && File(path).length() > 0
+        val pureBlack = if (hasImage) {
+            isNightActive && nightMode == Settings.BackgroundNightMode.PURE_BLACK
+        } else {
+            settings.appTheme == Settings.AppTheme.EXTREME_DARK ||
+                (isNightActive && (settings.useExtremeDarkMode || nightMode == Settings.BackgroundNightMode.PURE_BLACK))
+        }
+        Glide.with(this).clear(target)
+        target.colorFilter = if (!pureBlack && isNightActive && nightMode == Settings.BackgroundNightMode.DIM) {
+            PorterDuffColorFilter(Color.argb(135, 0, 0, 0), PorterDuff.Mode.SRC_ATOP)
+        } else {
+            null
+        }
+        when {
+            pureBlack -> target.setImageDrawable(ContextCompat.getColor(ctx, R.color.extreme_dark_background).toDrawable())
+            hasImage -> Glide.with(this)
+                .load(File(path))
+                .signature(ObjectKey(File(path).lastModified()))
+                .centerCrop()
+                .into(target)
+            else -> target.setImageDrawable(
+                ContextCompat.getDrawable(ctx, if (settings.useGradientBackground) R.drawable.bg_gradient else R.drawable.bg)
+            )
+        }
     }
 
     private fun handleImageSelected(uri: Uri) {
@@ -708,9 +820,10 @@ class CustomizationFragment : Fragment() {
         txtButtonScaleDescription?.setText(
             if (classic) R.string.home_button_scale_description else R.string.home_bar_scale_description
         )
-        val settingsColorVisibility = if (classic) View.VISIBLE else View.GONE
-        rowColorSettings?.visibility = settingsColorVisibility
-        previewBtnSettings?.visibility = settingsColorVisibility
+        rowColorSettings?.visibility = if (classic) View.VISIBLE else View.GONE
+        previewContainer?.visibility = if (classic) View.VISIBLE else View.GONE
+        homeColorPreview?.visibility = if (classic) View.GONE else View.VISIBLE
+        renderMiniHome(ctx)
 
         // Update button color previews & indicators (previews stay visible but styled as disabled when unchecked)
         updateButtonPreview(
@@ -799,28 +912,11 @@ class CustomizationFragment : Fragment() {
         if (previewButton != null) {
             previewButton.visibility = View.VISIBLE
             previewButton.isEnabled = isEnabled
-            val newHomeTile = !settings.useClassicHome && connection != null
-            if (!isEnabled && newHomeTile) {
-                // A connection that is not in use is an idle tile on the new home, not a gray button.
-                val palette = homePalette(ctx)
-                previewButton.background = GradientDrawable().apply {
-                    setColor(palette.tile)
-                    cornerRadius = NEW_HOME_PREVIEW_RADIUS_DP * ctx.resources.displayMetrics.density
-                }
-                previewButton.iconTint = ColorStateList.valueOf(palette.textMuted)
-            } else if (!isEnabled) {
+            if (!isEnabled) {
                 val disabledBackground = ContextCompat.getDrawable(ctx, R.drawable.gradient_monochrome)
                 val disabledIconTint = ContextCompat.getColorStateList(ctx, R.color.disabled_icon_tint)
                 previewButton.background = disabledBackground?.constantState?.newDrawable()?.mutate()
                 previewButton.iconTint = disabledIconTint
-            } else if (newHomeTile && connection != null) {
-                // What the main button wears right now, monochrome at night included.
-                val color = HomeUiHelper.connectionColor(settings, connection, homePalette(ctx))
-                previewButton.background = GradientDrawable().apply {
-                    setColor(color)
-                    cornerRadius = NEW_HOME_PREVIEW_RADIUS_DP * ctx.resources.displayMetrics.density
-                }
-                previewButton.iconTint = ColorStateList.valueOf(HomeUiHelper.readableOn(color))
             } else {
                 val whiteTint = ColorStateList.valueOf(0xFFFFFFFF.toInt())
                 if (customColor != 0) {
@@ -957,10 +1053,13 @@ class CustomizationFragment : Fragment() {
             .setView(dialogView)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 onSave(selectedColor)
+                // The preview shows the connection just painted on the main button.
+                connection?.let { previewConnection = it }
                 refreshUI()
             }
             .setNeutralButton(R.string.color_preset_default) { _, _ ->
                 onSave(0)
+                connection?.let { previewConnection = it }
                 refreshUI()
             }
             .setNegativeButton(R.string.cancel, null)
@@ -1072,5 +1171,12 @@ class CustomizationFragment : Fragment() {
         bgCustomImageView?.let {
             try { Glide.with(this).clear(it) } catch (_: Exception) {}
         }
+        miniHomeBackground?.let {
+            try { Glide.with(this).clear(it) } catch (_: Exception) {}
+        }
+        // The fragment outlives its views: a new view needs a new preview inside it.
+        miniHomeStage = null
+        miniHomeBackground = null
+        miniHomeView = null
     }
 }
