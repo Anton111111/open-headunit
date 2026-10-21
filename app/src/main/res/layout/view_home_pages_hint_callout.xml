@@ -73,9 +73,11 @@
         android:textColor="@android:color/white"
         android:textSize="17sp"
         android:textStyle="bold"
-        app:backgroundTint="@color/home_hint_button"
+        android:focusable="true"
+        android:focusableInTouchMode="false"
+        app:backgroundTint="@color/home_hint_button_bg"
         app:cornerRadius="26dp"
         app:strokeColor="@color/home_hint_button_stroke"
-        app:strokeWidth="3dp" />
+        app:strokeWidth="4dp" />
 
 </LinearLayout>

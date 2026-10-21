@@ -31,6 +31,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.withScale
 import androidx.core.view.ViewCompat
 import com.andrerinas.openheadunit.R
+import com.andrerinas.openheadunit.main.HomePagesHintKeyPolicy
 import com.andrerinas.openheadunit.main.HomePagesHintPolicy
 import com.google.android.material.button.MaterialButton
 import kotlin.math.hypot
@@ -118,8 +119,12 @@ class HomePagesHintView(
 
     init {
         setWillNotDraw(false)
-        isClickable = true
-        isFocusable = true
+        // Only "Got it" takes focus, and the dim layer is no node of its own for TalkBack: it
+        // lands on the callout's text and its button. Touches are still taken in onTouchEvent.
+        isClickable = false
+        isFocusable = false
+        descendantFocusability = FOCUS_AFTER_DESCENDANTS
+        importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         if (hole != null) {
             val diameter = HomePagesHintPolicy.ringDiameter(hole, dp(if (small) 76f else 96f).toInt())
             ringRadius = diameter / 2f
@@ -139,6 +144,7 @@ class HomePagesHintView(
         ViewCompat.setElevation(callout, dp(8f))
         ViewCompat.setAccessibilityLiveRegion(callout, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
         gotIt.setOnClickListener { close(Reason.GOT_IT) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) gotIt.isFocusedByDefault = true
     }
 
     companion object {
@@ -417,11 +423,24 @@ class HomePagesHintView(
         x >= callout.left && x <= callout.right && y >= callout.top && y <= callout.bottom
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-            if (event.action == KeyEvent.ACTION_UP) close(Reason.BACK)
-            return true
+        if (event.action != KeyEvent.ACTION_DOWN && event.action != KeyEvent.ACTION_UP) return super.dispatchKeyEvent(event)
+        val isUp = event.action == KeyEvent.ACTION_UP
+        return when (HomePagesHintKeyPolicy.onKey(event.keyCode, isUp, gotIt.isFocused)) {
+            HomePagesHintKeyPolicy.Action.PASS -> super.dispatchKeyEvent(event)
+            HomePagesHintKeyPolicy.Action.CONSUME -> true
+            HomePagesHintKeyPolicy.Action.FOCUS_BUTTON -> {
+                gotIt.requestFocus()
+                true
+            }
+            HomePagesHintKeyPolicy.Action.CONFIRM -> {
+                close(Reason.GOT_IT)
+                true
+            }
+            HomePagesHintKeyPolicy.Action.BACK -> {
+                close(Reason.BACK)
+                true
+            }
         }
-        return super.dispatchKeyEvent(event)
     }
 
     /** Closes the hint once, whichever way it was closed first. */

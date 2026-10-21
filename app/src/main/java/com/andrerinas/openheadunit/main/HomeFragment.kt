@@ -2004,18 +2004,39 @@ class HomeFragment : Fragment() {
         if (reason == HomePagesHintView.Reason.HOLD && isResumed) showPageMenu(widgetPage = null)
     }
 
-    /** Keeps D-pad focus and TalkBack on the hint while it is up, and gives the home back after. */
+    /**
+     * Keeps D-pad focus and TalkBack on the hint while it is up, and gives the home back after:
+     * every view of the fragment but the hint, not just the first, in case anything else was
+     * added next to the home.
+     */
     private fun setHomeBehindHint(root: FrameLayout, hidden: Boolean) {
-        val home = root.getChildAt(0) ?: return
-        (home as? ViewGroup)?.descendantFocusability =
-            if (hidden) ViewGroup.FOCUS_BLOCK_DESCENDANTS else ViewGroup.FOCUS_AFTER_DESCENDANTS
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            home.importantForAccessibility = if (hidden) {
-                View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-            } else {
-                View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+        for (i in 0 until root.childCount) {
+            val child = root.getChildAt(i)
+            if (child is HomePagesHintView) continue
+            (child as? ViewGroup)?.descendantFocusability =
+                if (hidden) ViewGroup.FOCUS_BLOCK_DESCENDANTS else ViewGroup.FOCUS_AFTER_DESCENDANTS
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                child.importantForAccessibility = if (hidden) {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                } else {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+                }
             }
         }
+        // Whatever on the home had focus would keep it, out of reach behind the hint.
+        if (hidden) {
+            val focused = root.findFocus()
+            if (focused != null && pagesHint?.let { isInside(focused, it) } != true) focused.clearFocus()
+        }
+    }
+
+    private fun isInside(view: View, ancestor: View): Boolean {
+        var current: View? = view
+        while (current != null) {
+            if (current === ancestor) return true
+            current = current.parent as? View
+        }
+        return false
     }
 
     private fun boxIn(root: View, child: View): HomePagesHintPolicy.Box {

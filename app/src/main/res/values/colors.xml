@@ -85,4 +85,5 @@
     <color name="home_hint_title">#12161C</color>
     <color name="home_hint_body">#39414D</color>
     <color name="home_hint_button">#415F91</color>
+    <color name="home_hint_button_focused">#5F7FB5</color>
 </resources>
