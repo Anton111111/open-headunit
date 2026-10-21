@@ -1316,4 +1316,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit є головною програмою за замовчуванням</string>
     <string name="onb_summary_launcher_home">Лаунчер: Open Headunit є головним екраном</string>
     <string name="onb_summary_launcher_registered">Лаунчер: зареєстровано як головний екран</string>
+    <string name="home_pages_hint_title">Натисніть і утримуйте порожнє місце</string>
+    <string name="home_pages_hint_body">Так можна додати сторінку для віджетів або видалити її.</string>
+    <string name="home_pages_hint_got_it">Зрозуміло</string>
 </resources>

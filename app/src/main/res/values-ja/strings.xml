@@ -1320,4 +1320,7 @@
     <string name="onb_launcher_default_home_active">Open Headunitがデフォルトのホームアプリです</string>
     <string name="onb_summary_launcher_home">ランチャー: Open Headunitがホームアプリです</string>
     <string name="onb_summary_launcher_registered">ランチャー: ホームアプリとして登録済み</string>
+    <string name="home_pages_hint_title">空いている場所を長押し</string>
+    <string name="home_pages_hint_body">ウィジェット用のページを追加したり、削除したりできます。</string>
+    <string name="home_pages_hint_got_it">OK</string>
 </resources>

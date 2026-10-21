@@ -1318,4 +1318,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit là ứng dụng màn hình chính mặc định</string>
     <string name="onb_summary_launcher_home">Trình khởi chạy: Open Headunit là màn hình chính</string>
     <string name="onb_summary_launcher_registered">Trình khởi chạy: đã đăng ký làm màn hình chính</string>
+    <string name="home_pages_hint_title">Chạm và giữ vào chỗ trống</string>
+    <string name="home_pages_hint_body">Đó là cách thêm trang cho tiện ích, hoặc xóa một trang.</string>
+    <string name="home_pages_hint_got_it">Đã hiểu</string>
 </resources>

@@ -1314,4 +1314,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit является главным приложением по умолчанию</string>
     <string name="onb_summary_launcher_home">Лаунчер: Open Headunit является домашним экраном</string>
     <string name="onb_summary_launcher_registered">Лаунчер: зарегистрирован как домашний экран</string>
+    <string name="home_pages_hint_title">Нажмите и удерживайте пустое место</string>
+    <string name="home_pages_hint_body">Так можно добавить страницу для виджетов или удалить её.</string>
+    <string name="home_pages_hint_got_it">Понятно</string>
 </resources>

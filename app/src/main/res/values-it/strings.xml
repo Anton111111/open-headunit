@@ -1318,4 +1318,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit è l\'app Home predefinita</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit è la schermata iniziale</string>
     <string name="onb_summary_launcher_registered">Launcher: registrato come schermata iniziale</string>
+    <string name="home_pages_hint_title">Tieni premuto uno spazio vuoto</string>
+    <string name="home_pages_hint_body">Così aggiungi una pagina per i tuoi widget, o ne rimuovi una.</string>
+    <string name="home_pages_hint_got_it">Ho capito</string>
 </resources>

@@ -1361,4 +1361,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit เป็นแอปหน้าจอหลักเริ่มต้น</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit เป็นแอปหน้าจอหลัก</string>
     <string name="onb_summary_launcher_registered">Launcher: ลงทะเบียนเป็นแอปหน้าจอหลักแล้ว</string>
+    <string name="home_pages_hint_title">แตะค้างที่พื้นที่ว่าง</string>
+    <string name="home_pages_hint_body">นี่คือวิธีเพิ่มหน้าสำหรับวิดเจ็ตของคุณ หรือลบหน้าออก</string>
+    <string name="home_pages_hint_got_it">เข้าใจแล้ว</string>
 </resources>

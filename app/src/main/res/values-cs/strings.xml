@@ -1315,4 +1315,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit je výchozí domovská aplikace</string>
     <string name="onb_summary_launcher_home">Spouštěč: Open Headunit je domovská aplikace</string>
     <string name="onb_summary_launcher_registered">Spouštěč: zaregistrován jako domovská aplikace</string>
+    <string name="home_pages_hint_title">Podržte prst na prázdném místě</string>
+    <string name="home_pages_hint_body">Takto přidáte stránku pro widgety, nebo ji odeberete.</string>
+    <string name="home_pages_hint_got_it">Rozumím</string>
 </resources>

@@ -1315,4 +1315,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit is de standaard start-app</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit is het startscherm</string>
     <string name="onb_summary_launcher_registered">Launcher: geregistreerd als startscherm</string>
+    <string name="home_pages_hint_title">Houd een lege plek ingedrukt</string>
+    <string name="home_pages_hint_body">Zo voeg je een pagina voor je widgets toe, of verwijder je er een.</string>
+    <string name="home_pages_hint_got_it">Begrepen</string>
 </resources>

@@ -1310,4 +1310,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit varsayılan ana ekran uygulamasıdır</string>
     <string name="onb_summary_launcher_home">Başlatıcı: Open Headunit ana ekran uygulamasıdır</string>
     <string name="onb_summary_launcher_registered">Başlatıcı: ana ekran uygulaması olarak kaydedildi</string>
+    <string name="home_pages_hint_title">Boş bir yere basılı tutun</string>
+    <string name="home_pages_hint_body">Widget\'larınız için sayfa eklemek ya da kaldırmak böyle yapılır.</string>
+    <string name="home_pages_hint_got_it">Anladım</string>
 </resources>

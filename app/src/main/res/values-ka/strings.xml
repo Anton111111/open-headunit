@@ -1296,4 +1296,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit ნაგულისხმევი მთავარი აპია</string>
     <string name="onb_summary_launcher_home">გამშვები: Open Headunit მთავარი აპია</string>
     <string name="onb_summary_launcher_registered">გამშვები: რეგისტრირებულია მთავარ აპად</string>
+    <string name="home_pages_hint_title">ხანგრძლივად შეეხე ცარიელ ადგილს</string>
+    <string name="home_pages_hint_body">ასე დაამატებ გვერდს ვიჯეტებისთვის, ან წაშლი მას.</string>
+    <string name="home_pages_hint_got_it">გასაგებია</string>
 </resources>

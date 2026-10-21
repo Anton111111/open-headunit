@@ -1313,4 +1313,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit هو تطبيق الصفحة الرئيسية الافتراضي</string>
     <string name="onb_summary_launcher_home">المشغل: Open Headunit هو تطبيق الصفحة الرئيسية</string>
     <string name="onb_summary_launcher_registered">المشغل: مسجل كتطبيق الصفحة الرئيسية</string>
+    <string name="home_pages_hint_title">المس مع الاستمرار مكانًا فارغًا</string>
+    <string name="home_pages_hint_body">بهذه الطريقة تضيف صفحة لأدواتك، أو تزيل واحدة.</string>
+    <string name="home_pages_hint_got_it">حسنًا</string>
 </resources>

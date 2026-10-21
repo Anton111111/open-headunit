@@ -1324,4 +1324,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit이 기본 홈 앱입니다</string>
     <string name="onb_summary_launcher_home">런처: Open Headunit이 홈 앱입니다</string>
     <string name="onb_summary_launcher_registered">런처: 홈 앱으로 등록됨</string>
+    <string name="home_pages_hint_title">빈 곳을 길게 누르세요</string>
+    <string name="home_pages_hint_body">위젯용 페이지를 추가하거나 삭제하는 방법입니다.</string>
+    <string name="home_pages_hint_got_it">확인</string>
 </resources>

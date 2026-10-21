@@ -1319,4 +1319,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit ist die Standard-Start-App</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit ist die Start-App</string>
     <string name="onb_summary_launcher_registered">Launcher: als Start-App registriert</string>
+    <string name="home_pages_hint_title">Halte eine leere Stelle gedrückt</string>
+    <string name="home_pages_hint_body">So fügst du eine Seite für deine Widgets hinzu oder entfernst eine.</string>
+    <string name="home_pages_hint_got_it">Verstanden</string>
 </resources>

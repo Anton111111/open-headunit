@@ -1355,4 +1355,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit est l\'application d\'accueil par défaut</string>
     <string name="onb_summary_launcher_home">Lanceur : Open Headunit est l\'application d\'accueil</string>
     <string name="onb_summary_launcher_registered">Lanceur : enregistré comme application d\'accueil</string>
+    <string name="home_pages_hint_title">Appuyez de manière prolongée sur un espace vide</string>
+    <string name="home_pages_hint_body">C\'est ainsi que vous ajoutez une page pour vos widgets, ou en supprimez une.</string>
+    <string name="home_pages_hint_got_it">J\'ai compris</string>
 </resources>

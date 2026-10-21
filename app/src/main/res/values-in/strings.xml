@@ -1363,4 +1363,7 @@
     <string name="onb_launcher_default_home_active">Open Headunit adalah aplikasi beranda default</string>
     <string name="onb_summary_launcher_home">Peluncur: Open Headunit adalah aplikasi beranda</string>
     <string name="onb_summary_launcher_registered">Peluncur: terdaftar sebagai aplikasi beranda</string>
+    <string name="home_pages_hint_title">Sentuh lama area kosong</string>
+    <string name="home_pages_hint_body">Begitulah cara menambahkan halaman untuk widget, atau menghapusnya.</string>
+    <string name="home_pages_hint_got_it">Mengerti</string>
 </resources>

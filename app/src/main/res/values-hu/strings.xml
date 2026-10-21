@@ -1311,4 +1311,7 @@
     <string name="onb_launcher_default_home_active">Az Open Headunit az alapértelmezett kezdőképernyő</string>
     <string name="onb_summary_launcher_home">Indító: az Open Headunit a kezdőképernyő</string>
     <string name="onb_summary_launcher_registered">Indító: kezdőképernyőként regisztrálva</string>
+    <string name="home_pages_hint_title">Tarts nyomva egy üres helyet</string>
+    <string name="home_pages_hint_body">Így adhatsz hozzá oldalt a widgeteidnek, vagy távolíthatsz el egyet.</string>
+    <string name="home_pages_hint_got_it">Értem</string>
 </resources>
