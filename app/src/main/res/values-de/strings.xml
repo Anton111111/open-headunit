@@ -84,6 +84,9 @@
     <string name="color_custom_hex">Hex-Farbcode</string>
     <string name="home_button_scale">Button-Größe</string>
     <string name="home_button_scale_description">Vergrößere oder verkleinere die 4 Startseiten-Buttons</string>
+    <string name="home_connection_colors">Verbindungsfarben</string>
+    <string name="home_connection_colors_description">Der Hauptbutton trägt die Farbe seiner Verbindung, ebenso eine Kachel der Leiste, solange sie verbindet oder verbunden ist</string>
+    <string name="home_bar_scale_description">Passe die Größe der Kacheln in der Seitenleiste und der Lieblings-Apps an. Auf niedrigen Bildschirmen verkleinert die Leiste ihre Kacheln, damit alle hineinpassen</string>
     <string name="home_button_scale_preview">Live-Vorschau Startseite</string>
     <string name="btn_reset_scale">Button-Größe zurücksetzen</string>
     <string name="category_automation">Automatisierung</string>

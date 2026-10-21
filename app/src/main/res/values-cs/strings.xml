@@ -988,6 +988,9 @@
     <string name="color_custom_hex">Hexadecimální barva</string>
     <string name="home_button_scale">Velikost tlačítek</string>
     <string name="home_button_scale_description">Upravte velikost 4 tlačítek domovské obrazovky</string>
+    <string name="home_connection_colors">Barvy připojení</string>
+    <string name="home_connection_colors_description">Hlavní tlačítko má barvu svého připojení, stejně jako dlaždice v liště během připojování nebo po připojení</string>
+    <string name="home_bar_scale_description">Upravte velikost dlaždic boční lišty a oblíbených aplikací. Na nízké obrazovce lišta dlaždice zmenší, aby se vešly všechny</string>
     <string name="home_button_scale_preview">Živý náhled domovské obrazovky</string>
     <string name="btn_reset_scale">Obnovit velikost tlačítek</string>
     <string name="static_bssid_title">Statická BSSID (MAC adresa)</string>

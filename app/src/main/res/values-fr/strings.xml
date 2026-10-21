@@ -1037,6 +1037,9 @@
     <string name="color_custom_hex">Couleur Hex</string>
     <string name="home_button_scale">Taille des boutons</string>
     <string name="home_button_scale_description">Ajustez la taille des 4 boutons de l\'écran d\'accueil</string>
+    <string name="home_connection_colors">Couleurs de connexion</string>
+    <string name="home_connection_colors_description">Le bouton principal prend la couleur de sa connexion, tout comme une tuile de la barre pendant la connexion ou une fois connectée</string>
+    <string name="home_bar_scale_description">Ajustez la taille des tuiles de la barre latérale et des applis favorites. Sur un écran peu haut, la barre réduit ses tuiles pour qu’elles tiennent toutes</string>
     <string name="home_button_scale_preview">Aperçu en direct de l\'écran d\'accueil</string>
     <string name="btn_reset_scale">Réinitialiser la taille des boutons</string>
     <string name="hotspot_band">Bande du point d\'accès</string>

@@ -987,6 +987,9 @@
     <string name="color_custom_hex">Kolor szesnastkowy Hex</string>
     <string name="home_button_scale">Rozmiar przycisków</string>
     <string name="home_button_scale_description">Dostosuj rozmiar 4 przycisków ekranu głównego</string>
+    <string name="home_connection_colors">Kolory połączeń</string>
+    <string name="home_connection_colors_description">Główny przycisk ma kolor swojego połączenia, podobnie jak kafelek paska podczas łączenia lub po połączeniu</string>
+    <string name="home_bar_scale_description">Dostosuj rozmiar kafelków paska bocznego i ulubionych aplikacji. Na niskim ekranie pasek zmniejsza kafelki, aby wszystkie się zmieściły</string>
     <string name="home_button_scale_preview">Podgląd ekranu głównego na żywo</string>
     <string name="btn_reset_scale">Zresetuj rozmiar przycisków</string>
     <string name="static_bssid_title">Statyczny BSSID (Adres MAC)</string>

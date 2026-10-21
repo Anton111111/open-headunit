@@ -987,6 +987,9 @@
     <string name="color_custom_hex">Hex-код цвета</string>
     <string name="home_button_scale">Размер кнопок</string>
     <string name="home_button_scale_description">Настройка размера 4 кнопок на главном экране</string>
+    <string name="home_connection_colors">Цвета подключений</string>
+    <string name="home_connection_colors_description">Главная кнопка окрашена в цвет своего подключения, как и плитка панели во время подключения или после него</string>
+    <string name="home_bar_scale_description">Настройте размер плиток боковой панели и избранных приложений. На невысоком экране панель уменьшает плитки, чтобы поместились все</string>
     <string name="home_button_scale_preview">Предпросмотр главного экрана</string>
     <string name="btn_reset_scale">Сбросить размер кнопок</string>
     <string name="static_bssid_title">Статический BSSID (MAC-адрес)</string>

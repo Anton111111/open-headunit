@@ -984,6 +984,9 @@
     <string name="color_custom_hex">Hexadecimális szín</string>
     <string name="home_button_scale">Gombméret</string>
     <string name="home_button_scale_description">A kezdőképernyő 4 gombjának méretezése</string>
+    <string name="home_connection_colors">Kapcsolatszínek</string>
+    <string name="home_connection_colors_description">A fő gomb a kapcsolata színét viseli, ahogy a sáv csempéje is csatlakozás közben vagy csatlakozva</string>
+    <string name="home_bar_scale_description">Az oldalsáv csempéinek és a kedvenc alkalmazásoknak a mérete. Alacsony képernyőn a sáv lekicsinyíti a csempéket, hogy mind elférjen</string>
     <string name="home_button_scale_preview">Kezdőképernyő élő előnézete</string>
     <string name="btn_reset_scale">Gombméret visszaállítása</string>
     <string name="static_bssid_title">Statikus BSSID (MAC-cím)</string>

@@ -986,6 +986,9 @@
     <string name="color_custom_hex">Hex 色码</string>
     <string name="home_button_scale">按钮大小</string>
     <string name="home_button_scale_description">调整主画面 4 个按钮的大小</string>
+    <string name="home_connection_colors">连接颜色</string>
+    <string name="home_connection_colors_description">主按钮使用其连接的颜色，栏中的图块在连接中或已连接时也会使用该颜色</string>
+    <string name="home_bar_scale_description">调整侧边栏图块和收藏应用的大小。在较矮的屏幕上，侧边栏会缩小图块以便全部显示</string>
     <string name="home_button_scale_preview">主画面即时预览</string>
     <string name="btn_reset_scale">重设按钮大小</string>
     <string name="static_bssid_title">静态 BSSID（MAC 位址）</string>

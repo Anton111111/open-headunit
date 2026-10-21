@@ -991,6 +991,9 @@
     <string name="color_custom_hex">Colore esadecimale</string>
     <string name="home_button_scale">Dimensione pulsanti</string>
     <string name="home_button_scale_description">Regola la dimensione dei 4 pulsanti della schermata iniziale</string>
+    <string name="home_connection_colors">Colori di connessione</string>
+    <string name="home_connection_colors_description">Il pulsante principale prende il colore della sua connessione, come la casella della barra mentre si connette o è connessa</string>
+    <string name="home_bar_scale_description">Regola la dimensione delle caselle della barra laterale e delle app preferite. Su uno schermo basso la barra rimpicciolisce le caselle perché ci stiano tutte</string>
     <string name="home_button_scale_preview">Anteprima dal vivo schermata iniziale</string>
     <string name="btn_reset_scale">Reimposta dimensione</string>
     <string name="static_bssid_title">BSSID statico (Indirizzo MAC)</string>

@@ -983,6 +983,9 @@
     <string name="color_custom_hex">Hex Renk Kodu</string>
     <string name="home_button_scale">Düğme Boyutu</string>
     <string name="home_button_scale_description">Ana ekrandaki 4 düğmenin boyutunu ayarlayın</string>
+    <string name="home_connection_colors">Bağlantı renkleri</string>
+    <string name="home_connection_colors_description">Ana düğme bağlantısının rengini alır, çubuktaki kutucuk da bağlanırken veya bağlıyken aynı rengi alır</string>
+    <string name="home_bar_scale_description">Yan çubuk kutucuklarının ve favori uygulamaların boyutunu ayarlayın. Kısa ekranlarda çubuk, hepsi sığsın diye kutucuklarını küçültür</string>
     <string name="home_button_scale_preview">Canlı Ana Ekran Önizlemesi</string>
     <string name="btn_reset_scale">Düğme Boyutunu Sıfırla</string>
     <string name="static_bssid_title">Statik BSSID (MAC Adresi)</string>

@@ -278,6 +278,9 @@
     <string name="color_custom_hex">Hex Color</string>
     <string name="home_button_scale">Button Size</string>
     <string name="home_button_scale_description">Adjust the size of the 4 home screen buttons</string>
+    <string name="home_connection_colors">Connection Colors</string>
+    <string name="home_connection_colors_description">The main button wears the color of its connection, and so does a bar tile while it connects or is connected</string>
+    <string name="home_bar_scale_description">Adjust the size of the side bar tiles and the favorite apps. On a short screen the bar shrinks its tiles so they all fit</string>
     <string name="home_button_scale_preview">Live Home Screen Preview</string>
     <string name="btn_reset_scale">Reset Button Size</string>
     <string name="category_automation">Automation</string>

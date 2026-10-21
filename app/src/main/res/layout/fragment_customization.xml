@@ -238,6 +238,7 @@
 
             <!-- Button Colors Section -->
             <TextView
+                android:id="@+id/txt_button_colors_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/home_button_colors"
@@ -247,6 +248,7 @@
                 android:layout_marginBottom="8dp" />
 
             <TextView
+                android:id="@+id/txt_button_colors_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/home_button_colors_description"
@@ -592,6 +594,7 @@
                 android:layout_marginBottom="8dp" />
 
             <TextView
+                android:id="@+id/txt_button_scale_description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/home_button_scale_description"

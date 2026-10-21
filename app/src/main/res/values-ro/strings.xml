@@ -985,6 +985,9 @@
     <string name="color_custom_hex">Culoare hexazecimală</string>
     <string name="home_button_scale">Dimensiune butoane</string>
     <string name="home_button_scale_description">Ajustează dimensiunea celor 4 butoane de pe ecranul principal</string>
+    <string name="home_connection_colors">Culorile conexiunii</string>
+    <string name="home_connection_colors_description">Butonul principal are culoarea conexiunii sale, la fel și dala din bară în timp ce se conectează sau este conectată</string>
+    <string name="home_bar_scale_description">Ajustează dimensiunea dalelor din bara laterală și a aplicațiilor preferate. Pe un ecran scund, bara își micșorează dalele ca să încapă toate</string>
     <string name="home_button_scale_preview">Previzualizare în timp real a ecranului principal</string>
     <string name="btn_reset_scale">Resetează dimensiunea</string>
     <string name="static_bssid_title">BSSID static (Adresă MAC)</string>

@@ -993,6 +993,9 @@
     <string name="color_custom_hex">16進数カラーコード</string>
     <string name="home_button_scale">ボタンのサイズ</string>
     <string name="home_button_scale_description">ホーム画面の4つのボタンのサイズを調整</string>
+    <string name="home_connection_colors">接続の色</string>
+    <string name="home_connection_colors_description">メインボタンは接続の色になります。バーのタイルも接続中または接続済みのときにその色になります</string>
+    <string name="home_bar_scale_description">サイドバーのタイルとお気に入りアプリのサイズを調整します。高さの低い画面では、すべて収まるようにバーがタイルを縮小します</string>
     <string name="home_button_scale_preview">ホーム画面のライブプレビュー</string>
     <string name="btn_reset_scale">ボタンサイズをリセット</string>
     <string name="static_bssid_title">静的BSSID（MACアドレス）</string>

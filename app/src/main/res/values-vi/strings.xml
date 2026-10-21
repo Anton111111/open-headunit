@@ -991,6 +991,9 @@
     <string name="color_custom_hex">Mã màu Hex</string>
     <string name="home_button_scale">Kích thước nút</string>
     <string name="home_button_scale_description">Điều chỉnh kích thước 4 nút trên màn hình chính</string>
+    <string name="home_connection_colors">Màu kết nối</string>
+    <string name="home_connection_colors_description">Nút chính mang màu của kết nối, ô trên thanh cũng vậy khi đang kết nối hoặc đã kết nối</string>
+    <string name="home_bar_scale_description">Điều chỉnh kích thước các ô của thanh bên và ứng dụng yêu thích. Trên màn hình thấp, thanh sẽ thu nhỏ các ô để vừa tất cả</string>
     <string name="home_button_scale_preview">Xem trước màn hình chính trực tiếp</string>
     <string name="btn_reset_scale">Đặt lại kích thước nút</string>
     <string name="static_bssid_title">BSSID tĩnh (Địa chỉ MAC)</string>

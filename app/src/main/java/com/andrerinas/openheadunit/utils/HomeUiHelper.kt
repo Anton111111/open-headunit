@@ -39,6 +39,7 @@ import androidx.core.view.doOnLayout
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.connection.ConnectionStage
 import com.andrerinas.openheadunit.main.BarFitPolicy
+import com.andrerinas.openheadunit.main.HomeColorPolicy
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Decision
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Status
@@ -324,7 +325,7 @@ object HomeUiHelper {
             label?.text = status ?: name
             tile.contentDescription = if (status != null && name != null) "$name, $status" else null
             val radius = context.resources.getDimension(R.dimen.home_tile_radius)
-            val color = accentColor(settings, connection, palette)
+            val color = connectionColor(settings, connection, palette)
             when (state) {
                 TileState.ACTIVE -> {
                     val onColor = readableOn(color)
@@ -346,14 +347,10 @@ object HomeUiHelper {
             if (state != TileState.CONNECTING) stopTileShine(tile)
         }
 
+        // Color on the bar means a connection, so Settings stays neutral. Its custom color is the
+        // classic grid's, and Customization only offers it there.
         val settingsTile = rootView.findViewById<ViewGroup>(R.id.settings_button) ?: return
-        val customColor = settings.customSettingsButtonColor
-        val background = if (customColor != 0 && !palette.isDark) {
-            pressable(customColor, context.resources.getDimension(R.dimen.home_tile_radius))
-        } else {
-            tileBackground(context, palette)
-        }
-        paintTile(settingsTile, background, palette.text, palette.text)
+        paintTile(settingsTile, tileBackground(context, palette), palette.text, palette.text)
     }
 
     private fun tileBackground(context: Context, palette: Palette): Drawable {
@@ -491,7 +488,7 @@ object HomeUiHelper {
             stopProgressShine(rootView)
         }
 
-        val color = accentColor(settings, decision.primary, palette)
+        val color = connectionColor(settings, decision.primary, palette)
         paintProgress(context, rootView, color, palette)
         val resources = context.resources
         val panelRadius = resources.getDimension(R.dimen.home_panel_radius)
@@ -654,24 +651,31 @@ object HomeUiHelper {
     fun speedText(kmh: Int?): String = kmh?.toString() ?: UNKNOWN_SPEED
 
     /**
-     * The connection's color. At night the user's own colors are kept as accents (extreme dark
-     * turns them down a little), and the monochrome option takes the color out altogether.
+     * The color the connection wears on the main button and on its active tile. At night the
+     * user's own colors are kept as accents (extreme dark turns them down a little), and the
+     * monochrome option takes the color out altogether. See [HomeColorPolicy].
      */
-    private fun accentColor(settings: Settings, connection: Connection, palette: Palette): Int {
-        if (palette.isDark && settings.autoMonochromeButtonsAtNight) return palette.monochrome
-        val customColor = when (connection) {
-            Connection.USB -> settings.customUsbButtonColor
-            Connection.WIFI -> settings.customWifiButtonColor
-            Connection.SELF -> settings.customSelfModeButtonColor
+    fun connectionColor(settings: Settings, connection: Connection, palette: Palette): Int {
+        val customColor = customColor(settings, connection)
+        return when (HomeColorPolicy.source(customColor, palette.mode, settings.autoMonochromeButtonsAtNight)) {
+            HomeColorPolicy.Source.MONOCHROME -> palette.monochrome
+            HomeColorPolicy.Source.CUSTOM_DIMMED -> ColorUtils.darkenColor(customColor, EXTREME_CUSTOM_COLOR_DIM)
+            HomeColorPolicy.Source.CUSTOM -> customColor
+            HomeColorPolicy.Source.DEFAULT -> defaultConnectionColor(connection, palette)
         }
-        if (customColor != 0) {
-            return if (palette.mode == Mode.EXTREME_DARK) ColorUtils.darkenColor(customColor, EXTREME_CUSTOM_COLOR_DIM) else customColor
-        }
-        return when (connection) {
-            Connection.USB -> palette.usb
-            Connection.WIFI -> palette.wifi
-            Connection.SELF -> palette.self
-        }
+    }
+
+    private fun customColor(settings: Settings, connection: Connection): Int = when (connection) {
+        Connection.USB -> settings.customUsbButtonColor
+        Connection.WIFI -> settings.customWifiButtonColor
+        Connection.SELF -> settings.customSelfModeButtonColor
+    }
+
+    /** The design's own color for the connection, the one a user who never picked one sees. */
+    fun defaultConnectionColor(connection: Connection, palette: Palette): Int = when (connection) {
+        Connection.USB -> palette.usb
+        Connection.WIFI -> palette.wifi
+        Connection.SELF -> palette.self
     }
 
     private fun kickerRes(decision: Decision): Int = when (decision.status) {
@@ -954,7 +958,7 @@ object HomeUiHelper {
     private fun withAlpha(color: Int, alpha: Int) = (color and 0x00FFFFFF) or (alpha shl 24)
 
     /** Near-black or white, whichever reads better on [background]. */
-    private fun readableOn(background: Int): Int {
+    fun readableOn(background: Int): Int {
         val luminance = androidx.core.graphics.ColorUtils.calculateLuminance(background)
         return if (luminance > DARK_TEXT_LUMINANCE) NEAR_BLACK else Color.WHITE
     }

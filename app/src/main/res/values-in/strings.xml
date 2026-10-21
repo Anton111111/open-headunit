@@ -264,6 +264,9 @@
     <string name="color_custom_hex">Warna Heksadesimal</string>
     <string name="home_button_scale">Ukuran Tombol</string>
     <string name="home_button_scale_description">Sesuaikan ukuran 4 tombol di layar beranda</string>
+    <string name="home_connection_colors">Warna koneksi</string>
+    <string name="home_connection_colors_description">Tombol utama memakai warna koneksinya, begitu juga ubin bilah saat sedang menghubungkan atau sudah terhubung</string>
+    <string name="home_bar_scale_description">Atur ukuran ubin bilah samping dan aplikasi favorit. Di layar yang pendek, bilah mengecilkan ubinnya agar semuanya muat</string>
     <string name="home_button_scale_preview">Pratinjau Layar Beranda Langsung</string>
     <string name="btn_reset_scale">Atur Ulang Ukuran Tombol</string>
     <string name="category_automation">Otomatisasi</string>

@@ -969,6 +969,9 @@
     <string name="color_custom_hex">Hex ფერი</string>
     <string name="home_button_scale">ღილაკების ზომა</string>
     <string name="home_button_scale_description">მთავარი ეკრანის 4 ღილაკის ზომის შეცვლა</string>
+    <string name="home_connection_colors">კავშირის ფერები</string>
+    <string name="home_connection_colors_description">მთავარი ღილაკი თავისი კავშირის ფერს იღებს, ზოლის ფილაც დაკავშირებისას ან დაკავშირებულ მდგომარეობაში</string>
+    <string name="home_bar_scale_description">შეცვალეთ გვერდითი ზოლის ფილებისა და რჩეული აპების ზომა. დაბალ ეკრანზე ზოლი ფილებს აპატარავებს, რომ ყველა დაეტიოს</string>
     <string name="home_button_scale_preview">მთავარი ეკრანის პირდაპირი გადახედვა</string>
     <string name="btn_reset_scale">ზომის გადატვირთვა</string>
     <string name="static_bssid_title">სტატიკური BSSID (MAC მისამართი)</string>

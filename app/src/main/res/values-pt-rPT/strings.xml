@@ -265,6 +265,9 @@
     <string name="color_custom_hex">Cor Hex</string>
     <string name="home_button_scale">Tamanho dos botões</string>
     <string name="home_button_scale_description">Ajustar o tamanho dos 4 botões do ecrã inicial</string>
+    <string name="home_connection_colors">Cores da ligação</string>
+    <string name="home_connection_colors_description">O botão principal usa a cor da sua ligação, tal como o bloco da barra enquanto liga ou está ligado</string>
+    <string name="home_bar_scale_description">Ajuste o tamanho dos blocos da barra lateral e das apps favoritas. Em ecrãs baixos a barra reduz os blocos para que caibam todos</string>
     <string name="home_button_scale_preview">Pré-visualização do ecrã inicial em tempo real</string>
     <string name="btn_reset_scale">Repor tamanho dos botões</string>
     <string name="category_automation">Automatização</string>

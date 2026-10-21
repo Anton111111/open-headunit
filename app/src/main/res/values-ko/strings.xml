@@ -997,6 +997,9 @@
     <string name="color_custom_hex">16진수 색상 코드</string>
     <string name="home_button_scale">버튼 크기</string>
     <string name="home_button_scale_description">홈 화면 4개 버튼의 크기 조정</string>
+    <string name="home_connection_colors">연결 색상</string>
+    <string name="home_connection_colors_description">메인 버튼은 연결의 색상을 사용하며, 바의 타일도 연결 중이거나 연결되었을 때 그 색상을 사용합니다</string>
+    <string name="home_bar_scale_description">사이드바 타일과 즐겨찾는 앱의 크기를 조정합니다. 높이가 낮은 화면에서는 모두 들어가도록 바가 타일을 줄입니다</string>
     <string name="home_button_scale_preview">홈 화면 실시간 미리보기</string>
     <string name="btn_reset_scale">버튼 크기 재설정</string>
     <string name="native_ap_transport_hint">스마트폰이 WiFi Direct 그룹 대신 이 기기의 핫스팟에 연결됩니다. 연결 전에 핫스팟을 켜세요.</string>

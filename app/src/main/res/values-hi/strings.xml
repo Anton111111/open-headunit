@@ -264,6 +264,9 @@
     <string name="color_custom_hex">हेक्स रंग</string>
     <string name="home_button_scale">बटन का आकार</string>
     <string name="home_button_scale_description">4 होम स्क्रीन बटनों का आकार समायोजित करें</string>
+    <string name="home_connection_colors">कनेक्शन के रंग</string>
+    <string name="home_connection_colors_description">मुख्य बटन अपने कनेक्शन का रंग लेता है, और बार की टाइल भी, जब वह कनेक्ट हो रही हो या कनेक्ट हो</string>
+    <string name="home_bar_scale_description">साइड बार की टाइलों और पसंदीदा ऐप्स का आकार बदलें। छोटी ऊँचाई वाली स्क्रीन पर बार अपनी टाइलें छोटी कर देता है ताकि सब समा जाएँ</string>
     <string name="home_button_scale_preview">लाइव होम स्क्रीन पूर्वावलोकन</string>
     <string name="btn_reset_scale">बटन आकार रीसेट करें</string>
     <string name="category_automation">ऑटोमेशन</string>

@@ -989,6 +989,9 @@
     <string name="color_custom_hex">Cor Hexadecimal</string>
     <string name="home_button_scale">Tamanho dos botões</string>
     <string name="home_button_scale_description">Ajuste o tamanho dos 4 botões da tela inicial</string>
+    <string name="home_connection_colors">Cores da conexão</string>
+    <string name="home_connection_colors_description">O botão principal usa a cor da sua conexão, assim como o bloco da barra enquanto conecta ou está conectado</string>
+    <string name="home_bar_scale_description">Ajuste o tamanho dos blocos da barra lateral e dos apps favoritos. Em telas baixas a barra diminui os blocos para que todos caibam</string>
     <string name="home_button_scale_preview">Prévia em tempo real da tela inicial</string>
     <string name="btn_reset_scale">Redefinir tamanho</string>
     <string name="static_bssid_title">BSSID estático (Endereço MAC)</string>

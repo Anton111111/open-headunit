@@ -986,6 +986,9 @@
     <string name="color_custom_hex">رمز اللون السداسي Hex</string>
     <string name="home_button_scale">حجم الأزرار</string>
     <string name="home_button_scale_description">تعديل حجم أزرار الشاشة الرئيسية الأربعة</string>
+    <string name="home_connection_colors">ألوان الاتصال</string>
+    <string name="home_connection_colors_description">يأخذ الزر الرئيسي لون اتصاله، وكذلك مربع الشريط أثناء الاتصال أو بعده</string>
+    <string name="home_bar_scale_description">اضبط حجم مربعات الشريط الجانبي والتطبيقات المفضلة. في الشاشات القصيرة يصغّر الشريط مربعاته لتتسع كلها</string>
     <string name="home_button_scale_preview">معاينة مباشرة للشاشة الرئيسية</string>
     <string name="btn_reset_scale">إعادة ضبط حجم الأزرار</string>
     <string name="static_bssid_title">BSSID ثابت (عنوان MAC)</string>

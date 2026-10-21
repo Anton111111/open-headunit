@@ -264,6 +264,9 @@
     <string name="color_custom_hex">รหัสสี Hex</string>
     <string name="home_button_scale">ขนาดปุ่ม</string>
     <string name="home_button_scale_description">ปรับขนาดของปุ่มบนหน้าจอหลัก 4 ปุ่ม</string>
+    <string name="home_connection_colors">สีของการเชื่อมต่อ</string>
+    <string name="home_connection_colors_description">ปุ่มหลักใช้สีของการเชื่อมต่อ และไทล์ในแถบก็ใช้สีนั้นขณะกำลังเชื่อมต่อหรือเชื่อมต่อแล้ว</string>
+    <string name="home_bar_scale_description">ปรับขนาดไทล์ของแถบด้านข้างและแอปโปรด บนหน้าจอที่เตี้ย แถบจะย่อไทล์ลงเพื่อให้แสดงได้ครบทั้งหมด</string>
     <string name="home_button_scale_preview">ตัวอย่างหน้าจอหลักแบบสด</string>
     <string name="btn_reset_scale">รีเซ็ตขนาดปุ่ม</string>
     <string name="category_automation">ระบบอัตโนมัติ</string>

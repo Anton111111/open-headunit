@@ -15,6 +15,8 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -40,6 +42,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.andrerinas.openheadunit.App
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.app.BaseActivity
+import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.ColorUtils
 import com.andrerinas.openheadunit.utils.ClassicHomeUiHelper
@@ -53,6 +56,11 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class CustomizationFragment : Fragment() {
+
+    private companion object {
+        /** The new home's tiles are rounded squares, so its previews are too, not the classic circles. */
+        const val NEW_HOME_PREVIEW_RADIUS_DP = 16f
+    }
 
     private lateinit var settings: Settings
     private var bgDefaultView: View? = null
@@ -96,6 +104,9 @@ class CustomizationFragment : Fragment() {
     private var switchShowSpeed: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
     private var btnResetColors: MaterialButton? = null
+    private var txtButtonColorsTitle: TextView? = null
+    private var txtButtonColorsDescription: TextView? = null
+    private var txtButtonScaleDescription: TextView? = null
 
     // Button Scale views
     private var previewContainer: View? = null
@@ -219,6 +230,9 @@ class CustomizationFragment : Fragment() {
         switchShowSpeed = view.findViewById(R.id.switch_show_speed)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
+        txtButtonColorsTitle = view.findViewById(R.id.txt_button_colors_title)
+        txtButtonColorsDescription = view.findViewById(R.id.txt_button_colors_description)
+        txtButtonScaleDescription = view.findViewById(R.id.txt_button_scale_description)
 
         // Button Scale views
         previewContainer = view.findViewById(R.id.preview_container)
@@ -260,7 +274,8 @@ class CustomizationFragment : Fragment() {
                 R.string.btn_color_self_mode,
                 settings.customSelfModeButtonColor,
                 R.drawable.gradient_blue,
-                R.drawable.ic_launch_white
+                R.drawable.ic_launch_white,
+                Connection.SELF
             ) { color ->
                 settings.customSelfModeButtonColor = color
             }
@@ -271,7 +286,8 @@ class CustomizationFragment : Fragment() {
                 R.string.btn_color_usb,
                 settings.customUsbButtonColor,
                 R.drawable.gradient_orange,
-                R.drawable.ic_usb_white
+                R.drawable.ic_usb_white,
+                Connection.USB
             ) { color ->
                 settings.customUsbButtonColor = color
             }
@@ -282,7 +298,8 @@ class CustomizationFragment : Fragment() {
                 R.string.btn_color_wifi,
                 settings.customWifiButtonColor,
                 R.drawable.gradient_purple,
-                R.drawable.ic_network_wifi_white
+                R.drawable.ic_network_wifi_white,
+                Connection.WIFI
             ) { color ->
                 settings.customWifiButtonColor = color
             }
@@ -358,6 +375,8 @@ class CustomizationFragment : Fragment() {
             // The preview below inflates the chosen design, so it has to start over.
             overlayHomeContent?.removeAllViews()
             currentOverlayHomeView = null
+            // The two designs use the colors differently, so the color section changes with them.
+            refreshUI()
         }
 
         switchShowClock?.isChecked = settings.showHomeClock
@@ -678,6 +697,21 @@ class CustomizationFragment : Fragment() {
         val showsUsb = settings.showsUsb()
         val showsWifi = settings.showsWifi()
 
+        // The classic grid wears the colors as gradients on four buttons. The new home uses them as
+        // accents for the connections only: the main button, and a bar tile while it is connecting
+        // or connected. Its Settings tile stays neutral, so that color is a classic-only option.
+        val classic = settings.useClassicHome
+        txtButtonColorsTitle?.setText(if (classic) R.string.home_button_colors else R.string.home_connection_colors)
+        txtButtonColorsDescription?.setText(
+            if (classic) R.string.home_button_colors_description else R.string.home_connection_colors_description
+        )
+        txtButtonScaleDescription?.setText(
+            if (classic) R.string.home_button_scale_description else R.string.home_bar_scale_description
+        )
+        val settingsColorVisibility = if (classic) View.VISIBLE else View.GONE
+        rowColorSettings?.visibility = settingsColorVisibility
+        previewBtnSettings?.visibility = settingsColorVisibility
+
         // Update button color previews & indicators (previews stay visible but styled as disabled when unchecked)
         updateButtonPreview(
             previewBtnSelfMode,
@@ -685,7 +719,8 @@ class CustomizationFragment : Fragment() {
             settings.customSelfModeButtonColor,
             R.drawable.gradient_blue,
             showsSelf,
-            ctx
+            ctx,
+            Connection.SELF
         )
         updateButtonPreview(
             previewBtnUsb,
@@ -693,7 +728,8 @@ class CustomizationFragment : Fragment() {
             settings.customUsbButtonColor,
             R.drawable.gradient_orange,
             showsUsb,
-            ctx
+            ctx,
+            Connection.USB
         )
         updateButtonPreview(
             previewBtnWifi,
@@ -701,16 +737,20 @@ class CustomizationFragment : Fragment() {
             settings.customWifiButtonColor,
             R.drawable.gradient_purple,
             showsWifi,
-            ctx
+            ctx,
+            Connection.WIFI
         )
-        updateButtonPreview(
-            previewBtnSettings,
-            indicatorSettings,
-            settings.customSettingsButtonColor,
-            R.drawable.gradient_darkblue,
-            true,
-            ctx
-        )
+        if (classic) {
+            updateButtonPreview(
+                previewBtnSettings,
+                indicatorSettings,
+                settings.customSettingsButtonColor,
+                R.drawable.gradient_darkblue,
+                true,
+                ctx,
+                null
+            )
+        }
 
         // Hide color customization rows for unchecked connection modes
         rowColorSelfMode?.visibility = if (showsSelf) View.VISIBLE else View.GONE
@@ -720,9 +760,32 @@ class CustomizationFragment : Fragment() {
         val hasCustomColors = settings.customSelfModeButtonColor != 0 ||
                 settings.customUsbButtonColor != 0 ||
                 settings.customWifiButtonColor != 0 ||
-                settings.customSettingsButtonColor != 0
+                (classic && settings.customSettingsButtonColor != 0)
         btnResetColors?.isEnabled = hasCustomColors
     }
+
+    /** The new home's look right now: day, dark or extreme dark, as the home screen would pick it. */
+    private fun homePalette(ctx: Context): HomeUiHelper.Palette {
+        val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        return HomeUiHelper.palette(ctx, HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive))
+    }
+
+    /**
+     * A sample of [color] as the chosen design draws it. 0 is the default: the classic gradient
+     * in [classicDefaultRes], or the new home's own color for [connection].
+     */
+    private fun colorSample(ctx: Context, color: Int, classicDefaultRes: Int, connection: Connection?, radiusDp: Float): Drawable? {
+        if (!settings.useClassicHome && connection != null) {
+            return GradientDrawable().apply {
+                setColor(sampleColor(ctx, color, connection))
+                cornerRadius = radiusDp * ctx.resources.displayMetrics.density
+            }
+        }
+        return if (color != 0) ColorUtils.createGradientDrawable(color, radiusDp, ctx) else ContextCompat.getDrawable(ctx, classicDefaultRes)
+    }
+
+    private fun sampleColor(ctx: Context, color: Int, connection: Connection): Int =
+        if (color != 0) color else HomeUiHelper.defaultConnectionColor(connection, homePalette(ctx))
 
     private fun updateButtonPreview(
         previewButton: MaterialButton?,
@@ -730,16 +793,34 @@ class CustomizationFragment : Fragment() {
         customColor: Int,
         defaultDrawableRes: Int,
         isEnabled: Boolean,
-        ctx: Context
+        ctx: Context,
+        connection: Connection?
     ) {
         if (previewButton != null) {
             previewButton.visibility = View.VISIBLE
             previewButton.isEnabled = isEnabled
-            if (!isEnabled) {
+            val newHomeTile = !settings.useClassicHome && connection != null
+            if (!isEnabled && newHomeTile) {
+                // A connection that is not in use is an idle tile on the new home, not a gray button.
+                val palette = homePalette(ctx)
+                previewButton.background = GradientDrawable().apply {
+                    setColor(palette.tile)
+                    cornerRadius = NEW_HOME_PREVIEW_RADIUS_DP * ctx.resources.displayMetrics.density
+                }
+                previewButton.iconTint = ColorStateList.valueOf(palette.textMuted)
+            } else if (!isEnabled) {
                 val disabledBackground = ContextCompat.getDrawable(ctx, R.drawable.gradient_monochrome)
                 val disabledIconTint = ContextCompat.getColorStateList(ctx, R.color.disabled_icon_tint)
                 previewButton.background = disabledBackground?.constantState?.newDrawable()?.mutate()
                 previewButton.iconTint = disabledIconTint
+            } else if (newHomeTile && connection != null) {
+                // What the main button wears right now, monochrome at night included.
+                val color = HomeUiHelper.connectionColor(settings, connection, homePalette(ctx))
+                previewButton.background = GradientDrawable().apply {
+                    setColor(color)
+                    cornerRadius = NEW_HOME_PREVIEW_RADIUS_DP * ctx.resources.displayMetrics.density
+                }
+                previewButton.iconTint = ColorStateList.valueOf(HomeUiHelper.readableOn(color))
             } else {
                 val whiteTint = ColorStateList.valueOf(0xFFFFFFFF.toInt())
                 if (customColor != 0) {
@@ -753,14 +834,8 @@ class CustomizationFragment : Fragment() {
             }
         }
 
-        if (indicatorView != null) {
-            if (customColor != 0) {
-                val indicatorDrawable = ColorUtils.createGradientDrawable(customColor, 12f, ctx)
-                indicatorView.background = indicatorDrawable
-            } else {
-                indicatorView.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-            }
-        }
+        // The row's dot shows the color as picked, even when the night turns the buttons gray.
+        indicatorView?.background = colorSample(ctx, customColor, defaultDrawableRes, connection, 12f)
     }
 
     private fun showColorPickerDialog(
@@ -768,6 +843,7 @@ class CustomizationFragment : Fragment() {
         currentColor: Int,
         defaultDrawableRes: Int,
         iconRes: Int,
+        connection: Connection? = null,
         onSave: (Int) -> Unit
     ) {
         val ctx = context ?: return
@@ -785,10 +861,10 @@ class CustomizationFragment : Fragment() {
 
         fun updateDialogPreview(color: Int) {
             selectedColor = color
-            if (color != 0) {
-                previewButton.background = ColorUtils.createGradientDrawable(color, 36f, ctx)
-            } else {
-                previewButton.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
+            val newHomeTile = !settings.useClassicHome && connection != null
+            previewButton.background = colorSample(ctx, color, defaultDrawableRes, connection, if (newHomeTile) 20f else 36f)
+            if (newHomeTile && connection != null) {
+                previewButton.iconTint = ColorStateList.valueOf(HomeUiHelper.readableOn(sampleColor(ctx, color, connection)))
             }
         }
 
@@ -844,11 +920,7 @@ class CustomizationFragment : Fragment() {
                 }
                 swatch.layoutParams = lp
 
-                if (colorInt == 0) {
-                    swatch.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-                } else {
-                    swatch.background = ColorUtils.createGradientDrawable(colorInt, 18f, ctx)
-                }
+                swatch.background = colorSample(ctx, colorInt, defaultDrawableRes, connection, 18f)
 
                 swatch.setOnClickListener {
                     updateDialogPreview(colorInt)

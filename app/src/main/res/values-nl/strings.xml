@@ -988,6 +988,9 @@
     <string name="color_custom_hex">Hex-kleur</string>
     <string name="home_button_scale">Knopgrootte</string>
     <string name="home_button_scale_description">Pas de grootte van de 4 startschermknoppen aan</string>
+    <string name="home_connection_colors">Verbindingskleuren</string>
+    <string name="home_connection_colors_description">De hoofdknop krijgt de kleur van zijn verbinding, net als een tegel in de balk tijdens het verbinden of als hij verbonden is</string>
+    <string name="home_bar_scale_description">Pas de grootte van de tegels in de zijbalk en van de favoriete apps aan. Op een laag scherm verkleint de balk zijn tegels zodat ze allemaal passen</string>
     <string name="home_button_scale_preview">Live startschermvoorbeeld</string>
     <string name="btn_reset_scale">Knopgrootte resetten</string>
     <string name="static_bssid_title">Statische BSSID (MAC-adres)</string>
