@@ -1289,7 +1289,7 @@
     <string name="home_choose_favorite_app">Escolha um app ou atalho</string>
     <string name="home_shortcut_badge">Atalho</string>
     <string name="home_show_favorite_apps">Apps e widgets na tela inicial</string>
-    <string name="home_show_favorite_apps_description">Apps favoritos e widgets abaixo do botão principal quando o Open Headunit é o app de início</string>
+    <string name="home_show_favorite_apps_description">Seus apps favoritos e widgets abaixo do botão principal, quando o Open Headunit é seu launcher</string>
     <string name="home_show_clock">Data e hora na tela inicial</string>
     <string name="home_show_clock_description">A hora e a data de hoje, no topo do botão principal</string>
     <string name="home_show_speed">Velocidade do GPS na tela inicial</string>

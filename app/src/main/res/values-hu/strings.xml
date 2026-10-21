@@ -1284,7 +1284,7 @@
     <string name="home_choose_favorite_app">Válassz alkalmazást vagy parancsikont</string>
     <string name="home_shortcut_badge">Parancsikon</string>
     <string name="home_show_favorite_apps">Alkalmazások és widgetek a kezdőképernyőn</string>
-    <string name="home_show_favorite_apps_description">Kedvenc alkalmazások és widgetek a fő gomb alatt, amíg az Open Headunit a kezdőképernyő-alkalmazás</string>
+    <string name="home_show_favorite_apps_description">Kedvenc alkalmazásaid és widgeteid a fő gomb alatt, amikor az Open Headunit az indítód</string>
     <string name="home_show_clock">Dátum és idő a kezdőképernyőn</string>
     <string name="home_show_clock_description">A pontos idő és a mai dátum a fő gomb tetején</string>
     <string name="home_show_speed">GPS-sebesség a kezdőképernyőn</string>

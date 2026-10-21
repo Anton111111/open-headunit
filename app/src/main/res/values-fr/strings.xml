@@ -1328,7 +1328,7 @@
     <string name="home_choose_favorite_app">Choisir une app ou un raccourci</string>
     <string name="home_shortcut_badge">Raccourci</string>
     <string name="home_show_favorite_apps">Apps et widgets sur l\'écran d\'accueil</string>
-    <string name="home_show_favorite_apps_description">Apps favorites et widgets sous le bouton principal lorsque Open Headunit est l\'application d\'accueil</string>
+    <string name="home_show_favorite_apps_description">Vos apps favorites et widgets sous le bouton principal, quand Open Headunit est votre lanceur</string>
     <string name="home_show_clock">Date et heure sur l\'écran d\'accueil</string>
     <string name="home_show_clock_description">L\'heure et la date du jour, en haut du bouton principal</string>
     <string name="home_show_speed">Vitesse GPS sur l\'écran d\'accueil</string>

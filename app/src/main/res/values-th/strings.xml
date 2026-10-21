@@ -1334,7 +1334,7 @@
     <string name="home_choose_favorite_app">เลือกแอปหรือทางลัด</string>
     <string name="home_shortcut_badge">ทางลัด</string>
     <string name="home_show_favorite_apps">แอปและวิดเจ็ตบนหน้าจอหลัก</string>
-    <string name="home_show_favorite_apps_description">แอปโปรดและวิดเจ็ตใต้ปุ่มหลักเมื่อ Open Headunit เป็นแอปหน้าจอหลัก</string>
+    <string name="home_show_favorite_apps_description">แอปโปรดและวิดเจ็ตของคุณใต้ปุ่มหลัก เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
     <string name="home_show_clock">วันที่และเวลาบนหน้าจอหลัก</string>
     <string name="home_show_clock_description">เวลาและวันที่ของวันนี้ที่ด้านบนปุ่มหลัก</string>
     <string name="home_show_speed">ความเร็ว GPS บนหน้าจอหลัก</string>

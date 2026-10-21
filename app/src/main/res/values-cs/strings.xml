@@ -1288,7 +1288,7 @@
     <string name="home_choose_favorite_app">Vyberte aplikaci nebo zkratku</string>
     <string name="home_shortcut_badge">Zkratka</string>
     <string name="home_show_favorite_apps">Aplikace a widgety na domovské obrazovce</string>
-    <string name="home_show_favorite_apps_description">Oblíbené aplikace a widgety pod hlavním tlačítkem, když je Open Headunit domovskou aplikací</string>
+    <string name="home_show_favorite_apps_description">Vaše oblíbené aplikace a widgety pod hlavním tlačítkem, když je Open Headunit váš spouštěč</string>
     <string name="home_show_clock">Datum a čas na domovské obrazovce</string>
     <string name="home_show_clock_description">Čas a dnešní datum nahoře na hlavním tlačítku</string>
     <string name="home_show_speed">Rychlost GPS na domovské obrazovce</string>

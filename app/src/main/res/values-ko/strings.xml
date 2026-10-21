@@ -1297,7 +1297,7 @@
     <string name="home_choose_favorite_app">앱 또는 바로가기 선택</string>
     <string name="home_shortcut_badge">바로가기</string>
     <string name="home_show_favorite_apps">홈 화면의 앱과 위젯</string>
-    <string name="home_show_favorite_apps_description">Open Headunit이 홈 앱일 때 메인 버튼 아래에 즐겨찾기 앱과 위젯을 표시합니다</string>
+    <string name="home_show_favorite_apps_description">Open Headunit이 런처일 때 메인 버튼 아래에 즐겨찾는 앱과 위젯을 표시합니다</string>
     <string name="home_show_clock">홈 화면에 날짜와 시간</string>
     <string name="home_show_clock_description">메인 버튼 위에 시각과 오늘 날짜</string>
     <string name="home_show_speed">홈 화면에 GPS 속도</string>

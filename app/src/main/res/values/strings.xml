@@ -1374,7 +1374,7 @@
     <string name="home_choose_favorite_app">Choose an app or shortcut</string>
     <string name="home_shortcut_badge">Shortcut</string>
     <string name="home_show_favorite_apps">Apps and widgets on the home screen</string>
-    <string name="home_show_favorite_apps_description">Favorite apps and widgets under the main button while Open Headunit is the launcher</string>
+    <string name="home_show_favorite_apps_description">Your favorite apps and widgets under the main button, when Open Headunit is your launcher</string>
     <string name="home_show_clock">Date and time on the home screen</string>
     <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
     <string name="home_show_speed">GPS speed on the home screen</string>

@@ -1285,7 +1285,7 @@
     <string name="home_choose_favorite_app">Alege o aplicație sau o comandă rapidă</string>
     <string name="home_shortcut_badge">Comandă rapidă</string>
     <string name="home_show_favorite_apps">Aplicații și widgeturi pe ecranul principal</string>
-    <string name="home_show_favorite_apps_description">Aplicații favorite și widgeturi sub butonul principal cât timp Open Headunit este aplicația principală</string>
+    <string name="home_show_favorite_apps_description">Aplicațiile tale favorite și widgeturile sub butonul principal, când Open Headunit este launcherul tău</string>
     <string name="home_show_clock">Data și ora pe ecranul principal</string>
     <string name="home_show_clock_description">Ora și data de astăzi, sus pe butonul principal</string>
     <string name="home_show_speed">Viteza GPS pe ecranul principal</string>

@@ -1286,7 +1286,7 @@
     <string name="home_choose_favorite_app">اختر تطبيقًا أو اختصارًا</string>
     <string name="home_shortcut_badge">اختصار</string>
     <string name="home_show_favorite_apps">التطبيقات والأدوات على الشاشة الرئيسية</string>
-    <string name="home_show_favorite_apps_description">التطبيقات المفضلة والأدوات أسفل الزر الرئيسي عندما يكون Open Headunit تطبيق الشاشة الرئيسية</string>
+    <string name="home_show_favorite_apps_description">تطبيقاتك المفضلة وأدواتك أسفل الزر الرئيسي، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
     <string name="home_show_clock">التاريخ والوقت على الشاشة الرئيسية</string>
     <string name="home_show_clock_description">الوقت وتاريخ اليوم في أعلى الزر الرئيسي</string>
     <string name="home_show_speed">سرعة GPS على الشاشة الرئيسية</string>

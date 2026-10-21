@@ -1289,7 +1289,7 @@
     <string name="home_choose_favorite_app">Виберіть програму або ярлик</string>
     <string name="home_shortcut_badge">Ярлик</string>
     <string name="home_show_favorite_apps">Програми та віджети на головному екрані</string>
-    <string name="home_show_favorite_apps_description">Улюблені програми та віджети під головною кнопкою, коли Open Headunit є головним екраном</string>
+    <string name="home_show_favorite_apps_description">Ваші улюблені програми та віджети під головною кнопкою, коли Open Headunit є вашим лаунчером</string>
     <string name="home_show_clock">Дата і час на головному екрані</string>
     <string name="home_show_clock_description">Час і сьогоднішня дата вгорі головної кнопки</string>
     <string name="home_show_speed">Швидкість GPS на головному екрані</string>
