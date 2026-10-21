@@ -728,7 +728,9 @@ class OnboardingActivity : BaseActivity() {
         preview.removeAllViews()
         videoRun = null
         videoAttempted = true
-        videoApply = !isUpgrader()
+        // Ticked for everyone, upgraders included: running the test is asking for its answer, and
+        // the box is right there to keep the current settings instead.
+        videoApply = true
         setVideoRunning(true)
         findViewById<TextView>(R.id.onb_video_status).text = getString(R.string.onb_video_preparing)
         val runner = VideoPreflightRunner(
@@ -742,7 +744,7 @@ class OnboardingActivity : BaseActivity() {
         videoJob = lifecycleScope.launch {
             try {
                 videoRun = runner.run()
-                videoApply = !isUpgrader()
+                videoApply = true
                 setVideoRunning(false)
                 renderVideoResult()
             } catch (e: CancellationException) {
