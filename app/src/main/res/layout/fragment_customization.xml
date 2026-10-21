@@ -145,6 +145,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
+                    android:layout_marginRight="8dp"
                     android:text="@string/btn_choose_image"
                     android:textColor="@color/btn_save_text"
                     app:backgroundTint="@color/btn_save_background"
@@ -158,6 +159,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
+                    android:layout_marginLeft="8dp"
                     android:text="@string/btn_reset_default"
                     android:textColor="?android:attr/textColorPrimary" />
 
@@ -365,7 +367,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="@drawable/gradient_blue"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginRight="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -405,7 +408,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="@drawable/gradient_orange"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginRight="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -445,7 +449,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="@drawable/gradient_purple"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginRight="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -485,7 +490,8 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:background="@drawable/gradient_darkblue"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginRight="16dp" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -520,7 +526,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:layout_marginEnd="12dp">
+                    android:layout_marginEnd="12dp"
+                    android:layout_marginRight="12dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -560,6 +567,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="6dp"
+                    android:layout_marginRight="6dp"
                     android:text="@string/btn_make_all_monochrome"
                     android:textColor="?android:attr/textColorPrimary" />
 
@@ -570,6 +578,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
+                    android:layout_marginLeft="6dp"
                     android:text="@string/btn_reset_colors"
                     android:textColor="?android:attr/textColorPrimary" />
 
