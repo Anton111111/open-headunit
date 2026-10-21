@@ -175,4 +175,55 @@ class HomePagesHintPolicyTest {
             )
         )
     }
+
+    @Test
+    fun `a narrow band is enough for a small spotlight`() {
+        // A short portrait card where only 70 of free height is left above the text.
+        val card = Box(0, 0, 400, 300)
+        val content = listOf(Box(0, 80, 380, 300))
+        val spot = HomePagesHintPolicy.emptySpot(card, content, false, 64, 360, 290, 5)!!
+        assertTrue(spot.height in 64..75)
+        assertNull(HomePagesHintPolicy.emptySpot(card, content, false, 148, 360, 290, 5))
+    }
+
+    @Test
+    fun `the ring shrinks with a small spotlight and stops growing at its full size`() {
+        assertEquals(96, HomePagesHintPolicy.ringDiameter(Box(0, 0, 300, 200), 96))
+        assertEquals(56, HomePagesHintPolicy.ringDiameter(Box(0, 0, 300, 70), 96))
+    }
+
+    @Test
+    fun `the card wins whenever it has a spot`() {
+        val card = HomePagesHintPolicy.Region(Box(0, 0, 400, 300), listOf(Box(0, 0, 300, 300)))
+        val page = HomePagesHintPolicy.Region(Box(0, 0, 400, 900), listOf(Box(0, 0, 400, 300)))
+        val spot = HomePagesHintPolicy.bestSpot(listOf(card, page), false, 64, 360, 290, 5)!!
+        assertTrue(spot.bottom <= 300 && spot.left >= 300)
+    }
+
+    @Test
+    fun `without room on the card the empty part of the page around it is used`() {
+        val card = HomePagesHintPolicy.Region(Box(0, 0, 400, 300), listOf(Box(0, 0, 400, 300)))
+        val page = HomePagesHintPolicy.Region(Box(0, 0, 400, 900), listOf(Box(0, 0, 400, 300), Box(0, 310, 400, 400)))
+        val spot = HomePagesHintPolicy.bestSpot(listOf(card, page), false, 64, 360, 290, 5)!!
+        assertTrue(spot.top >= 405)
+        assertNull(HomePagesHintPolicy.bestSpot(listOf(card), false, 64, 360, 290, 5))
+    }
+
+    @Test
+    fun `with no spot at all the callout is centred, the first size that fits`() {
+        val screen = Box(0, 0, 480, 240)
+        val (box, index) = HomePagesHintPolicy.centredCallout(
+            screen, 16, listOf(Size(380, 330), Size(448, 300), Size(294, 260), Size(448, 200))
+        )
+        assertEquals(3, index)
+        assertEquals(Box(16, 20, 464, 220), box)
+    }
+
+    @Test
+    fun `when nothing fits the last size is still shown inside the margins`() {
+        val (box, index) = HomePagesHintPolicy.centredCallout(Box(0, 0, 320, 200), 16, listOf(Size(288, 400)))
+        assertEquals(0, index)
+        assertEquals(16, box.left)
+        assertEquals(16, box.top)
+    }
 }

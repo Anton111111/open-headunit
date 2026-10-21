@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The card beside the spotlight of the pages hint. HomePagesHintView places it and sizes its text. -->
+<!--
+    The card of the pages hint. HomePagesHintView places it, sizes its text and, when there is no
+    spotlight, shows the art (the hand and ring, drawn by the hint view over it) above or beside
+    the text.
+-->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -10,23 +14,48 @@
     android:background="@drawable/home_hint_callout_bg"
     android:padding="@dimen/home_hint_callout_padding">
 
-    <TextView
-        android:id="@+id/home_pages_hint_title"
+    <LinearLayout
+        android:id="@+id/home_pages_hint_content"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/home_pages_hint_title"
-        android:textColor="@color/home_hint_title"
-        android:textSize="@dimen/home_hint_title"
-        android:textStyle="bold" />
+        android:orientation="vertical"
+        android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/home_pages_hint_body"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/home_pages_hint_body"
-        android:textColor="@color/home_hint_body"
-        android:textSize="@dimen/home_hint_body" />
+        <View
+            android:id="@+id/home_pages_hint_art"
+            android:layout_width="@dimen/home_hint_art"
+            android:layout_height="@dimen/home_hint_art"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/home_pages_hint_texts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/home_pages_hint_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/home_pages_hint_title"
+                android:textColor="@color/home_hint_title"
+                android:textSize="@dimen/home_hint_title"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/home_pages_hint_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/home_pages_hint_body"
+                android:textColor="@color/home_hint_body"
+                android:textSize="@dimen/home_hint_body" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/home_pages_hint_got_it"

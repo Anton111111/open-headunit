@@ -72,4 +72,6 @@
     <dimen name="home_hint_body_small">15sp</dimen>
     <dimen name="home_hint_button_height">52dp</dimen>
     <dimen name="home_hint_button_height_small">48dp</dimen>
+    <dimen name="home_hint_art">88dp</dimen>
+    <dimen name="home_hint_art_small">64dp</dimen>
 </resources>

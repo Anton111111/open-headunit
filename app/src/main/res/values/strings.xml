@@ -1396,4 +1396,5 @@
     <string name="home_pages_hint_title">Touch and hold an empty spot</string>
     <string name="home_pages_hint_body">That\'s how you add a page for your widgets, or remove one.</string>
     <string name="home_pages_hint_got_it">Got it</string>
+    <string name="home_pages_hint_body_anywhere">Touch and hold an empty part of the home to add a page for your widgets, or remove one.</string>
 </resources>

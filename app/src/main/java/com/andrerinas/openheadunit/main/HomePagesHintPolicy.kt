@@ -112,6 +112,49 @@ object HomePagesHintPolicy {
         return best
     }
 
+    /** A view that opens the page menu on a long press, and what is drawn inside it. */
+    data class Region(val interior: Box, val occupied: List<Box>)
+
+    /**
+     * The spot across the regions a long press opens the page menu from: the main button's card
+     * ([regions] first) whenever it has one, otherwise the roomiest of the others. Null when none
+     * has a free rectangle of [minSize] by [minSize].
+     */
+    fun bestSpot(
+        regions: List<Region>,
+        rightHandDrive: Boolean,
+        minSize: Int,
+        maxWidth: Int,
+        maxHeight: Int,
+        gap: Int,
+    ): Box? {
+        val spots = regions.map { emptySpot(it.interior, it.occupied, rightHandDrive, minSize, maxWidth, maxHeight, gap) }
+        spots.firstOrNull()?.let { return it }
+        return spots.drop(1).filterNotNull()
+            .maxByOrNull { minOf(it.width, maxWidth).toLong() * minOf(it.height, maxHeight) }
+    }
+
+    /**
+     * The callout when there is no spot to light up: centred on the screen, the first of [sizes]
+     * that fits inside [margin]; the last one, held inside the screen, when none does, so the
+     * hint is still shown. @return the box and which size it took.
+     */
+    fun centredCallout(screen: Box, margin: Int, sizes: List<Size>): Pair<Box, Int> {
+        val room = Box(screen.left + margin, screen.top + margin, screen.right - margin, screen.bottom - margin)
+        val index = sizes.indexOfFirst { it.width <= room.width && it.height <= room.height }
+            .let { if (it < 0) sizes.lastIndex else it }
+        val size = sizes[index]
+        val left = maxOf(room.left, room.centerX - size.width / 2)
+        val top = maxOf(room.top, room.centerY - size.height / 2)
+        return Box(left, top, left + size.width, top + size.height) to index
+    }
+
+    /**
+     * The ring's diameter for a spotlight: [max] where there is room, and four fifths of the
+     * spotlight's short side where there is not, so a small one still holds it.
+     */
+    fun ringDiameter(hole: Box, max: Int): Int = minOf(max, (minOf(hole.width, hole.height) * 0.8f).toInt())
+
     /**
      * The spotlight and its callout. The spotlight starts as large as the spot allows up to the
      * maximum, and shrinks, kept against the spot's far side, until a callout fits beside it

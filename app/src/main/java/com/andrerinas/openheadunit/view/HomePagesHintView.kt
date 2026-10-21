@@ -10,6 +10,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.drawable.Drawable
 import android.os.Build
@@ -20,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
+import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -35,35 +37,46 @@ import kotlin.math.hypot
 import kotlin.math.min
 
 /**
- * The one-time hint for adding pages: the home dimmed but for a spotlight on an empty spot of the
- * main button, a hand pressing there while a ring fills (touch and hold, not a tap), and a callout
- * beside it. Placed from the real card's bounds by [HomePagesHintPolicy]; this view only draws
- * and reports how it was closed.
+ * The one-time hint for adding pages: the home dimmed but for a spotlight on an empty spot that
+ * opens the page menu on a long press, a hand pressing there while a ring fills (touch and hold,
+ * not a tap), and a callout beside it. Without a spot ([hole] null) the whole home is dimmed and
+ * the hand and ring are drawn inside a centred callout instead. Placed by [HomePagesHintPolicy];
+ * this view only draws and reports how it was closed.
  */
 @SuppressLint("ViewConstructor")
 class HomePagesHintView(
     context: Context,
-    hole: HomePagesHintPolicy.Box,
+    hole: HomePagesHintPolicy.Box?,
     private val calloutBox: HomePagesHintPolicy.Box,
-    private val calloutSide: HomePagesHintPolicy.Side,
+    /** Where the callout sits from the spotlight; null without one. */
+    private val calloutSide: HomePagesHintPolicy.Side?,
     /** The smaller hand and ring, for a short screen. */
     small: Boolean,
-    /** The smaller callout, when the regular one had no room. */
-    smallCallout: Boolean,
+    private val look: Look,
     private val onClosed: (Reason) -> Unit,
 ) : FrameLayout(context) {
 
     /** LEFT: the home went away, or stopped being idle, while the hint was up. */
     enum class Reason { GOT_IT, OUTSIDE, BACK, HOLD, LEFT }
 
+    /**
+     * How the callout is dressed: [small] text, and for the hint without a spotlight the art
+     * ([withArt]) above the text or, on a short screen, [artBeside] it.
+     */
+    data class Look(val small: Boolean, val withArt: Boolean = false, val artBeside: Boolean = false)
+
     private val density = resources.displayMetrics.density
     private fun dp(value: Float): Float = value * density
 
-    private val holeRect = RectF(hole.left.toFloat(), hole.top.toFloat(), hole.right.toFloat(), hole.bottom.toFloat())
+    private val holeRect: RectF? = hole?.let { RectF(it.left.toFloat(), it.top.toFloat(), it.right.toFloat(), it.bottom.toFloat()) }
     private val holeRadius = dp(22f)
-    private val ringRadius = dp(if (small) 38f else 48f)
-    private val handSize = dp(if (small) 58f else 72f).toInt()
     private val arrow = dp(12f)
+
+    // The hand and ring: on the spotlight, sized to it; in the callout's art, sized to that.
+    private var centerX = 0f
+    private var centerY = 0f
+    private var ringRadius: Float
+    private var handSize: Int
 
     private val scrimPath = Path()
     private val arrowPath = Path()
@@ -72,11 +85,15 @@ class HomePagesHintView(
     private val outlinePaint = stroke(Color.argb(97, 255, 255, 255), dp(2f)).apply {
         pathEffect = DashPathEffect(floatArrayOf(dp(8f), dp(6f)), 0f)
     }
-    private val trackPaint = stroke(Color.argb(64, 255, 255, 255), dp(4f))
-    private val ringPaint = stroke(Color.WHITE, dp(4f)).apply { strokeCap = Paint.Cap.ROUND }
-    private val ripplePaint = stroke(Color.WHITE, dp(2f))
+    // White on the dimmed home; the button's blue on the light callout, where white would vanish.
+    private val ringColor = if (hole != null) Color.WHITE else ContextCompat.getColor(context, R.color.home_hint_button)
+    private val trackAlpha = if (hole != null) 64 else 51
+    private val trackPaint = stroke(ringColor, dp(4f))
+    private val ringPaint = stroke(ringColor, dp(4f)).apply { strokeCap = Paint.Cap.ROUND }
+    private val ripplePaint = stroke(ringColor, dp(2f))
     private val ringBounds = RectF()
-    private val outlineRect = RectF(holeRect).apply { inset(dp(10f), dp(10f)) }
+    private val outlineRect = holeRect?.let { RectF(it).apply { inset(dp(10f), dp(10f)) } }
+    private val artRect = Rect()
 
     private val hand: Drawable? = AppCompatResources.getDrawable(context, R.drawable.ic_home_hint_hand)?.mutate()
     private val handShadow: Drawable? = AppCompatResources.getDrawable(context, R.drawable.ic_home_hint_hand)?.mutate()?.apply {
@@ -87,8 +104,8 @@ class HomePagesHintView(
     private var phaseMs = STATIC_PHASE_MS
     private var animator: ValueAnimator? = null
 
-    private val callout: LinearLayout =
-        LayoutInflater.from(context).inflate(R.layout.view_home_pages_hint_callout, this, false) as LinearLayout
+    private val callout: LinearLayout = inflateCallout(context, this, look, holeless = hole == null)
+    private val art: View = callout.findViewById(R.id.home_pages_hint_art)
     private val gotIt: MaterialButton = callout.findViewById(R.id.home_pages_hint_got_it)
 
     private var closed = false
@@ -103,7 +120,21 @@ class HomePagesHintView(
         setWillNotDraw(false)
         isClickable = true
         isFocusable = true
-        if (smallCallout) makeSmall(callout)
+        if (hole != null) {
+            val diameter = HomePagesHintPolicy.ringDiameter(hole, dp(if (small) 76f else 96f).toInt())
+            ringRadius = diameter / 2f
+            handSize = (diameter * HAND_TO_RING).toInt()
+            centerX = holeRect!!.centerX()
+            centerY = holeRect.centerY()
+        } else {
+            val diameter = resources.getDimension(if (look.small) R.dimen.home_hint_art_small else R.dimen.home_hint_art)
+            ringRadius = diameter / 2f - dp(3f)
+            handSize = (diameter * HAND_IN_ART).toInt()
+        }
+        // A thinner ring on a small one, so it does not read as a solid disc.
+        val strokeWidth = if (ringRadius < dp(30f)) dp(3f) else dp(4f)
+        trackPaint.strokeWidth = strokeWidth
+        ringPaint.strokeWidth = strokeWidth
         addView(callout, LayoutParams(calloutBox.width, LayoutParams.WRAP_CONTENT))
         ViewCompat.setElevation(callout, dp(8f))
         ViewCompat.setAccessibilityLiveRegion(callout, ViewCompat.ACCESSIBILITY_LIVE_REGION_POLITE)
@@ -120,6 +151,10 @@ class HomePagesHintView(
         private const val FADE_MS = 400f
         private const val PRESSED_SCALE = 0.92f
         private const val ENTRANCE_MS = 250L
+        /** The hand to the ring's diameter on the spotlight, as in the approved design (72 to 96). */
+        private const val HAND_TO_RING = 0.75f
+        /** Smaller in the art, where it has to stay inside the callout. */
+        private const val HAND_IN_ART = 0.6f
 
         /** The callout's width, regular or small, no wider than [room]. */
         fun calloutWidth(context: Context, small: Boolean, room: Int): Int = minOf(
@@ -129,26 +164,55 @@ class HomePagesHintView(
             )
         )
 
-        private fun makeSmall(callout: LinearLayout) {
+        private fun inflateCallout(context: Context, parent: ViewGroup, look: Look, holeless: Boolean): LinearLayout {
+            val callout = LayoutInflater.from(context)
+                .inflate(R.layout.view_home_pages_hint_callout, parent, false) as LinearLayout
             val res = callout.resources
-            callout.findViewById<TextView>(R.id.home_pages_hint_title)
-                .setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.home_hint_title_small))
-            callout.findViewById<TextView>(R.id.home_pages_hint_body)
-                .setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.home_hint_body_small))
-            val padding = res.getDimensionPixelSize(R.dimen.home_hint_callout_padding_small)
-            callout.setPadding(padding, padding, padding, padding)
-            val button = callout.findViewById<View>(R.id.home_pages_hint_got_it)
-            button.layoutParams = button.layoutParams.apply { height = res.getDimensionPixelSize(R.dimen.home_hint_button_height_small) }
+            if (holeless) {
+                callout.findViewById<TextView>(R.id.home_pages_hint_body).setText(R.string.home_pages_hint_body_anywhere)
+            }
+            if (look.small) {
+                callout.findViewById<TextView>(R.id.home_pages_hint_title)
+                    .setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.home_hint_title_small))
+                callout.findViewById<TextView>(R.id.home_pages_hint_body)
+                    .setTextSize(TypedValue.COMPLEX_UNIT_PX, res.getDimension(R.dimen.home_hint_body_small))
+                val padding = res.getDimensionPixelSize(R.dimen.home_hint_callout_padding_small)
+                callout.setPadding(padding, padding, padding, padding)
+                val button = callout.findViewById<View>(R.id.home_pages_hint_got_it)
+                (button.layoutParams as LinearLayout.LayoutParams).apply {
+                    height = res.getDimensionPixelSize(R.dimen.home_hint_button_height_small)
+                    topMargin = (12 * res.displayMetrics.density).toInt()
+                }
+            }
+            if (look.withArt) {
+                val art = callout.findViewById<View>(R.id.home_pages_hint_art)
+                art.visibility = View.VISIBLE
+                val size = res.getDimensionPixelSize(if (look.small) R.dimen.home_hint_art_small else R.dimen.home_hint_art)
+                val gap = (16 * res.displayMetrics.density).toInt()
+                if (look.artBeside) {
+                    callout.findViewById<LinearLayout>(R.id.home_pages_hint_content).orientation = LinearLayout.HORIZONTAL
+                    art.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                        rightMargin = gap
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) marginEnd = gap
+                    }
+                    callout.findViewById<View>(R.id.home_pages_hint_texts).layoutParams =
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                } else {
+                    (art.layoutParams as LinearLayout.LayoutParams).apply {
+                        width = size
+                        height = size
+                    }
+                }
+            }
+            return callout
         }
 
         /**
-         * The callout's size, regular or small, measured as it will be drawn, so the caller can
-         * find it a place before building this view.
+         * The callout's size with [look] at [width], measured as it will be drawn, so the caller
+         * can find it a place before building this view.
          */
-        fun calloutSize(context: Context, small: Boolean, width: Int): HomePagesHintPolicy.Size {
-            val parent = FrameLayout(context)
-            val callout = LayoutInflater.from(context).inflate(R.layout.view_home_pages_hint_callout, parent, false) as LinearLayout
-            if (small) makeSmall(callout)
+        fun calloutSize(context: Context, look: Look, width: Int, holeless: Boolean): HomePagesHintPolicy.Size {
+            val callout = inflateCallout(context, FrameLayout(context), look, holeless)
             callout.measure(
                 MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
@@ -207,6 +271,12 @@ class HomePagesHintView(
         val x = calloutBox.left
         val y = calloutBox.top
         callout.layout(x, y, x + callout.measuredWidth, y + callout.measuredHeight)
+        if (holeRect == null && art.visibility == View.VISIBLE) {
+            artRect.set(0, 0, art.width, art.height)
+            offsetDescendantRectToMyCoords(art, artRect)
+            centerX = artRect.exactCenterX()
+            centerY = artRect.exactCenterY()
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -214,34 +284,46 @@ class HomePagesHintView(
         scrimPath.reset()
         scrimPath.fillType = Path.FillType.EVEN_ODD
         scrimPath.addRect(0f, 0f, width.toFloat(), height.toFloat(), Path.Direction.CW)
-        scrimPath.addRoundRect(holeRect, holeRadius, holeRadius, Path.Direction.CW)
+        holeRect?.let { scrimPath.addRoundRect(it, holeRadius, holeRadius, Path.Direction.CW) }
         canvas.drawPath(scrimPath, scrimPaint)
+        if (holeRect == null) return
 
-        val outlineRadius = holeRadius - dp(5f)
-        canvas.drawRoundRect(outlineRect, outlineRadius, outlineRadius, outlinePaint)
-        drawArrow(canvas)
+        outlineRect?.let {
+            val outlineRadius = holeRadius - dp(5f)
+            canvas.drawRoundRect(it, outlineRadius, outlineRadius, outlinePaint)
+        }
+        drawArrow(canvas, holeRect)
+        drawRing(canvas)
+        drawHand(canvas)
+    }
+
+    // Over the callout, where its art is: the callout is a child, drawn after onDraw.
+    override fun dispatchDraw(canvas: Canvas) {
+        super.dispatchDraw(canvas)
+        if (holeRect != null || art.visibility != View.VISIBLE) return
         drawRing(canvas)
         drawHand(canvas)
     }
 
     /** The callout's small triangle, pointing at the hand. */
-    private fun drawArrow(canvas: Canvas) {
+    private fun drawArrow(canvas: Canvas, hole: RectF) {
+        val side = calloutSide ?: return
         if (callout.width == 0) return
         val inset = resources.getDimension(R.dimen.home_hint_callout_radius) + arrow
         arrowPath.reset()
-        when (calloutSide) {
+        when (side) {
             HomePagesHintPolicy.Side.LEFT, HomePagesHintPolicy.Side.RIGHT -> {
-                val y = holeRect.centerY().coerceIn(callout.top + inset, callout.bottom - inset)
-                val base = if (calloutSide == HomePagesHintPolicy.Side.LEFT) callout.right - 1f else callout.left + 1f
-                val tip = if (calloutSide == HomePagesHintPolicy.Side.LEFT) base + arrow + 1f else base - arrow - 1f
+                val y = hole.centerY().coerceIn(callout.top + inset, callout.bottom - inset)
+                val base = if (side == HomePagesHintPolicy.Side.LEFT) callout.right - 1f else callout.left + 1f
+                val tip = if (side == HomePagesHintPolicy.Side.LEFT) base + arrow + 1f else base - arrow - 1f
                 arrowPath.moveTo(base, y - arrow)
                 arrowPath.lineTo(tip, y)
                 arrowPath.lineTo(base, y + arrow)
             }
             HomePagesHintPolicy.Side.ABOVE, HomePagesHintPolicy.Side.BELOW -> {
-                val x = holeRect.centerX().coerceIn(callout.left + inset, callout.right - inset)
-                val base = if (calloutSide == HomePagesHintPolicy.Side.ABOVE) callout.bottom - 1f else callout.top + 1f
-                val tip = if (calloutSide == HomePagesHintPolicy.Side.ABOVE) base + arrow + 1f else base - arrow - 1f
+                val x = hole.centerX().coerceIn(callout.left + inset, callout.right - inset)
+                val base = if (side == HomePagesHintPolicy.Side.ABOVE) callout.bottom - 1f else callout.top + 1f
+                val tip = if (side == HomePagesHintPolicy.Side.ABOVE) base + arrow + 1f else base - arrow - 1f
                 arrowPath.moveTo(x - arrow, base)
                 arrowPath.lineTo(x, tip)
                 arrowPath.lineTo(x + arrow, base)
@@ -252,12 +334,12 @@ class HomePagesHintView(
     }
 
     private fun drawRing(canvas: Canvas) {
-        val cx = holeRect.centerX()
-        val cy = holeRect.centerY()
+        val cx = centerX
+        val cy = centerY
         val t = phaseMs
         val fade = if (t <= FILL_MS) 1f else (1f - (t - FILL_MS) / FADE_MS).coerceIn(0f, 1f)
         ringBounds.set(cx - ringRadius, cy - ringRadius, cx + ringRadius, cy + ringRadius)
-        trackPaint.alpha = (64 * fade).toInt()
+        trackPaint.alpha = (trackAlpha * fade).toInt()
         canvas.drawCircle(cx, cy, ringRadius, trackPaint)
         val sweep = 360f * min(t, FILL_MS) / FILL_MS
         ringPaint.alpha = (255 * fade).toInt()
@@ -272,8 +354,8 @@ class HomePagesHintView(
 
     private fun drawHand(canvas: Canvas) {
         val hand = hand ?: return
-        val cx = holeRect.centerX()
-        val cy = holeRect.centerY()
+        val cx = centerX
+        val cy = centerY
         val t = phaseMs
         // Pressed down while the ring fills, then lifted.
         val pressed = when {
@@ -300,11 +382,13 @@ class HomePagesHintView(
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        val hole = holeRect
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 downX = event.x
                 downY = event.y
-                downInHole = holeRect.contains(event.x, event.y)
+                // Without a spotlight a long press opens nothing: the hint only says where to.
+                downInHole = hole != null && hole.contains(event.x, event.y)
                 downOutside = !downInHole && !inCallout(event.x, event.y)
                 if (downInHole) postDelayed(holdRunnable, ViewConfiguration.getLongPressTimeout().toLong())
             }
@@ -314,9 +398,8 @@ class HomePagesHintView(
             }
             MotionEvent.ACTION_UP -> {
                 removeCallbacks(holdRunnable)
-                if (downOutside && !holeRect.contains(event.x, event.y) && !inCallout(event.x, event.y)) {
-                    close(Reason.OUTSIDE)
-                }
+                val upInHole = hole != null && hole.contains(event.x, event.y)
+                if (downOutside && !upInHole && !inCallout(event.x, event.y)) close(Reason.OUTSIDE)
                 downOutside = false
                 downInHole = false
             }

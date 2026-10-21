@@ -200,9 +200,12 @@ class HomeFragment : Fragment() {
             pager.pageGap = container.resources.getDimensionPixelSize(R.dimen.home_gap)
             pager.onPageChanged = { renderDots() }
         }
-        // A long press on the main button's empty space is where pages are added.
-        container.findViewById<View>(R.id.home_primary_card)
-            ?.setOnLongClickListener { showPageMenu(widgetPage = null) }
+        // A long press on the main button's empty space is where pages are added, and so is one
+        // on the empty part of the main page around it: under the favorites and the widget row.
+        // Only a long press: a tap there still does nothing.
+        listOf(R.id.home_primary_card, R.id.home_page_main, R.id.home_favorites_area).forEach { id ->
+            container.findViewById<View>(id)?.setOnLongClickListener { showPageMenu(widgetPage = null) }
+        }
         setupListeners()
     }
 
@@ -1870,37 +1873,82 @@ class HomeFragment : Fragment() {
         ).mapNotNull { id -> root.findViewById<View>(id)?.takeIf { it.isShown && it.width > 0 }?.let { boxIn(root, it) } } +
             listOf(R.id.home_primary_kicker, R.id.home_primary_title, R.id.home_primary_subtitle, R.id.home_primary_detail)
                 .mapNotNull { id -> root.findViewById<TextView>(id)?.takeIf { it.isShown && it.width > 0 }?.let { textBox(root, it) } }
+        val margin = (16 * density).toInt()
+        val screen = HomePagesHintPolicy.Box(0, 0, root.width, root.height)
         val gap = (12 * density).toInt()
-        val minSize = ((if (small) 116 else 148) * density).toInt()
+        val minSize = (PAGES_HINT_MIN_SPOT_DP * density).toInt()
         val maxWidth = ((if (small) 280 else 360) * density).toInt()
         val maxHeight = ((if (small) 220 else 290) * density).toInt()
-        val spot = HomePagesHintPolicy.emptySpot(interior, occupied, rightHandDrive, minSize, maxWidth, maxHeight, gap)
+        val regions = listOf(HomePagesHintPolicy.Region(interior, occupied)) +
+            listOfNotNull(mainPageRegion(root, cardBox, screen, margin))
+        val spot = HomePagesHintPolicy.bestSpot(regions, rightHandDrive, minSize, maxWidth, maxHeight, gap)
         val placement = spot?.let {
             HomePagesHintPolicy.place(
                 spot = it,
                 maxWidth = maxWidth,
                 maxHeight = maxHeight,
                 minSize = minSize,
-                bounds = pagesHintBounds(root, cardBox, (16 * density).toInt()),
-                callouts = pagesHintCallouts(ctx, root.width - 2 * (16 * density).toInt()),
+                bounds = pagesHintBounds(root, cardBox, margin),
+                callouts = pagesHintCallouts(ctx, root.width - 2 * margin),
                 gap = (18 * density).toInt(),
                 arrowInset = HomePagesHintView.arrowInset(ctx),
                 rightHandDrive = rightHandDrive,
             )
         }
-        if (placement == null) {
-            AppLog.i("HomeFragment: no room on the main button for the pages hint, trying another time")
-            return
+        val hint = if (placement != null) {
+            AppLog.i(
+                "HomeFragment: showing the pages hint, ${placement.hole.width}x${placement.hole.height}px, " +
+                    "callout ${placement.side.name.lowercase()}"
+            )
+            HomePagesHintView(
+                ctx, placement.hole, placement.callout, placement.side,
+                small = small, look = HomePagesHintView.Look(small = placement.calloutSize > 0)
+            ) { reason -> onPagesHintClosed(reason) }
+        } else {
+            // No empty spot anywhere a long press reaches the menu: the hint still says where to.
+            val looks = listOf(
+                HomePagesHintView.Look(small = false, withArt = true),
+                HomePagesHintView.Look(small = false, withArt = true, artBeside = true),
+                HomePagesHintView.Look(small = true, withArt = true),
+                HomePagesHintView.Look(small = true, withArt = true, artBeside = true),
+            )
+            val room = root.width - 2 * margin
+            val sizes = looks.map { look ->
+                // Beside the art the text needs the room, so the callout takes the whole width.
+                val width = if (look.artBeside) room else HomePagesHintView.calloutWidth(ctx, look.small, room)
+                HomePagesHintView.calloutSize(ctx, look, width, holeless = true)
+            }
+            val (box, index) = HomePagesHintPolicy.centredCallout(screen, margin, sizes)
+            AppLog.i("HomeFragment: showing the pages hint without a spotlight, ${looks[index]}")
+            HomePagesHintView(ctx, null, box, null, small = small, look = looks[index]) { reason -> onPagesHintClosed(reason) }
         }
-        val hint = HomePagesHintView(
-            ctx, placement.hole, placement.callout, placement.side,
-            small = small, smallCallout = placement.calloutSize > 0
-        ) { reason -> onPagesHintClosed(reason) }
         setHomeBehindHint(root, hidden = true)
         root.addView(hint, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         pagesHint = hint
         pagesHintBack.isEnabled = true
-        AppLog.i("HomeFragment: showing the pages hint, ${placement.hole.width}x${placement.hole.height}px, callout ${placement.side.name.lowercase()}")
+    }
+
+    /**
+     * The main page around the card, which also opens the page menu on a long press: what is
+     * drawn there is the card, the favorites row and the widget row (whose scroller keeps the
+     * touches for itself, so it counts whole). Kept [margin] inside the screen.
+     */
+    private fun mainPageRegion(
+        root: View,
+        card: HomePagesHintPolicy.Box,
+        screen: HomePagesHintPolicy.Box,
+        margin: Int,
+    ): HomePagesHintPolicy.Region? {
+        val page = root.findViewById<View>(R.id.home_page_main)?.takeIf { it.isShown && it.width > 0 } ?: return null
+        val box = boxIn(root, page)
+        val interior = HomePagesHintPolicy.Box(
+            maxOf(box.left, screen.left + margin), maxOf(box.top, screen.top + margin),
+            minOf(box.right, screen.right - margin), minOf(box.bottom, screen.bottom - margin)
+        )
+        if (interior.width <= 0 || interior.height <= 0) return null
+        val drawn = listOf(R.id.home_favorites, R.id.home_widgets_scroll)
+            .mapNotNull { id -> root.findViewById<View>(id)?.takeIf { it.isShown && it.width > 0 }?.let { boxIn(root, it) } }
+        return HomePagesHintPolicy.Region(interior, listOf(card) + drawn)
     }
 
     /**
@@ -1911,8 +1959,8 @@ class HomeFragment : Fragment() {
         val minWidth = (PAGES_HINT_MIN_CALLOUT_DP * ctx.resources.displayMetrics.density).toInt()
         return listOf(false, true).mapNotNull { small ->
             val width = HomePagesHintView.calloutWidth(ctx, small, room)
-            if (width < minWidth) null else HomePagesHintView.calloutSize(ctx, small, width)
-        }.distinct()
+            if (width < minWidth) null else HomePagesHintView.calloutSize(ctx, HomePagesHintView.Look(small), width, holeless = false)
+        }
     }
 
     /**
@@ -2535,6 +2583,8 @@ class HomeFragment : Fragment() {
         private const val PAGES_HINT_SMALL_HEIGHT_DP = 520
         /** Narrower than this the callout's title would break into too many lines. */
         private const val PAGES_HINT_MIN_CALLOUT_DP = 240
+        /** The smallest empty spot the hint lights up; the hand and ring shrink to fit it. */
+        private const val PAGES_HINT_MIN_SPOT_DP = 64
 
         private const val COMPACT_WIDTH_DP = 400
         /** Where the unit is wide enough for the card and the favorites side by side. */
