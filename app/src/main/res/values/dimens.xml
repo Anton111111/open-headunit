@@ -60,4 +60,16 @@
     <!-- Customization: the scaled-down new home that previews the connection colors. -->
     <dimen name="customization_home_preview_padding">8dp</dimen>
     <dimen name="customization_home_preview_max_height">220dp</dimen>
+    <!-- The one-time hint for adding pages; the _small ones are for 800x480 class screens. -->
+    <dimen name="home_hint_callout_radius">20dp</dimen>
+    <dimen name="home_hint_callout_width">380dp</dimen>
+    <dimen name="home_hint_callout_width_small">294dp</dimen>
+    <dimen name="home_hint_callout_padding">24dp</dimen>
+    <dimen name="home_hint_callout_padding_small">18dp</dimen>
+    <dimen name="home_hint_title">24sp</dimen>
+    <dimen name="home_hint_title_small">20sp</dimen>
+    <dimen name="home_hint_body">17sp</dimen>
+    <dimen name="home_hint_body_small">15sp</dimen>
+    <dimen name="home_hint_button_height">52dp</dimen>
+    <dimen name="home_hint_button_height_small">48dp</dimen>
 </resources>

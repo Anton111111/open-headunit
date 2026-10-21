@@ -1393,4 +1393,7 @@
     <string name="home_page_remove_detail">The widgets on it are removed too</string>
     <string name="home_widget_remove">Remove widget</string>
     <string name="home_widget_fallback_title">Widget</string>
+    <string name="home_pages_hint_title">Touch and hold an empty spot</string>
+    <string name="home_pages_hint_body">That\'s how you add a page for your widgets, or remove one.</string>
+    <string name="home_pages_hint_got_it">Got it</string>
 </resources>

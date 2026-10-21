@@ -1239,6 +1239,10 @@ class MainActivity : BaseActivity() {
     /** The condition the banner is currently reporting, so the log line is not repeated. */
     private var loggedBannerIssue: ConnectionIssue? = null
 
+    /** Whether the connection issue banner is on screen, so the home holds its own hints back. */
+    fun connectionIssueBannerShown(): Boolean =
+        findViewById<View>(R.id.connection_issue_banner)?.visibility == View.VISIBLE
+
     private fun updateConnectionIssueBanner() {
         val banner = findViewById<View>(R.id.connection_issue_banner) ?: return
         val text = findViewById<android.widget.TextView>(R.id.connection_issue_text)

@@ -79,6 +79,8 @@ import com.andrerinas.openheadunit.connection.ConnectionNetworkDetail
 import com.andrerinas.openheadunit.connection.ConnectionNetworkDetailPolicy
 import com.andrerinas.openheadunit.connection.ConnectionStage
 import com.andrerinas.openheadunit.connection.ConnectionStageTracker
+import com.andrerinas.openheadunit.view.HomePagesHintView
+import androidx.activity.OnBackPressedCallback
 import com.andrerinas.openheadunit.connection.CommManager
 import com.andrerinas.openheadunit.connection.PhoneExitQuietPolicy
 import kotlinx.coroutines.isActive
@@ -144,6 +146,14 @@ class HomeFragment : Fragment() {
      * own. Decided once per home view: the screen does not change size without a new one.
      */
     private var widgetRowOverflows = false
+    /** The one-time hint for adding pages, while it is on screen. */
+    private var pagesHint: HomePagesHintView? = null
+    private val pagesHintCheck = Runnable { maybeShowPagesHint() }
+    private val pagesHintBack = object : OnBackPressedCallback(false) {
+        override fun handleOnBackPressed() {
+            pagesHint?.close(HomePagesHintView.Reason.BACK)
+        }
+    }
     /** Whether a session was up the last time the home looked, to notice one starting or ending. */
     private var lastSessionActive: Boolean? = null
 
@@ -198,6 +208,7 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, pagesHintBack)
 
         renderHome()
 
@@ -361,6 +372,10 @@ class HomeFragment : Fragment() {
             )
         )
         this.decision = decision
+        // A connection that starts under the hint takes the screen back; the hint was seen.
+        if (pagesHint != null && (commManager.isConnected || !HomePagesHintPolicy.isIdle(decision.status))) {
+            pagesHint?.close(HomePagesHintView.Reason.LEFT)
+        }
         val palette = homePalette(ctx)
         // With more than one page the card is not always in view, so the bar carries every chosen
         // connection, the one the card offers included. Otherwise, on a page without the card, a
@@ -1807,6 +1822,135 @@ class HomeFragment : Fragment() {
                 Aa174Notice.maybeShow(act, App.provide(requireContext()).settings)
             }
         }
+        // After the notices above and any auto-connect have had their moment.
+        root.removeCallbacks(pagesHintCheck)
+        root.postDelayed(pagesHintCheck, PAGES_HINT_DELAY_MS)
+    }
+
+    /**
+     * The one-time hint that a touch and hold on an empty spot adds pages, for whoever uses
+     * Open Headunit as the home, once the home is idle and nothing else is on screen. When it is
+     * not the moment, the next time the home is shown asks again.
+     */
+    private fun maybeShowPagesHint() {
+        val ctx = context ?: return
+        val root = view as? FrameLayout ?: return
+        if (pagesHint != null || !isResumed) return
+        val appSettings = App.provide(ctx).settings
+        val main = activity as? MainActivity
+        val pager = root.findViewById<HomePager>(R.id.home_pager)
+        val input = HomePagesHintPolicy.Input(
+            alreadyShown = appSettings.homePagesHintShown,
+            launcherActive = appSettings.isCarLauncherActive,
+            widgetsSupported = HomeWidgets.supported(),
+            appsAndWidgetsOn = appSettings.showHomeFavoriteApps,
+            connected = commManager.isConnected,
+            status = decision?.status,
+            bringUpRunning = ConnectionStageTracker.stage.value != null || MainActivity.overlayOwnsScreen(),
+            otherNoticeShowing = RenameNotice.isShowing() || Aa174Notice.isShowing() ||
+                activeDialog?.isShowing == true || actionDialog?.isShowing == true ||
+                main?.connectionIssueBannerShown() == true,
+            onMainPage = (pager?.currentPage ?: 0) == 0,
+        )
+        if (!HomePagesHintPolicy.shouldShow(input)) return
+        val card = root.findViewById<View>(R.id.home_primary_card) ?: return
+        if (card.width == 0 || !card.isShown) return
+
+        val res = resources
+        val density = res.displayMetrics.density
+        val small = compactHome || res.configuration.screenHeightDp < PAGES_HINT_SMALL_HEIGHT_DP
+        val rightHandDrive = appSettings.rightHandDrive
+        val cardBox = boxIn(root, card)
+        val padH = res.getDimensionPixelSize(R.dimen.home_card_padding_h)
+        val padV = res.getDimensionPixelSize(R.dimen.home_card_padding_v)
+        val interior = HomePagesHintPolicy.Box(cardBox.left + padH, cardBox.top + padV, cardBox.right - padH, cardBox.bottom - padV)
+        val occupied = listOf(
+            R.id.home_primary_icon_tile, R.id.home_countdown, R.id.home_primary_progress,
+            R.id.home_primary_actions, R.id.home_info,
+        ).mapNotNull { id -> root.findViewById<View>(id)?.takeIf { it.isShown && it.width > 0 }?.let { boxIn(root, it) } } +
+            listOf(R.id.home_primary_kicker, R.id.home_primary_title, R.id.home_primary_subtitle, R.id.home_primary_detail)
+                .mapNotNull { id -> root.findViewById<TextView>(id)?.takeIf { it.isShown && it.width > 0 }?.let { textBox(root, it) } }
+        val gap = (12 * density).toInt()
+        val hole = HomePagesHintPolicy.hole(
+            interior, occupied, rightHandDrive,
+            minSize = ((if (small) 116 else 148) * density).toInt(),
+            maxSize = ((if (small) 160 else 200) * density).toInt(),
+            gap = gap,
+        )
+        val side = hole?.let {
+            HomePagesHintPolicy.calloutSide(
+                it, HomePagesHintPolicy.Box(0, 0, root.width, root.height),
+                HomePagesHintView.calloutWidth(ctx, small), (18 * density).toInt(), rightHandDrive
+            )
+        }
+        if (hole == null || side == null) {
+            AppLog.i("HomeFragment: no empty spot on the main button for the pages hint, trying another time")
+            return
+        }
+        val hint = HomePagesHintView(ctx, hole, side, small) { reason -> onPagesHintClosed(reason) }
+        setHomeBehindHint(root, hidden = true)
+        root.addView(hint, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        pagesHint = hint
+        pagesHintBack.isEnabled = true
+        AppLog.i("HomeFragment: showing the pages hint, callout on the ${side.name.lowercase()}")
+    }
+
+    private fun onPagesHintClosed(reason: HomePagesHintView.Reason) {
+        val ctx = context ?: return
+        App.provide(ctx).settings.homePagesHintShown = true
+        pagesHintBack.isEnabled = false
+        val hint = pagesHint
+        pagesHint = null
+        AppLog.i("HomeFragment: pages hint closed ($reason)")
+        val root = view as? FrameLayout
+        if (root != null) {
+            setHomeBehindHint(root, hidden = false)
+            // Posted: this can run inside the hint's own touch handling.
+            root.post { root.removeView(hint) }
+        }
+        if (reason == HomePagesHintView.Reason.HOLD && isResumed) showPageMenu(widgetPage = null)
+    }
+
+    /** Keeps D-pad focus and TalkBack on the hint while it is up, and gives the home back after. */
+    private fun setHomeBehindHint(root: FrameLayout, hidden: Boolean) {
+        val home = root.getChildAt(0) ?: return
+        (home as? ViewGroup)?.descendantFocusability =
+            if (hidden) ViewGroup.FOCUS_BLOCK_DESCENDANTS else ViewGroup.FOCUS_AFTER_DESCENDANTS
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            home.importantForAccessibility = if (hidden) {
+                View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+            } else {
+                View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            }
+        }
+    }
+
+    private fun boxIn(root: View, child: View): HomePagesHintPolicy.Box {
+        val rootAt = IntArray(2)
+        val childAt = IntArray(2)
+        root.getLocationInWindow(rootAt)
+        child.getLocationInWindow(childAt)
+        val left = childAt[0] - rootAt[0]
+        val top = childAt[1] - rootAt[1]
+        return HomePagesHintPolicy.Box(left, top, left + child.width, top + child.height)
+    }
+
+    /** A text by the room its lines take, not its view, which spans the card. */
+    private fun textBox(root: View, text: TextView): HomePagesHintPolicy.Box {
+        val box = boxIn(root, text)
+        val layout = text.layout ?: return box
+        if (layout.lineCount == 0) return box
+        var lineLeft = Float.MAX_VALUE
+        var lineRight = 0f
+        for (i in 0 until layout.lineCount) {
+            lineLeft = minOf(lineLeft, layout.getLineLeft(i))
+            lineRight = maxOf(lineRight, layout.getLineRight(i))
+        }
+        val offset = text.compoundPaddingLeft - text.scrollX
+        return HomePagesHintPolicy.Box(
+            box.left + offset + lineLeft.toInt(), box.top,
+            box.left + offset + lineRight.roundToInt(), box.bottom
+        )
     }
 
     override fun onStart() {
@@ -1836,6 +1980,8 @@ class HomeFragment : Fragment() {
         actionDialog = null
         RenameNotice.dismiss()
         Aa174Notice.dismiss()
+        view?.removeCallbacks(pagesHintCheck)
+        pagesHint?.close(HomePagesHintView.Reason.LEFT)
     }
 
     private fun applyLayoutSettings(root: View, homeSettings: Settings) {
@@ -2339,6 +2485,11 @@ class HomeFragment : Fragment() {
         private const val SPEED_MAX_AGE_MS = 10_000L
         /** Where the main button's card stops fitting and the favorites take over. */
         private const val COMPACT_HEIGHT_DP = 360
+        /** How long the home waits before the pages hint, so notices and auto-connect go first. */
+        private const val PAGES_HINT_DELAY_MS = 1500L
+        /** Below this height the pages hint uses its smaller callout, as on an 800x480 unit. */
+        private const val PAGES_HINT_SMALL_HEIGHT_DP = 520
+
         private const val COMPACT_WIDTH_DP = 400
         /** Where the unit is wide enough for the card and the favorites side by side. */
         private const val WIDE_WIDTH_DP = 1100

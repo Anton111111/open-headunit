@@ -79,4 +79,10 @@
     <color name="home_extreme_self">#5A87C2</color>
     <color name="home_extreme_monochrome">#7A7A7A</color>
     <color name="home_extreme_countdown_ring">#44B8B8B8</color>
+    <!-- The one-time hint on the launcher home that shows where pages are added. -->
+    <color name="home_hint_scrim">#BD04060A</color>
+    <color name="home_hint_callout">#F3F5F8</color>
+    <color name="home_hint_title">#12161C</color>
+    <color name="home_hint_body">#39414D</color>
+    <color name="home_hint_button">#415F91</color>
 </resources>

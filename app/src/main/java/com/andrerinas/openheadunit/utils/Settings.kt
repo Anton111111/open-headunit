@@ -1571,6 +1571,11 @@ class Settings(private val context: Context) {
         get() = FavoriteAppsPolicy.decode(prefs.getString("home-favorite-apps", "") ?: "")
         set(value) { prefs.edit().putString("home-favorite-apps", FavoriteAppsPolicy.encode(value)).apply() }
 
+    /** The one-time hint on the launcher home that a touch and hold on an empty spot adds pages. */
+    var homePagesHintShown: Boolean
+        get() = prefs.getBoolean("home-pages-hint-shown", false)
+        set(value) { prefs.edit().putBoolean("home-pages-hint-shown", value).apply() }
+
     /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
     var showHomeFavoriteApps: Boolean
         get() = prefs.getBoolean("show-home-favorite-apps", true)
