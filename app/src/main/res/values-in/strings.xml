@@ -192,7 +192,6 @@
     <string name="no_apps_found">Tidak ada aplikasi yang ditemukan</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Mode Mandiri</string>
-    <string name="to_android_auto">Ke Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Hapus</string>
     <string name="usb">USB</string>
@@ -238,12 +237,9 @@
     <string name="home_background_custom">Gambar Kustom</string>
     <string name="btn_choose_image">Pilih Gambar</string>
     <string name="btn_reset_default">Atur Ulang ke Default</string>
-    <string name="home_button_colors">Warna Tombol &amp; Gradien</string>
-    <string name="home_button_colors_description">Kustomisasi warna dan gradien dari 4 tombol layar beranda</string>
     <string name="btn_color_self_mode">Tombol Mode Mandiri</string>
     <string name="btn_color_usb">Tombol USB</string>
     <string name="btn_color_wifi">Tombol Wi-Fi</string>
-    <string name="btn_color_settings">Tombol Pengaturan</string>
     <string name="btn_reset_colors">Atur Ulang Semua Warna Tombol</string>
     <string name="btn_make_all_monochrome">Jadikan semua tombol monokrom</string>
     <string name="auto_monochrome_at_night">Beralih ke monokrom di malam hari</string>
@@ -263,7 +259,6 @@
     <string name="color_preset_default">Default</string>
     <string name="color_custom_hex">Warna Heksadesimal</string>
     <string name="home_button_scale">Ukuran Tombol</string>
-    <string name="home_button_scale_description">Sesuaikan ukuran 4 tombol di layar beranda</string>
     <string name="home_connection_colors">Warna koneksi</string>
     <string name="home_connection_colors_description">Tombol utama memakai warna koneksinya, begitu juga ubin bilah saat sedang menghubungkan atau sudah terhubung</string>
     <string name="home_bar_scale_description">Atur ukuran ubin bilah samping dan aplikasi favorit. Di layar yang pendek, bilah mengecilkan ubinnya agar semuanya muat</string>
@@ -1342,8 +1337,6 @@
     <string name="home_shortcut_badge">Pintasan</string>
     <string name="home_show_favorite_apps">Aplikasi favorit di layar beranda</string>
     <string name="home_show_favorite_apps_description">Empat pintasan aplikasi di bawah tombol utama saat Open Headunit menjadi aplikasi beranda</string>
-    <string name="home_use_classic">Layar beranda klasik</string>
-    <string name="home_use_classic_description">Desain sebelumnya, dengan empat tombol sama besar</string>
     <string name="home_show_clock">Tanggal dan waktu di layar utama</string>
     <string name="home_show_clock_description">Waktu dan tanggal hari ini di atas tombol utama</string>
     <string name="home_show_speed">Kecepatan GPS di layar utama</string>
@@ -1362,10 +1355,6 @@
     <string name="home_page_remove_detail">Widget di halaman ini juga ikut dihapus</string>
     <string name="home_widget_remove">Hapus widget</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Layar beranda baru</string>
-    <string name="home_design_notice_message">Open Headunit punya layar beranda baru: koneksi yang Anda gunakan menjadi satu tombol besar, dan sisanya ada di sisi pengemudi.\n\nIngin menggunakannya? Anda bisa kembali kapan saja di Pengaturan, Kustomisasi.</string>
-    <string name="home_design_notice_use_new">Gunakan desain baru</string>
-    <string name="home_design_notice_keep_classic">Tetap pakai yang klasik</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Peluncur Mobil</string>
     <string name="onb_launcher_help">Open Headunit bisa menjadi layar beranda perangkat, jadi inilah yang muncul saat perangkat menyala dan saat tombol Home ditekan.</string>

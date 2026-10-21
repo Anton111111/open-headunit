@@ -12,7 +12,6 @@
     <string name="no_apps_found">Geen applicaties gevonden</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">Naar Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Verwijder</string>
     <string name="usb">USB</string>
@@ -962,12 +961,9 @@
     <string name="add_to_blacklist">Toevoegen aan zwarte lijst</string>
     <string name="remove_from_blacklist">Verwijderen van zwarte lijst</string>
     <string name="usb_device_action_title">USB-apparaat actie</string>
-    <string name="home_button_colors">Knopkleuren &amp; verlopen</string>
-    <string name="home_button_colors_description">Pas de kleuren en kleurverlopen van de 4 hoofdknoppen aan</string>
     <string name="btn_color_self_mode">Knop Zelfstandige modus</string>
     <string name="btn_color_usb">USB-knop</string>
     <string name="btn_color_wifi">WiFi-knop</string>
-    <string name="btn_color_settings">Instellingenknop</string>
     <string name="btn_reset_colors">Alle knopkleuren resetten</string>
     <string name="btn_make_all_monochrome">Alle knoppen monochroom maken</string>
     <string name="auto_monochrome_at_night">\'s Nachts automatisch naar monochroom schakelen</string>
@@ -987,7 +983,6 @@
     <string name="color_preset_default">Standaard</string>
     <string name="color_custom_hex">Hex-kleur</string>
     <string name="home_button_scale">Knopgrootte</string>
-    <string name="home_button_scale_description">Pas de grootte van de 4 startschermknoppen aan</string>
     <string name="home_connection_colors">Verbindingskleuren</string>
     <string name="home_connection_colors_description">De hoofdknop krijgt de kleur van zijn verbinding, net als een tegel in de balk tijdens het verbinden of als hij verbonden is</string>
     <string name="home_bar_scale_description">Pas de grootte van de tegels in de zijbalk en van de favoriete apps aan. Op een laag scherm verkleint de balk zijn tegels zodat ze allemaal passen</string>
@@ -1294,8 +1289,6 @@
     <string name="home_shortcut_badge">Snelkoppeling</string>
     <string name="home_show_favorite_apps">Favoriete apps op het startscherm</string>
     <string name="home_show_favorite_apps_description">Vier app-snelkoppelingen onder de hoofdknop zolang Open Headunit de start-app is</string>
-    <string name="home_use_classic">Klassiek startscherm</string>
-    <string name="home_use_classic_description">Het vorige ontwerp, met vier gelijke knoppen</string>
     <string name="home_show_clock">Datum en tijd op het startscherm</string>
     <string name="home_show_clock_description">De tijd en de datum van vandaag, boven aan de hoofdknoop</string>
     <string name="home_show_speed">GPS-snelheid op het startscherm</string>
@@ -1314,10 +1307,6 @@
     <string name="home_page_remove_detail">De widgets erop worden ook verwijderd</string>
     <string name="home_widget_remove">Widget verwijderen</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Een nieuw startscherm</string>
-    <string name="home_design_notice_message">Open Headunit heeft een nieuw startscherm: de verbinding die je gebruikt is één grote knop, en de rest staat aan de kant van de bestuurder.\n\nWil je het gebruiken? Je kunt altijd terugschakelen via Instellingen, Aanpassing.</string>
-    <string name="home_design_notice_use_new">Nieuw ontwerp gebruiken</string>
-    <string name="home_design_notice_keep_classic">Klassiek houden</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Auto-launcher</string>
     <string name="onb_launcher_help">Open Headunit kan het startscherm van het apparaat zijn, dus wat verschijnt bij het opstarten en bij het indrukken van de Home-knop.</string>

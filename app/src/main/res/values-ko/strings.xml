@@ -15,7 +15,6 @@
     <string name="no_apps_found">애플리케이션을 찾을 수 없습니다</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">단독 모드</string>
-    <string name="to_android_auto">Android Auto로 전환</string>
     <string name="title">Open Headunit</string>
     <string name="remove">제거</string>
     <string name="usb">USB</string>
@@ -971,12 +970,9 @@
     <string name="add_to_blacklist">차단 목록에 추가</string>
     <string name="remove_from_blacklist">차단 목록에서 제거</string>
     <string name="usb_device_action_title">USB 장치 작업</string>
-    <string name="home_button_colors">버튼 색상 및 그라데이션</string>
-    <string name="home_button_colors_description">홈 화면의 4개 버튼 색상 및 그라데이션 맞춤 설정</string>
     <string name="btn_color_self_mode">셀프 모드 버튼</string>
     <string name="btn_color_usb">USB 버튼</string>
     <string name="btn_color_wifi">WiFi 버튼</string>
-    <string name="btn_color_settings">설정 버튼</string>
     <string name="btn_reset_colors">모든 버튼 색상 재설정</string>
     <string name="btn_make_all_monochrome">모든 버튼을 모노크롬으로 설정</string>
     <string name="auto_monochrome_at_night">야간에 자동으로 모노크롬 전환</string>
@@ -996,7 +992,6 @@
     <string name="color_preset_default">기본값</string>
     <string name="color_custom_hex">16진수 색상 코드</string>
     <string name="home_button_scale">버튼 크기</string>
-    <string name="home_button_scale_description">홈 화면 4개 버튼의 크기 조정</string>
     <string name="home_connection_colors">연결 색상</string>
     <string name="home_connection_colors_description">메인 버튼은 연결의 색상을 사용하며, 바의 타일도 연결 중이거나 연결되었을 때 그 색상을 사용합니다</string>
     <string name="home_bar_scale_description">사이드바 타일과 즐겨찾는 앱의 크기를 조정합니다. 높이가 낮은 화면에서는 모두 들어가도록 바가 타일을 줄입니다</string>
@@ -1303,8 +1298,6 @@
     <string name="home_shortcut_badge">바로가기</string>
     <string name="home_show_favorite_apps">홈 화면 즐겨찾기 앱</string>
     <string name="home_show_favorite_apps_description">Open Headunit이 홈 앱일 때 메인 버튼 아래에 앱 바로가기 4개를 표시합니다</string>
-    <string name="home_use_classic">클래식 홈 화면</string>
-    <string name="home_use_classic_description">이전 디자인, 같은 크기의 버튼 4개</string>
     <string name="home_show_clock">홈 화면에 날짜와 시간</string>
     <string name="home_show_clock_description">메인 버튼 위에 시각과 오늘 날짜</string>
     <string name="home_show_speed">홈 화면에 GPS 속도</string>
@@ -1323,10 +1316,6 @@
     <string name="home_page_remove_detail">이 페이지의 위젯도 함께 제거됩니다</string>
     <string name="home_widget_remove">위젯 제거</string>
     <string name="home_widget_fallback_title">위젯</string>
-    <string name="home_design_notice_title">새로운 홈 화면</string>
-    <string name="home_design_notice_message">Open Headunit의 홈 화면이 새로워졌습니다. 사용하는 연결이 하나의 큰 버튼이 되고, 나머지는 운전석 쪽에 있습니다.\n\n새 디자인을 사용하시겠습니까? 언제든지 설정, 사용자 지정에서 되돌릴 수 있습니다.</string>
-    <string name="home_design_notice_use_new">새 디자인 사용</string>
-    <string name="home_design_notice_keep_classic">클래식 유지</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">차량용 런처</string>
     <string name="onb_launcher_help">Open Headunit을 기기의 홈 화면으로 사용할 수 있습니다. 기기를 켜거나 Home 버튼을 누를 때 표시됩니다.</string>

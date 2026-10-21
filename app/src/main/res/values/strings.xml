@@ -206,7 +206,6 @@
     <string name="no_apps_found">No applications found</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">To Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Remove</string>
     <string name="usb">USB</string>
@@ -252,12 +251,9 @@
     <string name="home_background_custom">Custom Image</string>
     <string name="btn_choose_image">Choose Image</string>
     <string name="btn_reset_default">Reset to Default</string>
-    <string name="home_button_colors">Button Colors &amp; Gradients</string>
-    <string name="home_button_colors_description">Customize the colors and gradients of the 4 home screen buttons</string>
     <string name="btn_color_self_mode">Self Mode Button</string>
     <string name="btn_color_usb">USB Button</string>
     <string name="btn_color_wifi">WiFi Button</string>
-    <string name="btn_color_settings">Settings Button</string>
     <string name="btn_reset_colors">Reset All Button Colors</string>
     <string name="btn_make_all_monochrome">Set all buttons to monochrome</string>
     <string name="auto_monochrome_at_night">Switch to monochrome at night</string>
@@ -277,7 +273,6 @@
     <string name="color_preset_default">Default</string>
     <string name="color_custom_hex">Hex Color</string>
     <string name="home_button_scale">Button Size</string>
-    <string name="home_button_scale_description">Adjust the size of the 4 home screen buttons</string>
     <string name="home_connection_colors">Connection Colors</string>
     <string name="home_connection_colors_description">The main button wears the color of its connection, and so does a bar tile while it connects or is connected</string>
     <string name="home_bar_scale_description">Adjust the size of the side bar tiles and the favorite apps. On a short screen the bar shrinks its tiles so they all fit</string>
@@ -1380,8 +1375,6 @@
     <string name="home_shortcut_badge">Shortcut</string>
     <string name="home_show_favorite_apps">Favorite apps on the home screen</string>
     <string name="home_show_favorite_apps_description">Four app shortcuts under the main button while Open Headunit is the launcher</string>
-    <string name="home_use_classic">Classic home screen</string>
-    <string name="home_use_classic_description">The previous design, with four equal buttons</string>
     <string name="home_show_clock">Date and time on the home screen</string>
     <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
     <string name="home_show_speed">GPS speed on the home screen</string>
@@ -1400,8 +1393,4 @@
     <string name="home_page_remove_detail">The widgets on it are removed too</string>
     <string name="home_widget_remove">Remove widget</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">A new home screen</string>
-    <string name="home_design_notice_message">Open Headunit has a new home screen: the connection you use is one big button, and the rest sits on the driver\'s side.\n\nDo you want to use it? You can switch back any time in Settings, Customization.</string>
-    <string name="home_design_notice_use_new">Use the new design</string>
-    <string name="home_design_notice_keep_classic">Keep the classic one</string>
 </resources>

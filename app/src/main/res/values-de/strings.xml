@@ -13,7 +13,6 @@
     <string name="no_apps_found">Keine Anwendungen gefunden</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">Zu Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Entfernen</string>
     <string name="usb">USB</string>
@@ -58,12 +57,9 @@
     <string name="home_background_custom">Eigenes Bild</string>
     <string name="btn_choose_image">Bild auswählen</string>
     <string name="btn_reset_default">Auf Standard zurücksetzen</string>
-    <string name="home_button_colors">Button-Farben &amp; Verläufe</string>
-    <string name="home_button_colors_description">Passe die Farben und Verläufe der 4 Startseiten-Buttons individuell an</string>
     <string name="btn_color_self_mode">Self Mode Button</string>
     <string name="btn_color_usb">USB Button</string>
     <string name="btn_color_wifi">WiFi Button</string>
-    <string name="btn_color_settings">Einstellungen Button</string>
     <string name="btn_reset_colors">Alle Button-Farben zurücksetzen</string>
     <string name="btn_make_all_monochrome">Alle Buttons monochrom färben</string>
     <string name="auto_monochrome_at_night">Nachts automatisch zu Monochrom wechseln</string>
@@ -83,7 +79,6 @@
     <string name="color_preset_default">Standard</string>
     <string name="color_custom_hex">Hex-Farbcode</string>
     <string name="home_button_scale">Button-Größe</string>
-    <string name="home_button_scale_description">Vergrößere oder verkleinere die 4 Startseiten-Buttons</string>
     <string name="home_connection_colors">Verbindungsfarben</string>
     <string name="home_connection_colors_description">Der Hauptbutton trägt die Farbe seiner Verbindung, ebenso eine Kachel der Leiste, solange sie verbindet oder verbunden ist</string>
     <string name="home_bar_scale_description">Passe die Größe der Kacheln in der Seitenleiste und der Lieblings-Apps an. Auf niedrigen Bildschirmen verkleinert die Leiste ihre Kacheln, damit alle hineinpassen</string>
@@ -1298,8 +1293,6 @@
     <string name="home_shortcut_badge">Verknüpfung</string>
     <string name="home_show_favorite_apps">Lieblings-Apps auf dem Startbildschirm</string>
     <string name="home_show_favorite_apps_description">Vier App-Verknüpfungen unter dem Hauptbutton, solange Open Headunit die Start-App ist</string>
-    <string name="home_use_classic">Klassischer Startbildschirm</string>
-    <string name="home_use_classic_description">Das bisherige Design mit vier gleichen Buttons</string>
     <string name="home_show_clock">Datum und Uhrzeit auf dem Startbildschirm</string>
     <string name="home_show_clock_description">Die Uhrzeit und das heutige Datum oben auf der Hauptschaltfläche</string>
     <string name="home_show_speed">GPS-Geschwindigkeit auf dem Startbildschirm</string>
@@ -1318,10 +1311,6 @@
     <string name="home_page_remove_detail">Die Widgets darauf werden ebenfalls entfernt</string>
     <string name="home_widget_remove">Widget entfernen</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Ein neuer Startbildschirm</string>
-    <string name="home_design_notice_message">Open Headunit hat einen neuen Startbildschirm: Deine Verbindung ist ein großer Button, der Rest liegt auf der Fahrerseite.\n\nMöchtest du ihn verwenden? Du kannst jederzeit unter Einstellungen, Anpassung zurückwechseln.</string>
-    <string name="home_design_notice_use_new">Neues Design verwenden</string>
-    <string name="home_design_notice_keep_classic">Klassisches behalten</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Car-Launcher</string>
     <string name="onb_launcher_help">Open Headunit kann der Startbildschirm des Geräts sein, also das, was beim Start und beim Drücken der Home-Taste erscheint.</string>

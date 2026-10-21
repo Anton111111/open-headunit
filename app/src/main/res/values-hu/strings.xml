@@ -13,7 +13,6 @@
     <string name="no_apps_found">Nem találhatók alkalmazások</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Önálló mód</string>
-    <string name="to_android_auto">Android Auto-ba</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Eltávolít</string>
     <string name="usb">USB</string>
@@ -958,12 +957,9 @@
     <string name="add_to_blacklist">Hozzáadás a feketelistához</string>
     <string name="remove_from_blacklist">Eltávolítás a feketelistáról</string>
     <string name="usb_device_action_title">USB eszköz művelet</string>
-    <string name="home_button_colors">Gombszínek és színátmenetek</string>
-    <string name="home_button_colors_description">A 4 kezdőképernyő gomb színeinek és átmeneteinek testreszabása</string>
     <string name="btn_color_self_mode">Önálló mód gomb</string>
     <string name="btn_color_usb">USB gomb</string>
     <string name="btn_color_wifi">WiFi gomb</string>
-    <string name="btn_color_settings">Beállítások gomb</string>
     <string name="btn_reset_colors">Összes gombszín visszaállítása</string>
     <string name="btn_make_all_monochrome">Összes gomb monokrómra állítása</string>
     <string name="auto_monochrome_at_night">Éjszaka automatikus monokróm mód</string>
@@ -983,7 +979,6 @@
     <string name="color_preset_default">Alapértelmezett</string>
     <string name="color_custom_hex">Hexadecimális szín</string>
     <string name="home_button_scale">Gombméret</string>
-    <string name="home_button_scale_description">A kezdőképernyő 4 gombjának méretezése</string>
     <string name="home_connection_colors">Kapcsolatszínek</string>
     <string name="home_connection_colors_description">A fő gomb a kapcsolata színét viseli, ahogy a sáv csempéje is csatlakozás közben vagy csatlakozva</string>
     <string name="home_bar_scale_description">Az oldalsáv csempéinek és a kedvenc alkalmazásoknak a mérete. Alacsony képernyőn a sáv lekicsinyíti a csempéket, hogy mind elférjen</string>
@@ -1290,8 +1285,6 @@
     <string name="home_shortcut_badge">Parancsikon</string>
     <string name="home_show_favorite_apps">Kedvenc alkalmazások a kezdőképernyőn</string>
     <string name="home_show_favorite_apps_description">Négy alkalmazás-parancsikon a fő gomb alatt, amíg az Open Headunit a kezdőképernyő-alkalmazás</string>
-    <string name="home_use_classic">Klasszikus kezdőképernyő</string>
-    <string name="home_use_classic_description">Az előző kialakítás, négy egyforma gombbal</string>
     <string name="home_show_clock">Dátum és idő a kezdőképernyőn</string>
     <string name="home_show_clock_description">A pontos idő és a mai dátum a fő gomb tetején</string>
     <string name="home_show_speed">GPS-sebesség a kezdőképernyőn</string>
@@ -1310,10 +1303,6 @@
     <string name="home_page_remove_detail">A rajta lévő widgetek is törlődnek</string>
     <string name="home_widget_remove">Widget eltávolítása</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Új kezdőképernyő</string>
-    <string name="home_design_notice_message">Az Open Headunit új kezdőképernyőt kapott: a használt kapcsolat egyetlen nagy gomb, a többi a vezető oldalán van.\n\nSzeretnéd használni? Bármikor visszaválthatsz a Beállítások, Testreszabás menüben.</string>
-    <string name="home_design_notice_use_new">Az új kialakítás használata</string>
-    <string name="home_design_notice_keep_classic">A klasszikus megtartása</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Autós indító</string>
     <string name="onb_launcher_help">Az Open Headunit lehet a készülék kezdőképernyője, így ez jelenik meg bekapcsoláskor és a Home gomb megnyomásakor.</string>

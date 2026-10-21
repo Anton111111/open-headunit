@@ -13,7 +13,6 @@
     <string name="no_apps_found">Nenalezeny žádné aplikace</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">Do Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Odstranit</string>
     <string name="usb">USB</string>
@@ -962,12 +961,9 @@
     <string name="add_to_blacklist">Přidat na černou listinu</string>
     <string name="remove_from_blacklist">Odebrat z černé listiny</string>
     <string name="usb_device_action_title">Akce USB zařízení</string>
-    <string name="home_button_colors">Barvy tlačítek a přechody</string>
-    <string name="home_button_colors_description">Přizpůsobte si barvy a přechody 4 tlačítek na domovské obrazovce</string>
     <string name="btn_color_self_mode">Tlačítko Samostatný režim</string>
     <string name="btn_color_usb">Tlačítko USB</string>
     <string name="btn_color_wifi">Tlačítko WiFi</string>
-    <string name="btn_color_settings">Tlačítko Nastavení</string>
     <string name="btn_reset_colors">Obnovit všechny barvy tlačítek</string>
     <string name="btn_make_all_monochrome">Nastavit všechna tlačítka na monochromatická</string>
     <string name="auto_monochrome_at_night">V noci automaticky přepnout na monochromatické</string>
@@ -987,7 +983,6 @@
     <string name="color_preset_default">Výchozí</string>
     <string name="color_custom_hex">Hexadecimální barva</string>
     <string name="home_button_scale">Velikost tlačítek</string>
-    <string name="home_button_scale_description">Upravte velikost 4 tlačítek domovské obrazovky</string>
     <string name="home_connection_colors">Barvy připojení</string>
     <string name="home_connection_colors_description">Hlavní tlačítko má barvu svého připojení, stejně jako dlaždice v liště během připojování nebo po připojení</string>
     <string name="home_bar_scale_description">Upravte velikost dlaždic boční lišty a oblíbených aplikací. Na nízké obrazovce lišta dlaždice zmenší, aby se vešly všechny</string>
@@ -1294,8 +1289,6 @@
     <string name="home_shortcut_badge">Zkratka</string>
     <string name="home_show_favorite_apps">Oblíbené aplikace na domovské obrazovce</string>
     <string name="home_show_favorite_apps_description">Čtyři zkratky aplikací pod hlavním tlačítkem, když je Open Headunit domovskou aplikací</string>
-    <string name="home_use_classic">Klasická domovská obrazovka</string>
-    <string name="home_use_classic_description">Předchozí vzhled se čtyřmi stejnými tlačítky</string>
     <string name="home_show_clock">Datum a čas na domovské obrazovce</string>
     <string name="home_show_clock_description">Čas a dnešní datum nahoře na hlavním tlačítku</string>
     <string name="home_show_speed">Rychlost GPS na domovské obrazovce</string>
@@ -1314,10 +1307,6 @@
     <string name="home_page_remove_detail">Widgety na ní se odstraní také</string>
     <string name="home_widget_remove">Odstranit widget</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Nová domovská obrazovka</string>
-    <string name="home_design_notice_message">Open Headunit má novou domovskou obrazovku: připojení, které používáte, je jedno velké tlačítko a zbytek je na straně řidiče.\n\nChcete ji používat? Kdykoli se můžete vrátit v Nastavení, Přizpůsobení.</string>
-    <string name="home_design_notice_use_new">Použít nový vzhled</string>
-    <string name="home_design_notice_keep_classic">Ponechat klasický</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Spouštěč v autě</string>
     <string name="onb_launcher_help">Open Headunit může být domovskou obrazovkou jednotky, takže se zobrazí při jejím spuštění a po stisknutí tlačítka Domů.</string>

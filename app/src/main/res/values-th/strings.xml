@@ -192,7 +192,6 @@
     <string name="no_apps_found">ไม่พบแอปพลิเคชัน</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">โหมดตนเอง (Self Mode)</string>
-    <string name="to_android_auto">ไปที่ Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">ลบ</string>
     <string name="usb">USB</string>
@@ -238,12 +237,9 @@
     <string name="home_background_custom">ภาพที่กำหนดเอง</string>
     <string name="btn_choose_image">เลือกภาพ</string>
     <string name="btn_reset_default">รีเซ็ตเป็นค่าเริ่มต้น</string>
-    <string name="home_button_colors">สีและเฉดสีของปุ่ม</string>
-    <string name="home_button_colors_description">ปรับแต่งสีและการไล่ระดับสีของปุ่มหน้าจอหลัก 4 ปุ่ม</string>
     <string name="btn_color_self_mode">ปุ่มโหมดตนเอง</string>
     <string name="btn_color_usb">ปุ่ม USB</string>
     <string name="btn_color_wifi">ปุ่ม Wi-Fi</string>
-    <string name="btn_color_settings">ปุ่มการตั้งค่า</string>
     <string name="btn_reset_colors">รีเซ็ตสีปุ่มทั้งหมด</string>
     <string name="btn_make_all_monochrome">ตั้งค่าปุ่มทั้งหมดเป็นขาวดำ</string>
     <string name="auto_monochrome_at_night">เปลี่ยนเป็นขาวดำในเวลากลางคืน</string>
@@ -263,7 +259,6 @@
     <string name="color_preset_default">ค่าเริ่มต้น</string>
     <string name="color_custom_hex">รหัสสี Hex</string>
     <string name="home_button_scale">ขนาดปุ่ม</string>
-    <string name="home_button_scale_description">ปรับขนาดของปุ่มบนหน้าจอหลัก 4 ปุ่ม</string>
     <string name="home_connection_colors">สีของการเชื่อมต่อ</string>
     <string name="home_connection_colors_description">ปุ่มหลักใช้สีของการเชื่อมต่อ และไทล์ในแถบก็ใช้สีนั้นขณะกำลังเชื่อมต่อหรือเชื่อมต่อแล้ว</string>
     <string name="home_bar_scale_description">ปรับขนาดไทล์ของแถบด้านข้างและแอปโปรด บนหน้าจอที่เตี้ย แถบจะย่อไทล์ลงเพื่อให้แสดงได้ครบทั้งหมด</string>
@@ -1340,8 +1335,6 @@
     <string name="home_shortcut_badge">ทางลัด</string>
     <string name="home_show_favorite_apps">แอปโปรดบนหน้าจอหลัก</string>
     <string name="home_show_favorite_apps_description">ทางลัดแอปสี่รายการใต้ปุ่มหลักเมื่อ Open Headunit เป็นแอปหน้าจอหลัก</string>
-    <string name="home_use_classic">หน้าจอหลักแบบคลาสสิก</string>
-    <string name="home_use_classic_description">ดีไซน์เดิม มีปุ่มขนาดเท่ากันสี่ปุ่ม</string>
     <string name="home_show_clock">วันที่และเวลาบนหน้าจอหลัก</string>
     <string name="home_show_clock_description">เวลาและวันที่ของวันนี้ที่ด้านบนปุ่มหลัก</string>
     <string name="home_show_speed">ความเร็ว GPS บนหน้าจอหลัก</string>
@@ -1360,10 +1353,6 @@
     <string name="home_page_remove_detail">วิดเจ็ตในหน้านี้จะถูกลบด้วย</string>
     <string name="home_widget_remove">ลบวิดเจ็ต</string>
     <string name="home_widget_fallback_title">วิดเจ็ต</string>
-    <string name="home_design_notice_title">หน้าจอหลักใหม่</string>
-    <string name="home_design_notice_message">Open Headunit มีหน้าจอหลักใหม่: การเชื่อมต่อที่คุณใช้จะเป็นปุ่มใหญ่ปุ่มเดียว และส่วนที่เหลืออยู่ฝั่งคนขับ\n\nต้องการใช้หน้าจอนี้ไหม? คุณเปลี่ยนกลับได้ทุกเมื่อใน การตั้งค่า, การปรับแต่ง</string>
-    <string name="home_design_notice_use_new">ใช้ดีไซน์ใหม่</string>
-    <string name="home_design_notice_keep_classic">ใช้แบบคลาสสิกต่อ</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Car Launcher</string>
     <string name="onb_launcher_help">Open Headunit เป็นหน้าจอหลักของอุปกรณ์ได้ จึงเป็นสิ่งที่แสดงเมื่อเปิดเครื่องและเมื่อกดปุ่ม Home</string>

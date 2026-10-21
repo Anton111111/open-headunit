@@ -13,7 +13,6 @@
     <string name="no_apps_found">لم يتم العثور على تطبيقات</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">الوضع الذاتي</string>
-    <string name="to_android_auto">إلى Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">إزالة</string>
     <string name="usb">USB</string>
@@ -960,12 +959,9 @@
     <string name="add_to_blacklist">إضافة إلى القائمة السوداء</string>
     <string name="remove_from_blacklist">إزالة من القائمة السوداء</string>
     <string name="usb_device_action_title">إجراء جهاز USB</string>
-    <string name="home_button_colors">ألوان الأزرار والتدرجات</string>
-    <string name="home_button_colors_description">تخصيص ألوان وتدرجات أزرار الشاشة الرئيسية الأربعة</string>
     <string name="btn_color_self_mode">زر الوضع الذاتي</string>
     <string name="btn_color_usb">زر USB</string>
     <string name="btn_color_wifi">زر WiFi</string>
-    <string name="btn_color_settings">زر الإعدادات</string>
     <string name="btn_reset_colors">إعادة ضبط جميع ألوان الأزرار</string>
     <string name="btn_make_all_monochrome">تعيين كل الأزرار إلى أحادي اللون</string>
     <string name="auto_monochrome_at_night">التبديل إلى أحادي اللون ليلاً</string>
@@ -985,7 +981,6 @@
     <string name="color_preset_default">افتراضي</string>
     <string name="color_custom_hex">رمز اللون السداسي Hex</string>
     <string name="home_button_scale">حجم الأزرار</string>
-    <string name="home_button_scale_description">تعديل حجم أزرار الشاشة الرئيسية الأربعة</string>
     <string name="home_connection_colors">ألوان الاتصال</string>
     <string name="home_connection_colors_description">يأخذ الزر الرئيسي لون اتصاله، وكذلك مربع الشريط أثناء الاتصال أو بعده</string>
     <string name="home_bar_scale_description">اضبط حجم مربعات الشريط الجانبي والتطبيقات المفضلة. في الشاشات القصيرة يصغّر الشريط مربعاته لتتسع كلها</string>
@@ -1292,8 +1287,6 @@
     <string name="home_shortcut_badge">اختصار</string>
     <string name="home_show_favorite_apps">التطبيقات المفضلة على الشاشة الرئيسية</string>
     <string name="home_show_favorite_apps_description">أربعة اختصارات لتطبيقات أسفل الزر الرئيسي عندما يكون Open Headunit تطبيق الشاشة الرئيسية</string>
-    <string name="home_use_classic">الشاشة الرئيسية الكلاسيكية</string>
-    <string name="home_use_classic_description">التصميم السابق، بأربعة أزرار متساوية</string>
     <string name="home_show_clock">التاريخ والوقت على الشاشة الرئيسية</string>
     <string name="home_show_clock_description">الوقت وتاريخ اليوم في أعلى الزر الرئيسي</string>
     <string name="home_show_speed">سرعة GPS على الشاشة الرئيسية</string>
@@ -1312,10 +1305,6 @@
     <string name="home_page_remove_detail">تتم إزالة الأدوات الموجودة عليها أيضًا</string>
     <string name="home_widget_remove">إزالة الأداة</string>
     <string name="home_widget_fallback_title">أداة</string>
-    <string name="home_design_notice_title">شاشة رئيسية جديدة</string>
-    <string name="home_design_notice_message">لدى Open Headunit شاشة رئيسية جديدة: الاتصال الذي تستخدمه أصبح زرًا كبيرًا واحدًا، والباقي في جهة السائق.\n\nهل تريد استخدامها؟ يمكنك العودة في أي وقت من الإعدادات، التخصيص.</string>
-    <string name="home_design_notice_use_new">استخدام التصميم الجديد</string>
-    <string name="home_design_notice_keep_classic">الإبقاء على الكلاسيكي</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">مشغل السيارة</string>
     <string name="onb_launcher_help">يمكن أن يكون Open Headunit الشاشة الرئيسية للجهاز، فيظهر عند تشغيله وعند الضغط على زر Home.</string>

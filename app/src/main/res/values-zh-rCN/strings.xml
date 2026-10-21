@@ -12,7 +12,6 @@
     <string name="no_apps_found">未找到应用程序</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">独立模式</string>
-    <string name="to_android_auto">到 Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">移除</string>
     <string name="usb">USB</string>
@@ -960,12 +959,9 @@
     <string name="add_to_blacklist">加入黑名单</string>
     <string name="remove_from_blacklist">从黑名单移除</string>
     <string name="usb_device_action_title">USB 设备操作</string>
-    <string name="home_button_colors">按钮颜色与渐层</string>
-    <string name="home_button_colors_description">自定义主画面 4 个按钮的颜色与渐层</string>
     <string name="btn_color_self_mode">独立模式按钮</string>
     <string name="btn_color_usb">USB 按钮</string>
     <string name="btn_color_wifi">WiFi 按钮</string>
-    <string name="btn_color_settings">设置按钮</string>
     <string name="btn_reset_colors">重设所有按钮颜色</string>
     <string name="btn_make_all_monochrome">将所有按钮设为单色</string>
     <string name="auto_monochrome_at_night">夜间自动切换为单色</string>
@@ -985,7 +981,6 @@
     <string name="color_preset_default">默认</string>
     <string name="color_custom_hex">Hex 色码</string>
     <string name="home_button_scale">按钮大小</string>
-    <string name="home_button_scale_description">调整主画面 4 个按钮的大小</string>
     <string name="home_connection_colors">连接颜色</string>
     <string name="home_connection_colors_description">主按钮使用其连接的颜色，栏中的图块在连接中或已连接时也会使用该颜色</string>
     <string name="home_bar_scale_description">调整侧边栏图块和收藏应用的大小。在较矮的屏幕上，侧边栏会缩小图块以便全部显示</string>
@@ -1292,8 +1287,6 @@
     <string name="home_shortcut_badge">快捷方式</string>
     <string name="home_show_favorite_apps">主画面收藏应用</string>
     <string name="home_show_favorite_apps_description">Open Headunit 作为主画面应用时，在主按钮下方显示四个应用快捷方式</string>
-    <string name="home_use_classic">经典主屏幕</string>
-    <string name="home_use_classic_description">以前的设计，四个同样大小的按钮</string>
     <string name="home_show_clock">在主屏幕上显示日期和时间</string>
     <string name="home_show_clock_description">在主按钮上方显示时间和今天的日期</string>
     <string name="home_show_speed">在主屏幕上显示 GPS 速度</string>
@@ -1312,10 +1305,6 @@
     <string name="home_page_remove_detail">页面上的小部件也会一并移除</string>
     <string name="home_widget_remove">移除小部件</string>
     <string name="home_widget_fallback_title">小部件</string>
-    <string name="home_design_notice_title">全新的主屏幕</string>
-    <string name="home_design_notice_message">Open Headunit 有了全新的主屏幕：你使用的连接是一个大按钮，其余内容位于驾驶员一侧。\n\n要使用新设计吗？你可以随时在“设置 > 个人化”中切换回来。</string>
-    <string name="home_design_notice_use_new">使用新设计</string>
-    <string name="home_design_notice_keep_classic">保留经典设计</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">车载启动器</string>
     <string name="onb_launcher_help">Open Headunit 可以成为设备的主画面，开机或按下 Home 键时就会显示它。</string>

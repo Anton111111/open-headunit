@@ -13,7 +13,6 @@
     <string name="no_apps_found">Nenhum aplicativo encontrado</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">Ir para o Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Remover</string>
     <string name="usb">USB</string>
@@ -963,12 +962,9 @@
     <string name="add_to_blacklist">Adicionar à lista negra</string>
     <string name="remove_from_blacklist">Remover da lista negra</string>
     <string name="usb_device_action_title">Ação do dispositivo USB</string>
-    <string name="home_button_colors">Cores dos botões e gradientes</string>
-    <string name="home_button_colors_description">Personalize as cores e gradientes dos 4 botões da tela inicial</string>
     <string name="btn_color_self_mode">Botão Modo Autônomo</string>
     <string name="btn_color_usb">Botão USB</string>
     <string name="btn_color_wifi">Botão WiFi</string>
-    <string name="btn_color_settings">Botão Configurações</string>
     <string name="btn_reset_colors">Redefinir todas as cores</string>
     <string name="btn_make_all_monochrome">Definir todos os botões como monocromáticos</string>
     <string name="auto_monochrome_at_night">Mudar para monocromático à noite</string>
@@ -988,7 +984,6 @@
     <string name="color_preset_default">Padrão</string>
     <string name="color_custom_hex">Cor Hexadecimal</string>
     <string name="home_button_scale">Tamanho dos botões</string>
-    <string name="home_button_scale_description">Ajuste o tamanho dos 4 botões da tela inicial</string>
     <string name="home_connection_colors">Cores da conexão</string>
     <string name="home_connection_colors_description">O botão principal usa a cor da sua conexão, assim como o bloco da barra enquanto conecta ou está conectado</string>
     <string name="home_bar_scale_description">Ajuste o tamanho dos blocos da barra lateral e dos apps favoritos. Em telas baixas a barra diminui os blocos para que todos caibam</string>
@@ -1295,8 +1290,6 @@
     <string name="home_shortcut_badge">Atalho</string>
     <string name="home_show_favorite_apps">Apps favoritos na tela inicial</string>
     <string name="home_show_favorite_apps_description">Quatro atalhos de apps abaixo do botão principal quando o Open Headunit é o app de início</string>
-    <string name="home_use_classic">Tela inicial clássica</string>
-    <string name="home_use_classic_description">O design anterior, com quatro botões iguais</string>
     <string name="home_show_clock">Data e hora na tela inicial</string>
     <string name="home_show_clock_description">A hora e a data de hoje, no topo do botão principal</string>
     <string name="home_show_speed">Velocidade do GPS na tela inicial</string>
@@ -1315,10 +1308,6 @@
     <string name="home_page_remove_detail">Os widgets dela também são removidos</string>
     <string name="home_widget_remove">Remover widget</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Uma nova tela inicial</string>
-    <string name="home_design_notice_message">O Open Headunit tem uma nova tela inicial: a conexão que você usa é um único botão grande, e o resto fica do lado do motorista.\n\nQuer usá-la? Você pode voltar quando quiser em Configurações, Personalização.</string>
-    <string name="home_design_notice_use_new">Usar o novo design</string>
-    <string name="home_design_notice_keep_classic">Manter o clássico</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Inicializador do carro</string>
     <string name="onb_launcher_help">O Open Headunit pode ser a tela inicial do aparelho, então é o que aparece quando ele liga e quando o botão Home é pressionado.</string>

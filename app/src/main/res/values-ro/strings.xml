@@ -13,7 +13,6 @@
     <string name="no_apps_found">Nicio aplicație găsită</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Mod local</string>
-    <string name="to_android_auto">Către Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Elimină</string>
     <string name="usb">USB</string>
@@ -959,12 +958,9 @@
     <string name="add_to_blacklist">Adaugă la lista neagră</string>
     <string name="remove_from_blacklist">Elimină din lista neagră</string>
     <string name="usb_device_action_title">Acțiune dispozitiv USB</string>
-    <string name="home_button_colors">Culori butoane și degradeuri</string>
-    <string name="home_button_colors_description">Personalizează culorile și degradeurile celor 4 butoane principale</string>
     <string name="btn_color_self_mode">Buton Mod Autonom</string>
     <string name="btn_color_usb">Buton USB</string>
     <string name="btn_color_wifi">Buton WiFi</string>
-    <string name="btn_color_settings">Buton Setări</string>
     <string name="btn_reset_colors">Resetează toate culorile butoanelor</string>
     <string name="btn_make_all_monochrome">Setează toate butoanele pe monocrom</string>
     <string name="auto_monochrome_at_night">Comută automat pe monocrom noaptea</string>
@@ -984,7 +980,6 @@
     <string name="color_preset_default">Implicit</string>
     <string name="color_custom_hex">Culoare hexazecimală</string>
     <string name="home_button_scale">Dimensiune butoane</string>
-    <string name="home_button_scale_description">Ajustează dimensiunea celor 4 butoane de pe ecranul principal</string>
     <string name="home_connection_colors">Culorile conexiunii</string>
     <string name="home_connection_colors_description">Butonul principal are culoarea conexiunii sale, la fel și dala din bară în timp ce se conectează sau este conectată</string>
     <string name="home_bar_scale_description">Ajustează dimensiunea dalelor din bara laterală și a aplicațiilor preferate. Pe un ecran scund, bara își micșorează dalele ca să încapă toate</string>
@@ -1291,8 +1286,6 @@
     <string name="home_shortcut_badge">Comandă rapidă</string>
     <string name="home_show_favorite_apps">Aplicații favorite pe ecranul principal</string>
     <string name="home_show_favorite_apps_description">Patru scurtături de aplicații sub butonul principal cât timp Open Headunit este aplicația principală</string>
-    <string name="home_use_classic">Ecran principal clasic</string>
-    <string name="home_use_classic_description">Designul anterior, cu patru butoane egale</string>
     <string name="home_show_clock">Data și ora pe ecranul principal</string>
     <string name="home_show_clock_description">Ora și data de astăzi, sus pe butonul principal</string>
     <string name="home_show_speed">Viteza GPS pe ecranul principal</string>
@@ -1311,10 +1304,6 @@
     <string name="home_page_remove_detail">Widgeturile de pe ea sunt eliminate și ele</string>
     <string name="home_widget_remove">Elimină widgetul</string>
     <string name="home_widget_fallback_title">Widget</string>
-    <string name="home_design_notice_title">Un nou ecran principal</string>
-    <string name="home_design_notice_message">Open Headunit are un nou ecran principal: conexiunea pe care o folosești este un singur buton mare, iar restul se află pe partea șoferului.\n\nVrei să îl folosești? Poți reveni oricând din Setări, Personalizare.</string>
-    <string name="home_design_notice_use_new">Folosește noul design</string>
-    <string name="home_design_notice_keep_classic">Păstrează varianta clasică</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Lansator auto</string>
     <string name="onb_launcher_help">Open Headunit poate fi ecranul principal al dispozitivului, deci apare la pornire și când se apasă butonul Home.</string>

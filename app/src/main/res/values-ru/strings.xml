@@ -13,7 +13,6 @@
     <string name="no_apps_found">Приложения не найдены</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Автономный режим</string>
-    <string name="to_android_auto">В Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Удалить</string>
     <string name="usb">USB</string>
@@ -961,12 +960,9 @@
     <string name="add_to_blacklist">Добавить в черный список</string>
     <string name="remove_from_blacklist">Удалить из черного списка</string>
     <string name="usb_device_action_title">Действие для USB-устройства</string>
-    <string name="home_button_colors">Цвета кнопок и градиенты</string>
-    <string name="home_button_colors_description">Настройка цветов и градиентов 4 кнопок главного экрана</string>
     <string name="btn_color_self_mode">Кнопка Автономного режима</string>
     <string name="btn_color_usb">Кнопка USB</string>
     <string name="btn_color_wifi">Кнопка WiFi</string>
-    <string name="btn_color_settings">Кнопка Настроек</string>
     <string name="btn_reset_colors">Сбросить цвета всех кнопок</string>
     <string name="btn_make_all_monochrome">Сделать все кнопки монохромными</string>
     <string name="auto_monochrome_at_night">Ночью переключать на монохромный</string>
@@ -986,7 +982,6 @@
     <string name="color_preset_default">По умолчанию</string>
     <string name="color_custom_hex">Hex-код цвета</string>
     <string name="home_button_scale">Размер кнопок</string>
-    <string name="home_button_scale_description">Настройка размера 4 кнопок на главном экране</string>
     <string name="home_connection_colors">Цвета подключений</string>
     <string name="home_connection_colors_description">Главная кнопка окрашена в цвет своего подключения, как и плитка панели во время подключения или после него</string>
     <string name="home_bar_scale_description">Настройте размер плиток боковой панели и избранных приложений. На невысоком экране панель уменьшает плитки, чтобы поместились все</string>
@@ -1293,8 +1288,6 @@
     <string name="home_shortcut_badge">Ярлык</string>
     <string name="home_show_favorite_apps">Избранные приложения на главном экране</string>
     <string name="home_show_favorite_apps_description">Четыре ярлыка приложений под главной кнопкой, когда Open Headunit используется как главный экран</string>
-    <string name="home_use_classic">Классический главный экран</string>
-    <string name="home_use_classic_description">Прежний дизайн с четырьмя одинаковыми кнопками</string>
     <string name="home_show_clock">Дата и время на главном экране</string>
     <string name="home_show_clock_description">Время и сегодняшняя дата в верхней части главной кнопки</string>
     <string name="home_show_speed">Скорость по GPS на главном экране</string>
@@ -1313,10 +1306,6 @@
     <string name="home_page_remove_detail">Виджеты на ней тоже будут удалены</string>
     <string name="home_widget_remove">Удалить виджет</string>
     <string name="home_widget_fallback_title">Виджет</string>
-    <string name="home_design_notice_title">Новый главный экран</string>
-    <string name="home_design_notice_message">В Open Headunit новый главный экран: ваше подключение теперь одна большая кнопка, а всё остальное находится со стороны водителя.\n\nИспользовать его? Вернуться можно в любой момент в разделе Настройки, Персонализация.</string>
-    <string name="home_design_notice_use_new">Использовать новый дизайн</string>
-    <string name="home_design_notice_keep_classic">Оставить классический</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Лаунчер авто</string>
     <string name="onb_launcher_help">Open Headunit может быть домашним экраном устройства: он появляется при включении и при нажатии кнопки Home.</string>

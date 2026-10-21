@@ -13,7 +13,6 @@
     <string name="no_apps_found">Không tìm thấy ứng dụng nào</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Chế độ độc lập</string>
-    <string name="to_android_auto">Sang Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Xoá</string>
     <string name="usb">USB</string>
@@ -965,12 +964,9 @@
     <string name="add_to_blacklist">Thêm vào danh sách đen</string>
     <string name="remove_from_blacklist">Xóa khỏi danh sách đen</string>
     <string name="usb_device_action_title">Hành động thiết bị USB</string>
-    <string name="home_button_colors">Màu sắc nút &amp; Hiệu ứng chuyển màu</string>
-    <string name="home_button_colors_description">Tùy chỉnh màu sắc và dải màu của 4 nút trên màn hình chính</string>
     <string name="btn_color_self_mode">Nút Chế độ Tự chạy</string>
     <string name="btn_color_usb">Nút USB</string>
     <string name="btn_color_wifi">Nút WiFi</string>
-    <string name="btn_color_settings">Nút Cài đặt</string>
     <string name="btn_reset_colors">Đặt lại tất cả màu nút</string>
     <string name="btn_make_all_monochrome">Đặt tất cả các nút thành đơn sắc</string>
     <string name="auto_monochrome_at_night">Tự động chuyển sang đơn sắc vào ban đêm</string>
@@ -990,7 +986,6 @@
     <string name="color_preset_default">Mặc định</string>
     <string name="color_custom_hex">Mã màu Hex</string>
     <string name="home_button_scale">Kích thước nút</string>
-    <string name="home_button_scale_description">Điều chỉnh kích thước 4 nút trên màn hình chính</string>
     <string name="home_connection_colors">Màu kết nối</string>
     <string name="home_connection_colors_description">Nút chính mang màu của kết nối, ô trên thanh cũng vậy khi đang kết nối hoặc đã kết nối</string>
     <string name="home_bar_scale_description">Điều chỉnh kích thước các ô của thanh bên và ứng dụng yêu thích. Trên màn hình thấp, thanh sẽ thu nhỏ các ô để vừa tất cả</string>
@@ -1297,8 +1292,6 @@
     <string name="home_shortcut_badge">Lối tắt</string>
     <string name="home_show_favorite_apps">Ứng dụng yêu thích trên màn hình chính</string>
     <string name="home_show_favorite_apps_description">Bốn lối tắt ứng dụng dưới nút chính khi Open Headunit là ứng dụng màn hình chính</string>
-    <string name="home_use_classic">Màn hình chính cổ điển</string>
-    <string name="home_use_classic_description">Thiết kế trước đây, với bốn nút bằng nhau</string>
     <string name="home_show_clock">Ngày và giờ trên màn hình chính</string>
     <string name="home_show_clock_description">Giờ và ngày hôm nay ở trên nút chính</string>
     <string name="home_show_speed">Tốc độ GPS trên màn hình chính</string>
@@ -1317,10 +1310,6 @@
     <string name="home_page_remove_detail">Các tiện ích trên trang này cũng bị xoá</string>
     <string name="home_widget_remove">Xoá tiện ích</string>
     <string name="home_widget_fallback_title">Tiện ích</string>
-    <string name="home_design_notice_title">Màn hình chính mới</string>
-    <string name="home_design_notice_message">Open Headunit có màn hình chính mới: kết nối bạn dùng là một nút lớn, phần còn lại nằm ở phía người lái.\n\nBạn có muốn dùng không? Bạn có thể quay lại bất cứ lúc nào trong Cài đặt, Tùy chỉnh.</string>
-    <string name="home_design_notice_use_new">Dùng thiết kế mới</string>
-    <string name="home_design_notice_keep_classic">Giữ kiểu cổ điển</string>
     <!-- Onboarding wizard: car launcher step -->
     <string name="onb_launcher_title">Trình khởi chạy trên xe</string>
     <string name="onb_launcher_help">Open Headunit có thể là màn hình chính của thiết bị, nên nó xuất hiện khi thiết bị khởi động và khi nhấn nút Home.</string>
