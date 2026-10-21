@@ -1364,4 +1364,5 @@
     <string name="home_pages_hint_title">แตะค้างที่พื้นที่ว่าง</string>
     <string name="home_pages_hint_body">นี่คือวิธีเพิ่มหน้าสำหรับวิดเจ็ตของคุณ หรือลบหน้าออก</string>
     <string name="home_pages_hint_got_it">เข้าใจแล้ว</string>
+    <string name="home_pages_hint_body_anywhere">แตะค้างที่ส่วนว่างของหน้าจอหลักเพื่อเพิ่มหน้าสำหรับวิดเจ็ตของคุณ หรือลบหน้าออก</string>
 </resources>

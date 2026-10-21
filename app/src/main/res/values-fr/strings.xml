@@ -1358,4 +1358,5 @@
     <string name="home_pages_hint_title">Appuyez de manière prolongée sur un espace vide</string>
     <string name="home_pages_hint_body">C\'est ainsi que vous ajoutez une page pour vos widgets, ou en supprimez une.</string>
     <string name="home_pages_hint_got_it">J\'ai compris</string>
+    <string name="home_pages_hint_body_anywhere">Appuyez de manière prolongée sur une partie vide de l\'accueil pour ajouter une page pour vos widgets, ou en supprimer une.</string>
 </resources>

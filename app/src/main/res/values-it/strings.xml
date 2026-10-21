@@ -1321,4 +1321,5 @@
     <string name="home_pages_hint_title">Tieni premuto uno spazio vuoto</string>
     <string name="home_pages_hint_body">Così aggiungi una pagina per i tuoi widget, o ne rimuovi una.</string>
     <string name="home_pages_hint_got_it">Ho capito</string>
+    <string name="home_pages_hint_body_anywhere">Tieni premuta una parte vuota della schermata iniziale per aggiungere una pagina per i tuoi widget, o rimuoverne una.</string>
 </resources>

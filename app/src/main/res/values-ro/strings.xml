@@ -1315,4 +1315,5 @@
     <string name="home_pages_hint_title">Ține apăsat pe un spațiu gol</string>
     <string name="home_pages_hint_body">Așa adaugi o pagină pentru widgeturi sau elimini una.</string>
     <string name="home_pages_hint_got_it">Am înțeles</string>
+    <string name="home_pages_hint_body_anywhere">Ține apăsat pe o parte goală a ecranului principal ca să adaugi o pagină pentru widgeturi sau să elimini una.</string>
 </resources>

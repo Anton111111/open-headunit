@@ -1327,4 +1327,5 @@
     <string name="home_pages_hint_title">빈 곳을 길게 누르세요</string>
     <string name="home_pages_hint_body">위젯용 페이지를 추가하거나 삭제하는 방법입니다.</string>
     <string name="home_pages_hint_got_it">확인</string>
+    <string name="home_pages_hint_body_anywhere">홈의 빈 곳을 길게 누르면 위젯용 페이지를 추가하거나 삭제할 수 있습니다.</string>
 </resources>

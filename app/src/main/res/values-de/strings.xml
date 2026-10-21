@@ -1322,4 +1322,5 @@
     <string name="home_pages_hint_title">Halte eine leere Stelle gedrückt</string>
     <string name="home_pages_hint_body">So fügst du eine Seite für deine Widgets hinzu oder entfernst eine.</string>
     <string name="home_pages_hint_got_it">Verstanden</string>
+    <string name="home_pages_hint_body_anywhere">Halte einen leeren Bereich des Startbildschirms gedrückt, um eine Seite für deine Widgets hinzuzufügen oder eine zu entfernen.</string>
 </resources>

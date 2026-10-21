@@ -1318,4 +1318,5 @@
     <string name="home_pages_hint_title">Houd een lege plek ingedrukt</string>
     <string name="home_pages_hint_body">Zo voeg je een pagina voor je widgets toe, of verwijder je er een.</string>
     <string name="home_pages_hint_got_it">Begrepen</string>
+    <string name="home_pages_hint_body_anywhere">Houd een leeg deel van het startscherm ingedrukt om een pagina voor je widgets toe te voegen, of er een te verwijderen.</string>
 </resources>

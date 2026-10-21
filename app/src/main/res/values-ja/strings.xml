@@ -1323,4 +1323,5 @@
     <string name="home_pages_hint_title">空いている場所を長押し</string>
     <string name="home_pages_hint_body">ウィジェット用のページを追加したり、削除したりできます。</string>
     <string name="home_pages_hint_got_it">OK</string>
+    <string name="home_pages_hint_body_anywhere">ホームの空いている部分を長押しすると、ウィジェット用のページを追加したり、削除したりできます。</string>
 </resources>
