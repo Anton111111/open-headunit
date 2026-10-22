@@ -85,6 +85,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTran
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeCredentialsPreflight
 import com.andrerinas.openheadunit.utils.BluetoothHelper
 import androidx.lifecycle.lifecycleScope
+import com.andrerinas.openheadunit.utils.WifiStackRecovery
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.andrerinas.openheadunit.connection.wifi.modes.helper.HelperStrategy
@@ -197,6 +198,7 @@ class SettingsFragment : Fragment() {
     private var pendingScreenOrientation: Settings.ScreenOrientation? = null
     private var pendingAppLanguage: String? = null
     private var pendingFakeSpeed: Boolean? = null
+    private var pendingAutoRestartWifi: Boolean? = null
     private var pendingNarrowBandProfileCap: Boolean? = null
     private var pendingDebugVideoLowLatency: Boolean? = null
     private var pendingAllowExternalConfiguration: Boolean? = null
@@ -396,6 +398,7 @@ class SettingsFragment : Fragment() {
         pendingRaiseProjectionDuringCall = settings.raiseProjectionDuringCall
         pendingAutoEnableHotspot = settings.autoEnableHotspot
         pendingFakeSpeed = settings.fakeSpeed
+        pendingAutoRestartWifi = settings.autoRestartWifiWhenP2pStuck
         pendingUseLibusb = settings.useLibusb
         pendingNarrowBandProfileCap = settings.narrowBandProfileCap
         pendingDebugVideoLowLatency = settings.debugVideoLowLatency
@@ -554,6 +557,7 @@ class SettingsFragment : Fragment() {
         pendingRaiseProjectionDuringCall = settings.raiseProjectionDuringCall
         pendingAutoEnableHotspot = settings.autoEnableHotspot
         pendingFakeSpeed = settings.fakeSpeed
+        pendingAutoRestartWifi = settings.autoRestartWifiWhenP2pStuck
         pendingUseLibusb = settings.useLibusb
         pendingNarrowBandProfileCap = settings.narrowBandProfileCap
         pendingDebugVideoLowLatency = settings.debugVideoLowLatency
@@ -806,6 +810,7 @@ class SettingsFragment : Fragment() {
         pendingRaiseProjectionDuringCall?.let { if (it != settings.raiseProjectionDuringCall) settings.raiseProjectionDuringCall = it }
         pendingAutoEnableHotspot?.let { if (it != settings.autoEnableHotspot) settings.autoEnableHotspot = it }
         pendingFakeSpeed?.let { if (it != settings.fakeSpeed) settings.fakeSpeed = it }
+        pendingAutoRestartWifi?.let { if (it != settings.autoRestartWifiWhenP2pStuck) settings.autoRestartWifiWhenP2pStuck = it }
         pendingUseLibusb?.let { if (it != settings.useLibusb) settings.useLibusb = it }
         pendingNarrowBandProfileCap?.let { if (it != settings.narrowBandProfileCap) settings.narrowBandProfileCap = it }
         pendingDebugVideoLowLatency?.let { if (it != settings.debugVideoLowLatency) settings.debugVideoLowLatency = it }
@@ -959,6 +964,7 @@ class SettingsFragment : Fragment() {
                         pendingRaiseProjectionDuringCall != settings.raiseProjectionDuringCall ||
                         pendingAutoEnableHotspot != settings.autoEnableHotspot ||
                         pendingFakeSpeed != settings.fakeSpeed ||
+                        pendingAutoRestartWifi != settings.autoRestartWifiWhenP2pStuck ||
                         pendingWifiConnectionMode != settings.wifiConnectionMode ||
                         pendingHelperConnectionStrategy != settings.helperConnectionStrategy ||
                         pendingWaitForWifi != settings.waitForWifiBeforeWifiDirect ||
@@ -4795,6 +4801,40 @@ class SettingsFragment : Fragment() {
             stableId = "wifiDirectBandHint",
             textResId = R.string.wifi_direct_band_hint
         ))
+        items.add(SettingItem.ToggleSettingEntry(
+            stableId = "autoRestartWifiWhenP2pStuck",
+            nameResId = R.string.auto_restart_wifi_title,
+            descriptionResId = R.string.auto_restart_wifi_description,
+            isChecked = pendingAutoRestartWifi ?: settings.autoRestartWifiWhenP2pStuck,
+            onCheckedChanged = { isChecked ->
+                pendingAutoRestartWifi = isChecked
+                checkChanges()
+                updateSettingsList()
+                if (isChecked) probeWifiRestartRoute()
+            }
+        ))
+    }
+
+    /**
+     * Ask for root, or run one ADB command, now, while the user is at the settings screen. Asking
+     * later would put a root prompt or "Allow USB debugging?" in front of a driver.
+     */
+    private fun probeWifiRestartRoute() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val ctx = context ?: return@launch
+            val rootGranted = WifiStackRecovery.requestRoot()
+            settings.wifiRestartRootGranted = rootGranted
+            val adbVerified = !rootGranted &&
+                WifiStackRecovery.availableRoute() == OemAppManager.ExecutionBackend.ADB &&
+                WifiStackRecovery.verifyAdb(ctx.applicationContext)
+            settings.wifiRestartAdbVerified = adbVerified
+            val message = when {
+                rootGranted -> R.string.auto_restart_wifi_root_granted
+                adbVerified -> R.string.auto_restart_wifi_adb
+                else -> R.string.auto_restart_wifi_unavailable
+            }
+            ToastUtils.showToast(ctx, message, Toast.LENGTH_LONG, force = true)
+        }
     }
 
     /**

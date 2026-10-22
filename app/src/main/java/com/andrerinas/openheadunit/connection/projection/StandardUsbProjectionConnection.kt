@@ -29,6 +29,9 @@ class StandardUsbProjectionConnection(usbMgr: UsbManager, device: UsbDevice) :
 
     override val type = ProjectionConnection.Type.USB
 
+    override val outMaxPacketSize: Int
+        get() = endpointOut?.maxPacketSize ?: 0
+
     override val isConnected: Boolean
         get() = usbDeviceConnected != null
 

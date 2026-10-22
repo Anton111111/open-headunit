@@ -205,7 +205,7 @@ open class WifiLauncherManager(val service: AapService) {
      * and after onDestroy. Each of the shared stops already handles being called with nothing
      * running.
      */
-    fun stop(seq: WifiLauncherStopSequence = WifiLauncherStopSequence.ANY) {
+    fun stop(seq: WifiLauncherStopSequence = WifiLauncherStopSequence.ANY, keepNativeGroup: Boolean = false) {
         active?.stop(seq)
         activeIsStarted = false
         WirelessSleepHold.stopped()
@@ -214,7 +214,7 @@ open class WifiLauncherManager(val service: AapService) {
         lastNativeRearmAtMs = 0L
 
         if (seq.handledAt(WifiLauncherStopSequence.LAST)) {
-            sharedServices.stopAll()
+            sharedServices.stopAll(keepNativeGroup)
             active = null
             ConnectionStageTracker.clear()
         }
