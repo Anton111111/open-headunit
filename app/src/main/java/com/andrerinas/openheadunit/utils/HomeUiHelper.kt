@@ -35,7 +35,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
-import androidx.core.view.doOnLayout
+import androidx.core.view.doOnNextLayout
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.connection.ConnectionStage
 import com.andrerinas.openheadunit.main.BarFitPolicy
@@ -647,8 +647,12 @@ object HomeUiHelper {
         }
         if (card.width <= 0) {
             // The first pass runs before the card has a width, and the block would cover the title
-            // until the next minute. Ask again once the layout has one.
-            card.doOnLayout { constrainInfoTexts(rootView, block, block.visibility == View.VISIBLE) }
+            // until the next minute. Ask again once the layout has one. Only on the next layout,
+            // and only with a width: a card already laid out at zero width would run doOnLayout
+            // right away and land back here without end.
+            card.doOnNextLayout {
+                if (card.width > 0) constrainInfoTexts(rootView, block, block.visibility == View.VISIBLE)
+            }
             return
         }
         block.measure(
