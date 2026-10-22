@@ -399,6 +399,13 @@ object HomeUiHelper {
         val validScale = if (scalePercent in 60..120) scalePercent else 100
         val factor = validScale / 100.0f
         (scaledTiles + R.id.home_favorites).mapNotNull { rootView.findViewById<View>(it) }.forEach { scale(it, factor) }
+        // The favorites row scales in height only. Under 100% its icons and labels shrink with it,
+        // or at 60% the labels were cut at the bottom of the tiles; over 100% the taller row
+        // already has room, and bigger labels would only wrap in tiles that keep their width.
+        val contentFactor = minOf(factor, 1f)
+        (rootView.findViewById<View>(R.id.home_favorites) as? ViewGroup)?.let { row ->
+            (0 until row.childCount).mapNotNull { row.getChildAt(it) as? ViewGroup }.forEach { scaleTileContent(it, contentFactor) }
+        }
         // This overwrites the fit, so [fitDriverBar] has to run again on top of it.
         rootView.setTag(R.id.home_bar_fit, null)
     }
