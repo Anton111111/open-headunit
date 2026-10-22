@@ -30,6 +30,14 @@ object NoticeClearancePolicy {
         return minOf(needed, room).coerceAtLeast(0)
     }
 
+    /**
+     * What is left of [push] once the card has room for its action. [overflow] is how much taller
+     * the card's content is than the card with the push applied and the lines that step aside
+     * gone: on a short card the push gives that back, since a corner a little under a notice is
+     * better than a cut action.
+     */
+    fun withinCard(push: Int, overflow: Int): Int = (push - overflow.coerceAtLeast(0)).coerceAtLeast(0)
+
     /** Side by side does not count: only a notice that shares some width with the view can cover it. */
     private fun overlapsAcross(a: Box, b: Box): Boolean = a.left < b.right && b.left < a.right
 }

@@ -44,6 +44,19 @@ class NoticeClearancePolicyTest {
     }
 
     @Test
+    fun `a card with room keeps the whole push`() {
+        assertEquals(65, NoticeClearancePolicy.withinCard(push = 65, overflow = 0))
+        assertEquals(65, NoticeClearancePolicy.withinCard(push = 65, overflow = -40))
+    }
+
+    @Test
+    fun `a short card gives back what its action would lose`() {
+        // 800x480: the banner asked for 65px and the action ended 36px past the card.
+        assertEquals(29, NoticeClearancePolicy.withinCard(push = 65, overflow = 36))
+        assertEquals(0, NoticeClearancePolicy.withinCard(push = 65, overflow = 90))
+    }
+
+    @Test
     fun `no notices or no corner moves nothing`() {
         val countdown = Box(702, 52, 790, 140)
         assertEquals(0, NoticeClearancePolicy.push(emptyList(), listOf(countdown), gap = 12, limit = 640))

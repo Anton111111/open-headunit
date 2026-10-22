@@ -711,7 +711,8 @@ class HomeFragment : Fragment() {
         if (!isAdded || view !== root) return
         val card = root.findViewById<View>(R.id.home_primary_card) ?: return
         if (card.height <= 0) return
-        clearStatusNotices(root)
+        val pushBefore = root.findViewById<View>(R.id.home_primary_header)?.paddingTop ?: 0
+        setNoticePush(root, statusNoticesPush(root))
         val stepShown = decision?.stage != null
         val optional = HomeCardFitPolicy.stepAsideOrder(stepShown).mapNotNull { line ->
             when (line) {
@@ -730,40 +731,50 @@ class HomeFragment : Fragment() {
         if (dropped.isNotEmpty()) {
             AppLog.i("HomeFragment: the main button is ${card.height}px tall, hiding ${dropped.size} line(s) so its action fits")
         }
+        // On a short card the push can cost more than the lines that stepped aside give back,
+        // and then it is the action that gets cut: the push gives that part up.
+        val push = root.findViewById<View>(R.id.home_primary_header)?.paddingTop ?: 0
+        val kept = if (push > 0) NoticeClearancePolicy.withinCard(push, cardMinimumHeight(card) - card.height) else push
+        setNoticePush(root, kept)
+        if (kept != pushBefore) {
+            AppLog.i(
+                if (kept > 0) "HomeFragment: moving the main button's top corner ${kept}px down, clear of the status notices"
+                else "HomeFragment: the main button's top corner is back where it was"
+            )
+        }
     }
 
     /**
-     * Moves the card's top corner (the countdown, or the date, time and speed) down from under
-     * MainActivity's status notices, when the card is narrow enough to put it there: see
-     * [NoticeClearancePolicy]. The header row takes the push as top padding and the date block as
-     * margin, so the lines under them make room in the same layout, and the step-aside fit that
-     * follows sees the height that is left.
+     * How far to move the card's top corner (the countdown, or the date, time and speed) down from
+     * under MainActivity's status notices, when the card is narrow enough to put it there: see
+     * [NoticeClearancePolicy]. The step-aside fit applies it before measuring, so the lines under
+     * it make room in the same layout, and takes back whatever the action would lose to it.
      */
-    private fun clearStatusNotices(root: View) {
-        val header = root.findViewById<View>(R.id.home_primary_header) ?: return
-        val content = root.findViewById<View>(R.id.home_primary_content) ?: return
-        val info = root.findViewById<View>(R.id.home_info)
+    private fun statusNoticesPush(root: View): Int {
+        val header = root.findViewById<View>(R.id.home_primary_header) ?: return 0
+        val content = root.findViewById<View>(R.id.home_primary_content) ?: return 0
+        if (!content.isShown) return 0
         val current = header.paddingTop
-        val push = if (!content.isShown) 0 else {
-            val notices = activity?.findViewById<ViewGroup>(R.id.status_notices)?.takeIf { it.isShown }
-            val noticeBoxes = notices?.let { group ->
-                (0 until group.childCount).map { group.getChildAt(it) }
-                    .filter { it.isShown && it.height > 0 }
-                    .map { boxIn(root, it) }
-            }.orEmpty()
-            // Where the corner sits with no push, so the answer does not depend on the last one.
-            val corner = listOfNotNull(root.findViewById<View>(R.id.home_countdown), info)
+        val notices = activity?.findViewById<ViewGroup>(R.id.status_notices)?.takeIf { it.isShown }
+        val noticeBoxes = notices?.let { group ->
+            (0 until group.childCount).map { group.getChildAt(it) }
                 .filter { it.isShown && it.height > 0 }
-                .map { boxIn(root, it).let { b -> HomePagesHintPolicy.Box(b.left, b.top - current, b.right, b.bottom - current) } }
-            val limit = boxIn(root, content).bottom - content.paddingBottom
-            NoticeClearancePolicy.push(noticeBoxes, corner, resources.getDimensionPixelSize(R.dimen.home_gap), limit)
-        }
-        if (push == current) return
-        AppLog.i(
-            if (push > 0) "HomeFragment: moving the main button's top corner ${push}px down, clear of the status notices"
-            else "HomeFragment: the status notices left the main button's top corner, putting it back"
-        )
+                .map { boxIn(root, it) }
+        }.orEmpty()
+        // Where the corner sits with no push, so the answer does not depend on the last one.
+        val corner = listOfNotNull(root.findViewById<View>(R.id.home_countdown), root.findViewById(R.id.home_info))
+            .filter { it.isShown && it.height > 0 }
+            .map { boxIn(root, it).let { b -> HomePagesHintPolicy.Box(b.left, b.top - current, b.right, b.bottom - current) } }
+        val limit = boxIn(root, content).bottom - content.paddingBottom
+        return NoticeClearancePolicy.push(noticeBoxes, corner, resources.getDimensionPixelSize(R.dimen.home_gap), limit)
+    }
+
+    /** The header row takes the push as top padding and the date block, which floats over it, as margin. */
+    private fun setNoticePush(root: View, push: Int) {
+        val header = root.findViewById<View>(R.id.home_primary_header) ?: return
+        if (header.paddingTop == push) return
         header.setPadding(header.paddingLeft, push, header.paddingRight, header.paddingBottom)
+        val info = root.findViewById<View>(R.id.home_info)
         (info?.layoutParams as? ViewGroup.MarginLayoutParams)?.let { params ->
             params.topMargin = resources.getDimensionPixelSize(R.dimen.home_card_padding_v) + push
             info.layoutParams = params
