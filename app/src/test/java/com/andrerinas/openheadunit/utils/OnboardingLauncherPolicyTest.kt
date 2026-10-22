@@ -33,10 +33,10 @@ class OnboardingLauncherPolicyTest {
 
     @Test
     fun `finishing never drops the alias while the app is home`() {
-        assertFalse(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = false, roleHeld = true))
-        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = true, roleHeld = true))
-        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = false, roleHeld = false))
-        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = true, roleHeld = false))
+        assertFalse(OnboardingLauncherPolicy.syncsAlias(stored = false, roleHeld = true))
+        assertTrue(OnboardingLauncherPolicy.syncsAlias(stored = true, roleHeld = true))
+        assertTrue(OnboardingLauncherPolicy.syncsAlias(stored = false, roleHeld = false))
+        assertTrue(OnboardingLauncherPolicy.syncsAlias(stored = true, roleHeld = false))
     }
 
     @Test

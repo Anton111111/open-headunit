@@ -46,6 +46,7 @@ import com.andrerinas.openheadunit.connection.PhoneExitQuietPolicy
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.CarLauncherManager
+import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.ConnectionIssue
 import com.andrerinas.openheadunit.utils.ConnectionIssues
 import android.content.res.Configuration
@@ -215,7 +216,12 @@ class MainActivity : BaseActivity() {
         // Sync UsbAttachedActivity and CarLauncher component states with settings.
         lifecycleScope.launch(Dispatchers.IO) {
             Settings.setUsbAttachedActivityEnabled(applicationContext, appSettings.listenForUsbDevices)
-            CarLauncherManager.syncWithSettings(applicationContext, appSettings.enableCarLauncher)
+            val launcherStored = appSettings.enableCarLauncher
+            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, CarLauncherManager.isDefaultLauncher(applicationContext))) {
+                CarLauncherManager.syncWithSettings(applicationContext, launcherStored)
+            } else {
+                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, keeping the launcher alias")
+            }
         }
 
         // Start main service immediately to handle connections and wireless server

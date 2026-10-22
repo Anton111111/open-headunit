@@ -750,7 +750,7 @@ class OnboardingActivity : BaseActivity() {
         settings.hasAcceptedDisclaimer = true
         settings.hasCompletedSetupWizard = true
         settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        if (OnboardingLauncherPolicy.syncsAliasOnFinish(
+        if (OnboardingLauncherPolicy.syncsAlias(
                 settings.enableCarLauncher, CarLauncherManager.isDefaultLauncher(this))
         ) {
             CarLauncherManager.syncWithSettings(this, settings.enableCarLauncher)

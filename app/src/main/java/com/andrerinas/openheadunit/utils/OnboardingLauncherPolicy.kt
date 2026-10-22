@@ -34,11 +34,13 @@ object OnboardingLauncherPolicy {
     fun launcherModeOnOpen(stored: Boolean, roleHeld: Boolean): Boolean = stored || roleHeld
 
     /**
-     * Whether finishing the wizard may sync the launcher alias with the stored setting. It must
-     * not drop the alias while the app holds the home role: that would hand Home back to the
-     * stock launcher, the opposite of what the user picked.
+     * Whether the launcher alias may be synced with the stored setting, when the wizard finishes
+     * or the main screen starts. It must not drop the alias while the app holds the home role:
+     * the setting can still be off because the wizard that would have stored it was cleared away,
+     * and dropping the alias would hand Home back to the stock launcher, the opposite of what the
+     * user picked. Turning launcher mode off in Settings drops the alias itself.
      */
-    fun syncsAliasOnFinish(stored: Boolean, roleHeld: Boolean): Boolean = stored || !roleHeld
+    fun syncsAlias(stored: Boolean, roleHeld: Boolean): Boolean = stored || !roleHeld
 
     /**
      * Whether to tell the user, under the launcher switch, that reopen on reconnection does not
