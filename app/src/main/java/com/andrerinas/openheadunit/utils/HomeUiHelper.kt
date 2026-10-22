@@ -240,6 +240,8 @@ object HomeUiHelper {
             setTextColor(palette.text)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
+                // Before Android 5 a GradientDrawable with no fill paints it black.
+                setColor(Color.TRANSPARENT)
                 setStroke(dp(context, 6), palette.countdownRing)
             }
         }
