@@ -1,4 +1,13 @@
 # Changelog
+### 4.0.0-alpha (unreleased)
+- New Homescreen, thanks to @andrecuellar
+- AAP: send one version request over TCP, so a slow head unit server is not left deaf
+- AAP: Keep media and navigation display updates off the receive path
+- AAP: Preserve frame boundaries during handshake
+- WiFi Direct: detect a wedged P2P stack and offer a WiFi restart
+- WiFi: Pause automatic searches during wireless sessions with Shizuku
+- Native AA: remember a unit that refuses every banded WiFi Direct group
+
 ### v.3.5.0
 - Native AA: reconnect to a network that is still there, wake the phone over Bluetooth or the external module, bring a lost group or hotspot back after sleep, boot or ACC wake, stop advertising an address that moves, and pick, wake or hold back only for a phone that is on
 - Wireless: BSSID recovery via IPv6 EUI-64, keep the station stood down mid-session, hold every automatic bring-up while the unit is asleep, and log a refused start at boot instead of crashing
