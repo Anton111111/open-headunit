@@ -415,12 +415,9 @@ class HomeFragment : Fragment() {
         // With more than one page the card is not always in view, so the bar carries every chosen
         // connection, the one the card offers included. Otherwise, on a page without the card, a
         // unit with a single chosen mode has no way to start it.
-        val carriesAll = HomePagesPolicy.barCarriesEveryConnection(pageCount)
-        val barConnections = if (carriesAll && decision.primary in chosen && decision.primary !in decision.barConnections) {
-            decision.barConnections + decision.primary
-        } else {
-            decision.barConnections
-        }
+        val barConnections = HomePrimaryPolicy.barConnections(
+            decision, chosen, HomePagesPolicy.barCarriesEveryConnection(pageCount)
+        )
         HomeUiHelper.applyBar(ctx, root, appSettings, barConnections, palette, decision.tiles)
         HomeUiHelper.applyPrimaryCard(
             ctx, root, appSettings, decision, usbPhone?.let { phoneName(it) }, reconnectSecondsLeft, palette,

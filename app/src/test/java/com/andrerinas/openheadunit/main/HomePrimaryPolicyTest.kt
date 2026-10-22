@@ -274,4 +274,40 @@ class HomePrimaryPolicyTest {
         assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(HomePrimaryPolicy.decide(input()), cardOnScreen = true))
         assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(null, cardOnScreen = true))
     }
+
+    @Test
+    fun `with no mode chosen the bar on a second page still carries the card's connection`() {
+        val decision = HomePrimaryPolicy.decide(input(lastConnection = Connection.WIFI))
+        assertEquals(
+            listOf(Connection.USB, Connection.SELF, Connection.WIFI),
+            HomePrimaryPolicy.barConnections(decision, emptySet(), carriesEveryConnection = true)
+        )
+    }
+
+    @Test
+    fun `a single page leaves the card's connection off the bar`() {
+        val decision = HomePrimaryPolicy.decide(input())
+        assertEquals(
+            listOf(Connection.WIFI, Connection.SELF),
+            HomePrimaryPolicy.barConnections(decision, emptySet(), carriesEveryConnection = false)
+        )
+    }
+
+    @Test
+    fun `the bar never carries a connection the user did not choose`() {
+        val chosen = setOf(Connection.USB)
+        val decision = HomePrimaryPolicy.decide(input(chosen = chosen, reconnectTarget = Connection.WIFI))
+        assertEquals(Connection.WIFI, decision.primary)
+        assertEquals(listOf(Connection.USB), HomePrimaryPolicy.barConnections(decision, chosen, carriesEveryConnection = true))
+    }
+
+    @Test
+    fun `a chosen connection on the card joins the bar once`() {
+        val chosen = setOf(Connection.USB, Connection.WIFI)
+        val decision = HomePrimaryPolicy.decide(input(chosen = chosen))
+        assertEquals(
+            listOf(Connection.WIFI, Connection.USB),
+            HomePrimaryPolicy.barConnections(decision, chosen, carriesEveryConnection = true)
+        )
+    }
 }

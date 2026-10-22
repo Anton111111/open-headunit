@@ -120,6 +120,22 @@ object HomePrimaryPolicy {
         input.stage != null && connectionOf(input.stage) == connection
 
     /**
+     * The connections the driver bar carries. With [carriesEveryConnection] (more than one page,
+     * so the card is not always in view) the card's own connection joins the bar too, as long as
+     * the user chose it. An empty [chosen] means every mode is allowed, so it counts as chosen:
+     * without that, a unit left on the defaults had no button for the card's connection on a
+     * page without the card.
+     */
+    fun barConnections(decision: Decision, chosen: Set<Connection>, carriesEveryConnection: Boolean): List<Connection> {
+        val primaryChosen = chosen.isEmpty() || decision.primary in chosen
+        return if (carriesEveryConnection && primaryChosen && decision.primary !in decision.barConnections) {
+            decision.barConnections + decision.primary
+        } else {
+            decision.barConnections
+        }
+    }
+
+    /**
      * Whether the home tells the bring-up itself, so the status pill can stay down. Only the card
      * on screen does, with the step and Cancel on it: a step that belongs to another connection,
      * or a page without the card, would leave the driver with no way to stop the bring-up.
