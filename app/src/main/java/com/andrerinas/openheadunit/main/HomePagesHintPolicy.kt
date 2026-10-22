@@ -87,6 +87,9 @@ object HomePagesHintPolicy {
         maxHeight: Int,
         gap: Int,
     ): Box? {
+        // A card smaller than its own padding leaves an empty (or inverted) interior, and the
+        // coerceIn below would throw on it.
+        if (interior.width < minSize || interior.height < minSize) return null
         val blocked = occupied.map { Box(it.left - gap, it.top - gap, it.right + gap, it.bottom + gap) }
         val xs = (listOf(interior.left, interior.right) + blocked.flatMap { listOf(it.left, it.right) })
             .map { it.coerceIn(interior.left, interior.right) }.distinct().sorted()

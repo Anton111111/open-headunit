@@ -102,6 +102,13 @@ class HomePagesHintPolicyTest {
         assertNull(HomePagesHintPolicy.emptySpot(Box(100, 50, 900, 190), emptyList(), false, 150, 360, 290, 10))
     }
 
+    @Test
+    fun `a card smaller than its padding gets no hint instead of a crash`() {
+        // The interior comes from the card minus its padding, so on a tiny card it is inverted.
+        assertNull(HomePagesHintPolicy.emptySpot(Box(60, 40, 20, 10), emptyList(), false, 150, 360, 290, 10))
+        assertNull(HomePagesHintPolicy.emptySpot(Box(0, 0, 100, 400), emptyList(), false, 150, 360, 290, 10))
+    }
+
     // A tall portrait card: the kicker, title and subtitle in the middle, the button at the bottom,
     // text running nearly the whole width, so there is no room beside it.
     private val tall = Box(40, 40, 1040, 1900)
