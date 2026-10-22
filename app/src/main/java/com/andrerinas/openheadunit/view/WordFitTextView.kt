@@ -24,6 +24,12 @@ class WordFitTextView @JvmOverloads constructor(
 
     /** The size asked for, in px; null until the first measure takes the one from the XML. */
     private var requestedPx: Float? = null
+
+    /**
+     * The size from the layout, in px, before anyone scaled it or the fit shrank it. A caller that
+     * scales the label works from this one: [getTextSize] may already be a fitted size.
+     */
+    val layoutTextSize: Float = textSize
     private var xmlMaxLines = -1
     private var fitting = false
     private val measurePaint = TextPaint()
@@ -56,14 +62,44 @@ class WordFitTextView @JvmOverloads constructor(
         if (mode != MeasureSpec.UNSPECIFIED) {
             // A pixel or two of slack: a word measured to the exact width can still be broken.
             val available = (MeasureSpec.getSize(widthMeasureSpec) - totalPaddingLeft - totalPaddingRight - SLACK_PX).toFloat()
-            measurePaint.set(paint)
-            measurePaint.textSize = requested
-            val widest = LabelFitPolicy.words(text).maxOfOrNull { measurePaint.measureText(it) } ?: 0f
-            val min = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_SP, resources.displayMetrics)
-            val fit = LabelFitPolicy.fit(requested, widest, available, min)
-            applyFit(fit)
+            val widest = widestWord(text, requested)
+            val floor = floorPx(requested)
+            val estimate = LabelFitPolicy.fit(requested, widest, available, floor)
+            applyFit(LabelFitPolicy.settle(estimate, requested, available, floor) { widestWord(text, it) })
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    /**
+     * How wide the tile holding this label has to be for none of [texts] to split or cut a word,
+     * at the size the label is asked for now: [tilePx] when they already fit, at most [maxPx].
+     */
+    fun tileWidthForWholeWords(texts: Iterable<CharSequence>, tilePx: Int, maxPx: Int): Int {
+        val requested = requestedPx ?: textSize
+        val padding = totalPaddingLeft + totalPaddingRight + SLACK_PX
+        // Measured at the size the label would settle on, not scaled from the requested one: at a
+        // few pixels the two differ by more than the slack.
+        val floor = floorPx(requested)
+        val widestAtRequested = texts.maxOfOrNull { widestWord(it, requested) } ?: return tilePx
+        if (widestAtRequested + padding <= tilePx) return tilePx
+        val widestAtFloor = texts.maxOf { widestWord(it, floor) }
+        return LabelFitPolicy.tileWidth(tilePx, floor, widestAtFloor, floor, padding, maxPx)
+    }
+
+    private fun widestWord(text: CharSequence, sizePx: Float): Float {
+        measurePaint.set(paint)
+        measurePaint.textSize = sizePx
+        return LabelFitPolicy.words(text).maxOfOrNull { measurePaint.measureText(it) } ?: 0f
+    }
+
+    private fun floorPx(requested: Float): Float {
+        val metrics = resources.displayMetrics
+        return LabelFitPolicy.floor(
+            requested,
+            layoutTextSize,
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, MIN_SP, metrics),
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, ABSOLUTE_MIN_SP, metrics),
+        )
     }
 
     private fun applyFit(fit: LabelFitPolicy.Fit) {
@@ -81,8 +117,10 @@ class WordFitTextView @JvmOverloads constructor(
     }
 
     private companion object {
-        /** The smallest label worth reading on a head unit. */
+        /** The smallest label worth reading on a head unit, at the label's own size. */
         const val MIN_SP = 9f
+        /** The floor of a label the home button scale made smaller: still readable at arm's length. */
+        const val ABSOLUTE_MIN_SP = 7f
         const val SLACK_PX = 2
     }
 }

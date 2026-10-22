@@ -45,6 +45,7 @@ import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Decision
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Status
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.TileState
 import com.andrerinas.openheadunit.main.HomeThemePolicy.Mode
+import com.andrerinas.openheadunit.view.WordFitTextView
 
 /** Paints the home screen. What it shows is decided by [com.andrerinas.openheadunit.main.HomePrimaryPolicy]. */
 object HomeUiHelper {
@@ -54,6 +55,8 @@ object HomeUiHelper {
     private const val RIPPLE_COLOR_EXTREME = 0x1FFFFFFF
     private const val ACCENT_WASH_ALPHA = 0x29
     private const val FOCUS_RING_DP = 3
+    /** A bar tile widens for its label up to this many times its own width, then the label ends in "...". */
+    private const val MAX_TILE_WIDENING = 2
     private const val PROGRESS_TRACK_ALPHA = 0x40
     /** One pass of the light across the bar, then a rest while it waits past the end. */
     private const val SHINE_SWEEP_MS = 1_600L
@@ -426,6 +429,46 @@ object HomeUiHelper {
             scale(view, tileScale)
             (view as? ViewGroup)?.let { scaleTileContent(it, tileScale) }
         }
+        widenForWholeWords(rootView, visible, scalePercent)
+    }
+
+    /**
+     * A long word on a small tile ("Einstellungen" or "Автономный" at 60%) is wider than the tile
+     * even at the smallest readable size, and ended in "...". The bar's tiles then widen together,
+     * just enough for the widest word, rather than cutting it. The words checked are each tile's
+     * name and the two states a connection tile can say instead, so the bar does not change width
+     * when a connection starts.
+     */
+    private fun widenForWholeWords(rootView: View, visible: List<View>, scalePercent: Int) {
+        val scroll = rootView.findViewById<View>(R.id.home_bar_scroll) ?: return
+        val tilePx = scroll.layoutParams?.width ?: return
+        if (tilePx <= 0) return
+        val context = rootView.context
+        val states = listOf(context.getString(R.string.connected), context.getString(R.string.stage_connecting))
+        val maxPx = tilePx * MAX_TILE_WIDENING
+        val width = visible.maxOfOrNull { tile ->
+            val label = (tile as? ViewGroup)?.let { group ->
+                (0 until group.childCount).map { group.getChildAt(it) }.filterIsInstance<WordFitTextView>().firstOrNull()
+            } ?: return@maxOfOrNull tilePx
+            val name = label.getTag(R.id.home_tile_name) as? CharSequence ?: label.text
+            val texts = if (tile.id == R.id.settings_button) listOf(name) else listOf(name) + states
+            label.tileWidthForWholeWords(texts, tilePx, maxPx)
+        } ?: tilePx
+        if (width <= tilePx) return
+        AppLog.i("HomeUiHelper: widening the bar's tiles from ${tilePx}px to ${width}px so their labels keep whole words")
+        fittedTiles.mapNotNull { rootView.findViewById<View>(it) }.forEach { setWidth(it, width) }
+        // Exit sits under them, at the user's scale; it widens too so the bar keeps one width.
+        rootView.findViewById<View>(R.id.exit_button)?.let { exit ->
+            val userScale = (if (scalePercent in 60..120) scalePercent else 100) / 100f
+            setWidth(exit, maxOf((baseSize(exit)[0] * userScale).toInt(), width))
+        }
+    }
+
+    private fun setWidth(view: View, width: Int) {
+        val params = view.layoutParams ?: return
+        if (params.width == width) return
+        params.width = width
+        view.layoutParams = params
     }
 
     /** The icon and the label shrink with their tile, so a shrunk tile still spells its name. */
@@ -434,8 +477,11 @@ object HomeUiHelper {
             when (val child = tile.getChildAt(i)) {
                 is ImageView -> scale(child, factor)
                 is TextView -> {
+                    // A word-fitting label may already be drawn at a fitted size, smaller than its
+                    // own: scaling that one would shrink the label twice.
                     val base = child.getTag(R.id.home_base_text_size) as? Float
-                        ?: child.textSize.also { child.setTag(R.id.home_base_text_size, it) }
+                        ?: ((child as? WordFitTextView)?.layoutTextSize ?: child.textSize)
+                            .also { child.setTag(R.id.home_base_text_size, it) }
                     child.setTextSize(TypedValue.COMPLEX_UNIT_PX, base * factor)
                 }
             }
