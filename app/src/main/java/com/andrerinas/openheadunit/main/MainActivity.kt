@@ -410,6 +410,10 @@ class MainActivity : BaseActivity() {
         val stage = ConnectionStageTracker.stage.value
         val usbAttempt = App.provide(this).commManager.isUsbSession ||
             stage == ConnectionStage.USB_ATTACHED || stage == ConnectionStage.USB_SWITCHING
+        // The home's own auto-connect countdown lives in HomeFragment, not here. The countdown
+        // only runs while the home's view is up, so the home in the nav host is the one to tell.
+        supportFragmentManager.findFragmentById(R.id.main_content)?.childFragmentManager?.fragments
+            ?.filterIsInstance<HomeFragment>()?.forEach { it.stopAutoConnectCountdown() }
         cancelAutoConnect()
         ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
             action = AapService.ACTION_CANCEL_WIRELESS

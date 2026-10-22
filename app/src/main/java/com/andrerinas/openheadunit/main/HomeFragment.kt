@@ -392,6 +392,17 @@ class HomeFragment : Fragment() {
         reconnectCountdown?.cancel()
     }
 
+    /**
+     * For [MainActivity.cancelBringUp]: the status pill's X has to end this countdown too, or the
+     * home connects once it runs out although the driver cancelled. Does nothing when no countdown
+     * is running, so a later bring-up is never blocked by an old cancel.
+     */
+    fun stopAutoConnectCountdown() {
+        if (reconnectCountdown?.isActive != true) return
+        AppLog.i("HomeFragment: auto-connect countdown stopped by the bring-up's cancel")
+        cancelAutoConnectCountdown()
+    }
+
     private fun renderHome() {
         val ctx = context ?: return
         val root = view ?: return
