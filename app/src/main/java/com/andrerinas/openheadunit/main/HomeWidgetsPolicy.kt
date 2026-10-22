@@ -1,5 +1,7 @@
 package com.andrerinas.openheadunit.main
 
+import kotlin.math.roundToInt
+
 /**
  * The widgets the home screen keeps under the main button, in the order they are shown.
  *
@@ -30,4 +32,8 @@ object HomeWidgetsPolicy {
     }
 
     fun remove(ids: List<Int>, id: Int): List<Int> = ids.filterNot { it == id }
+
+    /** A box in pixels as the dp a widget reads its size in. */
+    fun toDp(px: Int, density: Float): Int =
+        if (density <= 0f) px.coerceAtLeast(0) else (px.coerceAtLeast(0) / density).roundToInt()
 }

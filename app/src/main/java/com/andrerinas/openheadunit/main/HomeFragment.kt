@@ -158,7 +158,8 @@ class HomeFragment : Fragment() {
     /** Whether a session was up the last time the home looked, to notice one starting or ending. */
     private var lastSessionActive: Boolean? = null
 
-    // The widget the system is asking the user to allow, and the answer coming back.
+    // The widget waiting on the user, to be allowed or set up, and the answer coming back. Kept
+    // across a recreation, or a cancel after it would leave the id allocated with no widget.
     private var pendingWidgetId = -1
     // Where that widget goes: a widget page's index, or null for the row under the favorites.
     private var pendingWidgetPage: Int? = null
@@ -166,18 +167,37 @@ class HomeFragment : Fragment() {
     private val widgetBindLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val ctx = context ?: return@registerForActivityResult
-        val returned = result.data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
-        val id = if (returned >= 0) returned else pendingWidgetId
-        val page = pendingWidgetPage
-        pendingWidgetId = -1
-        pendingWidgetPage = null
+        val (id, page) = takePendingWidget(result.data)
+        if (result.resultCode == android.app.Activity.RESULT_OK && id >= 0) {
+            configureOrPlaceWidget(id, page)
+        } else {
+            releasePendingWidget(id, "was not allowed")
+        }
+    }
+
+    private val widgetConfigureLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val (id, page) = takePendingWidget(result.data)
         if (result.resultCode == android.app.Activity.RESULT_OK && id >= 0) {
             placeWidget(id, page)
         } else {
-            if (id >= 0) HomeWidgets.forget(ctx, id)
-            AppLog.i("HomeFragment: the widget was not allowed, releasing its id")
+            releasePendingWidget(id, "was not set up")
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        savedInstanceState?.let { state ->
+            pendingWidgetId = state.getInt(STATE_PENDING_WIDGET_ID, -1)
+            pendingWidgetPage = state.getInt(STATE_PENDING_WIDGET_PAGE, -1).takeIf { it >= 0 }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(STATE_PENDING_WIDGET_ID, pendingWidgetId)
+        outState.putInt(STATE_PENDING_WIDGET_PAGE, pendingWidgetPage ?: -1)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -1091,7 +1111,8 @@ class HomeFragment : Fragment() {
 
         val ids = pruneWidgets(ctx, appSettings.homeWidgets)
         val palette = homePalette(ctx)
-        ids.forEach { appWidgetId ->
+        // A for loop: forEach here resolved to java.lang.Iterable's, which is API 24.
+        for (appWidgetId in ids) {
             widgetTile(ctx, row, appWidgetId, palette)?.let { row.addView(it) }
         }
         // Android 5.0 is where the system lets an app ask for a widget at all.
@@ -1338,12 +1359,60 @@ class HomeFragment : Fragment() {
         val ctx = requireContext()
         val appWidgetId = HomeWidgets.allocateId(ctx)
         if (HomeWidgets.tryBind(ctx, appWidgetId, provider)) {
-            placeWidget(appWidgetId, page)
+            configureOrPlaceWidget(appWidgetId, page)
             return
         }
         pendingWidgetId = appWidgetId
         pendingWidgetPage = page
         widgetBindLauncher.launch(HomeWidgets.bindRequest(appWidgetId, provider))
+    }
+
+    /** The widget the answer is about, and where it goes; the answer names the id when it can. */
+    private fun takePendingWidget(data: Intent?): Pair<Int, Int?> {
+        val returned = data?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
+        val pending = (if (returned >= 0) returned else pendingWidgetId) to pendingWidgetPage
+        pendingWidgetId = -1
+        pendingWidgetPage = null
+        return pending
+    }
+
+    private fun releasePendingWidget(appWidgetId: Int, why: String) {
+        val ctx = context ?: return
+        if (appWidgetId >= 0) HomeWidgets.forget(ctx, appWidgetId)
+        AppLog.i("HomeFragment: widget $appWidgetId $why, releasing its id")
+    }
+
+    /**
+     * A widget that declares a setup activity shows nothing useful until it ran, so it is placed
+     * only once the user finished it, the way every launcher does.
+     */
+    private fun configureOrPlaceWidget(appWidgetId: Int, page: Int?) {
+        val ctx = context ?: return
+        val configure = HomeWidgets.configureActivity(ctx, appWidgetId)
+        if (configure == null) {
+            placeWidget(appWidgetId, page)
+            return
+        }
+        pendingWidgetId = appWidgetId
+        pendingWidgetPage = page
+        try {
+            widgetConfigureLauncher.launch(HomeWidgets.configureRequest(appWidgetId, configure))
+        } catch (e: Exception) {
+            // Not exported to other apps: only the host may start it, and its answer does not come
+            // back here, so the widget is kept and shows whatever the setup leaves it with.
+            AppLog.i("HomeFragment: widget $appWidgetId set up through the host: ${e.message}")
+            pendingWidgetId = -1
+            pendingWidgetPage = null
+            val owner = activity
+            if (owner != null && HomeWidgets.supported()) {
+                try {
+                    HomeWidgets.configureThroughHost(ctx, owner, appWidgetId)
+                } catch (hostError: Exception) {
+                    AppLog.w("HomeFragment: widget $appWidgetId could not be set up: ${hostError.message}")
+                }
+            }
+            placeWidget(appWidgetId, page)
+        }
     }
 
     private fun placeWidget(appWidgetId: Int, page: Int?) {
@@ -2127,6 +2196,12 @@ class HomeFragment : Fragment() {
         reportBringUpOwner(started = true)
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // The next view builds its widgets again; the host must not keep this one's alive.
+        HomeWidgets.releaseViews()
+    }
+
     override fun onStop() {
         super.onStop()
         HomeWidgets.stopListening()
@@ -2640,6 +2715,8 @@ class HomeFragment : Fragment() {
     }
 
     companion object {
+        private const val STATE_PENDING_WIDGET_ID = "home_pending_widget_id"
+        private const val STATE_PENDING_WIDGET_PAGE = "home_pending_widget_page"
         private var hasAutoStarted = false
         private var hasCheckedNativeDriverSelection = false
         var forceSelfModeLaunch = false

@@ -47,4 +47,22 @@ class HomeWidgetsPolicyTest {
         val ids = listOf(12, 34)
         assertEquals(ids, HomeWidgetsPolicy.decode(HomeWidgetsPolicy.encode(ids)))
     }
+
+    @Test
+    fun `a box is told to the widget in dp`() {
+        // The MT50 case: density 1.5, a 506x110 px frame.
+        assertEquals(337, HomeWidgetsPolicy.toDp(506, 1.5f))
+        assertEquals(73, HomeWidgetsPolicy.toDp(110, 1.5f))
+        assertEquals(240, HomeWidgetsPolicy.toDp(240, 1f))
+    }
+
+    @Test
+    fun `a box that has not been laid out yet is never negative`() {
+        assertEquals(0, HomeWidgetsPolicy.toDp(-12, 1.5f))
+    }
+
+    @Test
+    fun `a density the system did not report leaves the size as it is`() {
+        assertEquals(300, HomeWidgetsPolicy.toDp(300, 0f))
+    }
 }
