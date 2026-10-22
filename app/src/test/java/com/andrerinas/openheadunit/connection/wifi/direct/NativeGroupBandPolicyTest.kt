@@ -224,4 +224,63 @@ class NativeGroupBandPolicyTest {
             )
         }
     }
+
+    // --- Remembered banded refusal ---
+
+    private val build = "Lenovo/L38043/L38043:10/QP1A/eng.test:userdebug/test-keys"
+
+    @Test
+    fun `AUTO skips the banded ladder on the build that refused it`() {
+        assertTrue(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.AUTO, channelPinned = false, refusedOnFingerprint = build, currentFingerprint = build))
+    }
+
+    @Test
+    fun `nothing recorded means the band is asked for as before`() {
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.AUTO, false, null, build))
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.AUTO, false, "", build))
+    }
+
+    @Test
+    fun `a firmware update asks again`() {
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.AUTO, false, build, build + ".1"))
+    }
+
+    @Test
+    fun `a forced band keeps asking for that band`() {
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.FORCE_5GHZ, false, build, build))
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.FORCE_2_4GHZ, false, build, build))
+    }
+
+    @Test
+    fun `a pinned channel is an explicit choice and is still tried`() {
+        assertFalse(NativeGroupBandPolicy.skipsBandedRequest(P2pBandPreference.AUTO, channelPinned = true, refusedOnFingerprint = build, currentFingerprint = build))
+    }
+
+    @Test
+    fun `only an exhausted ladder under AUTO with every rung refused is recorded`() {
+        assertTrue(NativeGroupBandPolicy.recordsBandedRefusal(P2pBandPreference.AUTO, ladderExhausted = true, everyRungRefused = true))
+        assertFalse(NativeGroupBandPolicy.recordsBandedRefusal(P2pBandPreference.AUTO, ladderExhausted = false, everyRungRefused = true))
+        assertFalse(NativeGroupBandPolicy.recordsBandedRefusal(P2pBandPreference.FORCE_2_4GHZ, ladderExhausted = true, everyRungRefused = true))
+    }
+
+    @Test
+    fun `a ladder with a busy rung is not recorded`() {
+        assertFalse(NativeGroupBandPolicy.recordsBandedRefusal(P2pBandPreference.AUTO, ladderExhausted = true, everyRungRefused = false))
+    }
+
+    @Test
+    fun `only ERROR counts as a refusal of the band`() {
+        assertTrue(NativeGroupBandPolicy.isBandRefusal(reason = 0, crashed = false))
+        assertFalse(NativeGroupBandPolicy.isBandRefusal(reason = 2, crashed = false))
+        assertFalse(NativeGroupBandPolicy.isBandRefusal(reason = 1, crashed = false))
+        assertFalse(NativeGroupBandPolicy.isBandRefusal(reason = 0, crashed = true))
+    }
+
+    @Test
+    fun `the refusal is stored only when the no-band group is on 5GHz`() {
+        assertTrue(NativeGroupBandPolicy.storesBandedRefusalAt(5180))
+        assertTrue(NativeGroupBandPolicy.storesBandedRefusalAt(5745))
+        assertFalse(NativeGroupBandPolicy.storesBandedRefusalAt(2437))
+        assertFalse(NativeGroupBandPolicy.storesBandedRefusalAt(0))
+    }
 }

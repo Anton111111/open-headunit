@@ -52,3 +52,6 @@
 -keepclassmembers class * implements com.adayo.mcucommproxy.IMcuCommCallback {
     public void mcuCommCallback(byte[], char);
 }
+
+# Instantiated by Shizuku in a separate process using its class name and public constructor.
+-keep class com.andrerinas.openheadunit.connection.wifi.scan.WifiScanUserService { *; }

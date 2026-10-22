@@ -29,6 +29,7 @@ import com.andrerinas.openheadunit.input.KeyCode
 import com.andrerinas.openheadunit.utils.AuditReportPolicy
 import com.andrerinas.openheadunit.utils.LegacyOptimizer
 import com.andrerinas.openheadunit.connection.projection.ProjectionConnection
+import com.andrerinas.openheadunit.connection.projection.AbstractUsbProjectionConnection
 import com.andrerinas.openheadunit.connection.projection.SocketProjectionConnection
 import com.andrerinas.openheadunit.contract.ProjectionActivityRequest
 import com.andrerinas.openheadunit.decoder.audio.AudioDecoder
@@ -78,8 +79,9 @@ class AapTransport(
         internal val settings: Settings,
         private val notification: BackgroundNotification,
         val context: Context,
-        private val onAaMediaMetadata: ((MediaPlayback.MediaMetaData) -> Unit)? = null,
-        private val onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus) -> Unit)? = null,
+        private val onAaMediaMetadata: ((MediaPlayback.MediaMetaData, AaPresentationSession) -> Unit)? = null,
+        private val onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus, AaPresentationSession) -> Unit)? = null,
+        private val onAaPresentationClosed: ((AaPresentationSession) -> Unit)? = null,
         private val externalSsl: AapSslContext? = null) {
 
     val ssl: AapSsl = externalSsl?.newSession() ?: AapSslContext(SingleKeyKeyManager(context))
@@ -210,6 +212,7 @@ class AapTransport(
 
         return@Callback true
     }
+    private val presentationSession = AaPresentationSession()
     private var sendHandler: Handler? = null
     private val sendHandlerCallback = Handler.Callback {
         // Timed because the media channels are flow-controlled: acks that stay in here stall video
@@ -816,6 +819,7 @@ class AapTransport(
         val (cb, awaitHandshake, cleanEnd) = synchronized(lifecycleLock) {
             if (closing) return
             closing = true
+            presentationSession.retire()
             retiringWorkers = listOfNotNull(pollThread, sendThread, videoThread)
             aapRead?.stop()
             val callback = onQuit
@@ -1030,6 +1034,12 @@ class AapTransport(
         return shook && !closing
     }
 
+    /** Display updates stop immediately; the protocol reader may still finish a graceful ByeBye. */
+    internal fun retirePresentation() = synchronized(lifecycleLock) {
+        presentationSession.retire()
+        aapRead?.retirePresentation()
+    }
+
     /**
      * Phase 2 of startup: creates [AapRead] and posts the first [MSG_POLL] to begin the
      * inbound message loop.
@@ -1039,7 +1049,7 @@ class AapTransport(
      * frame is ever decoded before a render target exists.
      */
     internal fun startReading() = synchronized(lifecycleLock) {
-        if (closing || !handshakeStarted || handshakeFinished.count != 0L || aapRead != null) return@synchronized
+        if (closing || !presentationSession.isActive || !handshakeStarted || handshakeFinished.count != 0L || aapRead != null) return@synchronized
         AppLog.i("Start Aap transport read loop")
         aapRead = AapRead.Factory.create(
             connection!!,
@@ -1050,7 +1060,9 @@ class AapTransport(
             settings,
             context,
             onAaMediaMetadata,
-            onAaPlaybackStatus
+            onAaPlaybackStatus,
+            onAaPresentationClosed,
+            presentationSession
         )
         pollHandler?.sendEmptyMessage(MSG_POLL)
     }
@@ -1058,54 +1070,102 @@ class AapTransport(
     private fun handshake(connection: ProjectionConnection): Boolean {
         lastHandshakeFailure = HandshakeFailure.OTHER
         try {
-            val isUsb = connection !is SocketProjectionConnection && !connection.isSingleMessage
+            val isUsb = connection.type == ProjectionConnection.Type.USB
             // Increased delay for AA 16.4+ stability on USB - skip for Sockets
             if (isUsb) {
                 SystemClock.sleep(500)
             }
 
-            val buffer = ByteArray(Messages.DEF_BUFFER_LENGTH)
-
-            // Drain any stale data left in the USB pipe from a previous session.
-            // MUST ONLY be run on USB; on TCP Sockets, draining discards initial response bytes!
-            var drained = 0
-            if (isUsb) {
-                while (true) {
-                    val n = try { connection.recvBlocking(buffer, buffer.size, 50, false) } catch (e: Exception) { -1 }
-                    if (n <= 0) break
-                    drained += n
-                }
-                if (drained > 0) {
-                    AppLog.i("Handshake: Drained $drained bytes of stale USB data before version request")
-                }
-            }
-
-            AppLog.d("Handshake: Starting version request. TS: ${SystemClock.elapsedRealtime()}")
             val version = Messages.versionRequest
             var ret = -1
             var attempt = 0
             var received = false
+            var versionFrameSize = 0
             // Separates "the peer is not answering" from "our own link broke". Only the first
             // is worth reporting upwards: it is the one the user can do something about.
             var peerSentBytes = false
             var transportError = false
-            // Outer deadline prevents the loop from running for minutes on an unresponsive device.
-            // Each send+recv pair uses 2 s per operation; 3 attempts × 4 s ≈ 12 s worst-case,
-            // capped here at HANDSHAKE_TIMEOUT_MS so a stuck device fails fast.
+            var draining = isUsb
+            var drained = 0
+            // Keep one reader from the pre-request drain through version retries. Even the
+            // initial idle gap can split a stale packet; discarding its prefix loses alignment.
+            val frames = HandshakeFrameReader(SystemClock::elapsedRealtime, if (isUsb) 100 else 1,
+                skipEncryptedFrames = true) { bytes, length, timeout ->
+                val started = SystemClock.elapsedRealtime()
+                val count = connection.recvBlocking(bytes, length, timeout, false)
+                if (draining) {
+                    if (count > 0) drained += count
+                } else {
+                    if (count > 0) peerSentBytes = true
+                    if (HandshakeMessagePolicy.isReadError(count, SystemClock.elapsedRealtime() - started,
+                            timeout, timeoutLooksLikeError = isUsb)) {
+                        transportError = true
+                    }
+                }
+                ret = count
+                count
+            }
+            if (isUsb) {
+                // Discard complete old frames until the first idle read, at most 500 ms.
+                // The parser retains a partial header/body for the response window. Never
+                // drain TCP: its initial bytes may already belong to the new connection.
+                val drainDeadline = SystemClock.elapsedRealtime() + 500
+                try {
+                    while (connection.isConnected && frames.readFrame(drainDeadline, stopOnIdle = true) != null) {
+                        // Complete cleartext frames predate our request; encrypted frames are
+                        // skipped inside the reader using the same bounded wire lengths.
+                    }
+                } catch (e: java.io.IOException) {
+                    // Reopening USB may start inside an old frame (the old connection's
+                    // host buffer was discarded). No response to our request exists yet,
+                    // so discard unframed bytes until idle within the same drain budget.
+                    // After VersionRequest, an unknown boundary must still fail closed.
+                    AppLog.i("Handshake: Discarding unframed USB data before version request")
+                    frames.discardPendingFrame()
+                    val discard = ByteArray(Messages.DEF_BUFFER_LENGTH)
+                    while (connection.isConnected && drainDeadline - SystemClock.elapsedRealtime() >= 100) {
+                        val n = try { connection.recvBlocking(discard, discard.size, 100, false) }
+                            catch (_: Exception) { -1 }
+                        if (n <= 0) break
+                        drained += n
+                    }
+                }
+                if (drained > 0) {
+                    AppLog.i("Handshake: Read $drained stale USB bytes before version request")
+                }
+            }
+            draining = false
+            AppLog.d("Handshake: Starting version request. TS: ${SystemClock.elapsedRealtime()}")
+            // The first two receive windows allow 2 s each; the last uses the remaining
+            // budget. Partial frames retain bytes without extending this overall deadline.
             val versionDeadline = SystemClock.elapsedRealtime() + HANDSHAKE_TIMEOUT_MS
-            while (attempt < 3 && connection.isConnected) {
+            val versionRequests = HandshakeMessagePolicy.versionRequests(isUsb)
+            while (attempt < versionRequests && connection.isConnected) {
                 if (SystemClock.elapsedRealtime() >= versionDeadline) {
                     AppLog.e("Handshake: Version exchange timed out after $attempt attempt(s).")
                     return false
                 }
                 attempt++
-                ret = connection.sendBlocking(version, version.size, 2000)
+                ret = connection.sendBlocking(version, version.size,
+                    minOf(2000L, versionDeadline - SystemClock.elapsedRealtime()).coerceAtLeast(1).toInt())
                 AppLog.d("Handshake: Version request sent. ret: $ret. attempt: $attempt. TS: ${SystemClock.elapsedRealtime()}")
-                if (ret < 0) {
+                if (ret != version.size) {
                     AppLog.w("Handshake: Version request send failed (ret=$ret), attempt $attempt")
                     transportError = true
-                    SystemClock.sleep(200)
-                    continue
+                    lastHandshakeFailure = HandshakeFailure.TRANSPORT_ERROR
+                    // A negative USB result does not prove zero delivery. Only retry this
+                    // complete VersionRequest if the actual endpoint fits it in one packet:
+                    // the peer receives either none or the whole request. Whole duplicates
+                    // are already allowed by receive-timeout retries and late-response handling.
+                    // Never extend this to TLS records, short positive writes, or unknown/small
+                    // endpoints (full-speed bulk endpoints can have an 8-byte packet size).
+                    val packetSize = (connection as? AbstractUsbProjectionConnection)?.outMaxPacketSize ?: 0
+                    if (ret < 0 && isUsb && connection.isConnected && version.size <= packetSize &&
+                        attempt < versionRequests && versionDeadline - SystemClock.elapsedRealtime() > 200) {
+                        SystemClock.sleep(200)
+                        continue
+                    }
+                    return false
                 }
 
                 AppLog.d("Handshake: Waiting for version response. TS: ${SystemClock.elapsedRealtime()}")
@@ -1117,52 +1177,49 @@ class AapTransport(
                 // until the deadline expires.
                 // The last request waits out the whole budget: a USB dongle relaying over WiFi can
                 // answer after 6 s, and giving up there leaves its answers for the next attempt.
-                val recvDeadline = if (attempt < 3) SystemClock.elapsedRealtime() + 2000
-                    else maxOf(versionDeadline, SystemClock.elapsedRealtime() + 2000)
+                val recvDeadline = if (attempt < versionRequests) minOf(versionDeadline, SystemClock.elapsedRealtime() + 2000)
+                    else versionDeadline
                 while (SystemClock.elapsedRealtime() < recvDeadline) {
-                    val remaining = (recvDeadline - SystemClock.elapsedRealtime())
-                        .toInt().coerceAtLeast(100)
-                    val readStart = SystemClock.elapsedRealtime()
-                    ret = connection.recvBlocking(buffer, buffer.size, remaining, false)
-                    val readMs = SystemClock.elapsedRealtime() - readStart
-                    if (HandshakeMessagePolicy.isReadError(ret, readMs, remaining,
-                            timeoutLooksLikeError = connection !is SocketProjectionConnection)) {
-                        transportError = true
+                    val frame = try {
+                        frames.readFrame(recvDeadline)
+                    } catch (e: java.io.IOException) {
+                        // Known encrypted envelopes were consumed by length. An unknown header
+                        // has no safe skip boundary; let recovery reopen the transport.
+                        lastHandshakeFailure = HandshakeFailure.TRANSPORT_ERROR
+                        throw e
+                    } ?: break
+                    if (HandshakeMessagePolicy.isTerminalResponse(frame)) {
+                        AppLog.e("Handshake: peer terminated version negotiation")
+                        return false
                     }
-                    if (ret > 0) peerSentBytes = true
-                    if (ret <= 0) break  // timeout or error — fall through to outer retry
-                    if (ret >= 6
-                        && buffer[0] == 0.toByte()
-                        && buffer[4] == 0.toByte()
-                        && buffer[5] == 2.toByte()) {
-                        val negotiated = AapVersionNegotiation.parse(buffer, ret)
-                        if (negotiated != null) {
-                            negotiatedVersion = negotiated
-                            AppLog.i("Handshake: Version response received: the phone selected " +
-                                    "${negotiated.major}.${negotiated.minor} " +
-                                    "(we asked for ${AapVersionNegotiation.ANNOUNCED_MAJOR}." +
-                                    "${AapVersionNegotiation.ANNOUNCED_MINOR}), " +
-                                    "status ${negotiated.statusName}")
-                            negotiated.requestedConfig?.let {
-                                AppLog.i("Handshake: the phone asks for ping timeout " +
-                                        "${it.pingConfiguration.timeoutMs}ms, read timeout " +
-                                        "${it.wirelessTcpConfiguration.socketReadTimeoutMs}ms")
-                            }
-                        } else {
-                            AppLog.i("Handshake: Version response received (ret=$ret, attempt=$attempt).")
+                    if (HandshakeMessagePolicy.isLateVersionResponse(frame)) {
+                        val negotiated = AapVersionNegotiation.parse(frame, frame.size)
+                        if (negotiated == null || !negotiated.accepted) {
+                            AppLog.e("Handshake: rejected VERSION_RESPONSE: " +
+                                (negotiated?.let { "${it.major}.${it.minor}, ${it.statusName}" } ?: "malformed body"))
+                            return false
+                        }
+                        negotiatedVersion = negotiated
+                        AppLog.i("Handshake: the phone selected ${negotiated.major}.${negotiated.minor} " +
+                            "(we asked for ${AapVersionNegotiation.ANNOUNCED_MAJOR}.${AapVersionNegotiation.ANNOUNCED_MINOR}), status ${negotiated.statusName}")
+                        negotiated.requestedConfig?.let {
+                            AppLog.i("Handshake: the phone asks for ping timeout " +
+                                "${it.pingConfiguration.timeoutMs}ms, read timeout " +
+                                "${it.wirelessTcpConfiguration.socketReadTimeoutMs}ms")
                         }
                         received = true
+                        versionFrameSize = frame.size
                         break
                     }
                     // Wrong message — log and keep draining.
-                    val ch   = buffer[0].toInt() and 0xFF
-                    val type = ((buffer[4].toInt() and 0xFF) shl 8) or (buffer[5].toInt() and 0xFF)
+                    val ch   = frame[0].toInt() and 0xFF
+                    val type = ((frame[4].toInt() and 0xFF) shl 8) or (frame[5].toInt() and 0xFF)
                     AppLog.w("Handshake: Ignoring unexpected message " +
-                             "(ch=$ch, type=0x${type.toString(16)}, len=$ret). " +
+                             "(ch=$ch, type=0x${type.toString(16)}, len=${frame.size}). " +
                              "Waiting for VERSION_RESPONSE.")
                 }
                 if (received) break
-                AppLog.w("Handshake: No VERSION_RESPONSE within ${if (attempt < 3) "2s" else "the handshake budget"} (attempt $attempt), ret=$ret")
+                AppLog.w("Handshake: No VERSION_RESPONSE within ${if (attempt < versionRequests) "2s" else "the handshake budget"} (attempt $attempt), ret=$ret")
                 SystemClock.sleep(200)
             }
 
@@ -1186,7 +1243,7 @@ class AapTransport(
                 }
                 return false
             }
-            AppLog.i("Handshake: Version response recv ret: %d", ret)
+            AppLog.i("Handshake: Version response recv ret: %d", versionFrameSize)
             lastHandshakeFailure = HandshakeFailure.SSL
 
             AppLog.d("Handshake: Starting SSL handshake via performHandshake(). TS: ${SystemClock.elapsedRealtime()}")

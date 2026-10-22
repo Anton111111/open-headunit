@@ -57,6 +57,8 @@ import com.andrerinas.openheadunit.utils.ToastUtils
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import com.andrerinas.openheadunit.utils.WifiStackRecovery
+import com.andrerinas.openheadunit.utils.OemAppManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -174,6 +176,34 @@ class MainActivity : BaseActivity() {
         }
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+        if (Build.VERSION.SDK_INT >= 26) {
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    var notice: com.google.android.material.snackbar.Snackbar? = null
+                    try {
+                        while (true) {
+                            val state = com.andrerinas.openheadunit.connection.wifi.scan.WifiScanControl.state.value
+                            val adbRecovery = com.andrerinas.openheadunit.connection.wifi.scan.FytShizukuStarter.needsRecovery(this@MainActivity)
+                            if (adbRecovery || state == com.andrerinas.openheadunit.connection.wifi.scan.WifiScanControl.State.RECOVERY) {
+                                if (notice == null) {
+                                    notice = com.google.android.material.snackbar.Snackbar.make(
+                                        findViewById(android.R.id.content), if (adbRecovery) R.string.wifi_scan_fyt_recovery else R.string.wifi_scan_recovery_notice,
+                                        com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
+                                    ).setAction(R.string.wifi_scan_restore_short) {
+                                        startActivity(Intent(this@MainActivity, SettingsActivity::class.java)
+                                            .putExtra(SettingsActivity.EXTRA_SEARCH_QUERY, getString(R.string.wifi_scan_title)))
+                                    }
+                                    notice?.show()
+                                }
+                            } else if (state != com.andrerinas.openheadunit.connection.wifi.scan.WifiScanControl.State.WORKING) {
+                                notice?.dismiss(); notice = null
+                            }
+                            kotlinx.coroutines.delay(1_000)
+                        }
+                    } finally { notice?.dismiss() }
+                }
+            }
+        }
         if (isExtremeDark) {
             findViewById<View>(R.id.splash_overlay)?.setBackgroundColor(
                 ContextCompat.getColor(this, R.color.extreme_dark_background)
@@ -1172,6 +1202,7 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
+        SettingsActivity.onMainScreenResumed()
         val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
         window.peekDecorView()?.let { v ->
             imm?.hideSoftInputFromWindow(v.windowToken, 0)
@@ -1271,6 +1302,8 @@ class MainActivity : BaseActivity() {
                     R.string.connection_issue_banner_wifi_direct_refused
                 ConnectionIssue.WIFI_DIRECT_STACK_CYCLED ->
                     R.string.connection_issue_banner_wifi_direct_cycled
+                ConnectionIssue.WIFI_DIRECT_STACK_STUCK ->
+                    R.string.connection_issue_banner_wifi_direct_stuck
                 ConnectionIssue.WIFI_RADIO_OFF ->
                     R.string.connection_issue_banner_wifi_radio_off
                 ConnectionIssue.VIDEO_LINK_TOO_SLOW ->
@@ -1308,6 +1341,34 @@ class MainActivity : BaseActivity() {
     }
 
     /**
+     * The stuck-stack banner's action. Restarts WiFi itself when it can; otherwise opens the system
+     * WiFi panel, where switching WiFi off and on is two taps.
+     */
+    private fun restartWifiFromBanner() {
+        lifecycleScope.launch {
+            val route = WifiStackRecovery.availableRoute()
+            if (route == OemAppManager.ExecutionBackend.NONE && !Settings(this@MainActivity).wifiRestartRootGranted) {
+                openWifiPanel()
+                return@launch
+            }
+            ToastUtils.showToast(this@MainActivity, R.string.wifi_restart_running, Toast.LENGTH_SHORT, force = true)
+            val (ok, _) = WifiStackRecovery.restartWifi(applicationContext, "banner tap")
+            if (!ok) {
+                ToastUtils.showToast(this@MainActivity, R.string.wifi_restart_failed, Toast.LENGTH_LONG, force = true)
+                openWifiPanel()
+            }
+        }
+    }
+
+    private fun openWifiPanel() {
+        try {
+            startActivity(WifiStackRecovery.wifiPanelIntent())
+        } catch (e: Exception) {
+            AppLog.w("MainActivity: could not open the WiFi panel: ${e.message}")
+        }
+    }
+
+    /**
      * Open Settings on the row that fixes [issue].
      *
      * Seeds the search box rather than using EXTRA_DESTINATION, which targets a whole screen: every
@@ -1333,6 +1394,11 @@ class MainActivity : BaseActivity() {
             ConnectionIssue.HANDS_FREE_RECORD_REFUSED -> return
             // The remedy is on the phone, and this unit is already applying the one it has.
             ConnectionIssue.PHONE_HOLDS_STALE_ENDPOINT -> return
+            // The remedy is a WiFi restart: done here when root or local ADB allows, else the panel.
+            ConnectionIssue.WIFI_DIRECT_STACK_STUCK -> {
+                restartWifiFromBanner()
+                return
+            }
             // Auto-reconnect is a per-network switch in Android's own WiFi settings.
             ConnectionIssue.HOME_WIFI_REJOINED_BESIDE_GROUP -> {
                 try {

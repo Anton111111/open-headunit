@@ -12,6 +12,9 @@ abstract class AbstractUsbProjectionConnection(
     @Volatile protected var usbDeviceConnection: UsbDeviceConnection? = null
     protected val stateLock = Any()
 
+    /** Actual bulk OUT endpoint capacity; zero means no endpoint is available. */
+    abstract val outMaxPacketSize: Int
+
     fun isDeviceRunning(device: UsbDevice): Boolean {
         synchronized(stateLock) {
             if (!isConnected)
