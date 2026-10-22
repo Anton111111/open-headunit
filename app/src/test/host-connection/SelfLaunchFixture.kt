@@ -144,20 +144,39 @@ object AppLog { fun i(s: String) {}; fun w(s: String) {}; fun w(s: String, e: Th
 object VpnControl {
     fun isVpnAvailable() = true
     fun isPrepared(service: Service) = service.vpnPrepared
-    fun startVpn(service: Service, excludeSelf: Boolean) { service.vpnExcludeSelfRequests.add(excludeSelf) }
+    fun startVpn(service: Service, excludeSelf: Boolean) {
+        service.vpnExcludeSelfRequests.add(excludeSelf)
+        service.vpnCommands.add(service.vpnRequests.issue())
+    }
 }
 class ConnectivityManager { var activeNetwork: Any? = null }
 object Context { const val CONNECTIVITY_SERVICE = "connectivity" }
 object Build { object VERSION { var SDK_INT = 23 }; object VERSION_CODES { const val M = 23 } }
 const val AA_PACKAGE = "fixture.gearhead"
-class Intent(val action: String? = null) {
+class Intent(var action: String? = null) {
+    constructor(context: Service, target: Class<*>) : this()
+    private val extras = mutableMapOf<String, Any>()
     fun setPackage(name: String) {}
     fun setClassName(pkg: String, name: String) {}
     fun addFlags(flags: Int) {}
-    fun putExtra(key: String, value: Any) {}
-    fun getBooleanExtra(key: String, default: Boolean) = default
+    fun putExtra(key: String, value: Any) { extras[key] = value }
+    fun getBooleanExtra(key: String, default: Boolean) = extras[key] as? Boolean ?: default
     companion object { const val FLAG_ACTIVITY_NEW_TASK = 1 }
 }
+object ContextCompat {
+    fun startForegroundService(service: Service, intent: Intent) { service.homeCommands.add(intent) }
+}
+object HomeFragment { var forceSelfModeLaunch = false }
+class Main(private val service: Service) {
+    fun requestSelf() = forceSelfModeLaunch()
+    // MAIN_COMMAND
+}
+class Home(private val service: Service) {
+    private fun requireContext() = service
+    fun requestSelf(needsVpn: Boolean) = startSelfModeInternal(needsVpn)
+    // HOME_COMMAND
+}
+class FixtureMedia { var isActive = false; fun setMetadata(value: Any?) {} }
 class WifiLauncherManual(manager: WifiLauncherManager)
 class WifiLauncherManager {
     private val generation = WirelessCleanupGeneration()
@@ -225,6 +244,19 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     var directConnects = 0
     var directLaunchHook: (suspend () -> Unit)? = null
     var fallbacks = 0
+    val homeCommands = mutableListOf<Intent>()
+    internal val vpnRequests = DummyVpnStartRequests()
+    val vpnCommands = mutableListOf<String>()
+    var tunnel = false
+    fun deliverVpn() { vpnCommands.toList().forEach { vpnRequests.runIfCurrent(it) { tunnel = true } }; vpnCommands.clear() }
+    private fun safeMediaSessionCall(action: (FixtureMedia) -> Unit) { action(FixtureMedia()) }
+    private fun updateMediaSessionState(connected: Boolean) {}
+    fun deliverHomeCommand() {
+        val intent = homeCommands.removeAt(0)
+        when (intent.action) {
+            // START_ACTION
+        }
+    }
     var dummyVpnOwner: DummyVpnPolicy.Owner? = null
     var vpnPrepared = true
     val vpnExcludeSelfRequests = mutableListOf<Boolean>()
@@ -241,6 +273,7 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
         if (reason == DummyVpnPolicy.Reason.SELF_MODE_SESSION_LIVE) liveVpnReleases++ else vpnStops++
         if (DummyVpnPolicy.shouldStop(dummyVpnOwner, reason)) {
             vpnReleases++
+            vpnRequests.stop { tunnel = false }
             dummyVpnOwner = null
             manager.stopDummyVpnWatchdog()
         }
@@ -260,6 +293,8 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     }
     override fun close() { serviceScope.cancel(); main.drain() }
     companion object {
+        const val ACTION_START_SELF_MODE = "start-self"
+        const val EXTRA_SELF_MODE_VPN = "needs-vpn"
         const val ACTION_CANCEL_WIRELESS = "cancel"
         const val EXTRA_USB_ATTEMPT = "usb"
         const val START_STICKY = 1
@@ -267,6 +302,43 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
 }
 
 fun main() {
+    Service().use { s ->
+        Main(s).requestSelf(); s.deliverHomeCommand(); s.main.drain()
+        val originalJob = s.manager.currentLaunch()
+        check(s.manager.inFlight() && s.wifiLauncherManager.listenerStarts == 1)
+        check(s.vpnCommands.isEmpty() && s.activities == 0)
+        Home(s).requestSelf(true); s.deliverHomeCommand()
+        check(s.manager.currentLaunch() === originalJob)
+        check(s.vpnExcludeSelfRequests == listOf(false))
+        s.deliverVpn(); check(s.tunnel)
+        s.network.activeNetwork = Any()
+        s.main.advanceBy(100); s.main.drain()
+        check(s.activities == 1 && s.wifiLauncherManager.listenerStarts == 1)
+    }
+    Service().use { s ->
+        s.dummyVpnOwner = DummyVpnPolicy.Owner.SESSION
+        VpnControl.startVpn(s, true)
+        val oldRequest = s.vpnCommands.single()
+        Home(s).requestSelf(true)
+        check(s.vpnCommands.size == 1) { "Home must not start VPN before admission" }
+        // Current old terminal cleanup wins before the service receives the Self command.
+        s.stopDummyVpn(DummyVpnPolicy.Reason.SESSION_ENDED)
+        s.deliverHomeCommand()
+        check(s.dummyVpnOwner == DummyVpnPolicy.Owner.SELF_MODE)
+        check(!s.vpnRequests.runIfCurrent(oldRequest) { error("old request survived cleanup") })
+        s.deliverVpn()
+        check(s.tunnel && s.vpnExcludeSelfRequests == listOf(true, false))
+    }
+    for (needsVpn in listOf(false, true)) Service().use { s ->
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connected
+        Home(s).requestSelf(needsVpn); s.deliverHomeCommand()
+        check(s.vpnCommands.isEmpty()) { "rejected launch requested VPN" }
+    }
+    Service().use { s ->
+        s.modern = true
+        Home(s).requestSelf(false); s.deliverHomeCommand()
+        check(s.vpnCommands.isEmpty()) { "online/5277 launch gained an unrequested VPN" }
+    }
     Service().use { s ->
         s.dummyVpnOwner = DummyVpnPolicy.Owner.SESSION
         s.manager.start()

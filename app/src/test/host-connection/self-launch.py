@@ -42,7 +42,7 @@ for marker, file, declaration in [
     ('STATE', comm, 'class Disconnected('),
     ('CANCEL', comm, 'fun cancelPendingSettingsRestart()'),
     ('START', manager, 'fun start(settingsRestart:'),
-    ('ADOPT_VPN', manager, 'private fun adoptDummyVpn()'),
+    ('ADOPT_VPN', manager, 'private fun adoptDummyVpn('),
     ('STOP', manager, 'fun stop(wasConnected:'),
     ('ENDED', manager, 'internal fun onConnectionEnded('),
     ('ESTABLISHED', manager, 'internal fun onConnectionEstablished()'),
@@ -51,11 +51,16 @@ for marker, file, declaration in [
     ('LEGACY_RUN', legacy, 'override suspend fun run()'),
     ('LEGACY_WAIT', legacy, 'suspend fun runWifiLauncher()'),
     ('OBSERVER', 'aap/AapService.kt', 'private fun observeConnectionState()'),
+    ('MAIN_COMMAND', 'main/MainActivity.kt', 'private fun forceSelfModeLaunch()'),
+    ('HOME_COMMAND', 'main/HomeFragment.kt', 'private fun startSelfModeInternal('),
+    ('START_ACTION', 'aap/AapService.kt', 'ACTION_START_SELF_MODE       ->'),
     ('CANCEL_ACTION', 'aap/AapService.kt', 'ACTION_CANCEL_WIRELESS       ->'),
 ]:
     code = member(file, declaration)
     # Main and its delay scheduler are controlled; production launch/delay calls and Jobs remain intact.
-    code = code.replace('Dispatchers.Main', 'service.main').replace('this@AapService', 'this@Service')
+    code = code.replace('Dispatchers.Main', 'service.main').replace('this@AapService', 'this@Service').replace('AapService.', 'Service.').replace('AapService::class', 'Service::class')
+    if marker == 'MAIN_COMMAND':
+        code = code.replace('Intent(this,', 'Intent(service,').replace('startForegroundService(this,', 'startForegroundService(service,')
     fixture = fixture.replace('// ' + marker + '\n', code + '\n')
 # Extract the full Self branch of the actual service policy; remaining branches are unrelated
 # wireless/USB effects. Fail visibly if its boundary is renamed rather than testing a copy.
@@ -71,6 +76,7 @@ fixture = fixture.replace('// SELF_END_POLICY\n', policy + '\n')
 for name in ['SelfLaunchCoalescePolicy.kt', 'SelfLaunchTimeoutPolicy.kt']:
     source = (SRC / 'connection/self' / name).read_text()
     (OUT / name).write_text(source.replace('package com.andrerinas.openheadunit.connection.self', 'package selflaunch'))
+(OUT / 'DummyVpnStartRequests.kt').write_text((SRC / 'utils/DummyVpnStartRequests.kt').read_text().replace('package com.andrerinas.openheadunit.utils', 'package selflaunch'))
 (OUT / 'DummyVpnPolicy.kt').write_text((SRC / 'utils/DummyVpnPolicy.kt').read_text().replace('package com.andrerinas.openheadunit.utils', 'package selflaunch'))
 (OUT / 'extracted-method-sha256.json').write_text(json.dumps(methods, indent=2))
 (OUT / 'WirelessCleanupGeneration.kt').write_text((SRC / 'connection/wifi/WirelessCleanupGeneration.kt').read_text()

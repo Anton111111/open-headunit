@@ -3263,7 +3263,7 @@ class AapService : Service() {
 
         when (intent?.action) {
             ACTION_START_SELF_MODE       -> {
-                selfLauncherManager.start()
+                selfLauncherManager.start(needsDummyVpn = intent.getBooleanExtra(EXTRA_SELF_MODE_VPN, false))
                 safeMediaSessionCall {
                     it.isActive = false
                     it.setMetadata(null)
@@ -4002,6 +4002,7 @@ class AapService : Service() {
         private const val PROJECTION_LAUNCH_NOTIFICATION_ID = 43
 
         // Service action strings used with startService() and sendBroadcast()
+        const val EXTRA_SELF_MODE_VPN = "self_mode_needs_dummy_vpn"
         const val ACTION_START_SELF_MODE           = "com.andrerinas.openheadunit.ACTION_START_SELF_MODE"
         const val ACTION_STOP_SELF_MODE            = "com.andrerinas.openheadunit.ACTION_STOP_SELF_MODE"
         const val ACTION_START_WIRELESS            = "com.andrerinas.openheadunit.ACTION_START_WIRELESS"
