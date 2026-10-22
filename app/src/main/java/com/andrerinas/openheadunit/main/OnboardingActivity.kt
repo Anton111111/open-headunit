@@ -18,6 +18,7 @@ import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.VehicleTypePolicy
 import com.andrerinas.openheadunit.app.BaseActivity
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
+import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.AudioStreamTester
 import com.andrerinas.openheadunit.utils.AppThemeManager
@@ -27,6 +28,7 @@ import com.andrerinas.openheadunit.utils.PermissionRowBinder
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.AnnouncedDensityPolicy
 import com.andrerinas.openheadunit.utils.OnboardingDisplayPolicy
+import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.SystemOptimizer
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
@@ -63,6 +65,9 @@ class OnboardingActivity : BaseActivity() {
 
     private var step = 0
     private var isBinding = false
+    // The launcher switch asked the system for the home role and the answer is not in yet, so
+    // enableCarLauncher is not written until the role is confirmed held (see resolveLauncherRequest).
+    private var launcherRequestPending = false
 
     private var selectedSize = SystemOptimizer.DisplaySizePreset.STANDARD_9_10
     private var selectedPortrait = false
@@ -94,6 +99,7 @@ class OnboardingActivity : BaseActivity() {
         setContentView(R.layout.activity_onboarding)
 
         step = savedInstanceState?.getInt(KEY_STEP, 0) ?: 0
+        launcherRequestPending = savedInstanceState?.getBoolean(KEY_LAUNCHER_PENDING, false) ?: false
 
         flipper = findViewById(R.id.onb_flipper)
         backBtn = findViewById(R.id.onb_back)
@@ -130,6 +136,7 @@ class OnboardingActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(KEY_STEP, step)
+        outState.putBoolean(KEY_LAUNCHER_PENDING, launcherRequestPending)
     }
 
     override fun onResume() {
@@ -138,6 +145,8 @@ class OnboardingActivity : BaseActivity() {
         // returning from a special-permission settings screen (overlay / modify system settings).
         updateThemeButtonText()
         updateNightButtonText()
+        // Coming back from the home-role request (or the system home settings) is where its answer is.
+        resolveLauncherRequest()
         updateLauncherStep()
         permissionBinder?.rebind()
         if (step == STEP_DPI) dpiPicker?.startDemo()
@@ -161,6 +170,7 @@ class OnboardingActivity : BaseActivity() {
 
     /** Move forward to the next visible step, or finish on the last one. */
     private fun goForward() {
+        resolveLauncherRequest()
         var s = step + 1
         while (s < STEP_COUNT && isStepHidden(s)) s++
         if (s >= STEP_COUNT) { finishOnboarding(); return }
@@ -170,6 +180,7 @@ class OnboardingActivity : BaseActivity() {
 
     /** Move back to the previous visible step. */
     private fun goBack() {
+        resolveLauncherRequest()
         var s = step - 1
         while (s > 0 && isStepHidden(s)) s--
         step = s.coerceAtLeast(0)
@@ -325,16 +336,30 @@ class OnboardingActivity : BaseActivity() {
 
         // --- Car launcher: the unit's home screen, with the price of replacing the stock one ---
         findViewById<SwitchMaterial>(R.id.onb_launcher_switch).apply {
-            isChecked = settings.enableCarLauncher
+            isChecked = settings.enableCarLauncher || launcherRequestPending
             setOnCheckedChangeListener { _, checked ->
-                settings.enableCarLauncher = checked
+                // The alias has to be enabled for the system to offer this app as home, but the
+                // setting is only written once the role is held: a declined or lost request must
+                // not leave the app claiming launcher mode while it is not the home app.
                 CarLauncherManager.setLauncherEnabled(this@OnboardingActivity, checked)
+                if (checked) {
+                    if (CarLauncherManager.isDefaultLauncher(this@OnboardingActivity)) {
+                        settings.enableCarLauncher = true
+                    } else {
+                        // Flipping the switch is the request, so ask for the home role right away.
+                        launcherRequestPending = true
+                        CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+                    }
+                } else {
+                    launcherRequestPending = false
+                    settings.enableCarLauncher = false
+                }
                 updateLauncherStep()
-                // Flipping the switch is the request, so ask the system for the home role right away.
-                if (checked) promptDefaultLauncher()
             }
         }
         findViewById<MaterialButton>(R.id.onb_launcher_default_button).setOnClickListener {
+            // Only shown with the switch on, where a request is already pending or launcher mode
+            // is already stored, so asking again needs no extra bookkeeping.
             CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
         }
 
@@ -597,18 +622,45 @@ class OnboardingActivity : BaseActivity() {
      */
     private fun updateLauncherStep() {
         val button = findViewById<MaterialButton>(R.id.onb_launcher_default_button) ?: return
-        button.visibility = if (settings.enableCarLauncher) View.VISIBLE else View.GONE
+        val switchOn = findViewById<SwitchMaterial>(R.id.onb_launcher_switch).isChecked
+        button.visibility = if (switchOn) View.VISIBLE else View.GONE
         button.setText(
             if (CarLauncherManager.isDefaultLauncher(this)) R.string.onb_launcher_default_home_active
             else R.string.onb_launcher_default_home
         )
+        // Reopen on reconnection is ignored while the app is the home app (Settings.reopenOnReconnection),
+        // and the user may have just turned it on in the automation step, so say so here.
+        val showNote = OnboardingLauncherPolicy.showsReopenNote(
+            launcherSwitchOn = switchOn,
+            reopenOn = findViewById<SwitchMaterial>(R.id.onb_reopen_switch).isChecked,
+            reopenOffered = settings.showsUsb()
+        )
+        findViewById<View>(R.id.onb_launcher_reopen_note).visibility = if (showNote) View.VISIBLE else View.GONE
     }
 
-    /** Asks the system to make the app the home app, unless it already is. */
-    private fun promptDefaultLauncher() {
-        if (!CarLauncherManager.isDefaultLauncher(this)) {
-            CarLauncherManager.promptSetDefaultLauncher(this)
+    /**
+     * Settles a pending home-role request: launcher mode is stored only if the role is now held,
+     * otherwise the switch goes back off. Runs on resume and when leaving the step, so a request
+     * whose answer never arrives (the dialog did not show, or was dismissed) cannot leave the
+     * setting claiming launcher mode.
+     */
+    private fun resolveLauncherRequest() {
+        val held = CarLauncherManager.isDefaultLauncher(this)
+        when (OnboardingLauncherPolicy.resolve(launcherRequestPending, held)) {
+            OnboardingLauncherPolicy.Outcome.NONE -> return
+            OnboardingLauncherPolicy.Outcome.COMMIT -> {
+                launcherRequestPending = false
+                settings.enableCarLauncher = true
+                AppLog.i("OnboardingActivity: home role granted, car launcher mode stored")
+            }
+            OnboardingLauncherPolicy.Outcome.REVERT -> {
+                launcherRequestPending = false
+                AppLog.i("OnboardingActivity: home role not held after the request, turning the launcher switch back off")
+                // The switch listener drops the alias and stores launcher mode off.
+                findViewById<SwitchMaterial>(R.id.onb_launcher_switch).isChecked = false
+            }
         }
+        updateLauncherStep()
     }
 
     /** What the wizard ended up doing about the launcher, or null while the switch is off. */
@@ -654,6 +706,7 @@ class OnboardingActivity : BaseActivity() {
             render()
             return
         }
+        resolveLauncherRequest()
         deferredThisSession = true
         settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
         settings.commit()
@@ -686,6 +739,7 @@ class OnboardingActivity : BaseActivity() {
      * also covers a value stored by an older build, which never touched the alias.
      */
     private fun completeOnboarding() {
+        resolveLauncherRequest()
         settings.hasAcceptedDisclaimer = true
         settings.hasCompletedSetupWizard = true
         settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
@@ -929,6 +983,7 @@ class OnboardingActivity : BaseActivity() {
         @Volatile
         var deferredThisSession = false
         private const val KEY_STEP = "onb_step"
+        private const val KEY_LAUNCHER_PENDING = "onb_launcher_pending"
         private const val STEP_COUNT = 13
         private const val STEP_SAFETY = 1
         private const val STEP_CONNECTION = 2

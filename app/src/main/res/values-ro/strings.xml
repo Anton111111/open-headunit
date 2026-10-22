@@ -1310,6 +1310,7 @@
     <string name="onb_launcher_warning">Ecranul principal de acum este de obicei locul unde se află climatizarea, radioul sau camera de marșarier. Activează asta doar dacă le poți deschide și altfel.</string>
     <string name="onb_launcher_default_home">Setează ca aplicație principală implicită</string>
     <string name="onb_launcher_default_home_active">Open Headunit este aplicația principală implicită</string>
+    <string name="onb_launcher_reopen_note">Redeschide la reconectare nu se aplică cât timp Open Headunit este aplicația principală, deoarece unitatea revine oricum la ea. Funcționează din nou dacă dezactivezi lansatorul auto.</string>
     <string name="onb_summary_launcher_home">Lansator: Open Headunit este ecranul principal</string>
     <string name="onb_summary_launcher_registered">Lansator: înregistrat ca ecran principal</string>
     <string name="home_pages_hint_title">Ține apăsat pe un spațiu gol</string>

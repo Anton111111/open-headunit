@@ -1318,6 +1318,7 @@
     <string name="onb_launcher_warning">現在のホーム画面には、エアコン操作、ラジオ、バックカメラがあることが多いです。別の方法で開ける場合にのみオンにしてください。</string>
     <string name="onb_launcher_default_home">デフォルトのホームアプリに設定</string>
     <string name="onb_launcher_default_home_active">Open Headunitがデフォルトのホームアプリです</string>
+    <string name="onb_launcher_reopen_note">Open Headunitがホームアプリの間は、ユニットが自動的に戻るため「再接続時に再開」は適用されません。カーランチャーをオフにすると再び有効になります。</string>
     <string name="onb_summary_launcher_home">ランチャー: Open Headunitがホームアプリです</string>
     <string name="onb_summary_launcher_registered">ランチャー: ホームアプリとして登録済み</string>
     <string name="home_pages_hint_title">空いている場所を長押し</string>

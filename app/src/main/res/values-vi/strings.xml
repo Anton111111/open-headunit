@@ -1316,6 +1316,7 @@
     <string name="onb_launcher_warning">Màn hình chính hiện tại thường là nơi có điều hòa, radio hoặc camera lùi. Chỉ bật mục này nếu bạn có cách khác để mở chúng.</string>
     <string name="onb_launcher_default_home">Đặt làm ứng dụng màn hình chính mặc định</string>
     <string name="onb_launcher_default_home_active">Open Headunit là ứng dụng màn hình chính mặc định</string>
+    <string name="onb_launcher_reopen_note">Mở lại khi kết nối lại không áp dụng khi Open Headunit là ứng dụng màn hình chính, vì thiết bị đã tự quay lại ứng dụng này. Tùy chọn sẽ hoạt động lại nếu bạn tắt trình khởi chạy trên xe.</string>
     <string name="onb_summary_launcher_home">Trình khởi chạy: Open Headunit là màn hình chính</string>
     <string name="onb_summary_launcher_registered">Trình khởi chạy: đã đăng ký làm màn hình chính</string>
     <string name="home_pages_hint_title">Chạm và giữ vào chỗ trống</string>

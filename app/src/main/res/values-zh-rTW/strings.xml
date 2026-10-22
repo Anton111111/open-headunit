@@ -1312,6 +1312,7 @@
     <string name="onb_launcher_warning">目前的主畫面通常是空調控制、收音機或倒車顯影所在的位置。只有在能用其他方式開啟它們時才開啟。</string>
     <string name="onb_launcher_default_home">設為預設主畫面應用程式</string>
     <string name="onb_launcher_default_home_active">Open Headunit 是預設主畫面應用程式</string>
+    <string name="onb_launcher_reopen_note">當 Open Headunit 是主畫面應用程式時，「重新連線時重新開啟」不會生效，因為車機本來就會回到它。關閉車載啟動器後會重新生效。</string>
     <string name="onb_summary_launcher_home">啟動器：Open Headunit 是主畫面應用程式</string>
     <string name="onb_summary_launcher_registered">啟動器：已註冊為主畫面應用程式</string>
     <string name="home_pages_hint_title">按住空白處</string>

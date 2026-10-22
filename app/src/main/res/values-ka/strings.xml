@@ -1294,6 +1294,7 @@
     <string name="onb_launcher_warning">დღევანდელი მთავარი ეკრანი ჩვეულებრივ არის ადგილი, სადაც კლიმატის მართვა, რადიო ან უკანა კამერაა. ჩართეთ მხოლოდ მაშინ, თუ მათი გახსნა სხვანაირადაც შესაძლებელია.</string>
     <string name="onb_launcher_default_home">ნაგულისხმევ მთავარ აპად დაყენება</string>
     <string name="onb_launcher_default_home_active">Open Headunit ნაგულისხმევი მთავარი აპია</string>
+    <string name="onb_launcher_reopen_note">სანამ Open Headunit მთავარი აპია, „ხელახალი კავშირისას გახსნა“ არ მოქმედებს, რადგან მოწყობილობა ისედაც მასზე ბრუნდება. მანქანის გამშვების გამორთვის შემდეგ ისევ იმუშავებს.</string>
     <string name="onb_summary_launcher_home">გამშვები: Open Headunit მთავარი აპია</string>
     <string name="onb_summary_launcher_registered">გამშვები: რეგისტრირებულია მთავარ აპად</string>
     <string name="home_pages_hint_title">ხანგრძლივად შეეხე ცარიელ ადგილს</string>

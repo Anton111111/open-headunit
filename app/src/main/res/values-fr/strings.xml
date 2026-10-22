@@ -1353,6 +1353,7 @@
     <string name="onb_launcher_warning">L\'écran d\'accueil actuel est souvent là où se trouvent la climatisation, la radio ou la caméra de recul. Activez ceci seulement si l\'appareil permet de les ouvrir autrement.</string>
     <string name="onb_launcher_default_home">Définir comme application d\'accueil par défaut</string>
     <string name="onb_launcher_default_home_active">Open Headunit est l\'application d\'accueil par défaut</string>
+    <string name="onb_launcher_reopen_note">Rouvrir à la reconnexion ne s\'applique pas tant qu\'Open Headunit est l\'application d\'accueil, car l\'autoradio y revient déjà. L\'option refonctionne si vous désactivez le lanceur de voiture.</string>
     <string name="onb_summary_launcher_home">Lanceur : Open Headunit est l\'application d\'accueil</string>
     <string name="onb_summary_launcher_registered">Lanceur : enregistré comme application d\'accueil</string>
     <string name="home_pages_hint_title">Appuyez de manière prolongée sur un espace vide</string>

@@ -1314,6 +1314,7 @@
     <string name="onb_launcher_warning">A tela inicial de hoje geralmente é onde ficam o ar-condicionado, o rádio ou a câmera de ré. Ative isto apenas se houver outra forma de abri-los.</string>
     <string name="onb_launcher_default_home">Definir como app de início padrão</string>
     <string name="onb_launcher_default_home_active">O Open Headunit é o app de início padrão</string>
+    <string name="onb_launcher_reopen_note">Reabrir ao reconectar não se aplica enquanto o Open Headunit for o app de início, porque a central multimídia já volta para ele. Volta a funcionar se você desativar o inicializador do carro.</string>
     <string name="onb_summary_launcher_home">Inicializador: o Open Headunit é a tela inicial</string>
     <string name="onb_summary_launcher_registered">Inicializador: registrado como tela inicial</string>
     <string name="home_pages_hint_title">Toque e mantenha pressionado um espaço vazio</string>

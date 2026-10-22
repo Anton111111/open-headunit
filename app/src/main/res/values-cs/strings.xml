@@ -1313,6 +1313,7 @@
     <string name="onb_launcher_warning">Domovská obrazovka, kterou máte nyní, je obvykle místem, kde najdete ovládání klimatizace, rádio nebo couvací kameru. Zapněte to jen tehdy, když se k nim dostanete i jinak.</string>
     <string name="onb_launcher_default_home">Nastavit jako výchozí domovskou aplikaci</string>
     <string name="onb_launcher_default_home_active">Open Headunit je výchozí domovská aplikace</string>
+    <string name="onb_launcher_reopen_note">Volba Znovu otevřít při opětovném připojení neplatí, dokud je Open Headunit domovskou aplikací, protože se k ní jednotka vrací sama. Znovu začne fungovat, když spouštěč v autě vypnete.</string>
     <string name="onb_summary_launcher_home">Spouštěč: Open Headunit je domovská aplikace</string>
     <string name="onb_summary_launcher_registered">Spouštěč: zaregistrován jako domovská aplikace</string>
     <string name="home_pages_hint_title">Podržte prst na prázdném místě</string>

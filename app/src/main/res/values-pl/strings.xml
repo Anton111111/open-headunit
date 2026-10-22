@@ -1312,6 +1312,7 @@
     <string name="onb_launcher_warning">Obecny ekran główny to zwykle miejsce z klimatyzacją, radiem i kamerą cofania. Włącz to tylko wtedy, gdy można je otworzyć inaczej.</string>
     <string name="onb_launcher_default_home">Ustaw jako domyślną aplikację główną</string>
     <string name="onb_launcher_default_home_active">Open Headunit jest domyślną aplikacją główną</string>
+    <string name="onb_launcher_reopen_note">Opcja Otwórz ponownie po reconnect nie działa, dopóki Open Headunit jest aplikacją główną, bo urządzenie i tak do niej wraca. Zadziała znowu po wyłączeniu launchera samochodowego.</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit jest ekranem głównym</string>
     <string name="onb_summary_launcher_registered">Launcher: zarejestrowany jako ekran główny</string>
     <string name="home_pages_hint_title">Przytrzymaj puste miejsce</string>

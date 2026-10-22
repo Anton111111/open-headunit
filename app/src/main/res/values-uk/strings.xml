@@ -1314,6 +1314,7 @@
     <string name="onb_launcher_warning">На нинішньому головному екрані зазвичай розташовані клімат-контроль, радіо або камера заднього виду. Увімкніть це лише якщо їх можна відкрити інакше.</string>
     <string name="onb_launcher_default_home">Зробити головною програмою за замовчуванням</string>
     <string name="onb_launcher_default_home_active">Open Headunit є головною програмою за замовчуванням</string>
+    <string name="onb_launcher_reopen_note">«Відкривати при повторному підключенні» не діє, поки Open Headunit є головною програмою: пристрій і так повертається до неї. Знову запрацює, якщо вимкнути лаунчер авто.</string>
     <string name="onb_summary_launcher_home">Лаунчер: Open Headunit є головним екраном</string>
     <string name="onb_summary_launcher_registered">Лаунчер: зареєстровано як головний екран</string>
     <string name="home_pages_hint_title">Натисніть і утримуйте порожнє місце</string>

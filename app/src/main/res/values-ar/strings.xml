@@ -1311,6 +1311,7 @@
     <string name="onb_launcher_warning">الشاشة الرئيسية لديك اليوم هي عادة مكان التحكم بالتكييف والراديو وكاميرا الرجوع. فعّل هذا فقط إذا كانت هناك طريقة أخرى لفتحها.</string>
     <string name="onb_launcher_default_home">تعيين كتطبيق الصفحة الرئيسية الافتراضي</string>
     <string name="onb_launcher_default_home_active">Open Headunit هو تطبيق الصفحة الرئيسية الافتراضي</string>
+    <string name="onb_launcher_reopen_note">لا ينطبق خيار \"إعادة الفتح عند إعادة الاتصال\" عندما يكون Open Headunit تطبيق الصفحة الرئيسية، لأن الوحدة تعود إليه أصلًا. يعمل مجددًا إذا أوقفت مشغل السيارة.</string>
     <string name="onb_summary_launcher_home">المشغل: Open Headunit هو تطبيق الصفحة الرئيسية</string>
     <string name="onb_summary_launcher_registered">المشغل: مسجل كتطبيق الصفحة الرئيسية</string>
     <string name="home_pages_hint_title">المس مع الاستمرار مكانًا فارغًا</string>

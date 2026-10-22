@@ -1312,6 +1312,7 @@
     <string name="onb_launcher_warning">На нынешнем домашнем экране обычно находятся климат-контроль, радио или камера заднего вида. Включайте это, только если их можно открыть иначе.</string>
     <string name="onb_launcher_default_home">Сделать главным приложением по умолчанию</string>
     <string name="onb_launcher_default_home_active">Open Headunit является главным приложением по умолчанию</string>
+    <string name="onb_launcher_reopen_note">«Открывать при повторном подключении» не действует, пока Open Headunit является главным приложением: устройство и так возвращается к нему. Снова заработает, если выключить лаунчер авто.</string>
     <string name="onb_summary_launcher_home">Лаунчер: Open Headunit является домашним экраном</string>
     <string name="onb_summary_launcher_registered">Лаунчер: зарегистрирован как домашний экран</string>
     <string name="home_pages_hint_title">Нажмите и удерживайте пустое место</string>

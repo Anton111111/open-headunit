@@ -1322,6 +1322,7 @@
     <string name="onb_launcher_warning">La pantalla de inicio que tienes hoy suele ser donde viven el climatizador, la radio o la cámara de marcha atrás. Actívalo solo si el equipo tiene otra forma de abrirlos.</string>
     <string name="onb_launcher_default_home">Establecer como aplicación de inicio predeterminada</string>
     <string name="onb_launcher_default_home_active">Open Headunit es la aplicación de inicio predeterminada</string>
+    <string name="onb_launcher_reopen_note">Reabrir al reconectar no se aplica mientras Open Headunit sea la aplicación de inicio, porque la radio ya vuelve a ella. Vuelve a funcionar si desactivas el lanzador del coche.</string>
     <string name="onb_summary_launcher_home">Lanzador: Open Headunit es la aplicación de inicio</string>
     <string name="onb_summary_launcher_registered">Lanzador: registrado como aplicación de inicio</string>
     <string name="home_pages_hint_title">Mantén pulsado un espacio vacío</string>

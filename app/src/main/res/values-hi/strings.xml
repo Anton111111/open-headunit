@@ -1359,6 +1359,7 @@
     <string name="onb_launcher_warning">आपकी मौजूदा होम स्क्रीन में आमतौर पर क्लाइमेट कंट्रोल, रेडियो या रिवर्स कैमरा होता है। इसे तभी चालू करें जब इन्हें खोलने का कोई और तरीका हो।</string>
     <string name="onb_launcher_default_home">डिफ़ॉल्ट होम ऐप के रूप में सेट करें</string>
     <string name="onb_launcher_default_home_active">Open Headunit डिफ़ॉल्ट होम ऐप है</string>
+    <string name="onb_launcher_reopen_note">जब तक Open Headunit होम ऐप है, \"पुनः कनेक्ट होने पर दोबारा खोलें\" लागू नहीं होता, क्योंकि यूनिट वैसे भी उसी पर लौटती है। कार लॉन्चर बंद करने पर यह फिर से काम करेगा।</string>
     <string name="onb_summary_launcher_home">लॉन्चर: Open Headunit होम ऐप है</string>
     <string name="onb_summary_launcher_registered">लॉन्चर: होम ऐप के रूप में पंजीकृत</string>
     <string name="home_pages_hint_title">किसी खाली जगह को दबाकर रखें</string>

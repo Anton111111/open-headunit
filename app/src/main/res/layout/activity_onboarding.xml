@@ -696,6 +696,15 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/onb_launcher_reopen_note"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onb_launcher_reopen_note"
+                    android:textAppearance="?attr/textAppearanceCaption"
+                    android:visibility="gone" />
+
+                <TextView
                     android:id="@+id/onb_launcher_warning"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

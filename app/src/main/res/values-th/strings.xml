@@ -1359,6 +1359,7 @@
     <string name="onb_launcher_warning">หน้าจอหลักที่คุณใช้อยู่นี้มักเป็นที่อยู่ของระบบปรับอากาศ วิทยุ หรือกล้องมองหลัง เปิดใช้เฉพาะเมื่อมีวิธีอื่นในการเปิดสิ่งเหล่านี้</string>
     <string name="onb_launcher_default_home">ตั้งเป็นแอปหน้าจอหลักเริ่มต้น</string>
     <string name="onb_launcher_default_home_active">Open Headunit เป็นแอปหน้าจอหลักเริ่มต้น</string>
+    <string name="onb_launcher_reopen_note">ตัวเลือก \"เปิดใหม่เมื่อเชื่อมต่ออีกครั้ง\" จะไม่มีผลขณะที่ Open Headunit เป็นแอปหน้าจอหลัก เพราะเครื่องจะกลับมาที่แอปนี้อยู่แล้ว และจะกลับมาทำงานเมื่อปิด Car Launcher</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit เป็นแอปหน้าจอหลัก</string>
     <string name="onb_summary_launcher_registered">Launcher: ลงทะเบียนเป็นแอปหน้าจอหลักแล้ว</string>
     <string name="home_pages_hint_title">แตะค้างที่พื้นที่ว่าง</string>

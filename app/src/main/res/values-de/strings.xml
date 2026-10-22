@@ -1317,6 +1317,7 @@
     <string name="onb_launcher_warning">Der heutige Startbildschirm ist meistens dort, wo Klimaanlage, Radio oder Rückfahrkamera liegen. Schalte das nur ein, wenn du sie auch anders öffnen kannst.</string>
     <string name="onb_launcher_default_home">Als Standard-Start-App festlegen</string>
     <string name="onb_launcher_default_home_active">Open Headunit ist die Standard-Start-App</string>
+    <string name="onb_launcher_reopen_note">\"Bei Neuverbindung erneut öffnen\" gilt nicht, solange Open Headunit die Start-App ist, weil das Gerät ohnehin zu ihr zurückkehrt. Es greift wieder, wenn du den Car-Launcher ausschaltest.</string>
     <string name="onb_summary_launcher_home">Launcher: Open Headunit ist die Start-App</string>
     <string name="onb_summary_launcher_registered">Launcher: als Start-App registriert</string>
     <string name="home_pages_hint_title">Halte eine leere Stelle gedrückt</string>

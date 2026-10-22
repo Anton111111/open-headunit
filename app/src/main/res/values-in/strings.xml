@@ -1361,6 +1361,7 @@
     <string name="onb_launcher_warning">Layar beranda Anda saat ini biasanya berisi kontrol iklim, radio, atau kamera mundur. Aktifkan ini hanya jika ada cara lain untuk membukanya.</string>
     <string name="onb_launcher_default_home">Jadikan aplikasi beranda default</string>
     <string name="onb_launcher_default_home_active">Open Headunit adalah aplikasi beranda default</string>
+    <string name="onb_launcher_reopen_note">Buka kembali saat terhubung ulang tidak berlaku selama Open Headunit menjadi aplikasi beranda, karena unit sudah kembali ke aplikasi ini. Fitur ini berfungsi lagi jika Peluncur Mobil dimatikan.</string>
     <string name="onb_summary_launcher_home">Peluncur: Open Headunit adalah aplikasi beranda</string>
     <string name="onb_summary_launcher_registered">Peluncur: terdaftar sebagai aplikasi beranda</string>
     <string name="home_pages_hint_title">Sentuh lama area kosong</string>

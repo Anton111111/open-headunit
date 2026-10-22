@@ -1358,6 +1358,7 @@
     <string name="onb_launcher_warning">O ecrã inicial de hoje é normalmente onde estão o ar condicionado, o rádio ou a câmara de marcha-atrás. Ative isto apenas se houver outra forma de os abrir.</string>
     <string name="onb_launcher_default_home">Definir como aplicação de ecrã inicial predefinida</string>
     <string name="onb_launcher_default_home_active">O Open Headunit é a aplicação de ecrã inicial predefinida</string>
+    <string name="onb_launcher_reopen_note">Reabrir ao reconectar não se aplica enquanto o Open Headunit for a aplicação de ecrã inicial, porque o rádio já volta para ela. Volta a funcionar se desativar o Car Launcher.</string>
     <string name="onb_summary_launcher_home">Launcher: o Open Headunit é o ecrã inicial</string>
     <string name="onb_summary_launcher_registered">Launcher: registado como ecrã inicial</string>
     <string name="home_pages_hint_title">Toque sem soltar num espaço vazio</string>
