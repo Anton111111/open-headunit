@@ -27,6 +27,20 @@ object OnboardingLauncherPolicy {
     }
 
     /**
+     * Whether launcher mode is on when the wizard opens. Picking this app as home can end the
+     * wizard before it hears back (on Android 9 and older the Home intent goes to the main screen,
+     * which clears the wizard off the task), so a home role already held counts as launcher on.
+     */
+    fun launcherModeOnOpen(stored: Boolean, roleHeld: Boolean): Boolean = stored || roleHeld
+
+    /**
+     * Whether finishing the wizard may sync the launcher alias with the stored setting. It must
+     * not drop the alias while the app holds the home role: that would hand Home back to the
+     * stock launcher, the opposite of what the user picked.
+     */
+    fun syncsAliasOnFinish(stored: Boolean, roleHeld: Boolean): Boolean = stored || !roleHeld
+
+    /**
      * Whether to tell the user, under the launcher switch, that reopen on reconnection does not
      * apply while the app is the home app. Only when they turned reopen on and could see it.
      */

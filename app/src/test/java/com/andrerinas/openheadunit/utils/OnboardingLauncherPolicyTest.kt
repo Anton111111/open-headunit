@@ -25,6 +25,21 @@ class OnboardingLauncherPolicyTest {
     }
 
     @Test
+    fun `a home role already held opens the wizard with launcher mode on`() {
+        assertTrue(OnboardingLauncherPolicy.launcherModeOnOpen(stored = false, roleHeld = true))
+        assertTrue(OnboardingLauncherPolicy.launcherModeOnOpen(stored = true, roleHeld = false))
+        assertFalse(OnboardingLauncherPolicy.launcherModeOnOpen(stored = false, roleHeld = false))
+    }
+
+    @Test
+    fun `finishing never drops the alias while the app is home`() {
+        assertFalse(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = false, roleHeld = true))
+        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = true, roleHeld = true))
+        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = false, roleHeld = false))
+        assertTrue(OnboardingLauncherPolicy.syncsAliasOnFinish(stored = true, roleHeld = false))
+    }
+
+    @Test
     fun `the reopen note shows only when reopen was on and offered with the launcher switch on`() {
         assertTrue(OnboardingLauncherPolicy.showsReopenNote(launcherSwitchOn = true, reopenOn = true, reopenOffered = true))
         assertFalse(OnboardingLauncherPolicy.showsReopenNote(launcherSwitchOn = false, reopenOn = true, reopenOffered = true))

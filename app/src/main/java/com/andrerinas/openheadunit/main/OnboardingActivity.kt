@@ -335,6 +335,13 @@ class OnboardingActivity : BaseActivity() {
         bindAudioStep()
 
         // --- Car launcher: the unit's home screen, with the price of replacing the stock one ---
+        // A wizard reopened after the user picked this app as home must not show launcher mode off.
+        val launcherOn = OnboardingLauncherPolicy.launcherModeOnOpen(
+            settings.enableCarLauncher, CarLauncherManager.isDefaultLauncher(this))
+        if (launcherOn != settings.enableCarLauncher) {
+            settings.enableCarLauncher = true
+            AppLog.i("OnboardingActivity: the app already holds the home role, storing car launcher mode")
+        }
         findViewById<SwitchMaterial>(R.id.onb_launcher_switch).apply {
             isChecked = settings.enableCarLauncher || launcherRequestPending
             setOnCheckedChangeListener { _, checked ->
@@ -743,7 +750,13 @@ class OnboardingActivity : BaseActivity() {
         settings.hasAcceptedDisclaimer = true
         settings.hasCompletedSetupWizard = true
         settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        CarLauncherManager.syncWithSettings(this, settings.enableCarLauncher)
+        if (OnboardingLauncherPolicy.syncsAliasOnFinish(
+                settings.enableCarLauncher, CarLauncherManager.isDefaultLauncher(this))
+        ) {
+            CarLauncherManager.syncWithSettings(this, settings.enableCarLauncher)
+        } else {
+            AppLog.i("OnboardingActivity: the app holds the home role, keeping the launcher alias")
+        }
         settings.commit()
     }
 
