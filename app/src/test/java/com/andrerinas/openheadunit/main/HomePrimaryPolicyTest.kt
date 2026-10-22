@@ -310,4 +310,40 @@ class HomePrimaryPolicyTest {
             HomePrimaryPolicy.barConnections(decision, chosen, carriesEveryConnection = true)
         )
     }
+
+    @Test
+    fun `the countdown towards the connection that is listening hides the pill`() {
+        val decision = HomePrimaryPolicy.decide(
+            input(lastConnection = Connection.WIFI, reconnectTarget = Connection.WIFI, stage = ConnectionStage.SEARCHING)
+        )
+        assertEquals(Status.RECONNECTING, decision.status)
+        assertNull(decision.stage)
+        assertEquals(true, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = false))
+    }
+
+    @Test
+    fun `once the countdown is cancelled the card keeps telling the step with its own Cancel`() {
+        val decision = HomePrimaryPolicy.decide(
+            input(lastConnection = Connection.WIFI, stage = ConnectionStage.SEARCHING)
+        )
+        assertEquals(Status.WAITING, decision.status)
+        assertEquals(ConnectionStage.SEARCHING, decision.stage)
+        assertEquals(true, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+    }
+
+    @Test
+    fun `a countdown towards another connection leaves the step to the pill`() {
+        val decision = HomePrimaryPolicy.decide(
+            input(reconnectTarget = Connection.USB, stage = ConnectionStage.SEARCHING)
+        )
+        assertEquals(Status.RECONNECTING, decision.status)
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+    }
+
+    @Test
+    fun `a countdown with nothing running tells no bring-up`() {
+        val decision = HomePrimaryPolicy.decide(input(reconnectTarget = Connection.WIFI))
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+    }
 }

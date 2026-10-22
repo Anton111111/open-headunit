@@ -502,6 +502,9 @@ class HomeFragment : Fragment() {
     }
 
     private fun onPrimaryCancelClicked() {
+        // During the countdown Cancel only ends the countdown, even when the pill was hidden for it
+        // (HomePrimaryPolicy.homeTellsBringUp): the card then shows the listening step with its own
+        // Cancel, which is the one that stops the bring-up.
         if (decision?.status == HomePrimaryPolicy.Status.RECONNECTING) {
             cancelAutoConnectCountdown()
         } else {

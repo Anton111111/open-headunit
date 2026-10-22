@@ -58,6 +58,11 @@ object HomePrimaryPolicy {
         /** The step the card names, only while it is [Status.CONNECTING] or [Status.WAITING]. */
         val stage: ConnectionStage? = null,
         val tiles: Map<Connection, TileState> = emptyMap(),
+        /**
+         * The countdown is about to try the connection whose listening step is running, so the card
+         * already stands for that bring-up even though it shows the countdown instead of the step.
+         */
+        val countdownOverStage: Boolean = false,
     )
 
     /**
@@ -84,7 +89,8 @@ object HomePrimaryPolicy {
         val status = statusOf(input, primary)
         val stage = input.stage.takeIf { status == Status.CONNECTING || status == Status.WAITING }
         val tiles = Connection.values().associateWith { tileState(input, status, primary, it) }
-        return Decision(primary, status, available - primary, stage, tiles)
+        val countdownOverStage = status == Status.RECONNECTING && stageOn(input, primary)
+        return Decision(primary, status, available - primary, stage, tiles, countdownOverStage)
     }
 
     private fun connecting(input: Input): Boolean =
@@ -139,9 +145,17 @@ object HomePrimaryPolicy {
      * Whether the home tells the bring-up itself, so the status pill can stay down. Only the card
      * on screen does, with the step and Cancel on it: a step that belongs to another connection,
      * or a page without the card, would leave the driver with no way to stop the bring-up.
+     *
+     * The countdown towards the connection whose listening step is running tells it too, so the
+     * pill does not float over the card saying the same thing twice. Nothing is lost: the card's
+     * Cancel ends the countdown, the card then drops to [Status.WAITING] with the step and its own
+     * Cancel, and that one stops the bring-up. One tap stopping both was left out on purpose: the
+     * listening is often the stack's always-on wireless side, which the driver did not ask to end
+     * when they only skipped the timed attempt. A countdown towards another connection leaves the
+     * step to the pill, the same as a card that stands for another connection.
      */
     fun homeTellsBringUp(decision: Decision?, cardOnScreen: Boolean): Boolean =
-        cardOnScreen && decision?.stage != null
+        cardOnScreen && decision != null && (decision.stage != null || decision.countdownOverStage)
 
     private fun tileState(input: Input, status: Status, primary: Connection, connection: Connection): TileState = when {
         input.sessionActive && input.sessionConnection == connection -> TileState.ACTIVE
