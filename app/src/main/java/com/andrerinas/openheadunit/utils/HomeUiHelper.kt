@@ -53,6 +53,7 @@ object HomeUiHelper {
     private const val RIPPLE_COLOR_ON_DARK = 0x33FFFFFF
     private const val RIPPLE_COLOR_EXTREME = 0x1FFFFFFF
     private const val ACCENT_WASH_ALPHA = 0x29
+    private const val FOCUS_RING_DP = 3
     private const val PROGRESS_TRACK_ALPHA = 0x40
     /** One pass of the light across the bar, then a rest while it waits past the end. */
     private const val SHINE_SWEEP_MS = 1_600L
@@ -254,14 +255,32 @@ object HomeUiHelper {
         paintSlot(context, tile, R.id.widget_add_icon, R.id.widget_add_label, filled = false, palette)
     }
 
-    /** A widget sits on the same tile surface as everything around it, so the row reads as one. */
+    /**
+     * A widget sits on the same tile surface as everything around it, so the row reads as one.
+     * It takes focus too, so a D-pad reaches the long press that removes it.
+     */
     fun paintWidgetSlot(context: Context, slot: View, palette: Palette) {
-        slot.background = shape(
-            palette.tile,
-            context.resources.getDimension(R.dimen.home_tile_radius),
-            palette.tileStroke,
-            dp(context, 1)
-        )
+        val radius = context.resources.getDimension(R.dimen.home_tile_radius)
+        slot.background = shape(palette.tile, radius, palette.tileStroke, dp(context, 1))
+        slot.isFocusable = true
+        (slot as? FrameLayout)?.let { applyFocusRing(context, it, radius, palette) }
+    }
+
+    /**
+     * The ring a D-pad or a rotary knob shows around a focused card or widget, and nothing
+     * otherwise. A FrameLayout's foreground, so it works from API 16 and leaves the background,
+     * which carries the colors, alone.
+     */
+    // FrameLayout has had setForeground since API 1; lint only sees the View one that API 23 added.
+    @SuppressLint("NewApi")
+    private fun applyFocusRing(context: Context, frame: FrameLayout, radiusPx: Float, palette: Palette) {
+        frame.foreground = StateListDrawable().apply {
+            addState(
+                intArrayOf(android.R.attr.state_focused),
+                shape(Color.TRANSPARENT, radiusPx, palette.text, dp(context, FOCUS_RING_DP))
+            )
+            addState(intArrayOf(), rounded(Color.TRANSPARENT, radiusPx))
+        }
     }
 
     private fun paintSlot(
@@ -452,6 +471,9 @@ object HomeUiHelper {
         networkLine: String? = null
     ) {
         val card = rootView.findViewById<View>(R.id.home_primary_card) ?: return
+        (card as? FrameLayout)?.let {
+            applyFocusRing(context, it, context.resources.getDimension(R.dimen.home_panel_radius), palette)
+        }
         val reconnecting = decision.status == Status.RECONNECTING
         val connecting = decision.status == Status.CONNECTING
         val stage = decision.stage
@@ -948,8 +970,11 @@ object HomeUiHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             return RippleDrawable(ColorStateList.valueOf(ripple), normal(), mask?.invoke())
         }
+        // Below 5.0 there is no ripple to show focus, so a focused button looks pressed; otherwise
+        // a D-pad moves across the home with nothing on screen saying where it is.
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_pressed), pressed())
+            addState(intArrayOf(android.R.attr.state_focused), pressed())
             addState(intArrayOf(), normal())
         }
     }

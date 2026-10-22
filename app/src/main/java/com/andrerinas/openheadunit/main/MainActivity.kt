@@ -22,6 +22,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import android.widget.VideoView
 import androidx.activity.OnBackPressedCallback
+import androidx.navigation.fragment.NavHostFragment
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
@@ -173,6 +174,7 @@ class MainActivity : BaseActivity() {
             theme.applyStyle(R.style.ThemeOverlay_GradientBackground, true)
         }
         enableEdgeToEdge()
+        registerBackHandling()
         setContentView(R.layout.activity_main)
         if (Build.VERSION.SDK_INT >= 26) {
             lifecycleScope.launch {
@@ -223,34 +225,6 @@ class MainActivity : BaseActivity() {
         ContextCompat.startForegroundService(this, serviceIntent)
 
         setFullscreen()
-
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.main_content) as androidx.navigation.fragment.NavHostFragment
-        val navController = navHostFragment.navController
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // While the full-screen overlay is up, treat Back as cancel so the
-                // user isn't trapped if a manual connection attempt hangs. Pill
-                // mode is non-blocking, so Back falls through to its normal
-                // navigation behavior there.
-                if (overlayOwnsScreen()) {
-                    cancelAutoConnect()
-                    return
-                }
-                if (navController.navigateUp()) {
-                    return
-                } else if (appSettings.enableCarLauncher || CarLauncherManager.isDefaultLauncher(this@MainActivity)) {
-                    // When in Car Launcher mode or active system Home launcher,
-                    // back press at the root of the app should not finish the launcher.
-                    return
-                } else if (System.currentTimeMillis() - lastBackPressTime < 2000) {
-                    finish()
-                } else {
-                    lastBackPressTime = System.currentTimeMillis()
-                    ToastUtils.showToast(this@MainActivity, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT, force = true)
-                }
-            }
-        })
 
         val launchSource = if (savedInstanceState == null) intent?.getStringExtra(EXTRA_LAUNCH_SOURCE) else null
 
@@ -1450,6 +1424,40 @@ class MainActivity : BaseActivity() {
         if (hasFocus) {
             setFullscreen()
         }
+    }
+
+    /**
+     * The app's own Back: cancel the overlay, go up, or stay put as the launcher. Registered
+     * before setContentView on purpose. The dispatcher asks the last callback added first, and the
+     * home builds its view inside setContentView, so a callback added after it always ran first
+     * and swallowed the Back a fragment had asked for, the home's pages hint included.
+     */
+    private fun registerBackHandling() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // While the full-screen overlay is up, treat Back as cancel so the
+                // user isn't trapped if a manual connection attempt hangs. Pill
+                // mode is non-blocking, so Back falls through to its normal
+                // navigation behavior there.
+                if (overlayOwnsScreen()) {
+                    cancelAutoConnect()
+                    return
+                }
+                val navHost = supportFragmentManager.findFragmentById(R.id.main_content) as? NavHostFragment
+                if (navHost?.navController?.navigateUp() == true) {
+                    return
+                } else if (Settings(this@MainActivity).enableCarLauncher || CarLauncherManager.isDefaultLauncher(this@MainActivity)) {
+                    // When in Car Launcher mode or active system Home launcher,
+                    // back press at the root of the app should not finish the launcher.
+                    return
+                } else if (System.currentTimeMillis() - lastBackPressTime < 2000) {
+                    finish()
+                } else {
+                    lastBackPressTime = System.currentTimeMillis()
+                    ToastUtils.showToast(this@MainActivity, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT, force = true)
+                }
+            }
+        })
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {

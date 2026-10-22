@@ -5,6 +5,7 @@
     taking height from the content. That height is what the widget row under the favorite apps
     needs on a short screen, and giving it to a line of text instead would push the main button's
     action off the card.
+    Focusable so a D-pad reaches its long press, which opens the page menu, the same as a finger.
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -13,7 +14,8 @@
     android:id="@+id/home_primary_card"
     android:layout_width="match_parent"
     android:layout_height="0dp"
-    android:layout_weight="1">
+    android:layout_weight="1"
+    android:focusable="true">
 
     <LinearLayout
         android:id="@+id/home_primary_content"
