@@ -134,8 +134,8 @@
         <!-- Centered, so a label that wraps ("Add app" on a narrow row) does not leave its
              second line hanging against the left edge of the tile. -->
         <item name="android:gravity">center</item>
-        <!-- One line: the landscape bar shrinks its tiles to fit the height, and two lines would be
-             cut by the shorter tile. See HomeTileLabel.Wrap for the portrait row. -->
+        <!-- One line, for the labels that sit beside their icon or have a one-word name (Exit,
+             All apps). See HomeTileLabel.Wrap for the bar's connection tiles and the favorites. -->
         <item name="android:maxLines">1</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@android:color/white</item>
@@ -143,8 +143,10 @@
         <item name="android:textStyle">bold</item>
     </style>
     <style name="HomeTileLabel.Wrap">
-        <!-- Portrait: the tiles share the width, so a narrow phone stacks "Self Mode" instead of
-             ellipsizing it to "Sel...". The portrait tiles keep their full height. -->
+        <!-- Two lines, so a narrow tile stacks "Self Mode" instead of ellipsizing it to "Sel...".
+             Use it with WordFitTextView, which only breaks between words. The landscape bar's
+             tiles shrink with the screen, but their icon and label shrink with them, and two lines
+             still fit down to about 65% of the smallest tile size. -->
         <item name="android:maxLines">2</item>
     </style>
     <style name="HomeCardText">
