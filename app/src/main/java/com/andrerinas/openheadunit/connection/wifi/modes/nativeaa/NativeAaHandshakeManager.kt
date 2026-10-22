@@ -3007,12 +3007,11 @@ class NativeAaHandshakeManager(
                     }
                     WppAction.SendInfoResponse -> {
                         AppLog.i("NativeAA: Phone ready for WiFi association. Delivering credentials...")
-                        AppLog.i("NativeAA: [TX] Sending WifiInfoResponse (Type 3) with full credentials in 1000ms...")
+                        AppLog.i("NativeAA: [TX] Sending WifiInfoResponse (Type 3) with full credentials...")
                         // The one site that really is sending credentials to the phone.
                         ConnectionStageTracker.report(ConnectionStage.SENDING_CREDENTIALS)
-                        delay(1000) // [FIX] Increased delay to give phone more processing time
                         // The one blind spot the tick loop's own check cannot cover. A phone that
-                        // rejoined the kept network during this pause is already projecting, and
+                        // rejoined the kept network since the last tick is already projecting, and
                         // credentials now would only make it re-associate and drop that session.
                         // Not a failure, so the handshake backoff is not spent on it.
                         if (commManager.isConnected) {

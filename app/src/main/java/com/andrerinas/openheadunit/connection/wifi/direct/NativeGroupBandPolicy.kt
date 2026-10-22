@@ -133,6 +133,39 @@ object NativeGroupBandPolicy {
         return WifiP2pOperatingChannelPolicy.frequencyMhzFor(channel)
     }
 
+    /**
+     * Whether AUTO goes straight to the no-band create because this firmware refused every banded
+     * request before. A forced band or a pinned channel is the user's choice and is still asked for.
+     */
+    fun skipsBandedRequest(
+        preference: P2pBandPreference,
+        channelPinned: Boolean,
+        refusedOnFingerprint: String?,
+        currentFingerprint: String,
+    ): Boolean = preference == P2pBandPreference.AUTO &&
+        !channelPinned &&
+        !refusedOnFingerprint.isNullOrEmpty() &&
+        refusedOnFingerprint == currentFingerprint
+
+    /** The P2P reason that means the driver refused the request; BUSY and the rest are transient. */
+    const val REASON_REFUSED = 0
+
+    /** Whether a failed rung counts as a refusal of the band rather than a busy or crashed framework. */
+    fun isBandRefusal(reason: Int, crashed: Boolean): Boolean = !crashed && reason == REASON_REFUSED
+
+    /**
+     * Whether an exhausted banded ladder may become this unit's standing answer: only under AUTO, and
+     * only when every rung was refused. A busy framework says nothing about the band.
+     */
+    fun recordsBandedRefusal(preference: P2pBandPreference, ladderExhausted: Boolean, everyRungRefused: Boolean): Boolean =
+        ladderExhausted && everyRungRefused && preference == P2pBandPreference.AUTO
+
+    /**
+     * Whether the no-band group that followed may be stored. Only above 4000 MHz: there skipping the
+     * band costs nothing, while a 2.4 GHz group would turn the narrow-band cap on for every drive.
+     */
+    fun storesBandedRefusalAt(frequencyMhz: Int): Boolean = frequencyMhz > 4000
+
     /** What a failed Native AA group request does next. */
     enum class NextStep {
         /** Ask again for the same thing. */

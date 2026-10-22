@@ -8,7 +8,7 @@ package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
  * `WifiBluetoothReceiver` filters `ACL_CONNECTED` and the HFP and A2DP
  * `CONNECTION_STATE_CHANGED`, and its own tokens are `WIRELESS_SETUP_SHARED_HFP_CONNECTING` and
  * siblings. A radio that auto-connects hands-free and holds it across a session and past its end
- * raises no further event, so the phone never re-triggers and the stand-down is permanent.
+ * raises no further event, so the phone may not re-trigger and the stand-down can be permanent.
  *
  * The poke is what produces that event, at the measured cost of the phone's hands-free slot, so it
  * is budgeted rather than freed: only for a pairing that has already run Android Auto on this unit,
