@@ -40,6 +40,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.andrerinas.openheadunit.App
@@ -56,6 +57,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+
+/** Long enough to read the blocked-location notice on a car screen and reach its button. */
+private const val LOCATION_NOTICE_DURATION_MS = 8000
 
 class CustomizationFragment : Fragment() {
 
@@ -143,11 +147,15 @@ class CustomizationFragment : Fragment() {
     ) { granted ->
         settings.showHomeSpeed = granted
         switchShowSpeed?.isChecked = granted
-        if (granted) {
+        val canAskAgain = !granted && shouldShowRequestPermissionRationale(
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        when (SpeedPermissionPolicy.afterRequest(granted, canAskAgain)) {
             // The switch was already on, so its listener does not run again to redraw the preview.
-            updatePreviewScale(settings.homeButtonScalePercent)
-        } else {
-            ToastUtils.showToast(requireContext(), R.string.home_speed_needs_location, Toast.LENGTH_LONG, force = true)
+            SpeedPermissionPolicy.Outcome.SHOW_SPEED -> updatePreviewScale(settings.homeButtonScalePercent)
+            SpeedPermissionPolicy.Outcome.EXPLAIN ->
+                ToastUtils.showToast(requireContext(), R.string.home_speed_needs_location, Toast.LENGTH_LONG, force = true)
+            SpeedPermissionPolicy.Outcome.OPEN_APP_SETTINGS -> showLocationBlockedNotice()
         }
     }
 
@@ -216,6 +224,11 @@ class CustomizationFragment : Fragment() {
         switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
         switchShowClock = view.findViewById(R.id.switch_show_clock)
         switchShowSpeed = view.findViewById(R.id.switch_show_speed)
+        // A tap anywhere on a switch row flips its switch, not only on the switch itself.
+        toggleSwitchFromRow(view.findViewById(R.id.row_auto_monochrome_night), switchAutoMonochromeNight)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_favorite_apps), switchShowFavoriteApps)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_clock), switchShowClock)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_speed), switchShowSpeed)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
         homeColorPreview = view.findViewById(R.id.home_color_preview)
@@ -397,6 +410,11 @@ class CustomizationFragment : Fragment() {
         refreshUI()
     }
 
+    private fun toggleSwitchFromRow(row: View?, switch: SwitchMaterial?) {
+        if (switch == null) return
+        row?.setOnClickListener { switch.toggle() }
+    }
+
     private fun showSamsungStyleOverlay() {
         overlayHomePreview?.removeCallbacks(hideOverlayRunnable)
         customizationMainContent?.animate()?.alpha(0f)?.setDuration(200)?.start()
@@ -408,6 +426,33 @@ class CustomizationFragment : Fragment() {
 
     private fun hideSamsungStyleOverlay() {
         overlayHomePreview?.postDelayed(hideOverlayRunnable, 600)
+    }
+
+    /**
+     * The system no longer shows the location dialog, so the switch would just bounce back off.
+     * Say so and offer the app's system settings, where the permission can still be allowed.
+     */
+    private fun showLocationBlockedNotice() {
+        val root = view ?: return
+        AppLog.i("Location permission blocked for the home speed, offering the app settings")
+        Snackbar.make(root, R.string.home_speed_location_blocked, LOCATION_NOTICE_DURATION_MS)
+            .setAction(R.string.open_settings) { openAppSystemSettings() }
+            .show()
+    }
+
+    private fun openAppSystemSettings() {
+        val ctx = context ?: return
+        try {
+            startActivity(
+                Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:${ctx.packageName}")
+                )
+            )
+        } catch (e: Exception) {
+            AppLog.w("Could not open the app details settings: ${e.message}")
+            ToastUtils.showToast(ctx, R.string.cannot_open_settings, Toast.LENGTH_SHORT, force = true)
+        }
     }
 
     private fun hasLocationPermission(): Boolean =

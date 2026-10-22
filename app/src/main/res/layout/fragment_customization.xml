@@ -394,13 +394,17 @@
 
             <!-- Auto Monochrome at Night Toggle -->
             <LinearLayout
+                android:id="@+id/row_auto_monochrome_night"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_setting_single"
                 android:padding="16dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -547,13 +551,17 @@
 
             <!-- Favorite apps and widgets toggle (only used while Open Headunit is the launcher) -->
             <LinearLayout
+                android:id="@+id/row_show_favorite_apps"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_setting_single"
                 android:padding="16dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -589,13 +597,17 @@
 
             <!-- Date and time on the home screen -->
             <LinearLayout
+                android:id="@+id/row_show_clock"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_setting_single"
                 android:padding="16dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -631,13 +643,17 @@
 
             <!-- GPS speed on the home screen -->
             <LinearLayout
+                android:id="@+id/row_show_speed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:layout_marginTop="16dp"
                 android:background="@drawable/bg_setting_single"
                 android:padding="16dp"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
 
                 <LinearLayout
                     android:layout_width="0dp"

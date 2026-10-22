@@ -1297,6 +1297,7 @@
     <string name="home_show_speed_description">이 기기의 GPS가 알려주는 속도(km/h). 위치 권한을 요청합니다</string>
     <string name="home_speed_unit">km/h</string>
     <string name="home_speed_needs_location">속도에는 위치 권한이 필요합니다</string>
+    <string name="home_speed_location_blocked">위치 권한이 차단되어 있습니다. 속도를 표시하려면 이 앱의 시스템 설정에서 허용하세요.</string>
     <string name="home_add_widget">위젯 추가</string>
     <string name="home_widgets_full">위젯을 더 놓을 자리가 없습니다</string>
     <string name="home_widget_pick_title">홈 화면에 위젯 추가</string>
