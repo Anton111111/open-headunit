@@ -107,12 +107,25 @@ object HomePrimaryPolicy {
         input.sessionActive -> Status.ACTIVE_SESSION
         connecting(input) -> Status.CONNECTING
         input.reconnectTarget != null -> Status.RECONNECTING
-        primary == Connection.WIFI && input.wifiScanning -> Status.SEARCHING
+        // The stack's own search scans too. Without this the card flipped between its step with
+        // Cancel and "Search again" every time a scan started or ended within one search.
+        primary == Connection.WIFI && input.wifiScanning && !stageOn(input, primary) -> Status.SEARCHING
         // Naming the phone on the cable says more than "USB device connected".
         primary == Connection.USB && input.usbPhoneDetected -> Status.PHONE_DETECTED
-        input.stage != null && connectionOf(input.stage) == primary -> Status.WAITING
+        stageOn(input, primary) -> Status.WAITING
         else -> Status.READY
     }
+
+    private fun stageOn(input: Input, connection: Connection): Boolean =
+        input.stage != null && connectionOf(input.stage) == connection
+
+    /**
+     * Whether the home tells the bring-up itself, so the status pill can stay down. Only the card
+     * on screen does, with the step and Cancel on it: a step that belongs to another connection,
+     * or a page without the card, would leave the driver with no way to stop the bring-up.
+     */
+    fun homeTellsBringUp(decision: Decision?, cardOnScreen: Boolean): Boolean =
+        cardOnScreen && decision?.stage != null
 
     private fun tileState(input: Input, status: Status, primary: Connection, connection: Connection): TileState = when {
         input.sessionActive && input.sessionConnection == connection -> TileState.ACTIVE

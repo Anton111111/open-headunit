@@ -141,6 +141,7 @@ class HomeFragment : Fragment() {
     private var ultrawideHome = false
     /** How many pages the home has now: one unless it is the launcher and has more to show. */
     private var pageCount = 1
+    private var cardFitPending = false
     /**
      * The widgets under the favorites had no room on this screen, so they are on a page of their
      * own. Decided once per home view: the screen does not change size without a new one.
@@ -196,9 +197,14 @@ class HomeFragment : Fragment() {
         favoriteSlots = HomeUiHelper.favoriteSlotIds.mapNotNull { container.findViewById(it) }
         pageCount = 1
         widgetRowOverflows = false
+        // A fit still waiting on the previous view would never run, and block every later one.
+        cardFitPending = false
         container.findViewById<HomePager>(R.id.home_pager)?.let { pager ->
             pager.pageGap = container.resources.getDimensionPixelSize(R.dimen.home_gap)
-            pager.onPageChanged = { renderDots() }
+            pager.onPageChanged = {
+                renderDots()
+                reportBringUpOwner()
+            }
         }
         // A long press on the main button's empty space is where pages are added, and so is one
         // on the empty part of the main page around it: under the favorites and the widget row.
@@ -324,7 +330,9 @@ class HomeFragment : Fragment() {
         reconnectCountdown = viewLifecycleOwner.lifecycleScope.launch {
             for (left in seconds downTo 1) {
                 reconnectSecondsLeft = left
-                renderHome()
+                // A stopped home is not on screen, and rendering restarts its shine; onResume
+                // renders the number it has reached when it comes back.
+                if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) renderHome()
                 delay(1000L)
             }
         }
@@ -396,6 +404,22 @@ class HomeFragment : Fragment() {
         )
         HomeUiHelper.fitDriverBar(root, appSettings.homeButtonScalePercent)
         renderHomeInfo()
+        reportBringUpOwner()
+        // Cancel, the progress bar and the step come and go with the status, so the lines that fit
+        // change with it, not only with the layout.
+        scheduleCardFit(root)
+    }
+
+    /**
+     * Hands the bring-up to the status pill whenever the card is not the one telling it. [started]
+     * is passed from onStart, where the view's lifecycle has not reached STARTED yet.
+     */
+    private fun reportBringUpOwner(
+        started: Boolean = viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+    ) {
+        val cardOnScreen = (view?.findViewById<HomePager>(R.id.home_pager)?.currentPage ?: 0) == 0
+        val tells = started && HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen)
+        if (mainViewModel.homeShowsBringUp.value != tells) mainViewModel.homeShowsBringUp.value = tells
     }
 
     /**
@@ -603,33 +627,61 @@ class HomeFragment : Fragment() {
         }
         applyHomeLayout(root, appSettings, isLauncherActive)
         renderWidgets()
-        // After the layout pass that sizes the card, not inside it: hiding a line asks for
-        // another one.
-        root.findViewById<View>(R.id.home_primary_card)?.doOnLayout { root.post { fitCardText(root) } }
+        scheduleCardFit(root)
     }
 
     /**
-     * The lines of the main button that step aside, the least needed first, when the card is too
-     * short for all of it: the subtitle ("Over WiFi"), then the kicker. Otherwise it is the button
-     * itself that gets cut, which is what happened on a 720x360dp screen once the page dots took
-     * their row.
+     * After the layout pass that sizes the card, not inside it: hiding a line asks for another
+     * one. Renders come in bursts (every step, every second of the countdown), so one fit waits
+     * at a time.
+     */
+    private fun scheduleCardFit(root: View) {
+        if (cardFitPending) return
+        val card = root.findViewById<View>(R.id.home_primary_card) ?: return
+        cardFitPending = true
+        card.doOnLayout {
+            root.post {
+                cardFitPending = false
+                fitCardText(root)
+            }
+        }
+    }
+
+    /**
+     * The lines of the main button that step aside, in [HomeCardFitPolicy]'s order, when the card
+     * is too short for all of it. Otherwise it is the button itself that gets cut, which is what
+     * happened on a 720x360dp screen once the page dots took their row.
      */
     private fun fitCardText(root: View) {
         if (!isAdded || view !== root) return
         val card = root.findViewById<View>(R.id.home_primary_card) ?: return
         if (card.height <= 0) return
-        // The network line goes first, and only when the card asked for it: unlike the other two it
-        // is not always meant to be there.
-        val optional = listOfNotNull(
-            root.findViewById<View>(R.id.home_primary_detail)?.takeIf { it.visibility == View.VISIBLE },
-            root.findViewById<View>(R.id.home_primary_subtitle),
-            root.findViewById<View>(R.id.home_primary_kicker)
-        )
-        optional.forEach { it.visibility = View.VISIBLE }
+        val stepShown = decision?.stage != null
+        val optional = HomeCardFitPolicy.stepAsideOrder(stepShown).mapNotNull { line ->
+            when (line) {
+                // Only when the card asked for it: unlike the others it is not always meant to be there.
+                HomeCardFitPolicy.Line.DETAIL -> root.findViewById<TextView>(R.id.home_primary_detail)
+                    ?.takeIf { !it.text.isNullOrEmpty() }
+                HomeCardFitPolicy.Line.SUBTITLE -> root.findViewById<View>(R.id.home_primary_subtitle)
+                HomeCardFitPolicy.Line.KICKER -> root.findViewById<View>(R.id.home_primary_kicker)
+                HomeCardFitPolicy.Line.TITLE -> root.findViewById<View>(R.id.home_primary_title)
+            }
+        }
+        // A line the previous status hid has to be measured again under this one.
+        restoreCardLines(root, stepShown)
         val dropped = optional.takeWhile { cardMinimumHeight(card) > card.height }
         dropped.forEach { it.visibility = View.GONE }
         if (dropped.isNotEmpty()) {
             AppLog.i("HomeFragment: the main button is ${card.height}px tall, hiding ${dropped.size} line(s) so its action fits")
+        }
+    }
+
+    private fun restoreCardLines(root: View, stepShown: Boolean) {
+        listOf(R.id.home_primary_subtitle, R.id.home_primary_kicker, R.id.home_primary_title).forEach {
+            root.findViewById<View>(it)?.visibility = View.VISIBLE
+        }
+        root.findViewById<TextView>(R.id.home_primary_detail)?.let {
+            it.visibility = if (stepShown && !it.text.isNullOrEmpty()) View.VISIBLE else View.GONE
         }
     }
 
@@ -2072,7 +2124,7 @@ class HomeFragment : Fragment() {
         // A host that is not listening holds an empty widget view, so this runs before the row is
         // built in onResume.
         HomeWidgets.startListening(requireContext())
-        mainViewModel.homeShowsBringUp.value = true
+        reportBringUpOwner(started = true)
     }
 
     override fun onStop() {

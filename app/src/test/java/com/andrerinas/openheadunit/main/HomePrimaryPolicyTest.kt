@@ -231,4 +231,47 @@ class HomePrimaryPolicyTest {
             }
         }
     }
+
+    @Test
+    fun `a scan during the stack's own WiFi search keeps the step and Cancel on the card`() {
+        val searching = input(lastConnection = Connection.WIFI, stage = ConnectionStage.SEARCHING)
+        val withScan = HomePrimaryPolicy.decide(searching.copy(wifiScanning = true))
+        val withoutScan = HomePrimaryPolicy.decide(searching)
+        assertEquals(Status.WAITING, withScan.status)
+        assertEquals(ConnectionStage.SEARCHING, withScan.stage)
+        assertEquals(withoutScan.status, withScan.status)
+    }
+
+    @Test
+    fun `a scan with no bring-up behind it is still a search the user can repeat`() {
+        val decision = HomePrimaryPolicy.decide(
+            input(lastConnection = Connection.WIFI, wifiScanning = true, stage = ConnectionStage.USB_ATTACHED)
+        )
+        assertEquals(Status.SEARCHING, decision.status)
+    }
+
+    @Test
+    fun `the pill comes back when the card's step belongs to another connection`() {
+        // The HP Slate case: the card stands for USB while the stack searches over WiFi.
+        val decision = HomePrimaryPolicy.decide(
+            input(lastConnection = Connection.USB, wifiScanning = true, stage = ConnectionStage.SEARCHING)
+        )
+        assertEquals(Connection.USB, decision.primary)
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+    }
+
+    @Test
+    fun `the pill comes back on a page without the card`() {
+        val decision = HomePrimaryPolicy.decide(
+            input(lastConnection = Connection.WIFI, stage = ConnectionStage.WAKING_PHONE)
+        )
+        assertEquals(true, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = true))
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(decision, cardOnScreen = false))
+    }
+
+    @Test
+    fun `without a bring-up the home tells nothing`() {
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(HomePrimaryPolicy.decide(input()), cardOnScreen = true))
+        assertEquals(false, HomePrimaryPolicy.homeTellsBringUp(null, cardOnScreen = true))
+    }
 }
