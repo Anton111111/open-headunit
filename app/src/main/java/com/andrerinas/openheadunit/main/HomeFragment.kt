@@ -1029,7 +1029,8 @@ class HomeFragment : Fragment() {
         renderHome()
     }
 
-    private class FavoriteApp(val label: CharSequence, val icon: Drawable)
+    /** [available] is false for a shortcut that is kept but cannot be read outside the home role. */
+    private data class FavoriteApp(val label: CharSequence, val icon: Drawable, val available: Boolean = true)
 
     /** Loads only the four favorites, off the main thread: the drawer's full list is not needed here. */
     private fun loadFavorites() {
@@ -1064,18 +1065,30 @@ class HomeFragment : Fragment() {
         null
     }
 
-    /** A shortcut the app still offers, with its own icon and the app's as the fallback. */
+    /**
+     * A shortcut the app still offers, with its own icon and the app's as the fallback. One that
+     * cannot be read right now keeps its slot and shows as its app, dimmed.
+     */
     private fun shortcutFavorite(context: Context, pm: PackageManager, target: FavoriteTarget.Shortcut): FavoriteApp? {
-        val shortcut = LauncherShortcuts.forPackage(context, target.packageName)
-            .firstOrNull { it.shortcutId == target.shortcutId }
-        if (shortcut == null) {
-            AppLog.i("HomeFragment: favorite shortcut ${target.packageName}/${target.shortcutId} is gone, showing its slot as free")
-            return null
+        val app = appFavorite(pm, target.packageName)
+        val shortcuts = LauncherShortcuts.forPackage(context, target.packageName)
+        val name = "${target.packageName}/${target.shortcutId}"
+        return when (FavoriteAppsPolicy.shortcutState(app != null, shortcuts?.map { it.shortcutId }, target.shortcutId)) {
+            FavoriteAppsPolicy.SlotState.GONE -> {
+                AppLog.i("HomeFragment: favorite shortcut $name is gone, showing its slot as free")
+                null
+            }
+            FavoriteAppsPolicy.SlotState.UNAVAILABLE -> {
+                AppLog.i("HomeFragment: favorite shortcut $name cannot be read now, keeping its slot")
+                app?.copy(available = false)
+            }
+            FavoriteAppsPolicy.SlotState.SHOWN -> {
+                val shortcut = shortcuts?.firstOrNull { it.shortcutId == target.shortcutId } ?: return null
+                val icon = LauncherShortcuts.icon(context, target.packageName, target.shortcutId) ?: app?.icon
+                    ?: return null
+                FavoriteApp(shortcut.label, icon)
+            }
         }
-        val icon = LauncherShortcuts.icon(context, target.packageName, target.shortcutId)
-            ?: appFavorite(pm, target.packageName)?.icon
-        if (icon == null) return null
-        return FavoriteApp(shortcut.label, icon)
     }
 
     private fun bindFavorite(slotView: View, app: FavoriteApp?) {
@@ -1088,6 +1101,7 @@ class HomeFragment : Fragment() {
             icon.setImageDrawable(app.icon)
             label.text = app.label
         }
+        icon.alpha = if (app == null || app.available) 1f else UNAVAILABLE_FAVORITE_ALPHA
         (slotView as? ViewGroup)?.let { HomeUiHelper.paintFavoriteSlot(slotView.context, it, app != null, homePalette(slotView.context)) }
     }
 
@@ -1445,7 +1459,10 @@ class HomeFragment : Fragment() {
             is FavoriteTarget.Empty -> false
             is FavoriteTarget.App -> AppDrawerFragment.launchPackage(requireContext(), target.packageName)
             is FavoriteTarget.Shortcut ->
-                LauncherShortcuts.launch(requireContext(), target.packageName, target.shortcutId)
+                LauncherShortcuts.launch(requireContext(), target.packageName, target.shortcutId) ||
+                    // Unreadable outside the home role: the app is the closest thing that still opens.
+                    (!LauncherShortcuts.canRead(requireContext()) &&
+                        AppDrawerFragment.launchPackage(requireContext(), target.packageName))
         }
         if (!launched) openAppDrawer(favoriteSlot = slot)
     }
@@ -2717,6 +2734,7 @@ class HomeFragment : Fragment() {
     companion object {
         private const val STATE_PENDING_WIDGET_ID = "home_pending_widget_id"
         private const val STATE_PENDING_WIDGET_PAGE = "home_pending_widget_page"
+        private const val UNAVAILABLE_FAVORITE_ALPHA = 0.45f
         private var hasAutoStarted = false
         private var hasCheckedNativeDriverSelection = false
         var forceSelfModeLaunch = false

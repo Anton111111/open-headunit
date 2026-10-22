@@ -107,4 +107,50 @@ class FavoriteAppsPolicyTest {
             FavoriteAppsPolicy.remove(listOf(app("a"), app("b"), app("c"), app("d")), 1)
         )
     }
+
+    @Test
+    fun `a shortcut id with a comma keeps every slot in place`() {
+        // The reviewer's case: the slot after it used to move from 2 to 3.
+        val slots = listOf(shortcut("contacts", "shortcut,add-contact"), app("maps"), FavoriteTarget.Empty, app("music"))
+        assertEquals(slots, FavoriteAppsPolicy.decode(FavoriteAppsPolicy.encode(slots)))
+    }
+
+    @Test
+    fun `a percent sign and an escape lookalike in an id survive the round trip`() {
+        val slots = listOf(shortcut("a", "50%"), shortcut("b", "%2C"), shortcut("c", "%25,%"), FavoriteTarget.Empty)
+        assertEquals(slots, FavoriteAppsPolicy.decode(FavoriteAppsPolicy.encode(slots)))
+    }
+
+    @Test
+    fun `a value stored before escaping still decodes the same`() {
+        assertEquals(shortcut("maps", "navigate-home"), FavoriteAppsPolicy.decode("maps|navigate-home").first())
+    }
+
+    @Test
+    fun `shortcuts that cannot be read keep the slot`() {
+        assertEquals(
+            FavoriteAppsPolicy.SlotState.UNAVAILABLE,
+            FavoriteAppsPolicy.shortcutState(appInstalled = true, shortcutIds = null, shortcutId = "navigate")
+        )
+    }
+
+    @Test
+    fun `only a readable list without the shortcut frees the slot`() {
+        assertEquals(
+            FavoriteAppsPolicy.SlotState.GONE,
+            FavoriteAppsPolicy.shortcutState(appInstalled = true, shortcutIds = emptyList(), shortcutId = "navigate")
+        )
+        assertEquals(
+            FavoriteAppsPolicy.SlotState.SHOWN,
+            FavoriteAppsPolicy.shortcutState(appInstalled = true, shortcutIds = listOf("navigate"), shortcutId = "navigate")
+        )
+    }
+
+    @Test
+    fun `an uninstalled app frees its shortcut even when shortcuts cannot be read`() {
+        assertEquals(
+            FavoriteAppsPolicy.SlotState.GONE,
+            FavoriteAppsPolicy.shortcutState(appInstalled = false, shortcutIds = null, shortcutId = "navigate")
+        )
+    }
 }

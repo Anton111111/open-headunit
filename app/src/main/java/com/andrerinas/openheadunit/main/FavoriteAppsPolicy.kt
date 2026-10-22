@@ -16,7 +16,8 @@ sealed class FavoriteTarget {
  *
  * Stored as one string, comma separated: a package name for an app, and "package|shortcut" for a
  * shortcut. The separator is only ever the first "|", so a shortcut id that contains one still
- * decodes to the same shortcut.
+ * decodes to the same shortcut. A comma or a "%" in a shortcut id is stored escaped, so it never
+ * splits the slots; package names can hold neither.
  *
  * Pure, so the slot rules are unit tests rather than taps on a head unit.
  */
@@ -26,6 +27,29 @@ object FavoriteAppsPolicy {
 
     private const val SEPARATOR = ","
     private const val SHORTCUT_SEPARATOR = "|"
+    private const val ESCAPED_SEPARATOR = "%2C"
+    private const val ESCAPED_PERCENT = "%25"
+
+    /** What a stored slot turns into on screen once its app and shortcut were looked up. */
+    enum class SlotState {
+        SHOWN,
+        /** Kept, but nothing can confirm it now: shortcuts are unreadable outside the home role. */
+        UNAVAILABLE,
+        /** Uninstalled, or dropped by its app: the slot is freed. */
+        GONE,
+    }
+
+    /**
+     * @param shortcutIds the app's shortcuts, or null when they could not be read. Only a list
+     *   that was read and lacks the shortcut frees the slot; losing the home role once must not
+     *   wipe every shortcut favorite.
+     */
+    fun shortcutState(appInstalled: Boolean, shortcutIds: Collection<String>?, shortcutId: String): SlotState = when {
+        !appInstalled -> SlotState.GONE
+        shortcutIds == null -> SlotState.UNAVAILABLE
+        shortcutId in shortcutIds -> SlotState.SHOWN
+        else -> SlotState.GONE
+    }
 
     /** Always [SLOT_COUNT] slots, whatever was stored, so a corrupt value never breaks the row. */
     fun decode(stored: String): List<FavoriteTarget> =
@@ -40,15 +64,39 @@ object FavoriteAppsPolicy {
         if (separator <= 0 || separator == entry.length - 1) return FavoriteTarget.App(entry)
         return FavoriteTarget.Shortcut(
             entry.substring(0, separator),
-            entry.substring(separator + 1)
+            unescape(entry.substring(separator + 1))
         )
+    }
+
+    private fun escape(shortcutId: String): String =
+        shortcutId.replace("%", ESCAPED_PERCENT).replace(SEPARATOR, ESCAPED_SEPARATOR)
+
+    /** One pass, so an escaped "%" followed by "2C" never turns into a comma. */
+    private fun unescape(stored: String): String {
+        if ('%' !in stored) return stored
+        val out = StringBuilder(stored.length)
+        var i = 0
+        while (i < stored.length) {
+            when {
+                stored.startsWith(ESCAPED_SEPARATOR, i, ignoreCase = true) -> {
+                    out.append(SEPARATOR)
+                    i += ESCAPED_SEPARATOR.length
+                }
+                stored.startsWith(ESCAPED_PERCENT, i) -> {
+                    out.append('%')
+                    i += ESCAPED_PERCENT.length
+                }
+                else -> out.append(stored[i++])
+            }
+        }
+        return out.toString()
     }
 
     fun encode(slots: List<FavoriteTarget>): String = slots.joinToString(SEPARATOR) { entry ->
         when (entry) {
             is FavoriteTarget.Empty -> ""
             is FavoriteTarget.App -> entry.packageName
-            is FavoriteTarget.Shortcut -> entry.packageName + SHORTCUT_SEPARATOR + entry.shortcutId
+            is FavoriteTarget.Shortcut -> entry.packageName + SHORTCUT_SEPARATOR + escape(entry.shortcutId)
         }
     }
 

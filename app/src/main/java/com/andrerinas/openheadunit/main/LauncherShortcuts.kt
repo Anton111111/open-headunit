@@ -29,7 +29,7 @@ object LauncherShortcuts {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return emptyMap()
         return try {
             val service = launcherApps(context) ?: return emptyMap()
-            read(service, packageName = null, shortcutId = null)
+            read(service, packageName = null, shortcutId = null).orEmpty()
                 .mapNotNull { entryOf(it) }
                 .groupBy { it.packageName }
         } catch (e: Exception) {
@@ -38,24 +38,32 @@ object LauncherShortcuts {
         }
     }
 
-    /** @return the shortcuts of one app, for the favorites row. */
-    fun forPackage(context: Context, packageName: String): List<Entry> {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return emptyList()
+    /**
+     * @return the shortcuts of one app, for the favorites row, or null when they cannot be read:
+     *   below API 25, outside the home role, or while the user is locked. An app with no
+     *   shortcuts is an empty list, which is not the same thing.
+     */
+    fun forPackage(context: Context, packageName: String): List<Entry>? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return null
         return try {
-            val service = launcherApps(context) ?: return emptyList()
-            read(service, packageName, shortcutId = null).mapNotNull { entryOf(it) }
+            val service = launcherApps(context) ?: return null
+            read(service, packageName, shortcutId = null)?.mapNotNull { entryOf(it) }
         } catch (e: Exception) {
             AppLog.w(TAG, "Shortcuts of $packageName could not be read: ${e.message}")
-            emptyList()
+            null
         }
     }
+
+    /** @return whether shortcuts can be read now: API 25 and up, as the home app, user unlocked. */
+    fun canRead(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1 && launcherApps(context) != null
 
     /** @return the shortcut's own icon, or null when it cannot be read and the app icon is used. */
     fun icon(context: Context, packageName: String, shortcutId: String): Drawable? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) return null
         return try {
             val service = launcherApps(context) ?: return null
-            val shortcut = read(service, packageName, shortcutId).firstOrNull() ?: return null
+            val shortcut = read(service, packageName, shortcutId)?.firstOrNull() ?: return null
             service.getShortcutIconDrawable(shortcut, 0)
         } catch (e: Exception) {
             AppLog.w(TAG, "Icon of $packageName/$shortcutId could not be read: ${e.message}")
@@ -78,6 +86,7 @@ object LauncherShortcuts {
     }
 
     /** The label the drawer shows: the short one, and the long one only when there is no short. */
+    @RequiresApi(Build.VERSION_CODES.N_MR1)
     private fun entryOf(shortcut: ShortcutInfo): Entry? {
         val label = shortcut.shortLabel?.toString()?.trim().orEmpty()
             .ifEmpty { shortcut.longLabel?.toString()?.trim().orEmpty() }
@@ -85,9 +94,9 @@ object LauncherShortcuts {
         return Entry(shortcut.`package`, shortcut.id, label)
     }
 
-    /** @return every shortcut the query matches; empty when the launcher may not read them. */
+    /** @return every shortcut the query matches; null when the system would not say, e.g. while locked. */
     @RequiresApi(Build.VERSION_CODES.N_MR1)
-    private fun read(service: LauncherApps, packageName: String?, shortcutId: String?): List<ShortcutInfo> {
+    private fun read(service: LauncherApps, packageName: String?, shortcutId: String?): List<ShortcutInfo>? {
         val query = LauncherApps.ShortcutQuery().setQueryFlags(
             LauncherApps.ShortcutQuery.FLAG_MATCH_DYNAMIC or
                 LauncherApps.ShortcutQuery.FLAG_MATCH_MANIFEST or
@@ -96,7 +105,7 @@ object LauncherShortcuts {
         if (packageName != null) query.setPackage(packageName)
         // setShortcutIds needs a package, so it is only ever set together with one.
         if (packageName != null && shortcutId != null) query.setShortcutIds(listOf(shortcutId))
-        return service.getShortcuts(query, Process.myUserHandle()).orEmpty()
+        return service.getShortcuts(query, Process.myUserHandle())
     }
 
     /** @return the service, or null when this is not the home app that may read shortcuts. */
