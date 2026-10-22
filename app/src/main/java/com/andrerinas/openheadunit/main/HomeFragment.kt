@@ -1401,7 +1401,15 @@ class HomeFragment : Fragment() {
 
     private fun releasePendingWidget(appWidgetId: Int, why: String) {
         val ctx = context ?: return
-        if (appWidgetId >= 0) HomeWidgets.forget(ctx, appWidgetId)
+        if (appWidgetId < 0) {
+            // No widget was waiting. The usual case is a setup activity its app did not export:
+            // the system refuses the launch and still answers it with a cancel, which only arrives
+            // once the home is back on screen. By then the widget went through the host and was
+            // placed (configureOrPlaceWidget), so there is nothing to release.
+            AppLog.i("HomeFragment: a widget answer came back with no widget waiting ($why), nothing to release")
+            return
+        }
+        HomeWidgets.forget(ctx, appWidgetId)
         AppLog.i("HomeFragment: widget $appWidgetId $why, releasing its id")
     }
 
