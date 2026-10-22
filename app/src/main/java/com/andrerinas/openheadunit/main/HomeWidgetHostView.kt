@@ -49,7 +49,14 @@ class HomeWidgetHostView(context: Context) : AppWidgetHostView(context) {
                 if (abs(ev.x - downX) > touchSlop || abs(ev.y - downY) > touchSlop) removeCallbacks(longPress)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> removeCallbacks(longPress)
         }
-        if (!longPressed) return super.dispatchTouchEvent(ev)
+        if (!longPressed) {
+            val handled = super.dispatchTouchEvent(ev)
+            // Where the widget does not take the touch (its padding, a plain background) the rest
+            // of the gesture never comes here, so nothing would cancel the timer: a tap or a swipe
+            // would open the menu late. The frame's own long click covers those spots.
+            if (ev.actionMasked == MotionEvent.ACTION_DOWN && !handled) removeCallbacks(longPress)
+            return handled
+        }
         if (!widgetCancelled) {
             widgetCancelled = true
             val cancel = MotionEvent.obtain(ev)
