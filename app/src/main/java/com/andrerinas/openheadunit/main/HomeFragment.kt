@@ -237,8 +237,6 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, pagesHintBack)
-
         renderHome()
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -2064,7 +2062,13 @@ class HomeFragment : Fragment() {
         setHomeBehindHint(root, hidden = true)
         root.addView(hint, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         pagesHint = hint
+        // Added now rather than with the view: the dispatcher asks the last callback added first,
+        // and a callback tied to a lifecycle only joins the list on ON_START, which the home's view
+        // reaches before the activity does. The activity's own Back, always on, would then come
+        // after this one and swallow the key. The hint only shows while the home is resumed and
+        // closes on pause, so nothing re-adds the activity's callback while it is up.
         pagesHintBack.isEnabled = true
+        requireActivity().onBackPressedDispatcher.addCallback(pagesHintBack)
     }
 
     /**
@@ -2127,9 +2131,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun onPagesHintClosed(reason: HomePagesHintView.Reason) {
+        pagesHintBack.isEnabled = false
+        pagesHintBack.remove()
         val ctx = context ?: return
         App.provide(ctx).settings.homePagesHintShown = true
-        pagesHintBack.isEnabled = false
         val hint = pagesHint
         pagesHint = null
         AppLog.i("HomeFragment: pages hint closed ($reason)")
