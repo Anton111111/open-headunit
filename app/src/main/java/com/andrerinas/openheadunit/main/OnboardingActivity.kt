@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.text.Html
 import android.util.DisplayMetrics
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -31,6 +32,7 @@ import com.andrerinas.openheadunit.utils.OnboardingDisplayPolicy
 import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.SystemOptimizer
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.MarginLayoutParamsCompat
 import androidx.core.view.ViewCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -106,6 +108,7 @@ class OnboardingActivity : BaseActivity() {
         nextBtn = findViewById(R.id.onb_next)
         skipBtn = findViewById(R.id.onb_skip)
         stepper = findViewById(R.id.onb_stepper)
+        compactFooterOnShortScreens()
 
         selectedPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
         selectedSize = OnboardingDisplayPolicy.initialPreset(settings.displaySizePreset, estimateSizePreset())
@@ -608,6 +611,25 @@ class OnboardingActivity : BaseActivity() {
         permissionBinder?.rebind()
     }
 
+    /**
+     * On short screens (800x480 head units) the "Do it later" row costs a whole row of step
+     * content, enough to push the last switch of the longer steps below the fold. There it moves
+     * into the navigation row, just before Next. Taller screens keep it on its own row.
+     */
+    private fun compactFooterOnShortScreens() {
+        if (resources.configuration.screenHeightDp >= SHORT_SCREEN_MAX_HEIGHT_DP) return
+        val navRow = findViewById<LinearLayout>(R.id.onb_nav_row)
+        (skipBtn.parent as? ViewGroup)?.removeView(skipBtn)
+        val gap = (8 * resources.displayMetrics.density).toInt()
+        val params = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            rightMargin = gap
+            MarginLayoutParamsCompat.setMarginEnd(this, gap)
+        }
+        navRow.addView(skipBtn, navRow.indexOfChild(nextBtn), params)
+    }
+
     /** Show only the auto-start toggles that match the chosen connection type. Self Mode
      * connects without USB or WiFi, so both groups are hidden. */
     private fun applyAutomationVisibility() {
@@ -998,6 +1020,9 @@ class OnboardingActivity : BaseActivity() {
         private const val KEY_STEP = "onb_step"
         private const val KEY_LAUNCHER_PENDING = "onb_launcher_pending"
         private const val STEP_COUNT = 13
+        /** Below this available height (dp) the footer goes to a single row. 800x480 lands
+         * well under it; 1024x600 stays above, so its footer is unchanged. */
+        private const val SHORT_SCREEN_MAX_HEIGHT_DP = 500
         private const val STEP_SAFETY = 1
         private const val STEP_CONNECTION = 2
         private const val STEP_DISPLAY = 3
