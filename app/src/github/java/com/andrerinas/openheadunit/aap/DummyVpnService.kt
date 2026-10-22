@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import com.andrerinas.openheadunit.utils.VpnControl
 import com.andrerinas.openheadunit.utils.AppLog
 
 /**
@@ -27,7 +28,10 @@ class DummyVpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startVpn(intent?.getBooleanExtra(EXTRA_EXCLUDE_SELF, false) ?: false)
+        // A cancelled startService command can still reach an already bound instance.
+        VpnControl.startRequests.runIfCurrent(intent?.getStringExtra(EXTRA_START_REQUEST)) {
+            startVpn(intent?.getBooleanExtra(EXTRA_EXCLUDE_SELF, false) ?: false)
+        }
         return START_NOT_STICKY
     }
 
@@ -98,7 +102,7 @@ class DummyVpnService : VpnService() {
      */
     override fun onRevoke() {
         AppLog.i("DummyVpnService: consent was revoked, so the tun is down")
-        stopVpn()
+        VpnControl.startRequests.stop { stopVpn() }
         super.onRevoke()
     }
 
@@ -109,6 +113,7 @@ class DummyVpnService : VpnService() {
     }
 
     companion object {
+        const val EXTRA_START_REQUEST = "vpn_start_request"
         /** See [com.andrerinas.openheadunit.utils.VpnControl.startVpn]. */
         const val EXTRA_EXCLUDE_SELF = "exclude_self"
 
