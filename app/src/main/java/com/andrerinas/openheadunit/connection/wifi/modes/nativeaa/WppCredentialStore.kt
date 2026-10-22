@@ -14,7 +14,11 @@ internal class WppCredentialStore {
 
     @Synchronized
     fun publish(credentials: NativeNetworkCredentials) {
-        current = Snapshot(credentials, current.withdrawals)
+        val previous = current
+        // Some platforms publish a replacement without a preceding removal callback. Treat a
+        // changed join target as retiring the old one, but not an identity-policy update.
+        val replaced = previous.credentials?.let { !it.sameNetworkAs(credentials) } == true
+        current = Snapshot(credentials, previous.withdrawals + if (replaced) 1 else 0)
     }
 
     @Synchronized

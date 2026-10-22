@@ -38,4 +38,23 @@ class WppCredentialStoreTest {
         store.publish(network.copy())
         assertEquals(sent, store.current)
     }
+    @Test fun `replacement without a removal callback invalidates the previous handoff`() {
+        for (replacement in listOf(network.copy(ssid = "DIRECT-BB"), network.copy(psk = "87654321"),
+            network.copy(ip = "192.168.50.1"), network.copy(bssid = "02:11:22:33:44:66"))) {
+            val store = WppCredentialStore()
+            store.publish(network)
+            val sent = store.current
+            store.publish(replacement)
+            assertEquals(sent.withdrawals + 1, store.current.withdrawals)
+        }
+    }
+
+    @Test fun `identity reassessment and address spelling keep the network generation`() {
+        val store = WppCredentialStore()
+        store.publish(network.copy(bssid = "AA:BB:CC:DD:EE:FF"))
+        val sent = store.current
+        store.publish(network.copy(bssid = "aa:bb:cc:dd:ee:ff", identity = GroupIdentityStability.STABLE))
+        assertEquals(sent.withdrawals, store.current.withdrawals)
+        assertEquals(GroupIdentityStability.STABLE, store.current.credentials!!.identity)
+    }
 }

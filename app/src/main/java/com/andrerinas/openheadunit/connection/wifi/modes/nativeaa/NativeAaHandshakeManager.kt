@@ -3180,6 +3180,10 @@ class NativeAaHandshakeManager(
             // What the credentials looked like when this exchange captured them, kept as resolved
             // so the re-read before Type 3 compares like with like.
             var capturedCreds = NativeNetworkCredentials("", "", "", "")
+            // The network whose WPP endpoint (Type 4, TCP 5299) went out, or null while none has.
+            // Not the projection address: that is credIp:5288 in Type 1. Kept as first advertised,
+            // so a repeated Type 4 cannot move it; see CredentialFreshnessPolicy.keepsEndpoint.
+            var advertisedNetwork: NativeNetworkCredentials? = null
             // Set when the network named above stopped existing before Type 3 could go out.
             var credentialsWentStale = false
             // The withdrawal count the credentials were sent under, or -1 before Type 3.
@@ -3201,7 +3205,7 @@ class NativeAaHandshakeManager(
                             return
                         }
                         AppLog.i("NativeAA: [TX] Sending WifiVersionRequest (Type 4) v${WppHandshakeSession.WPP_VERSION_MAJOR}.${WppHandshakeSession.WPP_VERSION_MINOR}")
-                        sendWifiVersionRequest(output, transport)
+                        sendWifiVersionRequest(output, transport, advertisedNetwork)?.let { advertisedNetwork = it }
                         lastOpenerSentAt = SystemClock.elapsedRealtime()
                         spokeToPhone = true
                     }
@@ -3236,6 +3240,7 @@ class NativeAaHandshakeManager(
                         when (CredentialFreshnessPolicy.decide(
                             captured = capturedCreds,
                             live = live?.copy(bssid = live.bssid.uppercase()),
+                            endpointNetwork = advertisedNetwork,
                         )) {
                             CredentialFreshnessPolicy.Action.SEND_AS_CAPTURED ->
                                 AppLog.d("NativeAA: the live credentials still match the ones this handshake captured.")
@@ -3256,7 +3261,7 @@ class NativeAaHandshakeManager(
                             }
 
                             CredentialFreshnessPolicy.Action.ABORT -> {
-                                AppLog.e("NativeAA: WiFi credentials were withdrawn, incomplete, or moved to another endpoint before Type 3; waiting for a usable group.")
+                                AppLog.e("NativeAA: WiFi credentials were withdrawn, incomplete, moved to another endpoint, or no longer the network whose WPP endpoint went out before Type 3; ending this exchange so the next one describes the network that exists now.")
                                 credentialsWentStale = true
                             }
                         }
@@ -3527,7 +3532,7 @@ class NativeAaHandshakeManager(
                 }
                 resendOpener(
                     now,
-                    { sendWifiVersionRequest(output, transport) },
+                    { sendWifiVersionRequest(output, transport, advertisedNetwork)?.let { advertisedNetwork = it } },
                     "WifiVersionRequest (Type 4)"
                 )
                 tick(500)
@@ -3556,6 +3561,17 @@ class NativeAaHandshakeManager(
                 }
                 abortedLocally = true
                 feed(WppEvent.CredentialsUnavailable)
+                return@withContext
+            }
+
+            // Before Type 1 names this network's projection address. A Type 4 that advertised another
+            // network's endpoint (it was replaced, or re-judged as not to be kept, during the wait)
+            // cannot be followed by this one's credentials, so the exchange ends here and the next
+            // one opens with a Type 4 that matches. A cold start whose Type 4 carried no endpoint
+            // has nothing to keep, and carries on.
+            if (!CredentialFreshnessPolicy.keepsEndpoint(advertisedNetwork, snapshot)) {
+                AppLog.w("NativeAA: the WPP endpoint went out for ${advertisedNetwork?.ssid}, and the network now is ${snapshot.ssid} (identity stable=${GroupIdentityStabilityPolicy.label(snapshot.identity)}); ending this exchange rather than send Type 1 and Type 3 for a network the endpoint does not describe.")
+                abortedLocally = true
                 return@withContext
             }
 
@@ -3851,34 +3867,53 @@ class NativeAaHandshakeManager(
      * which is worse than staying quiet: it stores what we advertise and dials it in preference to
      * running this handshake again. On WiFi Direct that is decided by whether this unit's group has
      * been seen to keep its name and address, which travels with the credentials.
+     *
+     * Returns the network whose endpoint went out, or null when none did. That is the WPP-over-TCP
+     * endpoint (5299) the phone stores; the projection address (5288) is Type 1's, not this one's.
      */
-    private fun sendWifiVersionRequest(output: OutputStream, transport: NativeStrategy) {
-        val endpoint = when (val decision =
-            WppEndpointPolicy.decide(
-                transport,
-                wppTcpServer?.listeningPort,
-                credentials?.identity ?: GroupIdentityStability.UNPROVEN,
-            )) {
-            is WppEndpointDecision.Withhold -> {
+    private fun sendWifiVersionRequest(
+        output: OutputStream,
+        transport: NativeStrategy,
+        alreadyAdvertised: NativeNetworkCredentials?,
+    ): NativeNetworkCredentials? {
+        val snapshot = credentials
+        val decision = WppEndpointPolicy.decide(
+            transport,
+            wppTcpServer?.listeningPort,
+            snapshot?.identity ?: GroupIdentityStability.UNPROVEN,
+        )
+        // A repeat after the network changed: the phone may already hold the first endpoint, so
+        // this one must not quietly become the exchange's new baseline. The check before Type 1
+        // ends the exchange instead.
+        val rebases = decision is WppEndpointDecision.Advertise && alreadyAdvertised != null &&
+            snapshot != null && !alreadyAdvertised.sameNetworkAs(snapshot)
+        val endpoint = when {
+            decision is WppEndpointDecision.Withhold -> {
                 AppLog.i("NativeAA: not advertising WPP over TCP: ${decision.reason}")
                 null
             }
-            is WppEndpointDecision.Advertise ->
-                WppMessages.endpoint(credentials?.ip.orEmpty(), decision.port).also {
+            rebases -> {
+                AppLog.w("NativeAA: repeating Type 4 without an endpoint; the one already sent was for ${alreadyAdvertised?.ssid}, not ${snapshot?.ssid}.")
+                null
+            }
+            snapshot != null && decision is WppEndpointDecision.Advertise ->
+                WppMessages.endpoint(snapshot.ip, decision.port).also {
                     AppLog.i("NativeAA: advertising WPP over TCP at ${it.ip}:${it.port}")
-                    recordAdvertisedEndpoint(transport)
+                    recordAdvertisedEndpoint(transport, snapshot)
                 }
+            else -> null
         }
         val channelType = WppChannelTypePolicy.forHeadUnit(WifiBandCapability.supports5Ghz(context))
         val channels = WppChannelListPolicy.forGroup(WifiBandCapability.sessionFrequencyMhz())
         AppLog.i("NativeAA: [TX] version request channel type=$channelType channels=$channels")
         val request = WppMessages.versionRequest(carInfo(), endpoint, channelType, channels)
         sendProtobuf(output, request.toByteArray(), WppMessageType.VERSION_REQUEST)
+        return snapshot.takeIf { endpoint != null }
     }
 
     /** Remembers the network an endpoint went out under, which is the one the phone will insist on. */
-    private fun recordAdvertisedEndpoint(transport: NativeStrategy) {
-        val creds = credentials ?: return
+    private fun recordAdvertisedEndpoint(transport: NativeStrategy, snapshot: NativeNetworkCredentials?) {
+        val creds = snapshot ?: return
         if (transport == NativeStrategy.HOTSPOT) {
             val ap = SoftApEndpointStabilityPolicy.advertisement(creds.ssid, creds.psk, creds.bssid, creds.ip) ?: return
             if (settings.softApAdvertisedEndpoint != ap) settings.softApAdvertisedEndpoint = ap
@@ -3926,9 +3961,6 @@ class NativeAaHandshakeManager(
             // The hosted transport, not the saved one: see handleHandshake().
             override fun strategy(): NativeStrategy = launcher.strategy
 
-            override fun identity(): GroupIdentityStability =
-                this@NativeAaHandshakeManager.credentials?.identity ?: GroupIdentityStability.UNPROVEN
-
             override fun carInfo(): Wireless.WppCarInfo = this@NativeAaHandshakeManager.carInfo()
 
             // isActive(), not isStarted(): the question is whether a phone sent back to Bluetooth
@@ -3937,8 +3969,8 @@ class NativeAaHandshakeManager(
 
             override fun projectionSessionUp(): Boolean = commManager.isConnected
 
-            override fun projectionEndpoint(): Pair<String, Int>? =
-                this@NativeAaHandshakeManager.credentials?.ip?.takeIf { it.isNotBlank() }?.let { it to 5288 }
+            override fun projectionEndpoint(network: NativeNetworkCredentials): Pair<String, Int>? =
+                network.ip.takeIf { it.isNotBlank() }?.let { it to 5288 }
 
             override fun noteDialRefused() { dialRefusedSinceLastLanding = true }
 
@@ -3946,7 +3978,8 @@ class NativeAaHandshakeManager(
 
             override fun noteEndpointRetired() = retireAdvertisedEndpoint("the phone's dial was rejected")
 
-            override fun noteEndpointAdvertised() = recordAdvertisedEndpoint(launcher.strategy)
+            override fun noteEndpointAdvertised(credentials: NativeNetworkCredentials) =
+                recordAdvertisedEndpoint(launcher.strategy, credentials)
         })
         wppTcpServer = server
         server.start()
