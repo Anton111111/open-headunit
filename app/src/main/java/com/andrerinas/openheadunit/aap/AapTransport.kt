@@ -1128,7 +1128,8 @@ class AapTransport(
             // The first two receive windows allow 2 s each; the last uses the remaining
             // budget. Partial frames retain bytes without extending this overall deadline.
             val versionDeadline = SystemClock.elapsedRealtime() + HANDSHAKE_TIMEOUT_MS
-            while (attempt < 3 && connection.isConnected) {
+            val versionRequests = HandshakeMessagePolicy.versionRequests(isUsb)
+            while (attempt < versionRequests && connection.isConnected) {
                 if (SystemClock.elapsedRealtime() >= versionDeadline) {
                     AppLog.e("Handshake: Version exchange timed out after $attempt attempt(s).")
                     return false
@@ -1149,7 +1150,7 @@ class AapTransport(
                     // endpoints (full-speed bulk endpoints can have an 8-byte packet size).
                     val packetSize = (connection as? AbstractUsbProjectionConnection)?.outMaxPacketSize ?: 0
                     if (ret < 0 && isUsb && connection.isConnected && version.size <= packetSize &&
-                        attempt < 3 && versionDeadline - SystemClock.elapsedRealtime() > 200) {
+                        attempt < versionRequests && versionDeadline - SystemClock.elapsedRealtime() > 200) {
                         SystemClock.sleep(200)
                         continue
                     }
@@ -1165,7 +1166,7 @@ class AapTransport(
                 // until the deadline expires.
                 // The last request waits out the whole budget: a USB dongle relaying over WiFi can
                 // answer after 6 s, and giving up there leaves its answers for the next attempt.
-                val recvDeadline = if (attempt < 3) minOf(versionDeadline, SystemClock.elapsedRealtime() + 2000)
+                val recvDeadline = if (attempt < versionRequests) minOf(versionDeadline, SystemClock.elapsedRealtime() + 2000)
                     else versionDeadline
                 while (SystemClock.elapsedRealtime() < recvDeadline) {
                     val frame = try {
@@ -1207,7 +1208,7 @@ class AapTransport(
                              "Waiting for VERSION_RESPONSE.")
                 }
                 if (received) break
-                AppLog.w("Handshake: No VERSION_RESPONSE within ${if (attempt < 3) "2s" else "the handshake budget"} (attempt $attempt), ret=$ret")
+                AppLog.w("Handshake: No VERSION_RESPONSE within ${if (attempt < versionRequests) "2s" else "the handshake budget"} (attempt $attempt), ret=$ret")
                 SystemClock.sleep(200)
             }
 
