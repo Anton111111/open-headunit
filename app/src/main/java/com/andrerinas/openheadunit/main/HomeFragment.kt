@@ -360,12 +360,17 @@ class HomeFragment : Fragment() {
     private suspend fun countDownToAutoConnect(seconds: Int, target: HomePrimaryPolicy.Connection?) {
         if (target == null) return
         reconnectTarget = target
-        reconnectCountdown = viewLifecycleOwner.lifecycleScope.launch {
+        val owner = viewLifecycleOwner
+        reconnectCountdown = owner.lifecycleScope.launch {
             for (left in seconds downTo 1) {
+                // Settings inflates the main graph, so it builds a home of its own and drops it
+                // before that view's lifecycle starts. Its scope is then never cancelled, and
+                // asking for viewLifecycleOwner once the view is gone throws.
+                if (view == null) break
                 reconnectSecondsLeft = left
                 // A stopped home is not on screen, and rendering restarts its shine; onResume
                 // renders the number it has reached when it comes back.
-                if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) renderHome()
+                if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) renderHome()
                 delay(1000L)
             }
         }
