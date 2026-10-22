@@ -1,8 +1,8 @@
 <resources>
     <!--
-        The sizes every screen from 360dp tall uses, which is what values/dimens.xml also holds.
-        They are repeated here because a height qualifier is "at least": values-h320dp would
-        otherwise keep applying to a 480dp screen and shrink it for no reason. From 520dp tall and
+        The sizes every screen from 360dp tall uses, the ones the 800x480 screens were designed
+        with. A height qualifier is "at least", so without them values-h320dp would keep applying
+        to a 480dp screen and shrink it for no reason. From 520dp tall and
         400dp wide, values-w400dp-h520dp takes over with the larger head unit sizes.
     -->
     <dimen name="home_gap">12dp</dimen>
@@ -21,6 +21,7 @@
     <dimen name="home_card_subtitle">18sp</dimen>
     <dimen name="home_cta_height">76dp</dimen>
     <dimen name="home_cta_min_width">300dp</dimen>
+    <dimen name="home_progress_shine_width">72dp</dimen>
     <dimen name="home_cta_text">24sp</dimen>
     <dimen name="home_secondary_cta_height">64dp</dimen>
     <dimen name="home_secondary_cta_text">20sp</dimen>
