@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.view
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.text.Layout
@@ -27,13 +28,20 @@ class WordFitTextView @JvmOverloads constructor(
     private var fitting = false
     private val measurePaint = TextPaint()
 
-    init {
-        // From Android 6 the line breaker may hyphenate a word that fits ("Calen-dar") to even out
-        // the lines; a tile label only breaks between words. Older versions never hyphenate.
+    // Lint asks for LineBreaker.BREAK_STRATEGY_SIMPLE, which is API 29; Layout's constant has
+    // the same value (0) and exists from API 23, where this branch starts.
+    @SuppressLint("WrongConstant")
+    private fun avoidHyphenation() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NONE
             breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
         }
+    }
+
+    init {
+        // From Android 6 the line breaker may hyphenate a word that fits ("Calen-dar") to even out
+        // the lines; a tile label only breaks between words. Older versions never hyphenate.
+        avoidHyphenation()
     }
 
     override fun setTextSize(unit: Int, size: Float) {
