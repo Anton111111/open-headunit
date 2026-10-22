@@ -1637,39 +1637,31 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
     private data class ExitOption(val titleResId: Int, val iconResId: Int, val iconColor: Int)
 
+    private fun exitOption(option: ProjectionExitMenuPolicy.Option): ExitOption = when (option) {
+        ProjectionExitMenuPolicy.Option.STOP -> ExitOption(R.string.exit_dialog_stop, R.drawable.ic_stop, Color.RED)
+        ProjectionExitMenuPolicy.Option.END_STAY_ARMED ->
+            ExitOption(R.string.exit_dialog_end_stay_armed, R.drawable.ic_stop, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.PIP -> ExitOption(R.string.exit_dialog_pip, R.drawable.ic_pip, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.BACKGROUND -> ExitOption(R.string.exit_dialog_background, R.drawable.ic_home, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.SETTINGS ->
+            ExitOption(R.string.exit_dialog_settings, R.drawable.ic_settings_quick, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.SWITCH_PHONE -> ExitOption(R.string.switch_driver, R.drawable.ic_phone, Color.LTGRAY)
+    }
+
     private fun showExitDialog() {
-        // While the app is the car launcher its home screen is one tap away, so the menu keeps
-        // only what the driver cannot reach from there: stopping the connection, sending the
-        // projection to the background, and switching phones. Picture-in-picture, quick settings,
-        // the app drawer and the WiFi Direct "stay ready" stop are left out of it.
-        val shortMenu = settings.isCarLauncherActive
-        val options = mutableListOf<ExitOption>()
-        options.add(ExitOption(R.string.exit_dialog_stop, R.drawable.ic_stop, Color.RED))
-
-        // The unit has to declare the feature too: on one that does not, the framework refuses to
-        // put the projection in PiP, so the option is not offered at all.
-        if (!shortMenu && supportsPictureInPicture()) {
-            options.add(ExitOption(R.string.exit_dialog_pip, R.drawable.ic_pip, Color.LTGRAY))
-        }
-
-        options.add(ExitOption(R.string.exit_dialog_background, R.drawable.ic_home, Color.LTGRAY))
-
-        if (!shortMenu) {
-            options.add(ExitOption(R.string.exit_dialog_settings, R.drawable.ic_settings_quick, Color.LTGRAY))
-        }
-
-        if (settings.wifiConnectionMode == com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode.NATIVE) {
-            // Kept in the short menu: no other screen in launcher mode reaches the phone switch.
-            if (!ExternalBtTransportPolicy.usesExternalModule(NativeAaHandshakeManager.transportRoute(this))) {
-                options.add(ExitOption(R.string.switch_driver, R.drawable.ic_phone, Color.LTGRAY))
-            }
-            // WiFi Direct only: the group is ours, created for the session. An access point is
-            // usually the user's own, and UserExitHotspotPolicy already leaves it alone.
-            if (!shortMenu &&
-                settings.nativeApStrategy == com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy.WIFI_DIRECT) {
-                options.add(1, ExitOption(R.string.exit_dialog_end_stay_armed, R.drawable.ic_stop, Color.LTGRAY))
-            }
-        }
+        val options = ProjectionExitMenuPolicy.options(
+            ProjectionExitMenuPolicy.Input(
+                isHomeApp = CarLauncherManager.isDefaultLauncher(this),
+                pipWorks = supportsPictureInPicture(),
+                nativeWireless = settings.wifiConnectionMode ==
+                    com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode.NATIVE,
+                externalBtModule = ExternalBtTransportPolicy.usesExternalModule(NativeAaHandshakeManager.transportRoute(this)),
+                // WiFi Direct only: the group is ours, created for the session. An access point is
+                // usually the user's own, and UserExitHotspotPolicy already leaves it alone.
+                wifiDirectGroup = settings.nativeApStrategy ==
+                    com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy.WIFI_DIRECT
+            )
+        ).map(::exitOption)
 
         val adapter = object : android.widget.BaseAdapter() {
             override fun getCount(): Int = options.size
@@ -1800,8 +1792,9 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * and the unit declaring the feature. A unit without the feature throws instead of entering,
      * which is what a user reported as "PiP does nothing".
      */
+    // enterPiP acts from Android 8.0 only; offering it on 7.x left an option that did nothing.
     private fun supportsPictureInPicture(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
             packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
     private fun moveToBackground() {
