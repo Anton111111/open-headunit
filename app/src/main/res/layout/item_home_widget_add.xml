@@ -19,7 +19,7 @@
         android:layout_height="@dimen/home_favorite_icon"
         app:srcCompat="@drawable/ic_add_white" />
 
-    <TextView
+    <com.andrerinas.openheadunit.view.WordFitTextView
         android:id="@+id/widget_add_label"
         style="@style/HomeTileLabel.Wrap"
         android:text="@string/home_add_widget" />

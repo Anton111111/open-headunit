@@ -1,6 +1,8 @@
 package com.andrerinas.openheadunit.view
 
 import android.content.Context
+import android.os.Build
+import android.text.Layout
 import android.text.TextPaint
 import android.text.TextUtils
 import android.util.AttributeSet
@@ -24,6 +26,15 @@ class WordFitTextView @JvmOverloads constructor(
     private var xmlMaxLines = -1
     private var fitting = false
     private val measurePaint = TextPaint()
+
+    init {
+        // From Android 6 the line breaker may hyphenate a word that fits ("Calen-dar") to even out
+        // the lines; a tile label only breaks between words. Older versions never hyphenate.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NONE
+            breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
+        }
+    }
 
     override fun setTextSize(unit: Int, size: Float) {
         if (!fitting) requestedPx = TypedValue.applyDimension(unit, size, resources.displayMetrics)
