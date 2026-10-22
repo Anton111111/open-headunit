@@ -143,7 +143,10 @@ class CustomizationFragment : Fragment() {
     ) { granted ->
         settings.showHomeSpeed = granted
         switchShowSpeed?.isChecked = granted
-        if (!granted) {
+        if (granted) {
+            // The switch was already on, so its listener does not run again to redraw the preview.
+            updatePreviewScale(settings.homeButtonScalePercent)
+        } else {
             ToastUtils.showToast(requireContext(), R.string.home_speed_needs_location, Toast.LENGTH_LONG, force = true)
         }
     }
