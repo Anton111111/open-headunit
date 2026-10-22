@@ -1,6 +1,8 @@
 package com.andrerinas.openheadunit.aap
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.andrerinas.openheadunit.aap.protocol.Channel
 import com.andrerinas.openheadunit.decoder.audio.MicRecorder
 import com.andrerinas.openheadunit.aap.protocol.proto.MediaPlayback
@@ -14,12 +16,27 @@ internal class AapMessageHandlerType(
         private val aapVideo: AapVideo,
         settings: Settings,
         context: Context,
-        onAaMediaMetadata: ((MediaPlayback.MediaMetaData) -> Unit)? = null,
-        onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus) -> Unit)? = null) : AapMessageHandler {
+        onAaMediaMetadata: ((MediaPlayback.MediaMetaData, AaPresentationSession) -> Unit)? = null,
+        onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus, AaPresentationSession) -> Unit)? = null,
+        private val onAaPresentationClosed: ((AaPresentationSession) -> Unit)? = null,
+        private val presentationSession: AaPresentationSession = AaPresentationSession(),
+        private val presentation: PresentationQueue = mainPresentationQueue()) : AapMessageHandler {
 
     private val aapControl: AapControl = AapControlGateway(transport, recorder, aapAudio, settings, context)
-    private val mediaPlayback = AapMediaPlayback(onAaMediaMetadata, onAaPlaybackStatus)
-    private val aapNavigation = AapNavigation(context, settings)
+    private val mediaPlayback = AapMediaPlayback(
+        { meta -> if (presentationSession.isActive) onAaMediaMetadata?.invoke(meta, presentationSession) },
+        { status -> if (presentationSession.isActive) onAaPlaybackStatus?.invoke(status, presentationSession) },
+        presentation,
+    )
+    private val aapNavigation = AapNavigation(context, settings, presentation)
+
+    override fun close() {
+        presentationSession.retire()
+        presentation.close {
+            try { aapNavigation.close() }
+            finally { onAaPresentationClosed?.invoke(presentationSession) }
+        }
+    }
 
     private val dispatchMonitor = TransportDispatchMonitor()
 
@@ -72,16 +89,23 @@ internal class AapMessageHandlerType(
         }
 
         // 2. Try processing as Audio stream (Speech, System, Media)
-        if (message.isAudio) {
-            if (aapAudio.process(message)) {
-                // After process returns normally, return one DATA credit, including a safely rejected
-                // payload. Do not wait for speaker drain: that would stall the sender's window.
-                // CSD has no DATA credit to return; fragments were completed before dispatch.
+        if (message.isAudio && AudioMediaPayload.isMedia(msgType)) {
+            val sessionId = transport.getSessionId(message.channel)
+            try {
+                aapAudio.process(message)
+            } finally {
+                // A complete DATA owns one credit even if PCM conversion/decoder handoff
+                // rejects it. The reader catches processing exceptions and continues, so
+                // returning only on success would leave that credit outstanding at the phone.
+                // Android Auto 17.6/17.8 acquire permits for DATA, not CSD, and their timeout
+                // recovery does not make a missing ACK harmless: it can delay later audio.
+                // Reassembly drops never reach this dispatch; they use onDroppedMediaData.
+                // ACK retires receipt, not speaker playback. Keep the receiving session id.
                 if (AudioMediaPayload.requiresAck(msgType)) {
-                    transport.sendMediaAck(message.channel)
+                    transport.sendMediaAck(message.channel, sessionId)
                 }
-                return
             }
+            return
         }
 
         // 3. Media Playback Status (separate channel)
@@ -111,4 +135,18 @@ internal class AapMessageHandlerType(
             AppLog.e("Unknown msg_type: %d, flags: %d, channel: %d", msgType, flags, message.channel)
         }
     }
+
+    companion object {
+        private fun mainPresentationQueue(): PresentationQueue {
+            // Main serializes display effects with service teardown and artwork completion.
+            // Protocol parsing and ACKs remain on the reader.
+            val handler = Handler(Looper.getMainLooper())
+            return PresentationQueue(
+                post = { task, delay -> handler.postDelayed(task, delay) },
+                cancel = { task -> handler.removeCallbacks(task) },
+                onError = { error -> AppLog.e("AA presentation update failed", error) },
+            )
+        }
+    }
+
 }

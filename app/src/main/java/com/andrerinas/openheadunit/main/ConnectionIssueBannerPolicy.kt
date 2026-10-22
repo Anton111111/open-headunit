@@ -85,6 +85,7 @@ object ConnectionIssueBannerPolicy {
                 ConnectionIssue.BSSID_UNAVAILABLE,
                 ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED,
                 ConnectionIssue.WIFI_DIRECT_STACK_CYCLED,
+                ConnectionIssue.WIFI_DIRECT_STACK_STUCK,
                 ConnectionIssue.WIFI_RADIO_OFF,
                 ConnectionIssue.FIVE_GHZ_CHANNEL_REFUSED,
                 ConnectionIssue.HOME_WIFI_REJOINED_BESIDE_GROUP
@@ -192,16 +193,21 @@ object ConnectionIssueBannerPolicy {
         //
         // One at a time rather than a list: these panels are commonly 1024x600 and often 800x480,
         // and three stacked warnings would be the screen.
-        val newest = standing
+        //
+        // Dismissal is per occurrence, not permanent. Hiding what the user has already read costs
+        // nothing; hiding the next failure too would make the banner useless on the second drive.
+        // Filtered before the ranking, so a dismissed record can never hide a newer one.
+        val candidates = standing
             .filter { it.raisedAtEpochMs != 0L }
             .filter { it.issue in relevant }
             .filter { it.issue !in remedyApplied }
-            .maxByOrNull { it.raisedAtEpochMs }
-            ?: return null
-
-        // Dismissal is per occurrence, not permanent. Hiding what the user has already read costs
-        // nothing; hiding the next failure too would make the banner useless on the second drive.
-        if (newest.raisedAtEpochMs <= dismissedAtEpochMs) return null
+            .filter { it.raisedAtEpochMs > dismissedAtEpochMs }
+        val newest = candidates.maxByOrNull { it.raisedAtEpochMs } ?: return null
+        // The one exception to newest-wins: a wedged stack causes the refusal re-raised on every
+        // failed create, so that symptom must not hide the banner carrying the remedy. Only that.
+        if (newest.issue == ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED &&
+            candidates.any { it.issue == ConnectionIssue.WIFI_DIRECT_STACK_STUCK }
+        ) return ConnectionIssue.WIFI_DIRECT_STACK_STUCK
 
         return newest.issue
     }
