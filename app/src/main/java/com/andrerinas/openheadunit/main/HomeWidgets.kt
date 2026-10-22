@@ -90,6 +90,13 @@ object HomeWidgets {
     fun stopListening() {
         try {
             hostInstance?.stopListening()
+        } catch (e: NullPointerException) {
+            // The system service trips over a widget id this host allocated but that is not bound
+            // yet, the one waiting on the user to allow it while the home is off screen for that
+            // very dialog. It fails after dropping the host's callbacks, while it updates which
+            // widget apps count as visible, so the host did stop listening. The id cannot be freed
+            // here to avoid it: the user's answer is still on its way for it.
+            AppLog.i("$TAG: the widget host stopped listening; the system tripped over a widget not bound yet: ${e.message}")
         } catch (e: Exception) {
             AppLog.w("$TAG: the widget host could not stop listening: ${e.message}")
         }
