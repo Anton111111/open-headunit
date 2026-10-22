@@ -1484,7 +1484,11 @@ class MainActivity : BaseActivity() {
         val wizardPending = appSettings.onboardingVersion < OnboardingActivity.CURRENT_ONBOARDING_VERSION
         if (wizardPending && !OnboardingActivity.deferredThisSession) {
             // The wizard's permissions step handles runtime permissions, so don't also prompt here.
-            startActivity(Intent(this, OnboardingActivity::class.java))
+            // The wizard has a task of its own (see the manifest), so a Home intent that clears
+            // this singleTask activity's task leaves it alive. NEW_TASK with the same plain intent
+            // brings that task back as it was, at the step and screen the user left, instead of
+            // starting a second wizard, however many times this runs.
+            startActivity(Intent(this, OnboardingActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } else if (!wizardPending) {
             // Onboarding already completed (e.g. upgraders): request runtime permissions directly.
             requestPermissions()

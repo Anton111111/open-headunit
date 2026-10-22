@@ -28,8 +28,9 @@ object OnboardingLauncherPolicy {
 
     /**
      * Whether launcher mode is on when the wizard opens. Picking this app as home can end the
-     * wizard before it hears back (on Android 9 and older the Home intent goes to the main screen,
-     * which clears the wizard off the task), so a home role already held counts as launcher on.
+     * wizard before it hears back (a wizard from Settings shares the main screen's task, which the
+     * Home intent clears; the first-run one has its own task but can still lose its process), so
+     * a home role already held counts as launcher on.
      */
     fun launcherModeOnOpen(stored: Boolean, roleHeld: Boolean): Boolean = stored || roleHeld
 

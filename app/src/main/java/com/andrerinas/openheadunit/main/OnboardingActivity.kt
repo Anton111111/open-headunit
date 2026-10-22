@@ -755,9 +755,12 @@ class OnboardingActivity : BaseActivity() {
     /** Complete the wizard and open a specific Settings sub-screen (e.g. the loading screen setup). */
     private fun finishOnboardingInto(destinationId: Int) {
         completeOnboarding()
+        // NEW_TASK puts Settings in the app's own task, over the main screen, instead of in the
+        // wizard's task, which would linger out of Recents once the wizard is gone.
         startActivity(
             Intent(this, SettingsActivity::class.java)
                 .putExtra(SettingsActivity.EXTRA_DESTINATION, destinationId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         finish()
     }
