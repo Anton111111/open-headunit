@@ -604,4 +604,39 @@ class ConnectionIssueBannerPolicyTest {
         assertTrue("no state retired the record", retired > 0)
         assertTrue("no state kept a record", kept > 0)
     }
+
+    @Test
+    fun `a wedged stack outranks the newer refusal it causes`() {
+        val shown = bannerFor(standing = listOf(
+            standing(ConnectionIssue.WIFI_DIRECT_STACK_STUCK, 1_000L),
+            standing(ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED, 5_000L)
+        ))
+        assertEquals(ConnectionIssue.WIFI_DIRECT_STACK_STUCK, shown)
+    }
+
+    @Test
+    fun `a wedged stack does not outrank newer records other than the refusal`() {
+        val shown = bannerFor(standing = listOf(
+            standing(ConnectionIssue.WIFI_DIRECT_STACK_STUCK, 1_000L),
+            standing(ConnectionIssue.WIFI_RADIO_OFF, 5_000L)
+        ))
+        assertEquals(ConnectionIssue.WIFI_RADIO_OFF, shown)
+        val cycled = bannerFor(standing = listOf(
+            standing(ConnectionIssue.WIFI_DIRECT_STACK_STUCK, 1_000L),
+            standing(ConnectionIssue.WIFI_DIRECT_STACK_CYCLED, 5_000L)
+        ))
+        assertEquals(ConnectionIssue.WIFI_DIRECT_STACK_CYCLED, cycled)
+    }
+
+    @Test
+    fun `a dismissed wedge hides neither a newer record nor the refusal`() {
+        val shown = bannerFor(
+            standing = listOf(
+                standing(ConnectionIssue.WIFI_DIRECT_STACK_STUCK, 1_000L),
+                standing(ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED, 5_000L)
+            ),
+            dismissedAtEpochMs = 2_000L
+        )
+        assertEquals(ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED, shown)
+    }
 }

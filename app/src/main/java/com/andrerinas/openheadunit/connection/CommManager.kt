@@ -1,9 +1,11 @@
 package com.andrerinas.openheadunit.connection
+
 import android.app.Application
 import android.content.Context
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import com.andrerinas.openheadunit.aap.AapSslContext
+import com.andrerinas.openheadunit.aap.AaPresentationSession
 import com.andrerinas.openheadunit.aap.AapTransport
 import com.andrerinas.openheadunit.aap.NarrowBandProfilePolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
@@ -208,10 +210,12 @@ class CommManager(
     /** Callback for audio focus state changes (isPlaying). Set by AapService. */
     var onAudioFocusStateChanged: ((Boolean) -> Unit)? = null
 
-    /** Now-playing metadata from the phone (AAP media channel). Set by AapService. */
-    var onAaMediaMetadata: ((MediaPlayback.MediaMetaData) -> Unit)? = null
-    /** Playback status from the phone (AAP media channel), includes current position. */
-    var onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus) -> Unit)? = null
+    /** Latest now-playing metadata, delivered on Main with its owning session. Set by AapService. */
+    var onAaMediaMetadata: ((MediaPlayback.MediaMetaData, AaPresentationSession) -> Unit)? = null
+    /** Merged playback status/position, delivered on Main with its owning session. */
+    var onAaPlaybackStatus: ((MediaPlayback.MediaPlaybackStatus, AaPresentationSession) -> Unit)? = null
+    /** Runs on Main after the retired transport's final claimed display callback. */
+    var onAaPresentationClosed: ((AaPresentationSession) -> Unit)? = null
 
     // Creation/publication, saved audio settings and the first disconnect decision share one
     // boundary. Network handshake and final connection teardown run outside this lock.
@@ -917,8 +921,9 @@ class CommManager(
                         val candidate = AapTransport(
                             audioDecoder, videoDecoder, audioManager, settings, _backgroundNotification,
                             context, externalSsl = aapSslContext,
-                            onAaMediaMetadata = { meta -> onAaMediaMetadata?.invoke(meta) },
-                            onAaPlaybackStatus = { status -> onAaPlaybackStatus?.invoke(status) }
+                            onAaMediaMetadata = { meta, session -> onAaMediaMetadata?.invoke(meta, session) },
+                            onAaPlaybackStatus = { status, session -> onAaPlaybackStatus?.invoke(status, session) },
+                            onAaPresentationClosed = { session -> onAaPresentationClosed?.invoke(session) }
                         )
                         // A late quit belongs only to the transport that installed this callback.
                         candidate.onQuit = { isClean -> transportedQuited(candidate, isClean) }
@@ -1149,6 +1154,7 @@ class CommManager(
         // precedes final cleanup, so reconnect must await its actual termination as well.
         // Publish cleanup before state: a reconnect observer must be able to await this job.
         _disconnectJob = _scope.launch { doDisconnect(sendByeBye = false) }
+        source.retirePresentation()
         _connectionState.value = ConnectionState.Disconnected(isClean, isUserExit = wasUserExit, wasLoopbackSession = isLoopbackSession, hadPhysicalConnection = physicalConnectionReached, settingsRetryOwner = save)
         if (settings.killOnDisconnect) {
             context.sendBroadcast(android.content.Intent("com.andrerinas.openheadunit.ACTION_FINISH_ACTIVITIES").apply {
@@ -1160,6 +1166,7 @@ class CommManager(
                     action = com.andrerinas.openheadunit.aap.AapService.ACTION_STOP_SERVICE
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
+                com.andrerinas.openheadunit.aap.AapService.destroyIsUserStop = wasUserExit
                 context.stopService(stopIntent)
                 // Finish all tasks (API 21+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1472,6 +1479,7 @@ class CommManager(
             _transport?.wasUserExit = true
         }
         _disconnectJob = _scope.launch { doDisconnect(sendByeBye, byeByeReason, reason) }
+        _transport?.retirePresentation()
         _connectionState.value = ConnectionState.Disconnected(
             isUserExit = isUserExit, reason = reason,
             settingsRetryOwner = save,
@@ -1491,6 +1499,7 @@ class CommManager(
                     action = com.andrerinas.openheadunit.aap.AapService.ACTION_STOP_SERVICE
                 }
                 com.andrerinas.openheadunit.aap.AapService.killProcessOnDestroy = true
+                com.andrerinas.openheadunit.aap.AapService.destroyIsUserStop = isUserExit
                 context.stopService(stopIntent)
                 // Finish all tasks (API 21+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1537,6 +1546,7 @@ class CommManager(
             disconnectRequested = true
             connectionAttempt = null
             if (_connectionState.value !is ConnectionState.Disconnected) {
+                _transport?.retirePresentation()
                 _connectionState.value = ConnectionState.Disconnected(wasLoopbackSession = isLoopbackSession, hadPhysicalConnection = physicalConnectionReached)
             }
             val transport = _transport
@@ -1681,6 +1691,7 @@ class CommManager(
             HeadUnitScreenConfig.unlockResolution()
             val cleanup = _scope.launch { doDisconnect(sendByeBye = true) }
             _disconnectJob = cleanup
+            _transport?.retirePresentation()
             _connectionState.value = ConnectionState.Disconnected(isClean = false, isUserExit = false, wasLoopbackSession = isLoopbackSession, hadPhysicalConnection = physicalConnectionReached)
             cleanup
         }
