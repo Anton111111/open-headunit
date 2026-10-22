@@ -122,7 +122,7 @@ class VersionHandshakeFramingTest {
         assertEquals(false, method.invoke(transport, connection))
     }
 
-    @Test fun `split response survives retry and leaves coalesced TLS bytes for SSL`() = mockStatic(SystemClock::class.java).use { clock ->
+    @Test fun `split response survives a stalled read on one request and leaves coalesced TLS bytes for SSL`() = mockStatic(SystemClock::class.java).use { clock ->
         for (split in 1 until response.size) {
             var now = 0L
             clock.`when`<Long> { SystemClock.elapsedRealtime() }.thenAnswer { now }
@@ -137,7 +137,7 @@ class VersionHandshakeFramingTest {
                 assertFalse(it.getArgument<Boolean>(3))
                 if (position == split && !timedOut) {
                     timedOut = true
-                    now += it.getArgument<Int>(2)
+                    now += 2000
                     0
                 } else {
                     val count = minOf(it.getArgument<Int>(1),
@@ -153,7 +153,7 @@ class VersionHandshakeFramingTest {
             verify(ssl).performHandshake(connection)
             assertEquals(response.size, position)
             assertEquals(7, transport.negotiatedVersion!!.minor)
-            verify(connection, times(2)).sendBlocking(any(), anyInt(), anyInt())
+            verify(connection, times(1)).sendBlocking(any(), anyInt(), anyInt())
         }
     }
 
