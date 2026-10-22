@@ -4,6 +4,9 @@
     Headunit is the launcher. The widget row is built at runtime (HomeFragment.renderWidgets) and
     stays hidden when there are none; the divider between the two rows is only drawn while both
     are visible.
+    The scroll view fills its row with the widgets' row (fillViewport), so the empty space past the
+    last widget belongs to the row, which takes the long press that opens the page menu. A scroll
+    view never hands a long press to its own listener, so without this that space ate it.
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -50,6 +53,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none"
+        android:fillViewport="true"
         android:visibility="gone">
 
         <LinearLayout

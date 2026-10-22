@@ -228,8 +228,13 @@ class HomeFragment : Fragment() {
         }
         // A long press on the main button's empty space is where pages are added, and so is one
         // on the empty part of the main page around it: under the favorites and the widget row.
+        // The widget row itself is in the list because its scroll view takes every touch on it and
+        // never calls a long-click listener of its own, so the empty space past the last widget
+        // would swallow the press. Long-clickable is not focusable, so the D-pad does not stop there.
         // Only a long press: a tap there still does nothing.
-        listOf(R.id.home_primary_card, R.id.home_page_main, R.id.home_favorites_area).forEach { id ->
+        listOf(
+            R.id.home_primary_card, R.id.home_page_main, R.id.home_favorites_area, R.id.home_widgets_row
+        ).forEach { id ->
             container.findViewById<View>(id)?.setOnLongClickListener { showPageMenu(widgetPage = null) }
         }
         setupListeners()
