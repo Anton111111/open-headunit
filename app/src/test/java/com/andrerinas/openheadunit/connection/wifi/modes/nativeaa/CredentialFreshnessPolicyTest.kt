@@ -38,4 +38,9 @@ class CredentialFreshnessPolicyTest {
         assertEquals(Action.SEND_LIVE, CredentialFreshnessPolicy.decide(captured, captured.copy(bssid = "7E:D6:68:AC:67:06")))
         assertEquals(Action.SEND_LIVE, CredentialFreshnessPolicy.decide(captured, captured.copy(psk = "wxyz9876")))
     }
+    @Test
+    fun `replacement must pass credential checks again`() {
+        assertEquals(Action.ABORT, CredentialFreshnessPolicy.decide(captured, captured.copy(psk = "")))
+        assertEquals(Action.ABORT, CredentialFreshnessPolicy.decide(captured, captured.copy(ssid = "  ")))
+    }
 }

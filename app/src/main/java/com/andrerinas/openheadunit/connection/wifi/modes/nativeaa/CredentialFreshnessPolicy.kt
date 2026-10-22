@@ -21,8 +21,14 @@ object CredentialFreshnessPolicy {
         ABORT,
     }
 
+    fun isJoinable(credentials: NativeNetworkCredentials): Boolean =
+        credentials.ssid.isNotBlank() && credentials.psk.isNotEmpty()
+
     fun decide(captured: NativeNetworkCredentials, live: NativeNetworkCredentials?): Action = when {
         live == null -> Action.ABORT
+        // A replacement arriving during the Type 3 delay has not passed the earlier setup
+        // checks. Never substitute an incomplete group just because its endpoint is unchanged.
+        !isJoinable(live) -> Action.ABORT
         live == captured -> Action.SEND_AS_CAPTURED
         // Type 1 already told the phone where to dial. A different endpoint makes the whole
         // exchange stale, not just its last message.

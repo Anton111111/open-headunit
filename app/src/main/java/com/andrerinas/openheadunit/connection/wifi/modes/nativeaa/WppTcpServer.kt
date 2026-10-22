@@ -415,15 +415,15 @@ class WppTcpServer(
                 }
                 WppAction.SendInfoResponse -> {
                     val creds = callbacks.credentials()
-                    if (creds == null) {
-                        AppLog.w("WppTcpServer: no credentials to send")
+                    if (creds == null || !CredentialFreshnessPolicy.isJoinable(creds)) {
+                        AppLog.w("WppTcpServer: no complete credentials to send")
                         return
                     }
                     AppLog.i("WppTcpServer: [TX] WifiInfoResponse (Type 3) with credentials")
                     send(
                         output,
                         WppMessages.infoResponse(
-                            creds.ssid, creds.psk, creds.bssid, callbacks.identity()
+                            creds.ssid, creds.psk, creds.bssid, creds.identity
                         ).toByteArray(),
                         WppMessageType.INFO_RESPONSE
                     )

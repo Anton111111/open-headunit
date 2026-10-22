@@ -315,31 +315,12 @@ class NativeAaHandshakeManager(
     private val ownSocketCloseAt = ConcurrentHashMap<String, Long>()
 
     /**
-     * The credentials to hand the phone, as one value.
-     *
-     * Four separate fields were written by WifiDirectManager's delivery thread and read by the
-     * handshake coroutine with no synchronisation, which allowed two failures. A read could see the
-     * SSID and passphrase of one group beside the BSSID of another, and Gearhead joins with a
-     * WifiNetworkSpecifier matching SSID *and* BSSID under a full mask, so it rejects the pair with
-     * no clue as to why. And the null check and the `!!` that followed it were separate reads, so an
-     * invalidate landing between them threw a KotlinNullPointerException that surfaced as
-     * "Handshake error: null" and named nothing.
-     *
-     * One immutable snapshot behind one volatile reference: a reader gets all four fields from the
-     * same group or none of them, and reads them once. [identity] travels with them for the same
-     * reason: whether this network will still exist under this name and address next time is a
-     * fact about this group, and WppEndpointPolicy reads it beside the address it describes.
+     * Publish one complete Wi-Fi configuration together with its withdrawal generation.
+     * The sender uses the same snapshot for SSID, key, BSSID and STATIC/DYNAMIC policy;
+     * a later withdrawal is still visible while the phone is joining that network.
      */
-    private data class WifiCredentials(
-        val ssid: String,
-        val psk: String,
-        val ip: String,
-        val bssid: String,
-        val identity: GroupIdentityStability,
-    )
-
-    @Volatile
-    private var credentials: WifiCredentials? = null
+    private val credentialStore = WppCredentialStore()
+    private val credentials: NativeNetworkCredentials? get() = credentialStore.current.credentials
 
     /**
      * Whether the user is on a screen the wake poke must not interrupt. Answered by the launcher;
@@ -729,19 +710,15 @@ class NativeAaHandshakeManager(
         identity: GroupIdentityStability,
     ) {
         AppLog.i("NativeAA: Credentials updated. SSID=$ssid, IP=$ip, BSSID=$bssid, identity stable=${GroupIdentityStabilityPolicy.label(identity)}")
-        credentials = WifiCredentials(ssid = ssid, psk = psk, ip = ip, bssid = bssid, identity = identity)
+        credentialStore.publish(NativeNetworkCredentials(ssid, psk, ip, bssid, identity))
         earlyWakeSpent = false
     }
 
     /** Clears cached credentials so an in-progress wait doesn't hand out stale ones for a group
      *  that's about to be torn down. */
     fun invalidateCredentials() {
-        credentials = null
-        credentialsWithdrawals.incrementAndGet()
+        credentialStore.withdraw()
     }
-
-    /** Counts groups taken down, so a handshake can tell the network it sent has since gone. */
-    private val credentialsWithdrawals = java.util.concurrent.atomic.AtomicInteger()
 
     // isRunning alone isn't enough once closeAaListeners() can close the AA_UUID listener while
     // leaving the manager otherwise running (HFP stays up) — callers like AutoStartReceiver's
@@ -3206,7 +3183,7 @@ class NativeAaHandshakeManager(
             // Set when the network named above stopped existing before Type 3 could go out.
             var credentialsWentStale = false
             // The withdrawal count the credentials were sent under, or -1 before Type 3.
-            var sentUnderWithdrawals = -1
+            var sentUnderWithdrawals = -1L
             // When the opening message last went out, for the transports that have to repeat it.
             var lastOpenerSentAt = 0L
             // The held channel's bookkeeping, for its periodic summary and its release line.
@@ -3251,11 +3228,14 @@ class NativeAaHandshakeManager(
                         // Read again here rather than trusting the snapshot this exchange started
                         // with. A group removed inside the pause above leaves the phone hunting an
                         // SSID that is gone, which it cannot recover from without a new handshake.
-                        val withdrawalsAtSend = credentialsWithdrawals.get()
-                        val live = credentials
+                        // Read the network and its withdrawal generation together. A replacement
+                        // published between two reads must not inherit the old generation.
+                        val publication = credentialStore.current
+                        val withdrawalsAtSend = publication.withdrawals
+                        val live = publication.credentials
                         when (CredentialFreshnessPolicy.decide(
                             captured = capturedCreds,
-                            live = live?.let { NativeNetworkCredentials(it.ssid, it.psk, it.ip, it.bssid.uppercase()) },
+                            live = live?.copy(bssid = live.bssid.uppercase()),
                         )) {
                             CredentialFreshnessPolicy.Action.SEND_AS_CAPTURED ->
                                 AppLog.d("NativeAA: the live credentials still match the ones this handshake captured.")
@@ -3276,7 +3256,7 @@ class NativeAaHandshakeManager(
                             }
 
                             CredentialFreshnessPolicy.Action.ABORT -> {
-                                AppLog.e("NativeAA: the network these credentials name was taken down while Type 3 was pending, so nothing is sent; the phone retries once a group is up.")
+                                AppLog.e("NativeAA: WiFi credentials were withdrawn, incomplete, or moved to another endpoint before Type 3; waiting for a usable group.")
                                 credentialsWentStale = true
                             }
                         }
@@ -3289,7 +3269,7 @@ class NativeAaHandshakeManager(
                         }
                         sendWifiSecurityResponse(
                             output, credSsid, credPsk, credBssid,
-                            credentials?.identity ?: GroupIdentityStability.UNPROVEN
+                            live!!.identity
                         )
                         // Set after the write returns, not before the delay above: this marks that
                         // we put bytes on the channel, and a phone that opened the exchange itself
@@ -3468,7 +3448,7 @@ class NativeAaHandshakeManager(
                     return
                 }
                 if (session.stage == WppStage.SETTLING && sentUnderWithdrawals >= 0 &&
-                    credentialsWithdrawals.get() != sentUnderWithdrawals
+                    credentialStore.current.withdrawals != sentUnderWithdrawals
                 ) {
                     AppLog.w("NativeAA: the network the phone was sent was taken down while it was joining, so this handshake ends now and the phone is woken for the new one.")
                     feed(WppEvent.NetworkWithdrawn)
@@ -3583,7 +3563,7 @@ class NativeAaHandshakeManager(
             credSsid = snapshot.ssid
             credPsk = snapshot.psk
             credBssid = snapshot.bssid.uppercase()
-            capturedCreds = NativeNetworkCredentials(credSsid, credPsk, credIp, credBssid)
+            capturedCreds = snapshot.copy(bssid = credBssid)
 
             // Before the BSSID, because this one is certain rather than merely likely: an open
             // network is refused by every client, and sending it spends a wake poke, which takes
@@ -3942,7 +3922,6 @@ class NativeAaHandshakeManager(
         if (wppTcpServer != null) return
         val server = WppTcpServer(context, scope, object : WppTcpServer.Callbacks {
             override fun credentials(): NativeNetworkCredentials? = this@NativeAaHandshakeManager.credentials
-                ?.let { NativeNetworkCredentials(it.ssid, it.psk, it.ip, it.bssid) }
 
             // The hosted transport, not the saved one: see handleHandshake().
             override fun strategy(): NativeStrategy = launcher.strategy
@@ -4094,7 +4073,7 @@ class NativeAaHandshakeManager(
         }
         aaServerSocket = null
         hfpServerSocket = null
-        credentials = null
+        credentialStore.withdraw()
         pokeJob?.cancel()
         pokeJob = null
         lastPokeTriggerCredentials = null

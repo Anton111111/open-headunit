@@ -1,11 +1,14 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
 
+import com.andrerinas.openheadunit.connection.wifi.direct.GroupIdentityStability
+
 /** Everything the phone needs in order to join the network this head unit is offering it. */
 data class NativeNetworkCredentials(
     val ssid: String,
     val psk: String,
     val ip: String,
-    val bssid: String
+    val bssid: String,
+    val identity: GroupIdentityStability = GroupIdentityStability.UNPROVEN
 )
 
 /**
