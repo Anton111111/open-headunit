@@ -22,6 +22,22 @@ class WirelessCleanupGenerationTest {
         assertFalse(generations.isCurrent(ticket))
     }
 
+    @Test fun `Start while an earlier attempt is Connecting fences only that attempt's failed end`() {
+        val generations = WirelessCleanupGeneration()
+        val connecting = Any()
+        // Self is admitted during Connecting; the attempt's terminal is created after the arm.
+        generations.advance(attempt = connecting)
+        assertNull(generations.captureFor(Any(), connecting, reachedPhysical = false))
+        // An attempt that connected after the arm superseded it and keeps its own end policy.
+        assertNotNull(generations.captureFor(Any(), connecting, reachedPhysical = true))
+        // The arm's own later attempt, and ends without an attempt token, are unaffected.
+        assertNotNull(generations.captureFor(Any(), Any(), reachedPhysical = false))
+        assertNotNull(generations.captureFor(Any(), null, reachedPhysical = false))
+        // A further arm with no attempt in flight retires the recorded one.
+        generations.advance()
+        assertNotNull(generations.captureFor(Any(), connecting, reachedPhysical = false))
+    }
+
     @Test fun `ordinary terminal cleanup retains ownership until another arm`() {
         val generations = WirelessCleanupGeneration()
         generations.advance(Any())

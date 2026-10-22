@@ -9,6 +9,7 @@ import kotlinx.coroutines.Delay
 import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -89,7 +90,8 @@ class CommManager {
     fun reportError(message: String, state: ConnectionState.Disconnected? = null) { reports++ }
     fun emitError(message: String) { reports++ }
     fun disconnect() { cancelPendingSettingsRestart() }
-    suspend fun awaitDisconnectComplete() {}
+    var teardown: CompletableDeferred<Unit>? = null
+    suspend fun awaitDisconnectComplete() { teardown?.await() }
 }
 class SelfLauncherManager(private val service: Service, private val wifiLauncherManager: WifiLauncherManager) {
     var isActive = false
@@ -101,10 +103,13 @@ class SelfLauncherManager(private val service: Service, private val wifiLauncher
     private var retiredSettingsTerminal: CommManager.ConnectionState.Disconnected? = null
     private var selfModeVpnWatchdog: Job? = null
     private fun installedPath(service: Service) = if (service.modern) SelfLaunchPath.HEADUNIT_SERVER else SelfLaunchPath.LEGACY
-    private fun adoptDummyVpn() { service.vpnAdoptions++ }
+    private val VPN_TIMEOUT_MS = 120_000L
+    // ADOPT_VPN
     fun stopDummyVpnWatchdog() { selfModeVpnWatchdog?.cancel(); selfModeVpnWatchdog = null }
     fun handleNeverConnect() { service.resolvePrompts++ }
     fun currentLaunch() = launchJob
+    fun isLaunchInFlight() = launchInFlight
+    fun clearLaunchInFlight() { launchInFlight = false }
     fun inFlight() = launchInFlight
     // START
     // STOP
@@ -135,8 +140,12 @@ class SelfLauncherBTDiscovery(manager: SelfLauncherManager, services: SelfLaunch
 
 // Android effects are observable at the same calls made by production methods.
 object App { fun provide(service: Service) = service }
-object AppLog { fun i(s: String) {}; fun w(s: String) {}; fun w(s: String, e: Throwable) {}; fun e(s: String) {} }
-object DummyVpnPolicy { enum class Reason { SELF_MODE_NEVER_CONNECTED, SELF_MODE_SESSION_LIVE } }
+object AppLog { fun i(s: String) {}; fun w(s: String) {}; fun w(s: String, e: Throwable) {}; fun w(tag: String, s: String) {}; fun e(s: String) {} }
+object VpnControl {
+    fun isVpnAvailable() = true
+    fun isPrepared(service: Service) = service.vpnPrepared
+    fun startVpn(service: Service, excludeSelf: Boolean) { service.vpnExcludeSelfRequests.add(excludeSelf) }
+}
 class ConnectivityManager { var activeNetwork: Any? = null }
 object Context { const val CONNECTIVITY_SERVICE = "connectivity" }
 object Build { object VERSION { var SDK_INT = 23 }; object VERSION_CODES { const val M = 23 } }
@@ -151,12 +160,18 @@ class Intent(val action: String? = null) {
 }
 class WifiLauncherManual(manager: WifiLauncherManager)
 class WifiLauncherManager {
+    private val generation = WirelessCleanupGeneration()
+    fun cleanupTicket() = generation.capture()
+    fun isCleanupCurrent(ticket: Any) = generation.isCurrent(ticket)
+    var cancelledByUser = false
+    fun noteRearm() { cancelledByUser = false; generation.advance() }
     var active: Any? = null
     var listenerStarts = 0
     var stops = 0
     val sharedServices get() = this
     fun startWirelessServer(launcher: Any) { listenerStarts++ }
     fun stopForUser() { stops++ }
+    fun stop() { stops++ }
 }
 class UsbLauncherManager { var projectionHandshakeFailures = 0; fun onHandshakeFailed() {}; fun isSwitchingToProjection() = false; fun stopForUser() {} }
 enum class ConnectionStage { IDLE, USB_ATTACHED, USB_SWITCHING }
@@ -186,6 +201,7 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     private var sessionEndedByHand = false
     private val packageName = "fixture"
     private val ACTION_REQUEST_NIGHT_MODE_UPDATE = "night"
+    var isDestroying = false
     var connectedCallbacks = 0
     var ordinaryDisconnects = 0
     fun startObserver() { observeConnectionState() }
@@ -201,6 +217,7 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     private fun launchAapProjectionActivity() = Unit
     private fun sendBroadcast(intent: Intent) {}
     private fun maybeAutoResumePlaybackOnReconnect() {}
+    // SELF_END_POLICY
     // OBSERVER
     val network = ConnectivityManager()
     var modern = false
@@ -208,7 +225,10 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     var directConnects = 0
     var directLaunchHook: (suspend () -> Unit)? = null
     var fallbacks = 0
-    var vpnAdoptions = 0
+    var dummyVpnOwner: DummyVpnPolicy.Owner? = null
+    var vpnPrepared = true
+    val vpnExcludeSelfRequests = mutableListOf<Boolean>()
+    var vpnReleases = 0
     var vpnStops = 0
     var liveVpnReleases = 0
     var resolvePrompts = 0
@@ -219,6 +239,11 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
     fun startActivity(intent: Intent) { activities++ }
     fun stopDummyVpn(reason: DummyVpnPolicy.Reason) {
         if (reason == DummyVpnPolicy.Reason.SELF_MODE_SESSION_LIVE) liveVpnReleases++ else vpnStops++
+        if (DummyVpnPolicy.shouldStop(dummyVpnOwner, reason)) {
+            vpnReleases++
+            dummyVpnOwner = null
+            manager.stopDummyVpnWatchdog()
+        }
     }
     fun cancelAction(intent: Intent? = null): Int {
         when (ACTION_CANCEL_WIRELESS) {
@@ -242,6 +267,38 @@ class Service(private var hasEverConnected: Boolean = true, val commManager: Com
 }
 
 fun main() {
+    Service().use { s ->
+        s.dummyVpnOwner = DummyVpnPolicy.Owner.SESSION
+        s.manager.start()
+        // Old terminal cleanup may already have preserved this newly accepted Self launch.
+        // Cancelling before its queued body runs must still release the transferred VPN.
+        check(s.dummyVpnOwner == DummyVpnPolicy.Owner.SELF_MODE)
+        s.manager.stop()
+        s.main.drain()
+        check(s.dummyVpnOwner == null && s.vpnReleases == 1)
+        check(s.activities == 0 && s.wifiLauncherManager.listenerStarts == 0)
+    }
+    for (prepared in listOf(true, false)) Service().use { s ->
+        // The old Native session owns a VPN when a new Self launch overtakes its observer.
+        s.modern = true
+        s.vpnPrepared = prepared
+        s.dummyVpnOwner = DummyVpnPolicy.Owner.SESSION
+        s.manager.start()
+        s.main.drain()
+        check(s.dummyVpnOwner == DummyVpnPolicy.Owner.SELF_MODE)
+        check(s.vpnExcludeSelfRequests == if (prepared) listOf(false) else emptyList<Boolean>())
+        s.main.advanceBy(120_000L)
+        s.main.drain()
+        check(s.dummyVpnOwner == null && s.vpnReleases == 1) { "Self timeout left old SESSION VPN alive" }
+    }
+    Service().use { s ->
+        s.modern = true
+        s.dummyVpnOwner = DummyVpnPolicy.Owner.SESSION
+        s.manager.start()
+        s.main.drain()
+        s.stopDummyVpn(DummyVpnPolicy.Reason.SELF_MODE_SESSION_LIVE)
+        check(s.dummyVpnOwner == null && s.vpnReleases == 1)
+    }
     val originalSdk = Build.VERSION.SDK_INT
     try {
         for (sdk in listOf(23, 33)) {
@@ -365,7 +422,7 @@ fun main() {
         s.main.drain()
         check(job.isCancelled)
         check(s.wifiLauncherManager.listenerStarts == 0 && s.activities == 0 && s.directConnects == 0)
-        check(s.vpnAdoptions == 0 && !s.manager.isActive && !s.manager.inFlight())
+        check(s.dummyVpnOwner == null && !s.manager.isActive && !s.manager.inFlight())
         check(!saved.holdsSettingsWake(0))
     }
     // Cancel while the actual legacy launcher is suspended in its network wait.
@@ -662,6 +719,55 @@ fun main() {
         check(job.isCancelled && !entered)
         s.manager.start(saved)
         check(s.manager.currentLaunch() == null && !s.manager.isActive)
+    }
+    // Actual Self start publishes its cleanup ownership before the queued launcher runs.
+    Service().use { s ->
+        val old = s.wifiLauncherManager.cleanupTicket()
+        s.manager.start()
+        check(!s.wifiLauncherManager.isCleanupCurrent(old))
+    }
+    // The actual service X action must not stop a same-instance re-arm after its await.
+    for (rearmed in listOf(false, true)) Service().use { s ->
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connecting
+        s.commManager.teardown = CompletableDeferred()
+        s.cancelAction()
+        s.main.drain()
+        check(s.wifiLauncherManager.stops == 0)
+        if (rearmed) s.wifiLauncherManager.noteRearm()
+        s.commManager.teardown!!.complete(Unit)
+        s.main.drain()
+        check(s.wifiLauncherManager.stops == if (rearmed) 0 else 1)
+    }
+    Service().use { s ->
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connecting
+        s.commManager.teardown = CompletableDeferred()
+        s.cancelAction()
+        s.main.drain()
+        // Automatic socket progress is not an explicit replacement for the user's X.
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connected
+        s.commManager.teardown!!.complete(Unit)
+        s.main.drain()
+        check(s.wifiLauncherManager.stops == 1)
+    }
+    // The physical live state can be conflated away while a manual legacy launch waits.
+    // Execute the production service Self-end branch, not a flag-only test double.
+    for (physical in listOf(false, true)) Service().use { s ->
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connecting
+        s.manager.start(); s.main.drain()
+        val first = checkNotNull(s.manager.currentLaunch())
+        s.commManager.connectionState.value = CommManager.ConnectionState.Connected
+        val ended = CommManager.ConnectionState.Disconnected(hadPhysicalConnection = physical)
+        s.commManager.connectionState.value = ended
+        s.manager.onConnectionEnded(ended)
+        s.applySelfEndPolicy(ended)
+        check(first.isCancelled == physical)
+        check(s.wifiLauncherManager.stops == 0) { "in-flight wireless decision changed" }
+        if (physical) {
+            s.manager.start(); s.main.drain()
+            s.network.activeNetwork = Any()
+            s.main.advanceBy(100); s.main.drain()
+            check(s.activities == 1) { "retired Self launch ran alongside its replacement" }
+        }
     }
     println("PASS: real Self queued entry, legacy network wait, ownership takeover, stale permission, owned deadline and timeout takeover, conflated live/terminal delivery, replacement launch and bind-after-cancel")
 }
