@@ -142,6 +142,8 @@ class HomeFragment : Fragment() {
     /** How many pages the home has now: one unless it is the launcher and has more to show. */
     private var pageCount = 1
     private var cardFitPending = false
+    /** Watches MainActivity's status notices, which come and go on its schedule, not the home's renders. */
+    private var noticesLayoutListener: View.OnLayoutChangeListener? = null
     /**
      * The widgets under the favorites had no room on this screen, so they are on a page of their
      * own. Decided once per home view: the screen does not change size without a new one.
@@ -243,6 +245,14 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         renderHome()
+
+        activity?.findViewById<View>(R.id.status_notices)?.let { notices ->
+            val listener = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                this.view?.let { scheduleCardFit(it) }
+            }
+            notices.addOnLayoutChangeListener(listener)
+            noticesLayoutListener = listener
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -696,6 +706,7 @@ class HomeFragment : Fragment() {
         if (!isAdded || view !== root) return
         val card = root.findViewById<View>(R.id.home_primary_card) ?: return
         if (card.height <= 0) return
+        clearStatusNotices(root)
         val stepShown = decision?.stage != null
         val optional = HomeCardFitPolicy.stepAsideOrder(stepShown).mapNotNull { line ->
             when (line) {
@@ -713,6 +724,44 @@ class HomeFragment : Fragment() {
         dropped.forEach { it.visibility = View.GONE }
         if (dropped.isNotEmpty()) {
             AppLog.i("HomeFragment: the main button is ${card.height}px tall, hiding ${dropped.size} line(s) so its action fits")
+        }
+    }
+
+    /**
+     * Moves the card's top corner (the countdown, or the date, time and speed) down from under
+     * MainActivity's status notices, when the card is narrow enough to put it there: see
+     * [NoticeClearancePolicy]. The header row takes the push as top padding and the date block as
+     * margin, so the lines under them make room in the same layout, and the step-aside fit that
+     * follows sees the height that is left.
+     */
+    private fun clearStatusNotices(root: View) {
+        val header = root.findViewById<View>(R.id.home_primary_header) ?: return
+        val content = root.findViewById<View>(R.id.home_primary_content) ?: return
+        val info = root.findViewById<View>(R.id.home_info)
+        val current = header.paddingTop
+        val push = if (!content.isShown) 0 else {
+            val notices = activity?.findViewById<ViewGroup>(R.id.status_notices)?.takeIf { it.isShown }
+            val noticeBoxes = notices?.let { group ->
+                (0 until group.childCount).map { group.getChildAt(it) }
+                    .filter { it.isShown && it.height > 0 }
+                    .map { boxIn(root, it) }
+            }.orEmpty()
+            // Where the corner sits with no push, so the answer does not depend on the last one.
+            val corner = listOfNotNull(root.findViewById<View>(R.id.home_countdown), info)
+                .filter { it.isShown && it.height > 0 }
+                .map { boxIn(root, it).let { b -> HomePagesHintPolicy.Box(b.left, b.top - current, b.right, b.bottom - current) } }
+            val limit = boxIn(root, content).bottom - content.paddingBottom
+            NoticeClearancePolicy.push(noticeBoxes, corner, resources.getDimensionPixelSize(R.dimen.home_gap), limit)
+        }
+        if (push == current) return
+        AppLog.i(
+            if (push > 0) "HomeFragment: moving the main button's top corner ${push}px down, clear of the status notices"
+            else "HomeFragment: the status notices left the main button's top corner, putting it back"
+        )
+        header.setPadding(header.paddingLeft, push, header.paddingRight, header.paddingBottom)
+        (info?.layoutParams as? ViewGroup.MarginLayoutParams)?.let { params ->
+            params.topMargin = resources.getDimensionPixelSize(R.dimen.home_card_padding_v) + push
+            info.layoutParams = params
         }
     }
 
@@ -2250,6 +2299,8 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        noticesLayoutListener?.let { activity?.findViewById<View>(R.id.status_notices)?.removeOnLayoutChangeListener(it) }
+        noticesLayoutListener = null
         // The next view builds its widgets again; the host must not keep this one's alive.
         HomeWidgets.releaseViews()
     }
