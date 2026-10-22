@@ -1156,6 +1156,15 @@
     <string name="debug_video_feed_hold">低速デコーダーをシミュレート</string>
 
     <string name="category_more_features">その他の機能</string>
+    <string name="device_specific_settings">機種固有の設定</string>
+    <string name="device_specific_settings_description">対応するヘッドユニットの機種別設定</string>
+    <string name="device_specific_mcu_checking">MCUへのアクセスを確認中...</string>
+    <string name="device_specific_mcu_unavailable">MCUにアクセスできません。この機器では、リバースギア時に投影を一時停止する機能は無効です。</string>
+    <string name="device_specific_head_unit_model">ヘッドユニットの機種</string>
+    <string name="device_specific_model_none">未選択</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">リバースギア時にAndroid Autoの投影を一時停止</string>
+    <string name="device_specific_pause_projection_reverse_description">バックカメラの作動中はAndroid Autoの映像フォーカスを解放し、リバースギアを解除すると投影を再開します。</string>
     <string name="pref_enable_floating_button_title">フローティングランチャーボタン</string>
     <string name="pref_enable_floating_button_summary">純正ランチャーや他のアプリの上にフローティングボタンを表示し、Open Headunitに素早く戻れるようにします</string>
     <string name="pref_floating_button_connection_status_title">接続状態インジケーター</string>

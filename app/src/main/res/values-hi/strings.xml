@@ -512,6 +512,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">अधिक सुविधाएँ</string>
+    <string name="device_specific_settings">डिवाइस-विशिष्ट सेटिंग्स</string>
+    <string name="device_specific_settings_description">समर्थित हेड यूनिट मॉडल के लिए सेटिंग्स</string>
+    <string name="device_specific_mcu_checking">MCU तक पहुँच की जाँच हो रही है...</string>
+    <string name="device_specific_mcu_unavailable">MCU तक पहुँच उपलब्ध नहीं है। इस डिवाइस पर रिवर्स गियर में प्रोजेक्शन रोकने की सुविधा बंद है।</string>
+    <string name="device_specific_head_unit_model">हेड यूनिट मॉडल</string>
+    <string name="device_specific_model_none">चुना नहीं गया</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">रिवर्स गियर में Android Auto प्रोजेक्शन रोकें</string>
+    <string name="device_specific_pause_projection_reverse_description">रियर कैमरा सक्रिय होने पर Android Auto का वीडियो फ़ोकस छोड़ें और रिवर्स गियर हटाने पर प्रोजेक्शन फिर से शुरू करें।</string>
     <string name="pref_enable_car_launcher_title">कार लॉन्चर के रूप में उपयोग करें</string>
     <string name="pref_enable_car_launcher_summary">कार या हेडयूनिट होम बटन दबाए जाने पर Open Headunit को होम स्क्रीन ऐप के रूप में पंजीकृत करता है</string>
     <string name="pref_set_default_launcher_title">डिफ़ॉल्ट होम ऐप</string>

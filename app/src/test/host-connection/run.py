@@ -62,6 +62,7 @@ class CommManager {
  private var physicalConnectionReached=true
  private var outgoingEndpoint:Pair<String,Int>?=null
  @Volatile private var _transport:AapTransport?=null
+ @Volatile private var projectionVideoFocusSuppressed=false
  @Volatile private var _connection:ProjectionConnection?=ProjectionConnection()
  private val _backgroundNotification=Unit
  private val aapSslContext=Ssl()
@@ -120,7 +121,8 @@ for declaration in ['val isWirelessSession:', 'val isLoopbackSession:']:
 manager=manager_head+'\n'.join(extract(comm,n) for n in [
  'suspend fun startHandshake()', 'private inline fun withLiveTransport(', 'suspend fun startReading()',
  'private fun reachedSsl()', 'private fun transportedQuited(', 'fun applyAudioSettings()', 'fun disconnect(', 'fun cancelPendingSettingsRestart()', 'private fun doDisconnect(',
- 'private suspend fun connectIp(', 'private suspend fun connectUsb(', 'fun disconnectForLinkLoss(', 'fun destroy()'
+ 'private suspend fun connectIp(', 'private suspend fun connectUsb(', 'fun disconnectForLinkLoss(', 'fun destroy()',
+ 'fun setProjectionVideoFocusSuppressed('
 ])+'\n}\n'
 transport_head=r'''
 class AapTransport(
@@ -132,6 +134,8 @@ class AapTransport(
  private val lifecycleLock=Any()
  private val presentationSession=AaPresentationSession()
  @Volatile private var closing=false
+ @Volatile private var projectionVideoFocusSuppressed=false
+ fun isProjectionVideoFocusSuppressed()=projectionVideoFocusSuppressed
  private var handshakeStarted=false
  private val handshakeFinished=CountDownLatch(1)
  private val terminated=CountDownLatch(1)
@@ -201,7 +205,8 @@ transport_head=transport_head.replace("// CALLBACK MEMBERS",transport[callback_s
 transport_head=transport_head.replace("// CALLBACK PUBLICATION",member(transport[callback_end:],"synchronized(videoDecoder)"))
 transport_fixture=transport_head+'\n'.join(extract(transport,n) for n in [
  'internal fun retirePresentation()', 'internal fun startHandshake(connection:', 'internal fun startReading()', 'internal fun stop(', 'internal fun quit(',
- 'private fun resetSessionObservations()', 'internal fun awaitTermination()', 'private inline fun awaitUninterruptibly(', 'private inline fun cleanupStep('
+ 'private fun resetSessionObservations()', 'internal fun awaitTermination()', 'private inline fun awaitUninterruptibly(', 'private inline fun cleanupStep(',
+ 'internal fun setProjectionVideoFocusSuppressed('
 ])+'\n}\n'
 bulk=(base/'aap/AapReadMultipleMessages.kt').read_text()
 process=extract(bulk,'private fun processBulk()')
@@ -259,6 +264,26 @@ object ConnectionStageTracker{fun endAttempt(){};fun clear(){};val stage=Mutable
 object ConnectionStage{const val NONE=0;const val USB_ATTACHED=1;const val USB_SWITCHING=2}
 object TeardownGuard{fun runThenClose(teardown:()->Unit,close:()->Unit,onError:(String,Exception)->Unit){try{teardown()}catch(e:Exception){onError("teardown",e)}finally{close()}}}
 fun await(latch:CountDownLatch){check(latch.await(5,TimeUnit.SECONDS)){"probe barrier timed out"}}
+
+fun projectionFocusSuppression()=runBlocking{
+ val c=CommManager()
+ c.setProjectionVideoFocusSuppressed(true)
+ c.startHandshake();c.startReading()
+ val old=c.owner()
+ check(old.isProjectionVideoFocusSuppressed())
+ c.setProjectionVideoFocusSuppressed(false)
+ check(!old.isProjectionVideoFocusSuppressed())
+ c.setProjectionVideoFocusSuppressed(true)
+ check(old.isProjectionVideoFocusSuppressed())
+ c.disconnect(honorKillOnDisconnect=false);c.cleanups();c.awaitDisconnectComplete()
+ c.connectNext();c.startHandshake();c.startReading()
+ val fresh=c.owner()
+ check(fresh!==old && fresh.isProjectionVideoFocusSuppressed())
+ c.setProjectionVideoFocusSuppressed(false)
+ check(!fresh.isProjectionVideoFocusSuppressed() && old.isProjectionVideoFocusSuppressed())
+ c.close()
+ println("PASS projection focus suppression reaches current and replacement transports without changing retired owners")
+}
 
 fun lateHandshakeEntry()=runBlocking{
  val c=CommManager();c.settings.killOnDisconnect=true
@@ -345,6 +370,7 @@ fun controls()=runBlocking{
  println("PASS ordinary settings disconnect and reconnect keep callbacks and no-kill policy")
 }
 fun providedMain(){
+ projectionFocusSuppression()
  controls();lateHandshakeEntry();cancelledBeforeStartup();oldQuitOutlivesCleanup(false)
  oldQuitOutlivesCleanup(true);cancelDuringHandshake();handshakeFailure()
  println("ALL TRANSPORT LIFECYCLE CHECKS PASSED")
@@ -829,7 +855,8 @@ object AppLog{fun i(s:String){};fun w(s:String){};fun e(s:String){};fun e(t:Thro
 # Prefer the project's exact cached toolchain. Otherwise use the installed Kotlin distribution.
 cache=Path(os.environ.get("GRADLE_USER_HOME", str(Path.home()/".gradle")))/"caches/modules-2/files-2.1"
 def cached(group,artifact,version="*"):
-    found=sorted((cache/group/artifact).glob(version+"/*/*.jar"))
+    found=sorted(path for path in (cache/group/artifact).glob(version+"/*/*.jar")
+        if path.name == artifact+"-"+path.parent.parent.name+".jar")
     if not found: raise FileNotFoundError(artifact)
     return found[0]
 # The build's Kotlin version, so the harness compiles with the jars Gradle already cached.

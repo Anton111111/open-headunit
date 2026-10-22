@@ -44,6 +44,9 @@ private class AapTransport(
     var onAudioFocusStateChanged: ((Boolean) -> Unit)? = null
     var onUpdateUiConfigReplyReceived: (() -> Unit)? = null
     var wasUserExit = false
+    @Volatile private var projectionVideoFocusSuppressed = false
+    val isProjectionVideoFocusSuppressed get() = projectionVideoFocusSuppressed
+    // PRODUCTION TRANSPORT_FOCUS_SUPPRESSION
     init { constructionHook?.invoke() }
     companion object { var constructionHook: (() -> Unit)? = null }
 }
@@ -69,6 +72,7 @@ private class ConnectionFixture(val settings: Settings = Settings()) {
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Connected)
     private var _connection: Any? = Any()
     private var _transport: AapTransport? = null
+    @Volatile private var projectionVideoFocusSuppressed = false
     private var _disconnectJob: Job? = null
     private var onAaMediaMetadata: ((Any, Any) -> Unit)? = null
     private var onAaPlaybackStatus: ((Any, Any) -> Unit)? = null
@@ -77,6 +81,7 @@ private class ConnectionFixture(val settings: Settings = Settings()) {
     private var onUpdateUiConfigReplyReceived: (() -> Unit)? = null
     val disconnected get() = _connectionState.value is ConnectionState.Disconnected
     val audio get() = checkNotNull(_transport).aapAudio
+    val isProjectionVideoFocusSuppressed get() = checkNotNull(_transport).isProjectionVideoFocusSuppressed
     fun quitCallback() = checkNotNull(_transport?.onQuit)
     fun publish() = runBlocking {
         withContext(Dispatchers.Default) {
@@ -95,6 +100,7 @@ private class ConnectionFixture(val settings: Settings = Settings()) {
     // PRODUCTION CANCEL_SETTINGS
     // PRODUCTION REACHED_SSL
     // PRODUCTION QUIT
+    // PRODUCTION MANAGER_FOCUS_SUPPRESSION
     private fun doDisconnect(sendByeBye: Boolean,
         byeByeReason: com.andrerinas.openheadunit.aap.protocol.proto.Control.ByeByeReason =
             com.andrerinas.openheadunit.aap.protocol.proto.Control.ByeByeReason.USER_SELECTION,
@@ -234,6 +240,21 @@ private fun scanControlObserverRegression() {
 internal fun audioLifecycleBoundaryRegression() {
     scanControlObserverRegression()
     Handler.reset()
+    val focus = ConnectionFixture()
+    try {
+        focus.setProjectionVideoFocusSuppressed(true)
+        focus.publish()
+        check(focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(false)
+        check(!focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(true)
+        focus.nextConnection(); focus.publish()
+        check(focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(false)
+        check(!focus.isProjectionVideoFocusSuppressed)
+    } finally { focus.close(); Handler.reset() }
+    println("PASS audio lifecycle fixture preserves projection focus suppression across transport publication and replacement")
+
     val observer = ObserverFixture()
     try {
         observer.start(); check(!observer.resourcesHeld)

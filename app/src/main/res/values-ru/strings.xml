@@ -1150,6 +1150,15 @@
     <string name="debug_video_feed_hold">Имитировать медленный декодер</string>
 
     <string name="category_more_features">Дополнительные функции</string>
+    <string name="device_specific_settings">Настройки для конкретных моделей</string>
+    <string name="device_specific_settings_description">Настройки для поддерживаемых моделей головных устройств</string>
+    <string name="device_specific_mcu_checking">Проверка доступа к MCU…</string>
+    <string name="device_specific_mcu_unavailable">Доступ к MCU недоступен. Функция приостановки проекции при включении задней передачи отключена на этом устройстве.</string>
+    <string name="device_specific_head_unit_model">Модель головного устройства</string>
+    <string name="device_specific_model_none">Не выбрана</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Приостанавливать проекцию Android Auto на задней передаче</string>
+    <string name="device_specific_pause_projection_reverse_description">Освобождать видеофокус Android Auto, пока активна камера заднего вида, и восстанавливать проекцию после выключения задней передачи.</string>
     <string name="pref_enable_floating_button_title">Плавающая кнопка запуска</string>
     <string name="pref_enable_floating_button_summary">Отображает плавающую кнопку поверх штатного лаунчера и других приложений для быстрого возврата в Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Индикатор состояния подключения</string>

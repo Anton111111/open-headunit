@@ -1146,6 +1146,15 @@
     <string name="debug_video_feed_hold">Yavaş kod çözücüyü simüle et</string>
 
     <string name="category_more_features">Daha Fazla Özellik</string>
+    <string name="device_specific_settings">Cihaza Özel Ayarlar</string>
+    <string name="device_specific_settings_description">Desteklenen ana ünite modelleri için ayarlar</string>
+    <string name="device_specific_mcu_checking">MCU erişimi kontrol ediliyor...</string>
+    <string name="device_specific_mcu_unavailable">MCU erişimi kullanılamıyor. Bu cihazda geri viteste yansıtmayı duraklatma işlevi devre dışıdır.</string>
+    <string name="device_specific_head_unit_model">Ana ünite modeli</string>
+    <string name="device_specific_model_none">Seçilmedi</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Geri viteste Android Auto yansıtmasını duraklat</string>
+    <string name="device_specific_pause_projection_reverse_description">Geri görüş kamerası etkinken Android Auto video odağını bırakır ve geri vitesten çıkıldığında yansıtmayı geri yükler.</string>
     <string name="pref_enable_floating_button_title">Kayan Başlatıcı Düğmesi</string>
     <string name="pref_enable_floating_button_summary">Open Headunit\'e hızlıca dönmek için OEM başlatıcı ve diğer uygulamaların üzerinde kayan bir düğme gösterir</string>
     <string name="pref_floating_button_connection_status_title">Bağlantı Durumu Göstergesi</string>

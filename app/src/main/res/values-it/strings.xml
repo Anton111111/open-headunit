@@ -1154,6 +1154,15 @@
     <string name="debug_video_feed_hold">Simula un decoder lento</string>
 
     <string name="category_more_features">Altre funzionalità</string>
+    <string name="device_specific_settings">Impostazioni specifiche del dispositivo</string>
+    <string name="device_specific_settings_description">Impostazioni per i modelli di autoradio supportati</string>
+    <string name="device_specific_mcu_checking">Verifica dell\'accesso alla MCU…</string>
+    <string name="device_specific_mcu_unavailable">Accesso alla MCU non disponibile. La pausa della proiezione in retromarcia è disabilitata su questo dispositivo.</string>
+    <string name="device_specific_head_unit_model">Modello di autoradio</string>
+    <string name="device_specific_model_none">Non selezionato</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Metti in pausa la proiezione Android Auto in retromarcia</string>
+    <string name="device_specific_pause_projection_reverse_description">Rilascia il focus video di Android Auto mentre la telecamera posteriore è attiva, quindi ripristina la proiezione quando viene disinserita la retromarcia.</string>
     <string name="pref_enable_floating_button_title">Pulsante mobile di avvio</string>
     <string name="pref_enable_floating_button_summary">Mostra un pulsante mobile sopra il launcher OEM e altre app per tornare rapidamente a Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">Indicatore di stato della connessione</string>

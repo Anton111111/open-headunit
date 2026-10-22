@@ -1150,6 +1150,15 @@
     <string name="debug_video_feed_hold">模擬慢速解碼器</string>
 
     <string name="category_more_features">更多功能</string>
+    <string name="device_specific_settings">裝置專用設定</string>
+    <string name="device_specific_settings_description">支援的車機型號專用設定</string>
+    <string name="device_specific_mcu_checking">正在檢查 MCU 存取權限...</string>
+    <string name="device_specific_mcu_unavailable">無法存取 MCU。此裝置已停用排入倒車檔時暫停投影的功能。</string>
+    <string name="device_specific_head_unit_model">車機型號</string>
+    <string name="device_specific_model_none">未選取</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">排入倒車檔時暫停 Android Auto 投影</string>
+    <string name="device_specific_pause_projection_reverse_description">後視攝影機啟用時釋放 Android Auto 的影片焦點，退出倒車檔後恢復投影。</string>
     <string name="pref_enable_floating_button_title">懸浮快捷按鈕</string>
     <string name="pref_enable_floating_button_summary">在原廠啟動器及其他應用程式上方顯示懸浮按鈕，以便快速返回 Open Headunit</string>
     <string name="pref_floating_button_connection_status_title">連線狀態指示</string>
