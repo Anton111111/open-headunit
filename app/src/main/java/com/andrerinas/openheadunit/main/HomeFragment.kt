@@ -354,9 +354,15 @@ class HomeFragment : Fragment() {
                 delay(1000L)
             }
         }
-        reconnectCountdown?.join()
-        reconnectCountdown = null
-        reconnectTarget = null
+        try {
+            reconnectCountdown?.join()
+        } finally {
+            // The home's view can go (a list or settings screen opened over it) while this waits,
+            // which cancels the wait while the fragment lives on. Without this the next view would
+            // show the countdown frozen with nothing behind it to cancel or skip.
+            reconnectCountdown = null
+            reconnectTarget = null
+        }
         renderHome()
     }
 
