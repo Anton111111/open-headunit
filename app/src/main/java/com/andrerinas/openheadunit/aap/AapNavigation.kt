@@ -1,8 +1,6 @@
 package com.andrerinas.openheadunit.aap
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import com.andrerinas.openheadunit.aap.protocol.Channel
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus
 import com.andrerinas.openheadunit.utils.AppLog
@@ -12,21 +10,16 @@ import com.andrerinas.openheadunit.utils.Settings
  * Handles navigation messages from the ID_NAV channel from any Android Auto-enabled app
  * (Google Maps, Yandex Maps, etc.). Shows notifications with turn-by-turn directions and the road names.
  */
-class AapNavigation(
+internal class AapNavigation(
     private val context: Context,
-    private val settings: Settings
+    private val settings: Settings,
+    private val presentation: PresentationQueue,
 ) {
     private val helper = AapNavigationHelper(context)
     private val snapshot = AapNavigationHelper.NavigationSnapshot()
-    private val debounceHandler = Handler(Looper.getMainLooper())
-    private var isBroadcastScheduled = false
-    private var pendingNavEventType = NAV_EVENT_TYPE_TURN
-
-    private val debouncedBroadcastEmitter = Runnable {
-        isBroadcastScheduled = false
-        helper.sendFullNavigationBroadcast(snapshot, pendingNavEventType)
-    }
-
+    // Written on the reader, read by the serial presentation executor at retirement. A pending
+    // update counts too: close cancels its debounce, but external displays still need a clear.
+    @Volatile private var hasNavigationBroadcast = false
     fun process(message: AapMessage): Boolean {
         if (message.channel != Channel.ID_NAV) return false
 
@@ -41,7 +34,7 @@ class AapNavigation(
                 AppLog.d("Nav: Instrument cluster stop")
                 clearAccumulatedData()
                 scheduleDebouncedBroadcast(NAV_EVENT_TYPE_STOP)
-                helper.cancelNotification()
+                scheduleNotificationCancel()
                 true
             }
             NavigationStatus.MsgType.INSTRUMENT_CLUSTER_NAVIGATION_STATUS_VALUE -> {
@@ -66,7 +59,7 @@ class AapNavigation(
                     )
                     scheduleDebouncedBroadcast(NAV_EVENT_TYPE_TURN)
                     if (settings.showNavigationNotifications) {
-                        helper.showNotificationForSnapshot(snapshot, distanceMeters = null)
+                        scheduleNotification(null)
                     }
                     true
                 } catch (e: Exception) {
@@ -86,7 +79,7 @@ class AapNavigation(
                     )
                     scheduleDebouncedBroadcast(NAV_EVENT_TYPE_TURN)
                     if (settings.showNavigationNotifications) {
-                        helper.showNotificationForSnapshot(snapshot, distanceMeters = distanceMeters)
+                        scheduleNotification(distanceMeters)
                     }
                     true
                 } catch (e: Exception) {
@@ -147,17 +140,51 @@ class AapNavigation(
         val changed = previous != null && previous != status.status
         if (changed) {
             clearAccumulatedDataPreservingStatus(newStatus)
-            helper.cancelNotification()
+            scheduleNotificationCancel()
         } else {
             snapshot.clusterStatus = newStatus
         }
     }
 
     private fun scheduleDebouncedBroadcast(navEventType: Int) {
-        pendingNavEventType = navEventType
-        if (isBroadcastScheduled) return
-        isBroadcastScheduled = true
-        debounceHandler.postDelayed(debouncedBroadcastEmitter, BROADCAST_DEBOUNCE_MS)
+        // TimedMessage contains immutable protobufs; copy the mutable container on the reader.
+        // Main must never inspect the snapshot while the next packet is changing it.
+        val copy = snapshot.copy()
+        hasNavigationBroadcast = true
+        presentation.submit(PresentationQueue.Slot.NAV_BROADCAST, BROADCAST_DEBOUNCE_MS) {
+            helper.sendFullNavigationBroadcast(copy, navEventType)
+        }
+    }
+
+    private fun scheduleNotification(distanceMeters: Int?) {
+        val copy = snapshot.copy()
+        presentation.submit(PresentationQueue.Slot.NAV_NOTIFICATION) {
+            if (settings.showNavigationNotifications) helper.showNotificationForSnapshot(copy, distanceMeters)
+            else helper.cancelNotification()
+        }
+    }
+
+    private fun scheduleNotificationCancel() {
+        presentation.submit(PresentationQueue.Slot.NAV_NOTIFICATION) { helper.cancelNotification() }
+    }
+
+    /** Called once on the serial presentation executor after pending updates are cancelled. */
+    fun close() {
+        try {
+            if (hasNavigationBroadcast) {
+                // A STOP inside the debounce window must survive disconnect. Use an empty owned
+                // snapshot, just like the phone's STOP, rather than the reader's mutable state.
+                // The existing broadcast represents STOP with empty roads/unknown maneuver;
+                // navEventType is diagnostic, not a separate event field in the Android intent.
+                // This clear runs after any claimed old update and before the next session's UI.
+                helper.sendFullNavigationBroadcast(
+                    AapNavigationHelper.NavigationSnapshot(), NAV_EVENT_TYPE_STOP,
+                )
+            }
+        } finally {
+            // A broadcast failure must not leave the local navigation notification behind.
+            helper.cancelNotification()
+        }
     }
 
     companion object {

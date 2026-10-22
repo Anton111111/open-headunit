@@ -24,6 +24,8 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.andrerinas.openheadunit.App
+import kotlinx.coroutines.launch
+import com.andrerinas.openheadunit.utils.WifiStackRecovery
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.AapService
 import com.andrerinas.openheadunit.connection.CommManager
@@ -86,6 +88,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         private const val NATIVE_GROUP_MODE_5GHZ_REQUESTED = "5GHz requested"
         private const val NATIVE_GROUP_MODE_24GHZ_REQUESTED = "2.4GHz requested"
         private const val NATIVE_GROUP_MODE_STANDARD_FALLBACK = "standard fallback"
+        private const val NATIVE_GROUP_MODE_STANDARD_REMEMBERED = "standard (banded refusal remembered)"
         private const val NATIVE_GROUP_MODE_STANDARD_LEGACY = "standard (no 5GHz API)"
         // Native AA join recovery: if no phone joins the quiet-host group within this window,
         // tear it down and recreate a fresh one (bounded), dropping the forced 5GHz band after
@@ -225,6 +228,33 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
      */
     @Volatile
     private var pinnedChannelAbandoned = false
+
+    // Stuck-stack detection and recovery; see P2pStackWedgePolicy. Touched from the main thread
+    // (receiver and create callbacks), so plain collections under a lock are enough.
+    private val wedgeLock = Any()
+    private val p2pDisableEdges = ArrayDeque<Long>()
+    private val groupCreateFailures = ArrayDeque<Long>()
+    private val wifiRestartTimes = ArrayDeque<Long>()
+    @Volatile
+    private var wifiRestartInFlight = false
+    private var lastWedgeReportAtMs = 0L
+    // When the churn check last judged a window as another app cycling the stack, elapsedRealtime.
+    @Volatile
+    private var lastForeignChurnElapsedMs = 0L
+    private val recoveryScope = kotlinx.coroutines.CoroutineScope(
+        kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO
+    )
+
+    /**
+     * Set when the banded ladder ended in refusals under AUTO, so the no-band group that follows can
+     * be stored as this unit's standing answer once its frequency is known. Only the ladder sets it.
+     */
+    @Volatile
+    private var bandedRefusalPending = false
+
+    // Whether every rung of the current banded ladder failed with ERROR; one BUSY or crash clears it.
+    @Volatile
+    private var bandedLadderAllRefused = true
 
     /**
      * The frequency this group was asked for, or 0 where the band was asked for instead.
@@ -753,7 +783,101 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
     private fun noteGroupFormed() {
         ConnectionIssues.clear(context, ConnectionIssue.WIFI_DIRECT_GROUP_REFUSED)
         ConnectionIssues.clear(context, ConnectionIssue.WIFI_DIRECT_STACK_CYCLED)
+        ConnectionIssues.clear(context, ConnectionIssue.WIFI_DIRECT_STACK_STUCK)
         ConnectionIssues.clear(context, ConnectionIssue.WIFI_RADIO_OFF)
+        synchronized(wedgeLock) { groupCreateFailures.clear() }
+    }
+
+    private fun noteP2pDisableEdge() {
+        val now = SystemClock.elapsedRealtime()
+        synchronized(wedgeLock) { addWedgeStamp(p2pDisableEdges, now) }
+    }
+
+    /** Count a failed group create, then judge whether the stack is wedged. */
+    private fun noteGroupCreateFailure() {
+        val now = SystemClock.elapsedRealtime()
+        synchronized(wedgeLock) { addWedgeStamp(groupCreateFailures, now) }
+        checkStackWedged(now)
+    }
+
+    /** Drops stamps older than the window, so the count in the log is the real one up to the cap. */
+    private fun addWedgeStamp(stamps: ArrayDeque<Long>, now: Long) {
+        stamps.addLast(now)
+        while (stamps.isNotEmpty() && now - stamps.first() > P2pStackWedgePolicy.WINDOW_MS) stamps.removeFirst()
+        while (stamps.size > P2pStackWedgePolicy.MAX_STAMPS) stamps.removeFirst()
+    }
+
+    /**
+     * WiFi has just come on: the disabled broadcasts from the off period, and the creates that fail
+     * while WiFi Direct comes back, belong to the toggle and not to a wedge, so judge afresh.
+     */
+    private fun noteWifiEnabled() {
+        synchronized(wedgeLock) {
+            p2pDisableEdges.clear()
+            groupCreateFailures.clear()
+        }
+        // A named create refused while WiFi was off says nothing about the unit; ask by name again.
+        namedFallbackRefused = false
+    }
+
+    /**
+     * Raise the stuck-stack record when [P2pStackWedgePolicy] says so, and restart WiFi if the user
+     * opted in and the rate limits allow. The group comes back by itself: once WiFi is up again the
+     * state receiver sees WiFi Direct enabled and starts the quiet host.
+     */
+    private fun checkStackWedged(now: Long) {
+        if (wifiRestartInFlight) return
+        val wifiEnabled = try {
+            (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).isWifiEnabled
+        } catch (e: Exception) {
+            false
+        }
+        val (edges, failures, restarts) = synchronized(wedgeLock) {
+            Triple(
+                P2pStackWedgePolicy.countRecent(p2pDisableEdges, now),
+                P2pStackWedgePolicy.countRecent(groupCreateFailures, now),
+                wifiRestartTimes.toList()
+            )
+        }
+        // The churn check's verdict, not its running count: before our first request every edge
+        // counts as foreign, and a wedged stack floods them, so the running count would hide it.
+        val foreignChurn = P2pStackWedgePolicy.foreignChurnRecent(now, lastForeignChurnElapsedMs)
+        if (!P2pStackWedgePolicy.isWedged(wifiEnabled, edges, failures, foreignChurn)) return
+
+        // Once a minute: the creates keep failing every two seconds while this holds.
+        if (now - lastWedgeReportAtMs in 0 until P2pStackWedgePolicy.WINDOW_MS) return
+        lastWedgeReportAtMs = now
+        fun counted(n: Int) = if (n >= P2pStackWedgePolicy.MAX_STAMPS) "at least $n" else "$n"
+        AppLog.w(
+            "WifiDirectManager: WiFi Direct looks wedged - WiFi is on, the stack reported disabled " +
+                "${counted(edges)} times and ${counted(failures)} group creates failed in the last " +
+                "${P2pStackWedgePolicy.WINDOW_MS / 1000}s. Only a WiFi restart frees it."
+        )
+        ConnectionIssues.raise(context, ConnectionIssue.WIFI_DIRECT_STACK_STUCK)
+
+        val optedIn = try { App.provide(context).settings.autoRestartWifiWhenP2pStuck } catch (e: Exception) { false }
+        // CommManager as well as the Native provider, so a Helper-mode WiFi Direct session counts.
+        val sessionConnected = isNativeSessionConnected?.invoke() == true ||
+            try { App.provide(context).commManager.isConnected } catch (e: Exception) { false }
+        if (!P2pStackWedgePolicy.mayAutoRestart(optedIn, sessionConnected, now, restarts)) {
+            if (optedIn) AppLog.i("WifiDirectManager: automatic WiFi restart held back (cooldown, hourly limit or live session).")
+            return
+        }
+        wifiRestartInFlight = true
+        synchronized(wedgeLock) {
+            wifiRestartTimes.addLast(now)
+            while (wifiRestartTimes.size > 8) wifiRestartTimes.removeFirst()
+            // The restart itself produces disable edges; start the next judgement from a clean slate.
+            p2pDisableEdges.clear()
+            groupCreateFailures.clear()
+        }
+        recoveryScope.launch {
+            try {
+                WifiStackRecovery.restartWifi(context, "WiFi Direct wedged", automatic = true)
+            } finally {
+                wifiRestartInFlight = false
+            }
+        }
     }
 
     /**
@@ -768,6 +892,9 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         val now = System.currentTimeMillis()
         val elapsed = now - churnWindowStartedAtMs
         if (churnWindowStartedAtMs == 0L || elapsed >= P2pInterfaceChurnPolicy.WINDOW_MS || elapsed < 0L) {
+            if (P2pInterfaceChurnPolicy.isForeignChurn(churnForeignEventsInWindow)) {
+                lastForeignChurnElapsedMs = SystemClock.elapsedRealtime()
+            }
             if (P2pInterfaceChurnPolicy.isForeignChurn(churnForeignEventsInWindow) &&
                 P2pInterfaceChurnPolicy.shouldReport(now, lastChurnReportAtMs)
             ) {
@@ -798,6 +925,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                 WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION -> {
                     val state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1)
                     noteP2pStateChange()
+                    if (state == WifiP2pManager.WIFI_P2P_STATE_DISABLED) noteP2pDisableEdge()
                     if (P2pInterfaceChurnPolicy.shouldLogEachBroadcast(churnEventsInWindow)) {
                         AppLog.i("WifiDirectManager: WIFI_P2P_STATE_CHANGED_ACTION state=$state")
                     }
@@ -824,6 +952,11 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                         cancelNativeJoinWatchdog()
                         nativeRecreateCount = 0
                     }
+                }
+
+                WifiManager.WIFI_STATE_CHANGED_ACTION -> {
+                    val wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN)
+                    if (wifiState == WifiManager.WIFI_STATE_ENABLED) noteWifiEnabled()
                 }
 
                 WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
@@ -952,6 +1085,8 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                 addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
                 addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION)
                 addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION)
+                // Only to judge a wedge afresh after WiFi comes back; see noteWifiEnabled().
+                addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
             }
             ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
             isReceiverRegistered = true
@@ -2072,6 +2207,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         native5GhzBandMismatchRetries = 0
         nativeRequestedBand = NativeGroupBandPolicy.Band.UNSPECIFIED
         nativeRequestedFrequency = 0
+        bandedRefusalPending = false
         // legacyChannelAttempt is deliberately not reset here. The handshake calls
         // triggerWifiDirectRefresh() every ten seconds while it waits for credentials, and each one
         // lands back in this method - so resetting made rung 1 the only rung the ladder ever tried.
@@ -2225,6 +2361,25 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         // which two open issues spent weeks guessing at.
         AppLog.i("WifiDirectManager: ${WifiBandCapability.describe(supports5Ghz)}.")
         AppLog.i("WifiDirectManager: Band preference is ${NativeGroupBandPolicy.describePreference(preference, supports5Ghz)}.")
+
+        // Only on the first rung: the ladder's own retries are already past this decision.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && retryCount == 0 &&
+            NativeGroupBandPolicy.skipsBandedRequest(
+                preference = preference,
+                channelPinned = requestedFrequency > 0,
+                refusedOnFingerprint = appSettings.wifiDirectBandedRefusedOn,
+                currentFingerprint = Build.FINGERPRINT ?: "",
+            )
+        ) {
+            AppLog.i(
+                "WifiDirectManager: this unit refused every $bandLabel group request on this firmware " +
+                    "before and then hosted the no-band group, so the band request is skipped. " +
+                    "Changing the WiFi Direct band setting asks again."
+            )
+            standardCreateGroup(mgr, ch, 0, NATIVE_GROUP_MODE_STANDARD_REMEMBERED)
+            return
+        }
+        if (retryCount == 0) bandedLadderAllRefused = true
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             try {
@@ -2412,6 +2567,8 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         reasonStr: String,
         crash: Throwable?,
     ) {
+        noteGroupCreateFailure()
+        if (!NativeGroupBandPolicy.isBandRefusal(reason, crash != null)) bandedLadderAllRefused = false
         // Ahead of the ladder: inside the platform's own create window nothing on it can succeed.
         if (shouldCancelStuckCreate(reason)) {
             cancelStuckCreate(
@@ -2452,6 +2609,9 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
 
             NativeGroupBandPolicy.NextStep.STANDARD_FALLBACK -> {
                 AppLog.w("WifiDirectManager: $requestLabel createGroup retries exhausted ($reasonStr). Falling back to standard createGroup.")
+                bandedRefusalPending = NativeGroupBandPolicy.recordsBandedRefusal(
+                    preference, ladderExhausted = true, everyRungRefused = bandedLadderAllRefused
+                )
                 standardCreateGroup(mgr, ch, 0, NATIVE_GROUP_MODE_STANDARD_FALLBACK)
             }
 
@@ -2595,6 +2755,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                     }
                     override fun onFailure(reason: Int) {
                         if (supersededByStop(gen, "the Native AA group create")) return
+                        noteGroupCreateFailure()
                         val reasonStr = getP2pErrorString(reason)
                         if (shouldCancelStuckCreate(reason)) {
                             cancelStuckCreate(
@@ -2640,6 +2801,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
             }
             override fun onFailure(reason: Int) {
                 if (supersededByStop(gen, "the Native AA group create")) return
+                noteGroupCreateFailure()
                 val reasonStr = getP2pErrorString(reason)
                 if (shouldCancelStuckCreate(reason)) {
                     cancelStuckCreate(
@@ -2684,6 +2846,13 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                                 "finishing a create of ours rather than refusing to host one. Waiting for it."
                         )
                     }
+                    if (groupMode == NATIVE_GROUP_MODE_STANDARD_REMEMBERED) {
+                        // The shortcut is only worth keeping while it works. Forgetting it puts the
+                        // banded ladder back in front of the next bring-up.
+                        App.provide(context).settings.wifiDirectBandedRefusedOn = null
+                        AppLog.w("WifiDirectManager: the remembered no-band route failed too; forgetting it so the next bring-up asks for the band again.")
+                    }
+                    bandedRefusalPending = false
                     isGroupCreatingOrCreated = false
                     releaseNativeCreateWindow("the unit refused the group")
                 }
@@ -2708,6 +2877,8 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
             ConnectionIssues.clear(context, ConnectionIssue.FIVE_GHZ_CHANNEL_REFUSED)
         }
         nativeGroupCreationMode = groupMode
+        // The refusal is stored in notifyNativeGroupStarted(), once the group's frequency is known.
+        if (groupMode != NATIVE_GROUP_MODE_STANDARD_FALLBACK) bandedRefusalPending = false
         // The platform chose the band here, so there is no mismatch to correct, and no
         // frequency was named either.
         nativeRequestedBand = NativeGroupBandPolicy.Band.UNSPECIFIED
@@ -2927,6 +3098,18 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
     }
 
     private fun notifyNativeGroupStarted(ssid: String, frequency: Int, band: String) {
+        if (bandedRefusalPending && frequency > 0 && nativeGroupCreationMode == NATIVE_GROUP_MODE_STANDARD_FALLBACK) {
+            bandedRefusalPending = false
+            if (NativeGroupBandPolicy.storesBandedRefusalAt(frequency)) {
+                App.provide(context).settings.wifiDirectBandedRefusedOn = Build.FINGERPRINT
+                AppLog.i(
+                    "WifiDirectManager: recorded that this unit refuses banded groups on this firmware; " +
+                        "the next bring-up goes straight to the no-band group."
+                )
+            } else {
+                AppLog.i("WifiDirectManager: the no-band group is on $frequency MHz, so the banded refusal is not stored.")
+            }
+        }
         val frequencyText = if (frequency > 0) "$frequency MHz" else "frequency unknown"
         val message = "Native AA WiFi Direct: $band ($frequencyText), $nativeGroupCreationMode"
         if (message == lastNativeGroupStatusMessage) return

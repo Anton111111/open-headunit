@@ -101,4 +101,14 @@ class HandshakeMessagePolicyTest {
         assertFalse(HandshakeMessagePolicy.isReadError(ret = 12, elapsedMs = 1, timeoutMs = 2000,
             timeoutLooksLikeError = false))
     }
+
+    @Test
+    fun `a socket sends one version request`() {
+        assertEquals(1, HandshakeMessagePolicy.versionRequests(isUsb = false))
+    }
+
+    @Test
+    fun `USB keeps its retries for a lost request`() {
+        assertEquals(3, HandshakeMessagePolicy.versionRequests(isUsb = true))
+    }
 }

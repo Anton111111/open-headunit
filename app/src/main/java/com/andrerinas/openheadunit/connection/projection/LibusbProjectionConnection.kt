@@ -23,7 +23,7 @@ class LibusbProjectionConnection(usbMgr: UsbManager,
     @Volatile private var isConnecting = false
     private var usbInterface: UsbInterface? = null
     private var endpointIn: UsbEndpoint? = null
-    private var endpointOut: UsbEndpoint? = null
+    @Volatile private var endpointOut: UsbEndpoint? = null
     private var usbNative: UsbNative? = null
 
     // Direct ByteBuffer for JNI and tracking leftover state
@@ -34,6 +34,9 @@ class LibusbProjectionConnection(usbMgr: UsbManager,
     private val activeTransfers = AtomicInteger(0)
 
     override val type = ProjectionConnection.Type.USB
+
+    override val outMaxPacketSize: Int
+        get() = endpointOut?.maxPacketSize ?: 0
 
     override val isSingleMessage: Boolean
         get() = false
