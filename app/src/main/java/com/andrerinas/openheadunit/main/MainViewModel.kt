@@ -37,8 +37,12 @@ class MainViewModel(application: Application): AndroidViewModel(application), Us
     private var isRegistered = false
 
     fun register() {
-        ContextCompat.registerReceiver(app, usbReceiver, UsbReceiver.createFilter(), ContextCompat.RECEIVER_NOT_EXPORTED)
-        isRegistered = true
+        // The model outlives a recreated MainActivity (a rotation, for one), and a second
+        // registration would deliver every USB event twice.
+        if (!isRegistered) {
+            ContextCompat.registerReceiver(app, usbReceiver, UsbReceiver.createFilter(), ContextCompat.RECEIVER_NOT_EXPORTED)
+            isRegistered = true
+        }
         usbDevices.value = createDeviceList(settings.allowedDevices)
     }
 
