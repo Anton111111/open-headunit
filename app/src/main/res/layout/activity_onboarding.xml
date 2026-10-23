@@ -22,12 +22,21 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="24dp">
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="24dp">
+        <!-- No bottom padding here: each step's ScrollView carries it with clipToPadding off, so on
+             short screens (800x480) the content scrolls right up to the footer instead of stopping
+             24dp above it, and the row that does not fit peeks out as a hint to scroll. -->
 
         <!-- Step 0: Welcome + language -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -69,7 +78,9 @@
         <!-- Step 1: Safety -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -98,7 +109,9 @@
         <!-- Step 2: Connection (USB / WiFi) -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -174,7 +187,9 @@
         <!-- Step 3: Video test -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -289,7 +304,9 @@
         <!-- Step 4: Display auto-scan -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -383,7 +400,9 @@
         <!-- Step 5: Android Auto size (DPI) -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -431,7 +450,9 @@
         <!-- Step 6: Appearance -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -482,7 +503,9 @@
             android:id="@+id/onb_audio_scroll"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:fillViewport="true"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
 
             <include layout="@layout/onboarding_step_audio" />
         </ScrollView>
@@ -490,7 +513,9 @@
         <!-- Step 8: Automation -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -624,10 +649,90 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 9: GPS / Location -->
+        <!-- Step 9: Car launcher -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/onb_launcher_title"
+                    android:textAppearance="?attr/textAppearanceHeadline5"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onb_launcher_help"
+                    android:textAppearance="?attr/textAppearanceBody2" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="16dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/pref_enable_car_launcher_title"
+                        android:textAppearance="?attr/textAppearanceBody1" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/onb_launcher_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/onb_launcher_reopen_note"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/onb_launcher_reopen_note"
+                    android:textAppearance="?attr/textAppearanceCaption"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/onb_launcher_warning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_setting_single"
+                    android:text="@string/onb_launcher_warning"
+                    android:textColor="?attr/colorError"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/onb_launcher_default_button"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/onb_change_later"
+                    android:textAppearance="?attr/textAppearanceCaption" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Step 10: GPS / Location -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -675,10 +780,12 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 10: Car brand (vehicle identity sent to Android Auto) -->
+        <!-- Step 11: Car brand (vehicle identity sent to Android Auto) -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -834,10 +941,12 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 11: Permissions -->
+        <!-- Step 12: Permissions -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -869,10 +978,12 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Step 12: Ready -->
+        <!-- Step 13: Ready -->
         <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="24dp"
+            android:clipToPadding="false">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -1117,6 +1228,7 @@
 
         <!-- Primary navigation: compact back arrow + Next/Finish -->
         <LinearLayout
+            android:id="@+id/onb_nav_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

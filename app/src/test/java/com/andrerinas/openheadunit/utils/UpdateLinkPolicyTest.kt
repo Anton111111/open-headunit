@@ -28,17 +28,15 @@ class UpdateLinkPolicyTest {
     }
 
     @Test
-    fun oldUnitGetsTheApk() {
-        assertEquals(apk, UpdateLinkPolicy.linkToOpen(page, apk, needsDirectLink = true))
+    fun apkIsPrimaryAndReleasePageIsSecondary() {
+        assertEquals(
+            UpdateLinkPolicy.Choice.APK to UpdateLinkPolicy.Choice.RELEASE_PAGE,
+            UpdateLinkPolicy.choices(apk)
+        )
     }
 
     @Test
-    fun newUnitGetsTheReleasePage() {
-        assertEquals(page, UpdateLinkPolicy.linkToOpen(page, apk, needsDirectLink = false))
-    }
-
-    @Test
-    fun oldUnitWithNoApkFallsBackToThePage() {
-        assertEquals(page, UpdateLinkPolicy.linkToOpen(page, null, needsDirectLink = true))
+    fun noApkLeavesOnlyTheReleasePage() {
+        assertEquals(UpdateLinkPolicy.Choice.RELEASE_PAGE to null, UpdateLinkPolicy.choices(null))
     }
 }

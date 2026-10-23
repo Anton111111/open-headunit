@@ -56,6 +56,11 @@ class QueuedMain : MainCoroutineDispatcher(), Delay {
 }
 class CommManager {
     val attemptUserRequested = false
+    var isProjectionVideoFocusSuppressed = false
+    val videoFocus = mutableListOf<com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent>()
+    fun send(event: com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent) {
+        videoFocus.add(event)
+    }
     enum class DisconnectReason { CONNECTION_ENDED, SETTINGS_RESTART, PROJECTION_UNRAISED }
     sealed class ConnectionState {
         // STATE

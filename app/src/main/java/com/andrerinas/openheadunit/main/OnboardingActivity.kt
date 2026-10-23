@@ -11,6 +11,7 @@ import android.text.Html
 import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -29,13 +30,16 @@ import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightProgres
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRecommendation
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRun
 import com.andrerinas.openheadunit.decoder.video.preflight.VideoPreflightRunner
+import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.AppThemeManager
+import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.utils.LocaleHelper
 import com.andrerinas.openheadunit.utils.PermissionRowBinder
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.AnnouncedDensityPolicy
 import com.andrerinas.openheadunit.utils.OnboardingDisplayPolicy
+import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.SystemOptimizer
 import com.andrerinas.openheadunit.view.VideoPreviewLayout
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,6 +47,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.core.widget.TextViewCompat
+import androidx.core.view.MarginLayoutParamsCompat
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -68,7 +73,7 @@ import kotlinx.coroutines.withContext
  * is older than CURRENT_ONBOARDING_VERSION, and re-launchable from Settings.
  *
  * Steps: Welcome(+language) / Safety(mandatory) / Connection / Display scan /
- * Appearance / Audio streams / Automation / Location / Ready.
+ * Appearance / Audio streams / Automation / Car launcher / Location / Ready.
  *
  * Every step reuses the real settings and their strings, and deep-links into the
  * full settings sub-screens for advanced configuration.
@@ -84,6 +89,9 @@ class OnboardingActivity : BaseActivity() {
 
     private var step = 0
     private var isBinding = false
+    // The launcher switch asked the system for the home role and the answer is not in yet, so
+    // enableCarLauncher is not written until the role is confirmed held (see resolveLauncherRequest).
+    private var launcherRequestPending = false
 
     private var selectedSize = SystemOptimizer.DisplaySizePreset.STANDARD_9_10
     private var selectedPortrait = false
@@ -122,12 +130,14 @@ class OnboardingActivity : BaseActivity() {
         setContentView(R.layout.activity_onboarding)
 
         step = savedInstanceState?.getInt(KEY_STEP, 0) ?: 0
+        launcherRequestPending = savedInstanceState?.getBoolean(KEY_LAUNCHER_PENDING, false) ?: false
 
         flipper = findViewById(R.id.onb_flipper)
         backBtn = findViewById(R.id.onb_back)
         nextBtn = findViewById(R.id.onb_next)
         skipBtn = findViewById(R.id.onb_skip)
         stepper = findViewById(R.id.onb_stepper)
+        compactFooterOnShortScreens()
 
         applyCompactChrome()
 
@@ -162,6 +172,7 @@ class OnboardingActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
         outState.putInt(KEY_STEP, step)
         audioStep?.save(outState)
+        outState.putBoolean(KEY_LAUNCHER_PENDING, launcherRequestPending)
     }
 
     /**
@@ -185,19 +196,9 @@ class OnboardingActivity : BaseActivity() {
             indicator.bottomMargin = dp(2)
             stepper.layoutParams = indicator
         }
-        val footer = findViewById<LinearLayout>(R.id.onb_footer)
-        footer.setPadding(dp(8), dp(2), dp(8), dp(4))
-        // Put "Do it later" on the same row as Back/Next. On a 288 dp panel the extra
-        // row costs almost half of the space the step has left; the design's footer is
-        // a single row for the same reason.
-        val primary = footer.getChildAt(1) as? LinearLayout ?: return
-        footer.removeView(skipBtn)
-        val lp = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        )
-        lp.gravity = Gravity.CENTER_VERTICAL
-        primary.addView(skipBtn, 1, lp)
+        findViewById<LinearLayout>(R.id.onb_footer).setPadding(dp(8), dp(2), dp(8), dp(4))
+        // "Do it later" is already on the Back/Next row: compactFooterOnShortScreens moves it on
+        // anything under 500 dp, and this only runs under 400.
     }
 
     override fun onResume() {
@@ -206,6 +207,9 @@ class OnboardingActivity : BaseActivity() {
         // returning from a special-permission settings screen (overlay / modify system settings).
         updateThemeButtonText()
         updateNightButtonText()
+        // Coming back from the home-role request (or the system home settings) is where its answer is.
+        resolveLauncherRequest()
+        updateLauncherStep()
         permissionBinder?.rebind()
         if (step == STEP_DPI) dpiPicker?.startDemo()
         if (step == STEP_VIDEO) showVideoStep()
@@ -244,6 +248,7 @@ class OnboardingActivity : BaseActivity() {
 
     /** Move forward to the next visible step, or finish on the last one. */
     private fun goForward() {
+        resolveLauncherRequest()
         var s = step + 1
         while (s < STEP_COUNT && isStepHidden(s)) s++
         if (s >= STEP_COUNT) { finishOnboarding(); return }
@@ -253,6 +258,7 @@ class OnboardingActivity : BaseActivity() {
 
     /** Move back to the previous visible step. */
     private fun goBack() {
+        resolveLauncherRequest()
         var s = step - 1
         while (s > 0 && isStepHidden(s)) s--
         step = s.coerceAtLeast(0)
@@ -408,6 +414,42 @@ class OnboardingActivity : BaseActivity() {
             it.bind()
         }
 
+        // --- Car launcher: the unit's home screen, with the price of replacing the stock one ---
+        // A wizard reopened after the user picked this app as home must not show launcher mode off.
+        val launcherOn = OnboardingLauncherPolicy.launcherModeOnOpen(
+            settings.enableCarLauncher, CarLauncherManager.isDefaultLauncher(this))
+        if (launcherOn != settings.enableCarLauncher) {
+            settings.enableCarLauncher = true
+            AppLog.i("OnboardingActivity: the app already holds the home role, storing car launcher mode")
+        }
+        findViewById<SwitchMaterial>(R.id.onb_launcher_switch).apply {
+            isChecked = settings.enableCarLauncher || launcherRequestPending
+            setOnCheckedChangeListener { _, checked ->
+                // The alias has to be enabled for the system to offer this app as home, but the
+                // setting is only written once the role is held: a declined or lost request must
+                // not leave the app claiming launcher mode while it is not the home app.
+                CarLauncherManager.setLauncherEnabled(this@OnboardingActivity, checked)
+                if (checked) {
+                    if (CarLauncherManager.isDefaultLauncher(this@OnboardingActivity)) {
+                        settings.enableCarLauncher = true
+                    } else {
+                        // Flipping the switch is the request, so ask for the home role right away.
+                        launcherRequestPending = true
+                        CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+                    }
+                } else {
+                    launcherRequestPending = false
+                    settings.enableCarLauncher = false
+                }
+                updateLauncherStep()
+            }
+        }
+        findViewById<MaterialButton>(R.id.onb_launcher_default_button).setOnClickListener {
+            // Only shown with the switch on, where a request is already pending or launcher mode
+            // is already stored, so asking again needs no extra bookkeeping.
+            CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+        }
+
         // --- Location: this device's GPS vs the connected phone's GPS ---
         val gpsGroup = findViewById<MaterialButtonToggleGroup>(R.id.onb_gps_group)
         isBinding = true
@@ -551,6 +593,7 @@ class OnboardingActivity : BaseActivity() {
         if (step == STEP_READY) findViewById<TextView>(R.id.onb_ready_summary).text = summaryText()
         if (step == STEP_AUDIO) audioStep?.onShown() else audioStep?.onHidden()
         if (step == STEP_AUTOMATION) applyAutomationVisibility()
+        if (step == STEP_LAUNCHER) updateLauncherStep()
         if (step == STEP_PERMISSIONS) permissionBinder?.rebind()
         if (step == STEP_VEHICLE) applyVehicleTypeNote()
         if (step == STEP_VIDEO) showVideoStep() else stopVideoTest()
@@ -575,6 +618,25 @@ class OnboardingActivity : BaseActivity() {
         permissionBinder?.rebind()
     }
 
+    /**
+     * On short screens (800x480 head units) the "Do it later" row costs a whole row of step
+     * content, enough to push the last switch of the longer steps below the fold. There it moves
+     * into the navigation row, just before Next. Taller screens keep it on its own row.
+     */
+    private fun compactFooterOnShortScreens() {
+        if (resources.configuration.screenHeightDp >= SHORT_SCREEN_MAX_HEIGHT_DP) return
+        val navRow = findViewById<LinearLayout>(R.id.onb_nav_row)
+        (skipBtn.parent as? ViewGroup)?.removeView(skipBtn)
+        val gap = (8 * resources.displayMetrics.density).toInt()
+        val params = LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            rightMargin = gap
+            MarginLayoutParamsCompat.setMarginEnd(this, gap)
+        }
+        navRow.addView(skipBtn, navRow.indexOfChild(nextBtn), params)
+    }
+
     /** Show only the auto-start toggles that match the chosen connection type. Self Mode
      * connects without USB or WiFi, so both groups are hidden. */
     private fun applyAutomationVisibility() {
@@ -585,6 +647,63 @@ class OnboardingActivity : BaseActivity() {
         // Auto-start on WiFi is a legacy path that only applies up to Android 12L (API 32).
         findViewById<View>(R.id.onb_as_wifi_row).visibility =
             if (settings.showsWifi() && Build.VERSION.SDK_INT <= 32) View.VISIBLE else View.GONE
+    }
+
+    // --- Car launcher ---
+
+    /**
+     * The switch state and the default-home button. The button only makes sense with the launcher
+     * registered, and its label flips once the system grants the home role, which can happen while
+     * the wizard is in the background, so this also runs from onResume.
+     */
+    private fun updateLauncherStep() {
+        val button = findViewById<MaterialButton>(R.id.onb_launcher_default_button) ?: return
+        val switchOn = findViewById<SwitchMaterial>(R.id.onb_launcher_switch).isChecked
+        button.visibility = if (switchOn) View.VISIBLE else View.GONE
+        button.setText(
+            if (CarLauncherManager.isDefaultLauncher(this)) R.string.onb_launcher_default_home_active
+            else R.string.onb_launcher_default_home
+        )
+        // Reopen on reconnection is ignored while the app is the home app (Settings.reopenOnReconnection),
+        // and the user may have just turned it on in the automation step, so say so here.
+        val showNote = OnboardingLauncherPolicy.showsReopenNote(
+            launcherSwitchOn = switchOn,
+            reopenOn = findViewById<SwitchMaterial>(R.id.onb_reopen_switch).isChecked,
+            reopenOffered = settings.showsUsb()
+        )
+        findViewById<View>(R.id.onb_launcher_reopen_note).visibility = if (showNote) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Settles a pending home-role request: launcher mode is stored only if the role is now held,
+     * otherwise the switch goes back off. Runs on resume and when leaving the step, so a request
+     * whose answer never arrives (the dialog did not show, or was dismissed) cannot leave the
+     * setting claiming launcher mode.
+     */
+    private fun resolveLauncherRequest() {
+        val held = CarLauncherManager.isDefaultLauncher(this)
+        when (OnboardingLauncherPolicy.resolve(launcherRequestPending, held)) {
+            OnboardingLauncherPolicy.Outcome.NONE -> return
+            OnboardingLauncherPolicy.Outcome.COMMIT -> {
+                launcherRequestPending = false
+                settings.enableCarLauncher = true
+                AppLog.i("OnboardingActivity: home role granted, car launcher mode stored")
+            }
+            OnboardingLauncherPolicy.Outcome.REVERT -> {
+                launcherRequestPending = false
+                AppLog.i("OnboardingActivity: home role not held after the request, turning the launcher switch back off")
+                // The switch listener drops the alias and stores launcher mode off.
+                findViewById<SwitchMaterial>(R.id.onb_launcher_switch).isChecked = false
+            }
+        }
+        updateLauncherStep()
+    }
+
+    /** What the wizard ended up doing about the launcher, or null while the switch is off. */
+    private fun launcherSummaryLine(): String? = when {
+        CarLauncherManager.isDefaultLauncher(this) -> getString(R.string.onb_summary_launcher_home)
+        settings.enableCarLauncher -> getString(R.string.onb_summary_launcher_registered)
+        else -> null
     }
 
     private fun onNext() {
@@ -630,6 +749,7 @@ class OnboardingActivity : BaseActivity() {
             render()
             return
         }
+        resolveLauncherRequest()
         deferredThisSession = true
         settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
         settings.commit()
@@ -642,24 +762,41 @@ class OnboardingActivity : BaseActivity() {
     }
 
     private fun finishOnboarding() {
-        settings.hasAcceptedDisclaimer = true
-        settings.hasCompletedSetupWizard = true
-        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        settings.commit()
+        completeOnboarding()
         finish()
     }
 
     /** Complete the wizard and open a specific Settings sub-screen (e.g. the loading screen setup). */
     private fun finishOnboardingInto(destinationId: Int) {
-        settings.hasAcceptedDisclaimer = true
-        settings.hasCompletedSetupWizard = true
-        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
-        settings.commit()
+        completeOnboarding()
+        // NEW_TASK puts Settings in the app's own task, over the main screen, instead of in the
+        // wizard's task, which would linger out of Recents once the wizard is gone.
         startActivity(
             Intent(this, SettingsActivity::class.java)
                 .putExtra(SettingsActivity.EXTRA_DESTINATION, destinationId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
         finish()
+    }
+
+    /**
+     * Marks the wizard as seen and applies the settings that only take effect when it ends. The
+     * launcher switch already enabled or disabled the home alias as it was flipped; syncing here
+     * also covers a value stored by an older build, which never touched the alias.
+     */
+    private fun completeOnboarding() {
+        resolveLauncherRequest()
+        settings.hasAcceptedDisclaimer = true
+        settings.hasCompletedSetupWizard = true
+        settings.onboardingVersion = CURRENT_ONBOARDING_VERSION
+        if (OnboardingLauncherPolicy.syncsAlias(
+                settings.enableCarLauncher, CarLauncherManager.isDefaultLauncher(this))
+        ) {
+            CarLauncherManager.syncWithSettings(this, settings.enableCarLauncher)
+        } else {
+            AppLog.i("OnboardingActivity: the app holds the home role, keeping the launcher alias")
+        }
+        settings.commit()
     }
 
     // --- Language ---
@@ -1184,7 +1321,8 @@ class OnboardingActivity : BaseActivity() {
         val head = if (vehicle.isNotEmpty())
             getString(R.string.onb_summary_vehicle_format, vehicle) + "\n" + base
         else base
-        return head + "\n" + perms
+        val launcher = launcherSummaryLine()
+        return head + "\n" + perms + if (launcher == null) "" else "\n" + launcher
     }
 
     private fun resolveAttrColor(attr: Int): Int {
@@ -1200,7 +1338,11 @@ class OnboardingActivity : BaseActivity() {
         @Volatile
         var deferredThisSession = false
         private const val KEY_STEP = "onb_step"
-        private const val STEP_COUNT = 13
+        private const val KEY_LAUNCHER_PENDING = "onb_launcher_pending"
+        private const val STEP_COUNT = 14
+        /** Below this available height (dp) the footer goes to a single row. 800x480 lands
+         * well under it; 1024x600 stays above, so its footer is unchanged. */
+        private const val SHORT_SCREEN_MAX_HEIGHT_DP = 500
         /** The verdict box's wash: enough to tell pass from fail, light enough for its text. */
         private const val SUMMARY_WASH_ALPHA = 0x24
         private const val STEP_SAFETY = 1
@@ -1210,10 +1352,11 @@ class OnboardingActivity : BaseActivity() {
         private const val STEP_DPI = 5
         private const val STEP_AUDIO = 7
         private const val STEP_AUTOMATION = 8
-        private const val STEP_GPS = 9
-        private const val STEP_VEHICLE = 10
-        private const val STEP_PERMISSIONS = 11
-        private const val STEP_READY = 12
+        private const val STEP_LAUNCHER = 9
+        private const val STEP_GPS = 10
+        private const val STEP_VEHICLE = 11
+        private const val STEP_PERMISSIONS = 12
+        private const val STEP_READY = 13
 
         // The manufacturer half of the Desktop Head Unit identity we report by default.
         private const val DHU_MAKE = "Google"

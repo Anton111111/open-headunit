@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection.wifi.modes
 
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctServiceObserver
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -23,7 +24,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeCredenti
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.SoftApCredentialsProvider
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.SoftApEndpointStabilityPolicy
-import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDaemonReachability
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
 import com.andrerinas.openheadunit.main.SettingsActivity
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.BluetoothHelper
@@ -91,16 +92,17 @@ class WifiLauncherNative : WifiLauncher {
         // there is nobody to hand credentials to. A *measured* refusal only, never one merely not
         // measured yet - the dial that measures it is in handshakeManager.start(), which this
         // return skips, so the answer used to be gated behind itself.
+        val discovery = ZbtDiscovery.snapshot()
         val blockedByExternalBt = ExternalBtTransportPolicy.refusesBringUp(
-            BluetoothHelper.externalBtEvidence,
+            discovery,
             settings.externalBtZbtTransport,
             settings.nativeAaIgnoreExternalBt,
-            ZbtDaemonReachability.cached(),
-            settings.externalBtBlinkTransport,
-            BluetoothHelper.fytModuleEvidence,
+            blinkTransportEnabled = settings.externalBtBlinkTransport,
+            fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+            hctServiceAvailable = HctServiceObserver.available(service)
         )
         refusedModuleAtStart = blockedByExternalBt
-        if (blockedByExternalBt) NativeAaHandshakeManager.externalBtDiagnostic()?.let { AppLog.e(it) }
+        if (blockedByExternalBt) NativeAaHandshakeManager.externalBtDiagnostic(discovery)?.let { AppLog.e(it) }
 
         if (!blockedByExternalBt) {
             if (this.strategy == NativeStrategy.HOTSPOT) {
@@ -457,6 +459,7 @@ class WifiLauncherNative : WifiLauncher {
             AppLog.i("AapService: automatic wake is paused by the session policy. Keeping listeners available.")
         } else if (!service.userExitedAA) {
             if (handshakeManager?.reportsWake() != false) ConnectionStageTracker.report(ConnectionStage.WAKING_PHONE)
+            handshakeManager?.reportHctNetworkReady()
             handshakeManager?.triggerPoke()
         } else {
             AppLog.i("AapService: userExitedAA is true. Skipping auto-poke.")

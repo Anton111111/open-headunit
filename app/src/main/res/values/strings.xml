@@ -1,4 +1,14 @@
 <resources>
+    <string name="hct_aa_wake_not_sent">The connection state changed, so the phone reconnect was not started. Try again after the current connection activity finishes.</string>
+    <string name="hct_aa_selection_pending">The previous phone connection is still being handled. This selection has not replaced it.</string>
+    <string name="hct_aa_wake_unconfirmed">The head unit has not completed the Android Auto connection. Select the phone again to retry, or reconnect it from its Bluetooth settings. Open Headunit is still listening for Android Auto.</string>
+    <string name="hct_aa_no_paired_phone">No saved phone was found in the head unit’s Bluetooth list. Pair your phone using the head unit’s Bluetooth app, then select it here.</string>
+    <string name="hct_aa_waiting_existing_bluetooth">Bluetooth is already connected. Waiting for the head unit to open Android Auto; the existing connection will not be restarted.</string>
+    <string name="hct_aa_bluetooth_busy">Bluetooth is busy. Android Auto will not restart an active call or connection.</string>
+    <string name="hct_aa_handoff_unavailable">The head unit has not provided an Android Auto connection. Open Headunit has stopped this attempt.</string>
+    <string name="bt_manufacturer_devices_title">Devices paired through the head unit</string>
+    <string name="bt_manufacturer_devices_message">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nAndroid does not list them as paired. They cannot be selected for Android Bluetooth triggers or phone wake-up here. This saved list does not tell us whether they are connected or whether an Android Auto connection is available.</string>
+    <string name="bt_manufacturer_devices_android_unavailable">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nThe Android Bluetooth list is currently unavailable. This saved list alone cannot be used for Android Bluetooth triggers or phone wake-up. It does not tell us whether these devices are connected or whether an Android Auto connection is available.</string>
     <string name="app_name">Open Headunit</string>
     <string name="menu">Menu</string>
     <string name="settings">Settings</string>
@@ -194,6 +204,15 @@
     <!-- %1$d recommended DPI value -->
     <string name="onb_dpi_recommended">Recommended for your screen: %1$d dpi</string>
     <string name="onb_change_later">You can change this later in Settings.</string>
+    <!-- Onboarding wizard: car launcher step -->
+    <string name="onb_launcher_title">Car launcher</string>
+    <string name="onb_launcher_help">Open Headunit can be the unit\'s home screen, so it is what appears when the unit starts and when its Home button is pressed.</string>
+    <string name="onb_launcher_warning">The home screen you have today is usually where the climate controls, the radio or the reverse camera live. Set this only if the unit has another way to open them.</string>
+    <string name="onb_launcher_default_home">Set as the default home app</string>
+    <string name="onb_launcher_default_home_active">Open Headunit is the default home app</string>
+    <string name="onb_launcher_reopen_note">Reopen on reconnection does not apply while Open Headunit is the home app, since the unit already comes back to it. It works again if you turn the car launcher off.</string>
+    <string name="onb_summary_launcher_home">Launcher: Open Headunit is the home app</string>
+    <string name="onb_summary_launcher_registered">Launcher: registered as a home app</string>
     <string name="dpi_automatic">Automatic</string>
     <string name="dpi_automatic_desc">Use the device density.</string>
     <string name="dpi_widescreen_hint">%1$d DPI or lower: Android Auto shows the map with a media card beside it; text gets smaller.</string>
@@ -231,7 +250,6 @@
     <string name="no_apps_found">No applications found</string>
     <string name="video">Android Auto</string>
     <string name="self_mode">Self Mode</string>
-    <string name="to_android_auto">To Android Auto</string>
     <string name="title">Open Headunit</string>
     <string name="remove">Remove</string>
     <string name="usb">USB</string>
@@ -277,12 +295,9 @@
     <string name="home_background_custom">Custom Image</string>
     <string name="btn_choose_image">Choose Image</string>
     <string name="btn_reset_default">Reset to Default</string>
-    <string name="home_button_colors">Button Colors &amp; Gradients</string>
-    <string name="home_button_colors_description">Customize the colors and gradients of the 4 home screen buttons.</string>
     <string name="btn_color_self_mode">Self Mode Button</string>
     <string name="btn_color_usb">USB Button</string>
     <string name="btn_color_wifi">WiFi Button</string>
-    <string name="btn_color_settings">Settings Button</string>
     <string name="btn_reset_colors">Reset All Button Colors</string>
     <string name="btn_make_all_monochrome">Set all buttons to monochrome</string>
     <string name="auto_monochrome_at_night">Switch to monochrome at night</string>
@@ -302,7 +317,9 @@
     <string name="color_preset_default">Default</string>
     <string name="color_custom_hex">Hex Color</string>
     <string name="home_button_scale">Button Size</string>
-    <string name="home_button_scale_description">Adjust the size of the 4 home screen buttons.</string>
+    <string name="home_connection_colors">Connection Colors</string>
+    <string name="home_connection_colors_description">The main button wears the color of its connection, and so does a bar tile while it connects or is connected</string>
+    <string name="home_bar_scale_description">Adjust the size of the side bar tiles and the favorite apps. On a short screen the bar shrinks its tiles so they all fit</string>
     <string name="home_button_scale_preview">Live Home Screen Preview</string>
     <string name="btn_reset_scale">Reset Button Size</string>
     <string name="category_automation">Automation</string>
@@ -553,6 +570,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">More Features</string>
+    <string name="device_specific_settings">Device-Specific Settings</string>
+    <string name="device_specific_settings_description">Settings for supported head unit models</string>
+    <string name="device_specific_mcu_checking">Checking MCU access…</string>
+    <string name="device_specific_mcu_unavailable">MCU access is unavailable. The reverse-gear projection pause function is disabled on this device.</string>
+    <string name="device_specific_head_unit_model">Head unit model</string>
+    <string name="device_specific_model_none">Not selected</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Pause Android Auto projection on Reverse gear</string>
+    <string name="device_specific_pause_projection_reverse_description">Release Android Auto video focus while the rear camera is active, then restore projection when Reverse is turned off.</string>
     <string name="pref_enable_car_launcher_title">Use as Car Launcher</string>
     <string name="pref_enable_car_launcher_summary">Registers Open Headunit as a Home screen app, so it opens when the car or headunit Home button is pressed.</string>
     <string name="pref_set_default_launcher_title">Default Home App</string>
@@ -789,12 +815,13 @@
     <string name="checking_for_updates">Checking for updates…</string>
     <string name="update_available_title">Update Available</string>
     <string name="update_available_playstore_message">A newer version (%1$s) is available. Please visit the Google Play Store to update your app.</string>
-    <string name="update_available_github_message">A newer version (%1$s) is available. Visit GitHub to download the latest release.</string>
+    <string name="update_available_github_message">A newer version (%1$s) is available. Download the APK, or open GitHub Releases to see what changed.</string>
     <string name="update_not_available_title">Up to Date</string>
     <string name="update_not_available_message">You are already using the latest version (%1$s).</string>
     <string name="update_check_failed">Failed to check for updates. Please check your internet connection.</string>
     <string name="open_play_store">Open Play Store</string>
     <string name="open_github_releases">Open GitHub Releases</string>
+    <string name="download_apk">Download APK</string>
     <string name="about_title">About Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 
@@ -977,6 +1004,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperature</string>
     <string name="overlay_field_frame_age">Frame age</string>
+    <string name="overlay_field_battery">Battery</string>
+    <string name="overlay_field_memory">Free memory</string>
+    <string name="overlay_field_wifi_signal">WiFi signal</string>
     <string name="performance_overlay_no_lines">No lines</string>
     <string name="show_performance_overlay">Show Performance Overlay</string>
     <string name="overlay_position">Performance overlay position</string>
@@ -1061,6 +1091,7 @@
     <string name="ui_scale_description">Scales text, menus, and layout elements across the app. Recommended for high-resolution displays with small text.</string>
     <string name="ui_scale_home">Home screen</string>
     <string name="ui_scale_settings">Settings screen</string>
+    <string name="ui_scale_exit_dialog">Exit dialog</string>
     <string name="category_vehicle">Vehicle</string>
     <string name="category_head_unit">Head Unit</string>
     <string name="vehicle_display_name_label">Display name</string>
@@ -1444,6 +1475,63 @@
     <string name="copy_to_clipboard">Copy</string>
     <string name="copied_to_clipboard">Copied to clipboard</string>
     <string name="audio_settings_reconnect">Audio settings saved. Reconnect Android Auto to apply them.</string>
+
+    <!-- Home screen -->
+    <string name="home_kicker_active">Android Auto</string>
+    <string name="home_kicker_last_connection">Your last connection</string>
+    <string name="home_kicker_cable">Cable</string>
+    <string name="home_kicker_wireless">Wireless</string>
+    <string name="home_title_active">Your phone is connected</string>
+    <string name="home_title_reconnecting">Reconnecting</string>
+    <string name="home_title_connecting">Connecting to your phone</string>
+    <string name="home_title_searching">Searching for your phone…</string>
+    <string name="home_title_phone_detected">%1$s detected</string>
+    <string name="home_title_phone_detected_generic">Phone detected</string>
+    <string name="home_title_usb_ready">Plug in your phone</string>
+    <string name="home_title_wifi_ready">Connect wirelessly</string>
+    <string name="home_title_self_ready">Android Auto on this unit</string>
+    <string name="home_subtitle_searching">Open Android Auto on the phone if it does not show up</string>
+    <string name="home_subtitle_usb">Over USB cable</string>
+    <string name="home_subtitle_wifi">Over WiFi</string>
+    <string name="home_subtitle_self">Runs Android Auto on the radio itself</string>
+    <string name="home_action_back_to_android_auto">Back to Android Auto</string>
+    <string name="home_action_connect_now">Connect now</string>
+    <string name="home_action_search_again">Search again</string>
+    <string name="home_action_connect_usb">Connect over USB</string>
+    <string name="home_action_connect_wifi">Connect over WiFi</string>
+    <string name="home_action_start_self_mode">Start Self Mode</string>
+    <string name="home_all_apps">All</string>
+    <string name="home_add_favorite">Add app</string>
+    <string name="home_favorite_change">Change</string>
+    <string name="home_add_to_favorites">Add to favorites</string>
+    <string name="home_favorites_full">All four favorites are taken. Long-press one on the home screen to change it.</string>
+    <string name="home_choose_favorite_app">Choose an app or shortcut</string>
+    <string name="home_shortcut_badge">Shortcut</string>
+    <string name="home_show_favorite_apps">Apps and widgets on the home screen</string>
+    <string name="home_show_favorite_apps_description">Your favorite apps and widgets under the main button, when Open Headunit is your launcher</string>
+    <string name="home_show_clock">Date and time on the home screen</string>
+    <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
+    <string name="home_show_speed">GPS speed on the home screen</string>
+    <string name="home_show_speed_description">What this unit\'s GPS reports, in km/h. It asks for the location permission</string>
+    <string name="home_speed_unit">km/h</string>
+    <string name="home_speed_needs_location">The speed needs the location permission</string>
+    <string name="home_speed_location_blocked">The location permission is blocked. Allow it in this app\'s system settings to show the speed.</string>
+    <string name="home_add_widget">Add a widget</string>
+    <string name="home_widgets_full">No room for another widget</string>
+    <string name="home_widget_pick_title">Add a widget to the home screen</string>
+    <string name="home_widgets_none">This unit has no widgets to add</string>
+    <string name="home_page_add">Add a page</string>
+    <string name="home_page_remove">Remove this page</string>
+    <string name="home_page_position">Page %1$d of %2$d</string>
+    <string name="home_pages_title">Home screen pages</string>
+    <string name="home_page_add_detail">A new page for widgets. Swipe to reach it</string>
+    <string name="home_page_remove_detail">The widgets on it are removed too</string>
+    <string name="home_widget_remove">Remove widget</string>
+    <string name="home_widget_fallback_title">Widget</string>
+    <string name="home_pages_hint_title">Touch and hold an empty spot</string>
+    <string name="home_pages_hint_body">That\'s how you add a page for your widgets, or remove one.</string>
+    <string name="home_pages_hint_got_it">Got it</string>
+    <string name="home_pages_hint_body_anywhere">Any empty part of the home works. That\'s how you add a page for your widgets, or remove one.</string>
     <!-- Optional Shizuku Wi-Fi scan control -->
     <string name="wifi_scan_title">Pause automatic Wi-Fi searches (Shizuku)</string>
     <string name="wifi_scan_explanation">Pause automatic Wi-Fi searches during a Native wireless connection. Release control when the connection ends.\n\nRequires Shizuku. Setting changes apply immediately.</string>
@@ -1528,4 +1616,6 @@
     <string name="wifi_scan_other_help">If FYT startup is unavailable, use the method below to start Shizuku.</string>
     <string name="wifi_scan_fyt_restore_scans">Wi-Fi search settings could not be restored, so wireless ADB was left open. Keep Shizuku running and allow Open Headunit, then try again. You can also use the Wi-Fi recovery action above.</string>
     <string name="wifi_scan_legacy_limit">Renewal on Android 8–10\n• Request a pause on connection, then every five minutes while connected.\n• Android may enable searches between requests. The interval limits repeated cleanup work; it cannot keep every scan stopped.\n\nIf enabling searches fails, keep Shizuku running and retry. Rebooting resets this temporary control.</string>
+    <string name="native_aa_candidate_android_radio_description">Use Android Bluetooth instead of automatically selecting the head unit Bluetooth module. Leave off for automatic selection. If a module connection option is enabled, turn it off first.</string>
+    <string name="external_bt_candidate_transport_description">Force connection through the head unit Bluetooth module instead of automatic selection. This requires a compatible module service. Leave off to allow Android Bluetooth when that service does not respond; forcing this option prevents that fallback.</string>
 </resources>

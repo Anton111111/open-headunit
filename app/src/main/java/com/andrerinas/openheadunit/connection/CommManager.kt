@@ -228,6 +228,15 @@ class CommManager(
     private var physicalConnectionReached = false
     /** @Volatile: written on IO thread, read on Main and IO threads. */
     @Volatile private var _transport: AapTransport? = null
+    @Volatile private var projectionVideoFocusSuppressed = false
+    val isProjectionVideoFocusSuppressed: Boolean
+        get() = projectionVideoFocusSuppressed
+    val deviceVideoControl = com.andrerinas.openheadunit.device.ProjectionVideoSuppression { suppressed ->
+        setProjectionVideoFocusSuppressed(suppressed)
+        if (suppressed) {
+            send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = false, unsolicited = false))
+        }
+    }
 
     /**
      * `ip:port` of the most recent connection attempt, or `null` when it was not a socket
@@ -925,6 +934,7 @@ class CommManager(
                             onAaPlaybackStatus = { status, session -> onAaPlaybackStatus?.invoke(status, session) },
                             onAaPresentationClosed = { session -> onAaPresentationClosed?.invoke(session) }
                         )
+                        candidate.setProjectionVideoFocusSuppressed(projectionVideoFocusSuppressed)
                         // A late quit belongs only to the transport that installed this callback.
                         candidate.onQuit = { isClean -> transportedQuited(candidate, isClean) }
                         candidate.onAudioFocusStateChanged = { isPlaying -> onAudioFocusStateChanged?.invoke(isPlaying) }
@@ -1356,7 +1366,16 @@ class CommManager(
         // requests on a live stream: the phone acknowledged every one and its keyframe cadence never
         // moved off its fixed ~69s period. Kept because it costs one message and nothing has measured
         // the surface-mismatch path this serves without it.
-        send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
+        if (!projectionVideoFocusSuppressed) {
+            send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
+        }
+    }
+
+    private fun setProjectionVideoFocusSuppressed(suppressed: Boolean) {
+        synchronized(transportLifecycleLock) {
+            projectionVideoFocusSuppressed = suppressed
+            _transport?.setProjectionVideoFocusSuppressed(suppressed)
+        }
     }
 
     /**
@@ -1383,6 +1402,7 @@ class CommManager(
     class VideoFocusCycle internal constructor(internal val transport: AapTransport)
 
     fun releaseVideoFocusForKeyframe(): VideoFocusCycle? {
+        if (projectionVideoFocusSuppressed) return null
         if (_connectionState.value !is ConnectionState.TransportStarted) return null
         val transport = _transport ?: return null
         if (!transport.beginFocusCycle()) {
@@ -1396,6 +1416,10 @@ class CommManager(
 
     /** Complete only the cycle whose transport sent the release, and only while it is live. */
     fun retakeVideoFocusForKeyframe(cycle: VideoFocusCycle): Boolean {
+        if (projectionVideoFocusSuppressed) {
+            cycle.transport.endFocusCycle()
+            return false
+        }
         val transport = cycle.transport
         if (_transport !== transport || _connectionState.value !is ConnectionState.TransportStarted) return false
         transport.send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
@@ -1405,6 +1429,7 @@ class CommManager(
 
     /** Regain focus for the current transport during wake/resume; warm relaunch uses its cycle token. */
     fun retakeVideoFocusForKeyframe() {
+        if (projectionVideoFocusSuppressed) return
         _transport?.let {
             it.send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
             it.endFocusCycle()
