@@ -287,13 +287,14 @@
     <string name="checking_for_updates">Проверка обновлений…</string>
     <string name="update_available_title">Доступно обновление</string>
     <string name="update_available_playstore_message">Доступна новая версия (%1$s). Перейдите в Google Play Store, чтобы обновить приложение.</string>
-    <string name="update_available_github_message">Доступна новая версия (%1$s). Перейдите на GitHub, чтобы загрузить последнюю версию.</string>
+    <string name="update_available_github_message">Доступна новая версия (%1$s). Скачайте APK или откройте GitHub Releases, чтобы узнать, что изменилось.</string>
     <string name="update_not_available_title">Установлена последняя версия</string>
     <string name="update_not_available_message">Вы уже используете последнюю версию (%1$s).</string>
     <string name="update_check_failed">Не удалось проверить обновления. Проверьте подключение к интернету.</string>
     <string name="open_play_store">Открыть Play Store</string>
     <string name="open_github_releases">Открыть GitHub Releases</string>
     <string name="about_title">О приложении Open Headunit</string>
+    <string name="download_apk">Скачать APK</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 
     <!-- Safety Disclaimer -->

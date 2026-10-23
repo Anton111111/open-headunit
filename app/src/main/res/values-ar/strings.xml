@@ -284,12 +284,13 @@
     <string name="checking_for_updates">جارٍ التحقق من وجود تحديثات…</string>
     <string name="update_available_title">تحديث متاح</string>
     <string name="update_available_playstore_message">يتوفر إصدار أحدث (%1$s). يرجى زيارة متجر Google Play لتحديث تطبيقك.</string>
-    <string name="update_available_github_message">يتوفر إصدار أحدث (%1$s). تفضل بزيارة GitHub لتنزيل أحدث إصدار.</string>
+    <string name="update_available_github_message">يتوفر إصدار أحدث (%1$s). نزِّل ملف APK، أو افتح إصدارات GitHub لمعرفة التغييرات.</string>
     <string name="update_not_available_title">التطبيق محدّث</string>
     <string name="update_not_available_message">أنت تستخدم بالفعل أحدث إصدار (%1$s).</string>
     <string name="update_check_failed">فشل التحقق من وجود تحديثات. يرجى التحقق من اتصال الإنترنت.</string>
     <string name="open_play_store">فتح متجر Play</string>
     <string name="open_github_releases">فتح إصدارات GitHub</string>
+    <string name="download_apk">تنزيل APK</string>
     <string name="about_title">حول Open Headunit</string>
     <string name="copyright">© 2025-%d André Rinas</string>
 

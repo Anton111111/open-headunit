@@ -23,7 +23,6 @@ import android.content.ClipboardManager
 import com.andrerinas.openheadunit.aap.protocol.messages.BluetoothAnnouncePolicy
 import com.andrerinas.openheadunit.utils.OemAppManager
 import com.andrerinas.openheadunit.utils.CarLauncherManager
-import com.andrerinas.openheadunit.ssl.ConscryptInitializer
 import com.andrerinas.openheadunit.utils.UpdateChecker
 import com.andrerinas.openheadunit.utils.UpdateLinkPolicy
 import androidx.activity.OnBackPressedCallback
@@ -5201,12 +5200,19 @@ class SettingsFragment : Fragment() {
                                 UpdateChecker.openPlayStore(ctx)
                             }
                         } else {
-                            builder.setPositiveButton(R.string.open_github_releases) { _, _ ->
-                                val link = UpdateLinkPolicy.linkToOpen(
-                                    info.releaseUrl, info.apkUrl, ConscryptInitializer.isNeededForTls12()
-                                )
-                                AppLog.i("SettingsFragment: opening update link $link")
+                            val (primary, secondary) = UpdateLinkPolicy.choices(info.apkUrl)
+                            val open = { choice: UpdateLinkPolicy.Choice ->
+                                val apk = choice == UpdateLinkPolicy.Choice.APK
+                                val link = if (apk) info.apkUrl ?: info.releaseUrl else info.releaseUrl
+                                AppLog.i("SettingsFragment: opening update link (${if (apk) "apk" else "release page"}) $link")
                                 UpdateChecker.openGitHubReleases(ctx, link)
+                            }
+                            val label = { choice: UpdateLinkPolicy.Choice ->
+                                if (choice == UpdateLinkPolicy.Choice.APK) R.string.download_apk else R.string.open_github_releases
+                            }
+                            builder.setPositiveButton(label(primary)) { _, _ -> open(primary) }
+                            if (secondary != null) {
+                                builder.setNeutralButton(label(secondary)) { _, _ -> open(secondary) }
                             }
                         }
                         builder.show()
