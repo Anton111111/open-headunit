@@ -68,6 +68,12 @@ interface HandshakeLink : Closeable {
      * exists is dropped with nobody told.
      */
     val retransmitsWhileSilent: Boolean
+
+    /**
+     * A carrier may have already validated and buffered its version response. Replaying it into
+     * the common reader must not send a different version request or advertise a TCP endpoint.
+     */
+    val versionRequestAlreadySent: Boolean get() = false
 }
 
 /** The ordinary route: a phone that connected to one of this unit's own RFCOMM listeners. */

@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection.wifi.modes
 
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctServiceObserver
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -97,7 +98,8 @@ class WifiLauncherNative : WifiLauncher {
             settings.externalBtZbtTransport,
             settings.nativeAaIgnoreExternalBt,
             blinkTransportEnabled = settings.externalBtBlinkTransport,
-            fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+            fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+            hctServiceAvailable = HctServiceObserver.available(service)
         )
         refusedModuleAtStart = blockedByExternalBt
         if (blockedByExternalBt) NativeAaHandshakeManager.externalBtDiagnostic(discovery)?.let { AppLog.e(it) }

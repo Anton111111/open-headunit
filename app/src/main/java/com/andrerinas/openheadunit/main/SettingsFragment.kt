@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.main
 
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctServiceObserver
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -4439,7 +4440,8 @@ class SettingsFragment : Fragment() {
             pendingExternalBtZbtTransport ?: settings.externalBtZbtTransport,
             pendingNativeAaIgnoreExternalBt ?: settings.nativeAaIgnoreExternalBt,
             blinkTransportEnabled = pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
-            fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+            fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+            hctServiceAvailable = HctServiceObserver.available(requireContext())
         )
 
     /** The WiFi Direct band the block is currently showing settings for. */

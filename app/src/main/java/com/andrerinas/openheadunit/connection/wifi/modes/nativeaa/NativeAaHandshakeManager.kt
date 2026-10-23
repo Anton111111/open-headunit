@@ -1,5 +1,10 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
 
+import com.andrerinas.openheadunit.R
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctAaCarrier
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctOpening
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctServiceObserver
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctWakePolicy
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
@@ -143,7 +148,8 @@ class NativeAaHandshakeManager(
                 settings.externalBtZbtTransport,
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
-                fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+                fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+                hctServiceAvailable = HctServiceObserver.available(context)
             )
         }
 
@@ -155,7 +161,8 @@ class NativeAaHandshakeManager(
                 settings.externalBtZbtTransport,
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
-                fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+                fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+                hctServiceAvailable = HctServiceObserver.available(context)
             )
         }
 
@@ -167,7 +174,8 @@ class NativeAaHandshakeManager(
                 settings.externalBtZbtTransport,
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
-                fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+                fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+                hctServiceAvailable = HctServiceObserver.available(context)
             )
         }
 
@@ -176,7 +184,8 @@ class NativeAaHandshakeManager(
             when (transportRoute(context, discovery)) {
                 // The module has its own listener and its own compatibility, established by the
                 // daemon answering at connection time. Nothing below measures that.
-                ExternalBtTransportPolicy.Route.ZBT, ExternalBtTransportPolicy.Route.BLINK -> {
+                ExternalBtTransportPolicy.Route.ZBT, ExternalBtTransportPolicy.Route.BLINK,
+                ExternalBtTransportPolicy.Route.HCT -> {
                     AppLog.i("NativeAA: Bluetooth runs over the external module on this unit, so the RFCOMM compatibility check does not apply.")
                     return true
                 }
@@ -873,7 +882,8 @@ class NativeAaHandshakeManager(
                 settings.externalBtZbtTransport,
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
-                fytModuleEvidence = BluetoothHelper.fytModuleEvidence
+                fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+                hctServiceAvailable = HctServiceObserver.available(context)
             )
         ) {
             notStartedReason = "the vendor Bluetooth daemon is still being asked whether it will carry Android Auto."
@@ -900,6 +910,10 @@ class NativeAaHandshakeManager(
             // setup below applies to it.
             ExternalBtTransportPolicy.Route.ZBT -> {
                 startOverExternalModule()
+                return
+            }
+            ExternalBtTransportPolicy.Route.HCT -> {
+                startOverHctModule()
                 return
             }
             ExternalBtTransportPolicy.Route.BLINK -> {
@@ -2558,6 +2572,16 @@ class NativeAaHandshakeManager(
      * Start a manual poke (wakeup) for a specific Bluetooth device.
      */
     fun manualPoke(address: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            (moduleCarrier as? HctAaCarrier)?.let {
+                wakeStoodDown = false
+                sessionEndedAt = 0L
+                resetHandshakeBackoff()
+                resetJoinRefusals()
+                it.requestWakeFor(address)
+                return
+            }
+        }
         // Pressing the button is the way out of the stand-down and its settle, as well as of a
         // backoff: the user wants this phone woken now, whatever the last session ended on.
         // The user asking to try again is the way out of a backoff on either route.
@@ -2749,6 +2773,73 @@ class NativeAaHandshakeManager(
             }
         }
     }
+    @SuppressLint("NewApi") // The route is gated by HctServiceObserver.available (API 21+).
+    private fun startOverHctModule() {
+        isRunning = true
+        notStartedReason = null
+        aaListenersClosedForSession = false
+        localRadioName = "HCT external Bluetooth module"
+        val carrier = HctAaCarrier(
+            context = context,
+            openingRequest = {
+                HctOpening.versionRequest(
+                    WppChannelTypePolicy.forHeadUnit(WifiBandCapability.supports5Ghz(context)),
+                    WifiBandCapability.sessionFrequencyMhz()
+                )
+            },
+            serve = { link ->
+                ConnectionStageTracker.report(ConnectionStage.PHONE_ANSWERED)
+                handleHandshake(link)
+            },
+            mayServe = {
+                val now = SystemClock.elapsedRealtime()
+                // Match the normal radio's bounded cancel/prompt hold. The peer gate below
+                // clears expired flags and applies the existing chosen-driver policy.
+                isRunning && !aaListenersClosedForSession &&
+                    (!isSelectionCanceled || now - selectionCanceledAt >= NativeDriverSelectionPolicy.CANCEL_REFUSAL_MS) &&
+                    (!isSelectionPromptActive || selectionPromptExpired(now)) && !commManager.isConnected &&
+                    commManager.connectionState.value !is CommManager.ConnectionState.Connecting &&
+                    !isHandshakeInFlight() && !isHandoffSettling() &&
+                    NativeHandoffPolicy.shouldServeHandshake(consecutiveHandshakeFailures)
+            },
+            acceptPeer = ::shouldAcceptHandshake,
+            onPhoneEvidence = { resetHandshakeBackoff() },
+            onUnavailable = { result ->
+                ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
+                val message = when (result) {
+                    HctWakePolicy.Result.HFP_ALREADY_CONNECTED -> R.string.hct_aa_waiting_existing_bluetooth
+                    HctWakePolicy.Result.HFP_BUSY -> R.string.hct_aa_bluetooth_busy
+                    else -> R.string.hct_aa_handoff_unavailable
+                }
+                scope.launch(Dispatchers.Main) {
+                    ToastUtils.showToast(context, context.getString(message), Toast.LENGTH_LONG, force = true)
+                }
+            }
+        )
+        moduleCarrier = carrier
+        wakeAwaitingModule = false
+        scope.launch(Dispatchers.IO + CoroutineName("NativeAa-HctCarrier")) {
+            try {
+                carrier.run()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLog.w("NativeAA: [HCT] manufacturer carrier unavailable: ${e.message}")
+            } finally {
+                carrier.close()
+                withContext(NonCancellable + Dispatchers.Main.immediate) {
+                    if (moduleCarrier === carrier) {
+                        moduleCarrier = null
+                        isRunning = false
+                        notStartedReason = "the manufacturer AA service is unavailable"
+                        ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
+                        ToastUtils.showToast(context, context.getString(R.string.hct_aa_handoff_unavailable), Toast.LENGTH_LONG, force = true)
+                    }
+                }
+            }
+        }
+    }
+
     private fun startOverBlinkModule() {
         isRunning = true
         notStartedReason = null
@@ -3045,6 +3136,12 @@ class NativeAaHandshakeManager(
             suspend fun runAction(action: WppAction, source: ProtobufMessage?) {
                 when (action) {
                     WppAction.SendVersionRequest -> {
+                        if (link.versionRequestAlreadySent) {
+                            // The HCT carrier verified 1.7 before exposing its replay stream.
+                            // A second 4.2 request would change the phone's pending handshake.
+                            spokeToPhone = true
+                            return
+                        }
                         AppLog.i("NativeAA: [TX] Sending WifiVersionRequest (Type 4) v${WppHandshakeSession.WPP_VERSION_MAJOR}.${WppHandshakeSession.WPP_VERSION_MINOR}")
                         sendWifiVersionRequest(output, transport)
                         lastOpenerSentAt = SystemClock.elapsedRealtime()
@@ -3244,6 +3341,11 @@ class NativeAaHandshakeManager(
                     if (msg != null) {
                         AppLog.i("NativeAA: [RX] Received Type ${msg.type} (Payload size: ${msg.payload.size})")
                         logReceivedDetail(msg)
+                        if (link.versionRequestAlreadySent && msg.type == WppMessageType.VERSION_RESPONSE) {
+                            // A native response can precede the response to our request. A later
+                            // rejection must not be hidden by the first successful response.
+                            HctOpening.validateResponse(msg.payload)
+                        }
                         // The phone answered, so the channel carries data in at least one
                         // direction. Whatever the type turns out to be, this was not a silent unit.
                         ifOwner(link) {
