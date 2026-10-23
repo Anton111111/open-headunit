@@ -39,7 +39,7 @@ internal class HctAaCarrier(
     private val mayServe: () -> Boolean,
     private val acceptPeer: (String) -> Boolean,
     private val onPhoneEvidence: () -> Unit,
-    private val onUnavailable: (HctWakePolicy.Result?) -> Unit
+    private val onUnavailable: (HctWakePolicy.Result?, () -> Boolean) -> Unit
 ) : ExternalModuleCarrier {
     @Volatile private var stopped = false
     private val active = AtomicReference<LocalSocket?>()
@@ -54,19 +54,20 @@ internal class HctAaCarrier(
     }
 
     /** Explicit phone selection authorizes one OEM disconnect/reconnect, including this phone. */
-    fun requestWakeFor(mac: String, selected: () -> Unit = {}): Boolean {
+    fun requestWakeFor(mac: String, allowReplacePending: Boolean = false, selected: () -> Unit = {}): Boolean {
         val target = BluetoothPeerInventory.normalizeAddress(mac) ?: return false
         val now = SystemClock.elapsedRealtime()
         var committed = false
-        val held = attempts.selectAndEnqueue(target, now, { selected(); committed = true }) { wakes.trySend(it).isSuccess }
+        val held = attempts.selectAndEnqueue(target, now, { selected(); committed = true }, allowReplacePending) { wakes.trySend(it).isSuccess }
         if (held != null) {
             AppLog.i("NativeAA: [HCT] selected-phone wake held: $held")
-            if (held == HctWakeAttempts.Hold.AWAITING_OEM_RESULT &&
-                (attempts.pendingAge(now) ?: 0) >= WAKE_OBSERVATION_MS) {
-                onUnavailable(HctWakePolicy.Result.WAKE_UNCONFIRMED)
-            }
         }
         return committed
+    }
+
+    private fun reportUnavailable(result: HctWakePolicy.Result?, ticket: HctWakeAttempts.Ticket? = null) {
+        val current = attempts.failureIsCurrent(ticket)
+        onUnavailable(result) { !stopped && current() }
     }
 
     suspend fun run() = coroutineScope {
@@ -88,7 +89,7 @@ internal class HctAaCarrier(
                             HctWakeAttempts.Preparation.SUPERSEDED -> continue
                             HctWakeAttempts.Preparation.NOT_READY -> {
                                 AppLog.i("NativeAA: [HCT] wake #${ticket.id} not sent: local connection state changed")
-                                onUnavailable(HctWakePolicy.Result.LOCAL_NOT_READY)
+                                reportUnavailable(HctWakePolicy.Result.LOCAL_NOT_READY, ticket)
                                 continue
                             }
                             HctWakeAttempts.Preparation.READY -> Unit
@@ -106,16 +107,16 @@ internal class HctAaCarrier(
                             // Binder status can change without a new AA event. Only a replaced
                             // ticket has another handoff responsible for its outcome.
                             if (attempts.prepare(ticket, mayServe) != HctWakeAttempts.Preparation.SUPERSEDED)
-                                onUnavailable(HctWakePolicy.Result.LOCAL_NOT_READY)
+                                reportUnavailable(HctWakePolicy.Result.LOCAL_NOT_READY, ticket)
                         } else if (result != HctWakePolicy.Result.REQUESTED &&
-                            result != HctWakePolicy.Result.SUBMISSION_UNCONFIRMED) onUnavailable(result)
+                            result != HctWakePolicy.Result.SUBMISSION_UNCONFIRMED) reportUnavailable(result, ticket)
                         if (attempts.outstanding(ticket)) launch {
                             delay(WAKE_OBSERVATION_MS)
                             if (attempts.outstanding(ticket)) {
                                 AppLog.w("NativeAA: [HCT] wake #${ticket.id} has no matching WPP after 30 s; " +
                                     "no reconnect repeated; ${status.observationSummary()}")
                                 if (attempts.waitingForResult(ticket) && mayServe())
-                                    onUnavailable(HctWakePolicy.Result.WAKE_UNCONFIRMED)
+                                    reportUnavailable(HctWakePolicy.Result.WAKE_UNCONFIRMED, ticket)
                             }
                         }
                     } finally {
@@ -137,18 +138,20 @@ internal class HctAaCarrier(
                     }
                     // Reserve opening before the first Binder read: activePeer is not known yet.
                     if (!attempts.beginOpening()) continue
+                    val failureCurrent = attempts.openingFailure { status.admission.current(ticket) }
                     try {
+                        if (failureCurrent == null) continue
                         status.admission.handoff(ticket) { socketAttempted ->
                             serveOnce(status, ticket, socketAttempted)
                         }
                     } catch (error: CancellationException) {
                         if (stopped || !isActive) throw error
-                        onUnavailable(null)
+                        if (failureCurrent != null) onUnavailable(null) { !stopped && failureCurrent() }
                     } catch (error: Exception) {
                         currentCoroutineContext().ensureActive()
                         if (stopped) break
                         AppLog.w("NativeAA: [HCT] handoff stopped: ${error.message}; no automatic socket retry")
-                        onUnavailable(null)
+                        if (failureCurrent != null) onUnavailable(null) { !stopped && failureCurrent() }
                     } finally {
                         closeSocket()
                         attempts.endOpening()
@@ -291,6 +294,6 @@ internal class HctAaCarrier(
         private const val CONNECT_TIMEOUT_MS = 1_000
         private const val OPENING_TIMEOUT_MS = 5_000L
         // Observation deadline only; it does not establish OEM connector completion.
-        private const val WAKE_OBSERVATION_MS = 30_000L
+        private const val WAKE_OBSERVATION_MS = HctPendingReconnect.OBSERVATION_MS
     }
 }

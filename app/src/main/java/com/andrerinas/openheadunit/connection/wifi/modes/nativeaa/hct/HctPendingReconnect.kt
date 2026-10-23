@@ -16,8 +16,17 @@ internal class HctPendingReconnect {
     @Synchronized fun ticket(target: String) = HctWakeAttempts.Ticket(++serial, target)
     @Synchronized fun current(): Pending? = pending
 
-    @Synchronized fun submit(ticket: HctWakeAttempts.Ticket, now: Long): Boolean {
-        if (pending != null) return false
+    /**
+     * Only a new explicit selection may replace an unconfirmed request after its observation
+     * window. Expiry is a local retry limit, not proof that the manufacturer's connector ended.
+     * Keep the old record until the replacement passes all status checks and is claimed for IPC.
+     */
+    @Synchronized fun submit(
+        ticket: HctWakeAttempts.Ticket,
+        now: Long,
+        replacing: Pending? = null
+    ): Boolean {
+        if (pending != replacing || (replacing != null && !retryAllowed(replacing, now))) return false
         pending = Pending(ticket, now)
         return true
     }
@@ -27,6 +36,10 @@ internal class HctPendingReconnect {
     }
 
     companion object {
+        const val OBSERVATION_MS = 30_000L
+        fun retryAllowed(pending: Pending, now: Long): Boolean =
+            now >= pending.submittedAt && now - pending.submittedAt >= OBSERVATION_MS
+
         val process = HctPendingReconnect()
     }
 }

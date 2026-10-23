@@ -58,6 +58,24 @@ object ConnectionStageTracker {
         }
     }
 
+    /**
+     * The owning wireless handoff has finished with no GAL connection or association left.
+     * Unlike passive readiness, this releases its answered/credentials/joining display too.
+     * Callers must first fence their attempt and check that no live handoff owns the outcome.
+     * USB and GAL transport stages are never rewound here.
+     */
+    fun reportWirelessHandoffEnded() {
+        _stage.update { current ->
+            when (current) {
+                ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK,
+                ConnectionStage.WAKING_PHONE, ConnectionStage.PHONE_ANSWERED,
+                ConnectionStage.SENDING_CREDENTIALS, ConnectionStage.PHONE_JOINING ->
+                    ConnectionStage.WAITING_FOR_PHONE
+                else -> current
+            }
+        }
+    }
+
     /** The group came up, changed, or (null) went down. Equal deliveries are conflated. */
     fun reportNetwork(detail: ConnectionNetworkDetail?) {
         _network.value = detail

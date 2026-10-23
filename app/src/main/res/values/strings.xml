@@ -1,7 +1,7 @@
 <resources>
     <string name="hct_aa_wake_not_sent">The connection state changed, so the phone reconnect was not started. Try again after the current connection activity finishes.</string>
     <string name="hct_aa_selection_pending">The previous phone connection is still being handled. This selection has not replaced it.</string>
-    <string name="hct_aa_wake_unconfirmed">The head unit has not completed the Android Auto connection. Reconnect your phone from its Bluetooth settings. Open Headunit is still listening for Android Auto.</string>
+    <string name="hct_aa_wake_unconfirmed">The head unit has not completed the Android Auto connection. Select the phone again to retry, or reconnect it from its Bluetooth settings. Open Headunit is still listening for Android Auto.</string>
     <string name="hct_aa_no_paired_phone">No saved phone was found in the head unit’s Bluetooth list. Pair your phone using the head unit’s Bluetooth app, then select it here.</string>
     <string name="hct_aa_waiting_existing_bluetooth">Bluetooth is already connected. Waiting for the head unit to open Android Auto; the existing connection will not be restarted.</string>
     <string name="hct_aa_bluetooth_busy">Bluetooth is busy. Android Auto will not restart an active call or connection.</string>

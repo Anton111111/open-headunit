@@ -117,4 +117,28 @@ class ConnectionStageTrackerTest {
         assertEquals(null, ConnectionStageTracker.stage.value)
     }
 
+    @Test
+    fun finishedWirelessHandoffReleasesHomeRetryWithoutRewindingUsbOrGal() {
+        val ended = setOf(ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK,
+            ConnectionStage.WAKING_PHONE, ConnectionStage.PHONE_ANSWERED,
+            ConnectionStage.SENDING_CREDENTIALS, ConnectionStage.PHONE_JOINING)
+        for (stage in ConnectionStage.values()) {
+            ConnectionStageTracker.beginAttempt(stage)
+            ConnectionStageTracker.reportWirelessHandoffEnded()
+            assertEquals(if (stage in ended) ConnectionStage.WAITING_FOR_PHONE else stage,
+                ConnectionStageTracker.stage.value)
+            if (stage in ended) {
+                val home = com.andrerinas.openheadunit.main.HomePrimaryPolicy
+                val result = home.decide(com.andrerinas.openheadunit.main.HomePrimaryPolicy.Input(
+                    chosen = setOf(com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection.WIFI),
+                    lastConnection = null, usbPhoneDetected = false, sessionActive = false,
+                    reconnectTarget = null, wifiScanning = false, stage = ConnectionStageTracker.stage.value))
+                assertEquals(com.andrerinas.openheadunit.main.HomePrimaryPolicy.Status.WAITING, result.status)
+            }
+        }
+        ConnectionStageTracker.endAttempt()
+        ConnectionStageTracker.reportWirelessHandoffEnded()
+        assertNull(ConnectionStageTracker.stage.value)
+    }
+
 }

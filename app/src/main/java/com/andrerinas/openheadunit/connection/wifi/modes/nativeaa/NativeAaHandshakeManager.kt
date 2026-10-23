@@ -402,6 +402,8 @@ class NativeAaHandshakeManager(
     // only between start() and stop() on that route; it replaces the RFCOMM listeners entirely
     // rather than running beside them.
     @Volatile private var moduleCarrier: ExternalModuleCarrier? = null
+    // A WPP lease may finish after its carrier ends; only its own arming may clear the stage.
+    @Volatile private var hctStageOwner: Any? = null
     // The coroutine serving [activeHandshakeLink]. Closing a superseded handshake's link only
     // ends it on stacks where close() interrupts a pending read; some do not, and it runs on for
     // minutes. Cancelling cannot break a blocking JNI read either, but it does end every real
@@ -482,7 +484,7 @@ class NativeAaHandshakeManager(
     fun selectDriver(mac: String, explicit: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             (moduleCarrier as? HctAaCarrier)?.let { carrier ->
-                val accepted = carrier.requestWakeFor(mac) {
+                val accepted = carrier.requestWakeFor(mac, allowReplacePending = explicit) {
                     commitDriverSelection(mac, explicit)
                     wakeStoodDown = false
                     sessionEndedAt = 0L
@@ -2829,7 +2831,18 @@ class NativeAaHandshakeManager(
         notStartedReason = null
         aaListenersClosedForSession = false
         localRadioName = "HCT external Bluetooth module"
-        val carrier = HctAaCarrier(
+        // A manufacturer status binding can end independently of Wi-Fi projection. Report
+        // failure only while no GAL session or association attempt owns its own outcome.
+        fun mayReportFailure(): Boolean = !context.isStopping && !context.wirelessPausedForSettings &&
+            !commManager.isConnected && commManager.connectionState.value !is CommManager.ConnectionState.Connecting &&
+            !isHandshakeInFlight() && !isHandoffSettling()
+        val stageOwner = Any().also { hctStageOwner = it }
+        fun finishStageIfIdle() {
+            if (hctStageOwner === stageOwner && mayReportFailure())
+                ConnectionStageTracker.reportWirelessHandoffEnded()
+        }
+        lateinit var carrier: HctAaCarrier
+        carrier = HctAaCarrier(
             context = context,
             openingRequest = {
                 HctOpening.versionRequest(
@@ -2839,7 +2852,11 @@ class NativeAaHandshakeManager(
             },
             serve = { link ->
                 ConnectionStageTracker.report(ConnectionStage.PHONE_ANSWERED)
-                handleHandshake(link)
+                try { handleHandshake(link) } finally {
+                    // handleHandshake also returns normally after a write failure or timeout.
+                    // Restore retry access after that result, not just a carrier exception.
+                    withContext(NonCancellable + Dispatchers.Main.immediate) { finishStageIfIdle() }
+                }
             },
             mayServe = {
                 val now = SystemClock.elapsedRealtime()
@@ -2854,8 +2871,7 @@ class NativeAaHandshakeManager(
             },
             acceptPeer = ::shouldAcceptHandshake,
             onPhoneEvidence = { resetHandshakeBackoff() },
-            onUnavailable = { result ->
-                ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
+            onUnavailable = { result, stillCurrent ->
                 val message = when (result) {
                     HctWakePolicy.Result.HFP_ALREADY_CONNECTED -> R.string.hct_aa_waiting_existing_bluetooth
                     HctWakePolicy.Result.HFP_BUSY -> R.string.hct_aa_bluetooth_busy
@@ -2864,7 +2880,12 @@ class NativeAaHandshakeManager(
                     else -> R.string.hct_aa_handoff_unavailable
                 }
                 scope.launch(Dispatchers.Main) {
-                    ToastUtils.showToast(context, context.getString(message), Toast.LENGTH_LONG, force = true)
+                    // A queued failure belongs to this carrier, not a replacement started by
+                    // a later Wi-Fi button press. Check again at UI delivery, after dispatch.
+                    if (moduleCarrier === carrier && isRunning && stillCurrent() && mayReportFailure()) {
+                        finishStageIfIdle()
+                        ToastUtils.showToast(context, context.getString(message), Toast.LENGTH_LONG, force = true)
+                    }
                 }
             }
         )
@@ -2886,8 +2907,14 @@ class NativeAaHandshakeManager(
                         moduleCarrier = null
                         isRunning = false
                         notStartedReason = "the manufacturer AA service is unavailable"
-                        ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
-                        ToastUtils.showToast(context, context.getString(R.string.hct_aa_handoff_unavailable), Toast.LENGTH_LONG, force = true)
+                        // Home treats network setup stages as an active attempt. Once this
+                        // binding ends, leave the manual Wi-Fi retry reachable even if the
+                        // network was still forming; keep real GAL/association stages intact.
+                        ConnectionStageTracker.reportWirelessWaiting()
+                        if (mayReportFailure()) {
+                            finishStageIfIdle()
+                            ToastUtils.showToast(context, context.getString(R.string.hct_aa_handoff_unavailable), Toast.LENGTH_LONG, force = true)
+                        }
                     }
                 }
             }
@@ -4032,6 +4059,7 @@ class NativeAaHandshakeManager(
     }
 
     fun stop() {
+        hctStageOwner = null
         isRunning = false
         notStartedReason = "the wireless mode was stopped"
         measuringDaemon = false

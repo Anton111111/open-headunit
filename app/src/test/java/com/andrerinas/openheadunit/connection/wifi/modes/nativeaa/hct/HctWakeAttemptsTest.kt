@@ -24,7 +24,7 @@ class HctWakeAttemptsTest {
         assertTrue(attempts.claim(replacement, 3))
     }
 
-    @Test fun `unknown result and elapsed timeout do not cancel a native connector`() {
+    @Test fun `unknown result stays pending until a later explicit retry is claimed`() {
         val attempts = HctWakeAttempts()
         val first = attempts.select(phone, 0)!!
         assertTrue(attempts.claim(first, 1))
@@ -32,7 +32,12 @@ class HctWakeAttemptsTest {
         attempts.finishUnsent(first)
         assertTrue(attempts.outstanding(first))
         assertNull(attempts.select(phone, 30_000))
-        assertNull(attempts.select(other, 300_000))
+        val retry = attempts.select(other, 30_001, allowReplacePending = true)!!
+        assertTrue(attempts.outstanding(first)) // Selecting alone does not forget native work.
+        assertFalse(attempts.waitingForResult(first)) // Its delayed notice must not describe the retry.
+        assertTrue(attempts.claim(retry, 30_002))
+        assertFalse(attempts.outstanding(first))
+        assertTrue(attempts.outstanding(retry))
     }
 
     @Test fun `fresh AA during status read wins before native wake submission`() {
@@ -183,8 +188,8 @@ class HctWakeAttemptsTest {
         first.beginOpening()
         first.close()
         val next = HctWakeAttempts(process)
-        assertNull(next.select(other, 100_000))
-        assertNull(next.select(phone, 100_000))
+        assertNull(next.select(other, 10_000))
+        assertNull(next.select(phone, 10_000))
         first.accepted(phone) // Late result from a closed carrier cannot erase the operation.
         assertTrue(next.outstanding(ticket))
         assertTrue(next.beginOpening())
@@ -293,6 +298,197 @@ class HctWakeAttemptsTest {
         attempts.reported(1)
         assertEquals(HctWakePolicy.Result.STATE_CHANGED, attempts.claim(ticket, 2) { false })
         assertFalse(attempts.outstanding(ticket))
+    }
+
+    @Test fun `expired request cannot erase pending state when replacement publication fails`() {
+        val process = HctPendingReconnect()
+        val attempts = HctWakeAttempts(process)
+        val first = attempts.select(phone, 0)!!
+        assertTrue(attempts.claim(first, 1))
+        var chosen = phone
+        assertEquals(HctWakeAttempts.Hold.QUEUE_CLOSED,
+            attempts.selectAndEnqueue(other, 30_001, { chosen = other }, allowReplacePending = true) { false })
+        assertEquals(phone, chosen)
+        assertTrue(attempts.outstanding(first))
+        assertEquals(first, process.current()?.ticket)
+    }
+
+    @Test fun `expired request still requires a ready local state and a fresh OEM claim`() {
+        val attempts = HctWakeAttempts()
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        val retry = attempts.select(other, 30_001, allowReplacePending = true)!!
+        assertEquals(HctWakePolicy.Result.LOCAL_NOT_READY, attempts.claim(retry, 30_002) { false })
+        assertTrue(attempts.outstanding(first))
+        attempts.finishUnsent(retry)
+        assertNotNull(attempts.select(other, 30_003, allowReplacePending = true))
+    }
+
+    @Test fun `expired request survives recreation but explicit selection can replace it`() {
+        val process = HctPendingReconnect()
+        val old = HctWakeAttempts(process)
+        val first = old.select(phone, 0)!!
+        old.claim(first, 1)
+        old.close()
+        val next = HctWakeAttempts(process)
+        var chosen = phone
+        var retry: HctWakeAttempts.Ticket? = null
+        assertNull(next.selectAndEnqueue(other, 30_001, { chosen = other }, allowReplacePending = true) { retry = it; true })
+        assertEquals(other, chosen)
+        assertTrue(next.claim(retry!!, 30_002))
+        old.accepted(phone)
+        assertTrue(next.outstanding(retry!!))
+        next.beginOpening()
+        next.accepted(phone) // Late A must not acknowledge B's request.
+        assertTrue(next.outstanding(retry!!))
+        next.accepted(other)
+        assertFalse(next.outstanding(retry!!))
+    }
+
+    @Test fun `old same phone opening cannot clear explicitly replaced pending record`() {
+        val process = HctPendingReconnect()
+        val old = HctWakeAttempts(process)
+        old.claim(old.select(phone, 0)!!, 1)
+        old.beginOpening()
+        val next = HctWakeAttempts(process)
+        val retry = next.select(phone, 30_001, allowReplacePending = true)!!
+        assertTrue(next.claim(retry, 30_002))
+        old.accepted(phone)
+        assertTrue(next.outstanding(retry))
+    }
+
+    @Test fun `fresh AA or active opening still wins over expired reconnect`() {
+        val attempts = HctWakeAttempts()
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        attempts.reported(30_000)
+        var chosen = phone
+        assertEquals(HctWakeAttempts.Hold.FRESH_AA,
+            attempts.selectAndEnqueue(other, 30_001, { chosen = other }, allowReplacePending = true) { fail("no command"); true })
+        assertEquals(other, chosen)
+        assertTrue(attempts.beginOpening())
+        assertNull(attempts.select(phone, 60_000))
+        assertTrue(attempts.outstanding(first))
+    }
+
+    @Test fun `pending change during status reads cannot be overwritten by stale claim`() {
+        val process = HctPendingReconnect()
+        val attempts = HctWakeAttempts(process)
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        val retry = attempts.select(other, 30_001, allowReplacePending = true)!!
+        // A separately completing handoff resolves the exact old request during Binder reads.
+        process.accepted(process.current(), phone)
+        assertFalse(attempts.claim(retry, 30_002))
+        assertNull(process.current())
+    }
+
+    @Test fun `elapsed time does not grant automatic callers replacement permission`() {
+        val attempts = HctWakeAttempts()
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        assertNull(attempts.select(phone, 300_000))
+        assertNull(attempts.select(other, 300_000))
+        assertNull(attempts.select(other, 30_000, allowReplacePending = true))
+        assertNotNull(attempts.select(other, 30_001, allowReplacePending = true))
+    }
+
+    @Test fun `failure callbacks retain their source identity across dispatch and new selections`() {
+        val attempts = HctWakeAttempts()
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        val delayed = attempts.failureIsCurrent(first)
+        assertTrue(delayed())
+        val retry = attempts.select(other, 30_001, allowReplacePending = true)!!
+        assertFalse(delayed())
+        assertFalse(attempts.failureIsCurrent(first)()) // Old callback generated after selection too.
+        val current = attempts.failureIsCurrent(retry)
+        attempts.finishUnsent(retry) // Local NOT_READY may be delivered after worker finally.
+        assertTrue(current())
+        attempts.reported(30_002)
+        assertFalse(current())
+        val opening = attempts.failureIsCurrent()
+        assertTrue(opening())
+        attempts.close()
+        assertFalse(opening())
+    }
+
+    @Test fun `late AA before replacement IPC cancels unsent work without replaying a command`() {
+        val attempts = HctWakeAttempts()
+        val first = attempts.select(phone, 0)!!
+        attempts.claim(first, 1)
+        val retry = attempts.select(other, 30_001, allowReplacePending = true)!!
+        attempts.reported(30_002)
+        assertFalse(attempts.claim(retry, 30_003))
+        attempts.beginOpening(); attempts.endOpening() // A is rejected by the selected-phone gate.
+        assertTrue(attempts.outstanding(first))
+        assertNotNull(attempts.select(other, 60_001, allowReplacePending = true))
+    }
+
+    @Test fun `opening failure cannot borrow a later AA report generation`() {
+        val attempts = HctWakeAttempts()
+        val admission = HctAdmission()
+        val a = admission.report(listOf(HctAdmission.AA_MARKER), null, null, 1, true)!!
+        attempts.reported(1)
+        attempts.beginOpening()
+        val failedA = attempts.openingFailure { admission.current(a) }!!
+        admission.invalidate()
+        val b = admission.report(listOf(HctAdmission.AA_MARKER), null, null, 2, true)!!
+        attempts.reported(2)
+        // A's catch and Main delivery happen only now, after B has replaced it.
+        assertFalse(failedA())
+        assertNull(attempts.openingFailure { admission.current(a) })
+        assertTrue(admission.current(b))
+    }
+
+    @Test fun `retirement before socket attach keeps the genuine opening failure reportable`() {
+        val attempts = HctWakeAttempts()
+        val admission = HctAdmission()
+        val a = admission.report(listOf(HctAdmission.AA_MARKER), null, null, 1, true)!!
+        attempts.reported(1)
+        attempts.beginOpening()
+        val failedA = attempts.openingFailure { admission.current(a) }!!
+        admission.retireUnused(a)
+        attempts.endOpening()
+        assertFalse(admission.current(a))
+        assertTrue(failedA())
+    }
+
+    @Test fun `failed publication restores old request notification ownership`() {
+        val attempts = HctWakeAttempts()
+        val a = attempts.select(phone, 0)!!
+        attempts.claim(a, 1)
+        val failedA = attempts.failureIsCurrent(a)
+        assertEquals(HctWakeAttempts.Hold.QUEUE_CLOSED,
+            attempts.enqueue(other, 30_001, allowReplacePending = true) { false })
+        assertTrue(failedA())
+        assertTrue(attempts.outstanding(a))
+    }
+
+    @Test fun `automatic selection cannot replace work published by another carrier`() {
+        val process = HctPendingReconnect()
+        val automatic = HctWakeAttempts(process)
+        var queued: HctWakeAttempts.Ticket? = null
+        val otherCarrier = HctWakeAttempts(process)
+        automatic.enqueue(other, 0) {
+            queued = it
+            val a = otherCarrier.select(phone, 0)!!
+            assertTrue(otherCarrier.claim(a, 1))
+            true
+        }
+        // Even after the observation window, this queued automatic action has no replacement grant.
+        assertFalse(automatic.claim(queued!!, 300_000))
+        assertEquals(phone, process.current()!!.ticket.target)
+    }
+
+    @Test fun `same queued selection preserves its already dispatched failure notice`() {
+        val attempts = HctWakeAttempts()
+        val ticket = attempts.select(phone, 0)!!
+        val failure = attempts.failureIsCurrent(ticket)
+        assertEquals(HctWakeAttempts.Hold.DUPLICATE_SELECTION,
+            attempts.selectAndEnqueue(phone, 1, {}, allowReplacePending = true) { fail("coalesced"); true })
+        attempts.finishUnsent(ticket)
+        assertTrue(failure())
     }
 
 }
