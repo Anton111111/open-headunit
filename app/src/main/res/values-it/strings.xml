@@ -1337,4 +1337,6 @@
     <string name="home_pages_hint_got_it">Ho capito</string>
     <string name="home_pages_hint_body_anywhere">Va bene qualsiasi parte vuota della schermata iniziale. Così aggiungi una pagina per i tuoi widget, o ne rimuovi una.</string>
     <string name="audio_settings_reconnect">Impostazioni audio salvate. Riconnetti Android Auto per applicarle.</string>
+    <string name="native_aa_candidate_android_radio_description">Usa il Bluetooth di Android invece di selezionare automaticamente il modulo Bluetooth dell’autoradio. Lascia disattivato per la selezione automatica. Se è attiva un’opzione di connessione tramite modulo, disattivala prima.</string>
+    <string name="external_bt_candidate_transport_description">Forza la connessione tramite il modulo Bluetooth dell’autoradio invece della selezione automatica. Richiede un servizio del modulo compatibile. Lascia disattivato per consentire il Bluetooth di Android se il servizio non risponde; attivarlo impedisce questa alternativa.</string>
 </resources>

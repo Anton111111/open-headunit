@@ -1332,4 +1332,6 @@ Open Headunit предоставляется «как есть» без каки
     <string name="home_pages_hint_got_it">Понятно</string>
     <string name="home_pages_hint_body_anywhere">Подойдёт любая пустая часть главного экрана. Так можно добавить страницу для виджетов или удалить её.</string>
     <string name="audio_settings_reconnect">Настройки звука сохранены. Чтобы применить их, переподключите Android Auto.</string>
+    <string name="native_aa_candidate_android_radio_description">Использовать Bluetooth Android вместо автоматического выбора Bluetooth-модуля головного устройства. Для автоматического выбора оставьте выключенным. Если включена опция подключения через модуль, сначала выключите её.</string>
+    <string name="external_bt_candidate_transport_description">Принудительно подключаться через Bluetooth-модуль головного устройства вместо автоматического выбора. Нужна совместимая служба модуля. Оставьте выключенным, чтобы использовать Bluetooth Android, если служба не отвечает; включение блокирует этот запасной путь.</string>
 </resources>

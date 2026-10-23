@@ -1387,4 +1387,6 @@
     <string name="home_pages_hint_got_it">Percebi</string>
     <string name="home_pages_hint_body_anywhere">Serve qualquer parte vazia do ecrã inicial. É assim que adiciona uma página para os seus widgets, ou remove uma.</string>
     <string name="audio_settings_reconnect">Definições de áudio guardadas. Volte a ligar o Android Auto para as aplicar.</string>
+    <string name="native_aa_candidate_android_radio_description">Usar o Bluetooth do Android em vez de selecionar automaticamente o módulo Bluetooth da unidade. Deixe desativado para seleção automática. Se alguma opção de ligação pelo módulo estiver ativada, desative-a primeiro.</string>
+    <string name="external_bt_candidate_transport_description">Forçar a ligação pelo módulo Bluetooth da unidade em vez da seleção automática. Requer um serviço de módulo compatível. Deixe desativado para permitir o Bluetooth do Android quando o serviço não responder; ativar impede esta alternativa.</string>
 </resources>

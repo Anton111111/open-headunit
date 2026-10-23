@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
+import android.os.SystemClock
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.WppFraming
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.WppHandshakeSession
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.WppMessageType
@@ -161,8 +162,8 @@ object ZbtProbe {
             // Phase 1 — hello. Known-good since 2026-08-11: RequestInit draws InitInfo and a burst of
             // link state. The channel has already sent it.
             onProgress("Asking the Bluetooth module…")
-            val helloDeadline = System.currentTimeMillis() + HELLO_BUDGET_MS
-            while (System.currentTimeMillis() < helloDeadline && keepProbing()) {
+            val helloDeadline = SystemClock.elapsedRealtime() + HELLO_BUDGET_MS
+            while (SystemClock.elapsedRealtime() < helloDeadline && keepProbing()) {
                 val pump = channel.pumpOnce(helloDeadline, keepProbing)
                 if (pump == ZbtByteChannel.Pump.ENDED) break
                 // A gap after the burst means the burst is over; there is nothing else coming until
@@ -195,14 +196,14 @@ object ZbtProbe {
             }
             onProgress("Watching for Android Auto — this takes about a minute and a half…")
 
-            val start = System.currentTimeMillis()
+            val start = SystemClock.elapsedRealtime()
             val deadline = start + WATCH_BUDGET_MS
             var nextSummary = start + SUMMARY_EVERY_MS
             var nextLinkInfo = start + LINK_INFO_EVERY_MS
             var versionRequestAt = 0L
             var rfcommBeforeVersionRequest = 0
 
-            while (System.currentTimeMillis() < deadline && keepProbing()) {
+            while (SystemClock.elapsedRealtime() < deadline && keepProbing()) {
                 // Wake at whichever comes first: the end of the watch, the next summary line, or the
                 // next link-state poll. Between those the pump is simply waiting for the phone.
                 val wakeAt = minOf(deadline, nextSummary, nextLinkInfo)
@@ -210,7 +211,7 @@ object ZbtProbe {
                     AppLog.w("ZbtProbe: the daemon ended the connection during the watch")
                     break
                 }
-                val now = System.currentTimeMillis()
+                val now = SystemClock.elapsedRealtime()
 
                 // Only once there is evidence the channel is live. Writing into a channel with no
                 // Android Auto session behind it would be sending bytes at nothing, and a reply is

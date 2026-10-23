@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.main
 
+import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerDiscovery
 import android.content.Context
 import android.content.Intent
 import android.annotation.SuppressLint
@@ -131,6 +132,7 @@ class HomeFragment : Fragment() {
     private var hasAttemptedSingleUsbAutoConnect = false
     private var activeDialog: androidx.appcompat.app.AlertDialog? = null
     private var actionDialog: android.app.Dialog? = null
+    private var manufacturerPickerLoading = false
     private var driverCountdownTimer: CountDownTimer? = null
     private var homeInfoTicker: Job? = null
     private var gpsListener: LocationListener? = null
@@ -1944,7 +1946,9 @@ class HomeFragment : Fragment() {
                 // A unit whose Bluetooth is an external module has no Android radio to check
                 // and no Android device to pick; AapService arms the module route instead.
                 val route = NativeAaHandshakeManager.wifiButtonRoute(requireContext())
-                if (route == ExternalBtTransportPolicy.WifiButton.MODULE) {
+                if (NativeAaHandshakeManager.transportRoute(requireContext()) == ExternalBtTransportPolicy.Route.HCT) {
+                    showManufacturerPhoneSelector()
+                } else if (route == ExternalBtTransportPolicy.WifiButton.MODULE) {
                     ToastUtils.showToast(requireContext(), getString(R.string.searching_phone), Toast.LENGTH_SHORT)
                     val intent = Intent(requireContext(), AapService::class.java).apply {
                         action = AapService.ACTION_NATIVE_AA_POKE
@@ -2435,6 +2439,7 @@ class HomeFragment : Fragment() {
         val adapter = BluetoothHelper.getBluetoothAdapter(requireContext())
 
         if (adapter == null || !adapter.isEnabled) {
+            if (adapter == null && BluetoothDevicePicker.showManufacturerDevices(requireContext())) return
             ToastUtils.showToast(requireContext(), getString(R.string.bt_not_enabled), Toast.LENGTH_SHORT, force = true)
             return
         }
@@ -2445,6 +2450,7 @@ class HomeFragment : Fragment() {
         val cands = BluetoothHelper.driverCandidates(requireContext(), preferredMac, lastUsedMac)
         val bondedDevices = cands.all.map { it.device }
         if (bondedDevices.isEmpty()) {
+            if (BluetoothDevicePicker.showManufacturerDevices(requireContext(), cands.inventory)) return
             ToastUtils.showToast(requireContext(), "No paired Bluetooth devices found", Toast.LENGTH_SHORT, force = true)
             return
         }
@@ -2726,6 +2732,76 @@ class HomeFragment : Fragment() {
             putExtra(AapService.EXTRA_EXPLICIT_PICK, explicit)
         }
         ContextCompat.startForegroundService(requireContext(), intent)
+    }
+
+    /** Manufacturer-paired phones must go to the HCT carrier, never Android RFCOMM. */
+    private fun showManufacturerPhoneSelector() {
+        if (activeDialog?.isShowing == true || actionDialog?.isShowing == true || manufacturerPickerLoading) return
+        val context = requireContext()
+        val owner = viewLifecycleOwner
+        val originView = view
+        manufacturerPickerLoading = true
+        viewLifecycleOwner.lifecycleScope.launch {
+            val peers = try {
+                withContext(Dispatchers.IO) { BluetoothPeerDiscovery.manufacturerInventory(context).peers }
+            } finally {
+                manufacturerPickerLoading = false
+            }
+            // Inventory reads can finish after Settings opened or another dialog appeared.
+            // Do not restart wireless from a result belonging to a paused/replaced home view.
+            if (!isAdded || view !== originView || !owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
+                activeDialog?.isShowing == true || actionDialog?.isShowing == true) return@launch
+            if (App.provide(context).settings.wifiConnectionMode != WifiLauncherMode.NATIVE ||
+                NativeAaHandshakeManager.transportRoute(context) != ExternalBtTransportPolicy.Route.HCT) return@launch
+            if (peers.isEmpty()) {
+                // An unavailable inventory must not strand a carrier whose OEM binding died.
+                // No MAC means re-arm observation only: HCT requires an explicit paired-phone
+                // selection before it may send a manufacturer reconnect command.
+                ContextCompat.startForegroundService(context,
+                    Intent(context, AapService::class.java).setAction(AapService.ACTION_NATIVE_AA_POKE))
+                // This notice is not a selection prompt and must not hold/cancel fresh handoffs.
+                MaterialAlertDialogBuilder(context, R.style.DarkAlertDialog)
+                    .setTitle(R.string.bt_manufacturer_devices_title)
+                    .setMessage(R.string.hct_aa_no_paired_phone)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .create().also { notice ->
+                        notice.setOnDismissListener { if (activeDialog === notice) activeDialog = null }
+                        activeDialog = notice
+                        notice.show()
+                    }
+                return@launch
+            }
+            var selectionResolved = false
+            fun notifySelection(action: String) {
+                ContextCompat.startForegroundService(context,
+                    Intent(context, AapService::class.java).setAction(action))
+            }
+            fun cancelSelection() {
+                selectionResolved = true
+                notifySelection(AapService.ACTION_NATIVE_AA_CANCEL_POKE)
+            }
+            val builder = MaterialAlertDialogBuilder(context, R.style.DarkAlertDialog)
+                .setTitle(R.string.bt_manufacturer_devices_title)
+                .setNegativeButton(android.R.string.cancel) { _, _ -> cancelSelection() }
+            val labels = peers.map { peer -> peer.name?.let { "$it (${peer.address})" } ?: peer.address }
+            builder.setItems(labels.toTypedArray()) { _, index ->
+                selectionResolved = true
+                val peer = peers[index]
+                connectToNativeDevice(peer.address, peer.name ?: peer.address, emptyList(), explicit = true)
+            }
+            val dialog = builder.create()
+            dialog.setOnShowListener {
+                (activity as? MainActivity)?.dismissSplashImmediately()
+                notifySelection(AapService.ACTION_NATIVE_AA_PROMPT_SHOWN)
+            }
+            dialog.setOnCancelListener { cancelSelection() }
+            dialog.setOnDismissListener {
+                if (activeDialog === dialog) activeDialog = null
+                if (!selectionResolved) notifySelection(AapService.ACTION_NATIVE_AA_PROMPT_DISMISSED)
+            }
+            activeDialog = dialog
+            dialog.show()
+        }
     }
 
     private fun showNearbyDeviceSelector() {

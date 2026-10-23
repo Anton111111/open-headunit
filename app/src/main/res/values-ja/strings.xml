@@ -1337,4 +1337,6 @@
     <string name="home_pages_hint_got_it">OK</string>
     <string name="home_pages_hint_body_anywhere">ホームの空いている部分ならどこでも使えます。ウィジェット用のページを追加したり、削除したりできます。</string>
     <string name="audio_settings_reconnect">オーディオ設定を保存しました。適用するにはAndroid Autoを再接続してください。</string>
+    <string name="native_aa_candidate_android_radio_description">ヘッドユニットの Bluetooth モジュールを自動選択する代わりに、Android の Bluetooth を使用します。自動選択する場合はオフにしてください。モジュール経由の接続オプションがオンの場合は、先にオフにしてください。</string>
+    <string name="external_bt_candidate_transport_description">自動選択の代わりに、ヘッドユニットの Bluetooth モジュール経由の接続を強制します。対応するモジュールサービスが必要です。サービスが応答しないときに Android の Bluetooth を使用できるようにするには、オフにしてください。オンにすると、この代替経路は使えなくなります。</string>
 </resources>

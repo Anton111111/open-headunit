@@ -1340,4 +1340,6 @@
     <string name="home_pages_hint_got_it">Rozumiem</string>
     <string name="home_pages_hint_body_anywhere">Działa każde puste miejsce ekranu głównego. Tak dodasz stronę na widżety albo ją usuniesz.</string>
     <string name="audio_settings_reconnect">Ustawienia dźwięku zapisane. Połącz ponownie Android Auto, aby je zastosować.</string>
+    <string name="native_aa_candidate_android_radio_description">Używaj Bluetooth Androida zamiast automatycznie wybierać moduł Bluetooth jednostki. Pozostaw wyłączone, aby wybierać automatycznie. Jeśli włączono opcję połączenia przez moduł, najpierw ją wyłącz.</string>
+    <string name="external_bt_candidate_transport_description">Wymuś połączenie przez moduł Bluetooth jednostki zamiast automatycznego wyboru. Wymaga zgodnej usługi modułu. Pozostaw wyłączone, aby umożliwić użycie Bluetooth Androida, gdy usługa nie odpowiada; włączenie blokuje tę drogę zastępczą.</string>
 </resources>

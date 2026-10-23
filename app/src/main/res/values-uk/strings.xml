@@ -1336,4 +1336,6 @@
     <string name="home_pages_hint_got_it">Зрозуміло</string>
     <string name="home_pages_hint_body_anywhere">Підійде будь-яка порожня частина головного екрана. Так можна додати сторінку для віджетів або видалити її.</string>
     <string name="audio_settings_reconnect">Налаштування звуку збережено. Щоб застосувати їх, повторно підключіть Android Auto.</string>
+    <string name="native_aa_candidate_android_radio_description">Використовувати Bluetooth Android замість автоматичного вибору Bluetooth-модуля головного пристрою. Для автоматичного вибору залиште вимкненим. Якщо ввімкнено опцію з’єднання через модуль, спочатку вимкніть її.</string>
+    <string name="external_bt_candidate_transport_description">Примусово з’єднуватися через Bluetooth-модуль головного пристрою замість автоматичного вибору. Потрібна сумісна служба модуля. Залиште вимкненим, щоб використовувати Bluetooth Android, коли служба не відповідає; увімкнення блокує цей запасний шлях.</string>
 </resources>

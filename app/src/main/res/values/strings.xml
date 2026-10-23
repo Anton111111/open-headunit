@@ -1,4 +1,14 @@
 <resources>
+    <string name="hct_aa_wake_not_sent">The connection state changed, so the phone reconnect was not started. Try again after the current connection activity finishes.</string>
+    <string name="hct_aa_selection_pending">The previous phone connection is still being handled. This selection has not replaced it.</string>
+    <string name="hct_aa_wake_unconfirmed">The head unit has not completed the Android Auto connection. Select the phone again to retry, or reconnect it from its Bluetooth settings. Open Headunit is still listening for Android Auto.</string>
+    <string name="hct_aa_no_paired_phone">No saved phone was found in the head unit’s Bluetooth list. Pair your phone using the head unit’s Bluetooth app, then select it here.</string>
+    <string name="hct_aa_waiting_existing_bluetooth">Bluetooth is already connected. Waiting for the head unit to open Android Auto; the existing connection will not be restarted.</string>
+    <string name="hct_aa_bluetooth_busy">Bluetooth is busy. Android Auto will not restart an active call or connection.</string>
+    <string name="hct_aa_handoff_unavailable">The head unit has not provided an Android Auto connection. Open Headunit has stopped this attempt.</string>
+    <string name="bt_manufacturer_devices_title">Devices paired through the head unit</string>
+    <string name="bt_manufacturer_devices_message">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nAndroid does not list them as paired. They cannot be selected for Android Bluetooth triggers or phone wake-up here. This saved list does not tell us whether they are connected or whether an Android Auto connection is available.</string>
+    <string name="bt_manufacturer_devices_android_unavailable">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nThe Android Bluetooth list is currently unavailable. This saved list alone cannot be used for Android Bluetooth triggers or phone wake-up. It does not tell us whether these devices are connected or whether an Android Auto connection is available.</string>
     <string name="app_name">Open Headunit</string>
     <string name="menu">Menu</string>
     <string name="settings">Settings</string>
@@ -1498,4 +1508,6 @@
     <string name="wifi_scan_other_help">If FYT startup is unavailable, use the method below to start Shizuku.</string>
     <string name="wifi_scan_fyt_restore_scans">Wi-Fi search settings could not be restored, so wireless ADB was left open. Keep Shizuku running and allow Open Headunit, then try again. You can also use the Wi-Fi recovery action above.</string>
     <string name="wifi_scan_legacy_limit">Renewal on Android 8–10\n• Request a pause on connection, then every five minutes while connected.\n• Android may enable searches between requests. The interval limits repeated cleanup work; it cannot keep every scan stopped.\n\nIf enabling searches fails, keep Shizuku running and retry. Rebooting resets this temporary control.</string>
+    <string name="native_aa_candidate_android_radio_description">Use Android Bluetooth instead of automatically selecting the head unit Bluetooth module. Leave off for automatic selection. If a module connection option is enabled, turn it off first.</string>
+    <string name="external_bt_candidate_transport_description">Force connection through the head unit Bluetooth module instead of automatic selection. This requires a compatible module service. Leave off to allow Android Bluetooth when that service does not respond; forcing this option prevents that fallback.</string>
 </resources>

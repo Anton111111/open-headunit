@@ -1382,4 +1382,6 @@
     <string name="home_pages_hint_got_it">Mengerti</string>
     <string name="home_pages_hint_body_anywhere">Bagian kosong mana pun di beranda bisa dipakai. Begitulah cara menambahkan halaman untuk widget, atau menghapusnya.</string>
     <string name="audio_settings_reconnect">Pengaturan audio disimpan. Hubungkan ulang Android Auto untuk menerapkannya.</string>
+    <string name="native_aa_candidate_android_radio_description">Gunakan Bluetooth Android alih-alih memilih modul Bluetooth head unit secara otomatis. Biarkan nonaktif untuk pemilihan otomatis. Jika opsi koneksi melalui modul aktif, nonaktifkan terlebih dahulu.</string>
+    <string name="external_bt_candidate_transport_description">Paksa koneksi melalui modul Bluetooth head unit alih-alih pemilihan otomatis. Memerlukan layanan modul yang kompatibel. Biarkan nonaktif agar Bluetooth Android dapat digunakan saat layanan tidak merespons; mengaktifkannya mencegah jalur cadangan ini.</string>
 </resources>

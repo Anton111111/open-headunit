@@ -1,4 +1,5 @@
 <resources>
+    <string name="hct_aa_wake_not_sent">연결 상태가 바뀌어 휴대전화 재연결을 시작하지 않았습니다. 현재 연결 처리가 끝난 뒤 다시 시도해 주세요.</string>
     <string name="aaudio_output">AAudio 출력(실험적 기능)</string>
     <string name="aaudio_output_description">AAudio로 저지연 미디어 출력을 시도합니다. AAudio를 사용할 수 없으면 AudioTrack을 자동으로 사용합니다.</string>
     <string name="app_name">Open Headunit</string>
@@ -1411,4 +1412,6 @@
     <string name="wifi_scan_other_help">FYT 시작을 사용할 수 없는 기기는 아래 방법으로 Shizuku를 시작하세요.</string>
     <string name="wifi_scan_fyt_restore_scans">Wi-Fi 탐색 설정을 복구하지 못해 무선 ADB를 유지했습니다. Shizuku를 실행하고 Open Headunit을 허용한 뒤 다시 시도하세요. 위쪽의 Wi-Fi 설정 복구 기능도 이용할 수 있습니다.</string>
     <string name="wifi_scan_legacy_limit">Android 8~10의 재요청\n• 연결 시 한 번, 연결 중에는 5분마다 일시 중지를 요청합니다.\n• Android가 그 사이 탐색을 다시 켤 수 있습니다. 반복 처리 부담을 줄이기 위한 간격이며, 모든 탐색을 계속 막지는 못합니다.\n\n탐색을 다시 켜지 못하면 Shizuku를 실행한 상태에서 재시도하세요. 기기를 재부팅하면 이 임시 제어는 초기화됩니다.</string>
+    <string name="native_aa_candidate_android_radio_description">헤드유닛의 Bluetooth 모듈을 자동 선택하는 대신 Android Bluetooth를 사용합니다. 자동 선택을 사용하려면 꺼 두세요. 모듈을 통한 연결 옵션이 켜져 있다면 먼저 꺼 주세요.</string>
+    <string name="external_bt_candidate_transport_description">자동 선택 대신 헤드유닛의 Bluetooth 모듈을 통해 연결하도록 강제합니다. 호환되는 모듈 서비스가 필요합니다. 서비스가 응답하지 않을 때 Android Bluetooth로 연결하려면 꺼 두세요. 이 옵션을 켜면 Android Bluetooth로 전환하지 않습니다.</string>
 </resources>
