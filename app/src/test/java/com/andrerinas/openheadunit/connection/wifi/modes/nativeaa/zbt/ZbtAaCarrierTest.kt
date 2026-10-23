@@ -2,8 +2,12 @@ package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
 import android.os.SystemClock
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.HandshakeLink
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeHandoffPolicy
 import com.andrerinas.openheadunit.utils.AppLog
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -84,7 +88,7 @@ class ZbtAaCarrierTest {
         serve = serve, isRunning = { running }, isFinishedForSession = { false },
         isSessionConnected = { connected }, isSettling = { false },
         isHandshakeInFlight = { busy }, mayServeHandshake = { canServe },
-        onPhoneEvidence = { evidence++ }, openChannel = factory,
+        onPhoneEvidence = { evidence++ }, openChannel = { _, control, rfcomm -> factory(control, rfcomm) },
         now = { wall }, elapsedNow = { elapsed }
     )
 
@@ -394,4 +398,190 @@ class ZbtAaCarrierTest {
         assertEquals(1, evidence)
     }
 
+    private fun openingCarrier(
+        factory: (ZbtChannelOpening, (Int, ByteArray) -> Unit, (ByteArray) -> Unit) -> ZbtByteChannel
+    ) = ZbtAaCarrier(
+        serve = { fail("a retired opening must not reach the handshake") },
+        isRunning = { running }, isFinishedForSession = { false },
+        isSessionConnected = { connected }, isSettling = { false },
+        isHandshakeInFlight = { busy }, mayServeHandshake = { canServe },
+        onPhoneEvidence = { evidence++ }, openChannel = factory,
+        now = { wall }, elapsedNow = { elapsed }
+    )
+
+    @Test fun `close reaches a connecting socket before channel publication`() = runBlocking {
+        val sink = ByteArrayOutputStream()
+        var connects = 0
+        var closes = 0
+        lateinit var carrier: ZbtAaCarrier
+        carrier = openingCarrier { opening, control, rfcomm ->
+            ZbtByteChannel.open(
+                onControlFrame = control, onRfcommData = rfcomm, opening = opening,
+                socketFactory = { object : java.net.Socket() {
+                    override fun connect(endpoint: java.net.SocketAddress, timeout: Int) {
+                        connects++
+                        carrier.close()
+                    }
+                    override fun setSoTimeout(timeout: Int) = Unit
+                    override fun getInputStream(): InputStream = java.io.ByteArrayInputStream(byteArrayOf())
+                    override fun getOutputStream(): java.io.OutputStream = sink
+                    override fun close() { closes++ }
+                } }
+            )
+        }
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(1, connects)
+        assertTrue(closes > 0)
+        assertEquals(0, sink.size())
+        assertFalse(ZbtDaemonReachability.carrierLive())
+        assertFalse(ZbtDaemonReachability.carrierWantsClient())
+    }
+
+    @Test fun `late returned channel is closed without serving a retired carrier`() = runBlocking {
+        var closes = 0
+        lateinit var carrier: ZbtAaCarrier
+        carrier = openingCarrier { _, control, rfcomm ->
+            val result = ZbtByteChannel(
+                java.io.ByteArrayInputStream(byteArrayOf()), ByteArrayOutputStream(), control, rfcomm,
+                onClose = java.io.Closeable { closes++ }
+            )
+            carrier.close()
+            result
+        }
+        carrier.run()
+        assertEquals(1, closes)
+        assertFalse(ZbtDaemonReachability.carrierLive())
+        assertFalse(ZbtDaemonReachability.carrierWantsClient())
+    }
+
+    @Test fun `closing before run does not preempt an observer or open a socket`() = runBlocking {
+        val observer = ZbtDaemonReachability.observerOpening { true }!!
+        var closed = false
+        observer.attach(java.io.Closeable { closed = true })
+        try {
+            val carrier = openingCarrier { _, _, _ -> error("retired carrier opened") }
+            carrier.close()
+            carrier.run()
+            assertFalse(closed)
+            assertFalse(ZbtDaemonReachability.carrierWantsClient())
+        } finally {
+            observer.close()
+            ZbtDaemonReachability.releaseObserver(observer)
+        }
+    }
+
+    @Test fun `close releases a refused opening claim without waiting for retry backoff`() = runBlocking {
+        var opens = 0
+        val carrier = openingCarrier { _, _, _ ->
+            opens++
+            throw java.io.IOException("refused")
+        }
+        val job = launch { carrier.run() }
+        yield()
+        assertEquals(1, opens)
+        assertTrue(ZbtDaemonReachability.carrierWantsClient())
+        carrier.close()
+        assertFalse(ZbtDaemonReachability.carrierWantsClient())
+        withTimeout(1_000) { job.join() }
+        assertEquals(1, opens)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Recovery evidence across reopen. The manager clears its consecutive-failure count on
+    // onPhoneEvidence and counts a WPP-silent attempt as one failure; that contract is wired here
+    // to NativeHandoffPolicy's real limit, around the real carrier and byte channel.
+    // ---------------------------------------------------------------------------------------------
+
+    private class Limited(var failures: Int = 0, var served: Int = 0, var opens: Int = 0)
+
+    /** [steps] gives each open's frames, by 1-based open number; the run ends after [opens] opens. */
+    private fun limitedRun(
+        opens: Int,
+        state: Limited = Limited(),
+        beforeOpen: (Int) -> Unit = {},
+        steps: (Int) -> List<Step>
+    ): Limited = runBlocking {
+        val carrier = ZbtAaCarrier(
+            // A phone that never answers WPP: every served attempt ends as one counted failure.
+            serve = { link ->
+                state.served++; state.failures++; link.close()
+                if (state.opens >= opens) running = false
+            },
+            isRunning = { running }, isFinishedForSession = { false },
+            isSessionConnected = { connected }, isSettling = { false },
+            isHandshakeInFlight = { busy },
+            mayServeHandshake = { NativeHandoffPolicy.shouldServeHandshake(state.failures) },
+            onPhoneEvidence = { evidence++; state.failures = 0 },
+            openChannel = { _, control, rfcomm ->
+                state.opens++
+                check(state.opens <= opens) { "test exceeded its reopen budget" }
+                beforeOpen(state.opens)
+                advance(ZbtAttemptPolicy.MIN_ATTEMPT_INTERVAL_MS + 1)
+                open(steps(state.opens), control, rfcomm, eof = { if (state.opens >= opens) running = false })
+            },
+            now = { wall }, elapsedNow = { elapsed }
+        )
+        carrier.run()
+        state
+    }
+
+    private val sameReport = listOf(Step(frame(ZbtMessages.INIT_INFO)), Step(presence()))
+
+    @Test fun `same connected report on every reopen cannot lift the failure limit`() {
+        val run = limitedRun(opens = 8) { sameReport }
+        assertEquals(8, run.opens)
+        assertEquals(NativeHandoffPolicy.MAX_CONSECUTIVE_HANDSHAKE_FAILURES, run.served)
+        assertEquals("only the first report is an arrival", 1, evidence)
+    }
+
+    @Test fun `explicit down then up after the limit is a fresh chance`() {
+        val run = limitedRun(opens = 7) { n ->
+            if (n < 7) sameReport
+            else listOf(Step(frame(ZbtMessages.INIT_INFO)), Step(presence(false)), Step(presence()))
+        }
+        assertEquals(NativeHandoffPolicy.MAX_CONSECUTIVE_HANDSHAKE_FAILURES + 1, run.served)
+        assertEquals(2, evidence)
+    }
+
+    @Test fun `phone bytes on a reopened channel are a fresh chance`() {
+        val run = limitedRun(opens = 7) { n ->
+            if (n < 7) sameReport
+            else sameReport + Step(frame(ZbtMessages.RFCOMM_DATA, byteArrayOf(1)))
+        }
+        assertEquals(NativeHandoffPolicy.MAX_CONSECUTIVE_HANDSHAKE_FAILURES + 1, run.served)
+        assertEquals(2, evidence)
+    }
+
+    @Test fun `a different phone address on a reopened channel is a fresh chance`() {
+        val run = limitedRun(opens = 7) { n ->
+            if (n < 7) sameReport
+            else listOf(Step(frame(ZbtMessages.INIT_INFO)), Step(frame(ZbtMessages.LINK_INFO2, peer(name = "AABBCCDDEE02"))))
+        }
+        assertEquals(NativeHandoffPolicy.MAX_CONSECUTIVE_HANDSHAKE_FAILURES + 1, run.served)
+        assertEquals(2, evidence)
+    }
+
+    @Test fun `manual retry still lifts the limit without new link evidence`() {
+        val state = Limited()
+        // The manager's manual poke clears the count directly; the carrier must not need an edge.
+        val run = limitedRun(opens = 7, state = state, beforeOpen = { n -> if (n == 7) state.failures = 0 }) { sameReport }
+        assertEquals(NativeHandoffPolicy.MAX_CONSECUTIVE_HANDSHAKE_FAILURES + 1, run.served)
+        assertEquals(1, evidence)
+    }
+
+    @Test fun `a retired channel's down report cannot turn the next reopen into an arrival`() {
+        var firstControl: ((Int, ByteArray) -> Unit)? = null
+        var opens = 0
+        val carrier = carrier({ control, rfcomm ->
+            opens++
+            advance(ZbtAttemptPolicy.MIN_ATTEMPT_INTERVAL_MS + 1)
+            if (opens == 1) firstControl = control
+            else firstControl!!(ZbtMessages.LINK_INFO2, peer(false))
+            open(sameReport, control, rfcomm, eof = { if (opens >= 2) running = false })
+        }, { link -> if (opens >= 2) running = false; link.close() })
+        runBlocking { carrier.run() }
+        assertEquals(2, opens)
+        assertEquals(1, evidence)
+    }
 }

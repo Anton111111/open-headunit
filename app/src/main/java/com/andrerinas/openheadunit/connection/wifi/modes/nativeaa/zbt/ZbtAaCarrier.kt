@@ -7,7 +7,8 @@ import com.andrerinas.openheadunit.utils.AppLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
@@ -46,15 +47,17 @@ class ZbtAaCarrier(
     private val onModuleAddress: (String) -> Unit = {},
     private val retryDelayMs: () -> Long = { ZbtAttemptPolicy.MIN_ATTEMPT_INTERVAL_MS },
     private val openChannel: (
+        opening: ZbtChannelOpening,
         onControl: (Int, ByteArray) -> Unit,
         onRfcomm: (ByteArray) -> Unit
-    ) -> ZbtByteChannel = { onControl, onRfcomm ->
+    ) -> ZbtByteChannel = { opening, onControl, onRfcomm ->
         ZbtByteChannel.open(
             enableType = ZbtMessages.ENABLE_TYPE_ANDROID_AUTO,
             onControlFrame = onControl,
             onRfcommData = onRfcomm,
             // The handshake reads these bytes through the link, so they must be kept.
             bufferRfcommData = true,
+            opening = opening,
         )
     },
     private val now: () -> Long = { SystemClock.elapsedRealtime() },
@@ -78,6 +81,11 @@ class ZbtAaCarrier(
     @Volatile
     private var channel: ZbtByteChannel? = null
 
+    /** Published before connect, so close reaches sockets not yet returned by openChannel. */
+    private var openingChannel: ZbtChannelOpening? = null
+    private var carrierClaim: ZbtDaemonReachability.CarrierClaim? = null
+    private val stoppedSignal = CompletableDeferred<Unit>()
+
     /** Each open starts unknown; a callback from an old socket cannot populate the new one. */
     private class ChannelObservation {
         @Volatile var presence: ZbtAttemptPolicy.Presence? = null
@@ -92,6 +100,22 @@ class ZbtAaCarrier(
     @Volatile
     private var observation: ChannelObservation? = null
     private val observationLock = Any()
+
+    /**
+     * The last link state reported on any of this carrier's channels, kept across reopen.
+     *
+     * Used only to decide whether a report is *new* recovery evidence for [onPhoneEvidence], which
+     * clears the manager's consecutive-failure count. Attempt admission and wakes still read the
+     * channel's own [ChannelObservation], which starts unknown on every open. If this history were
+     * per channel too, the first "still connected" report after each reopen would count as an
+     * arrival, and a phone that never answers would never reach the failure limit.
+     *
+     * An explicit is_connect=0 followed by a connected report, a different phone address, and the
+     * first phone bytes on a channel remain evidence. A reconnect that happens entirely while no
+     * channel is open is not seen; a manual retry clears the count in that case.
+     * Guarded by [observationLock]; only the current observation's callbacks write it.
+     */
+    private var reportedPresence: ZbtAttemptPolicy.Presence? = null
 
     @Volatile
     private var lastWakeAt = 0L
@@ -119,26 +143,58 @@ class ZbtAaCarrier(
      */
     suspend fun run() {
         carrierJob = currentCoroutineContext()[Job]
+        if (!keepRunning()) return
         var refusals = 0
         var firstRefusalAt = 0L
         var warnedNoDaemon = false
         var lastQuietReminder = 0L
         // Claimed across the reopen loop, not just an open channel: a probe that took the daemon's
         // one client slot first must give way to a real connection rather than outlast it.
-        ZbtDaemonReachability.setCarrierWantsClient(true)
+        val claim = ZbtDaemonReachability.claimCarrier()
+        val ownsRun = synchronized(observationLock) {
+            if (stopped) false else { carrierClaim = claim; true }
+        }
+        if (!ownsRun) { claim.close(); return }
+        AppLog.i("NativeAA: [ZBT] carrier owner=${claim.id} registered an OHU client claim.")
         try {
             while (keepRunning()) {
                 val observed = ChannelObservation()
-                synchronized(observationLock) { observation = observed }
+                val opening = ZbtChannelOpening { keepRunning() }
+                val admitted = synchronized(observationLock) {
+                    if (!keepRunning()) false else {
+                        observation = observed
+                        openingChannel = opening
+                        true
+                    }
+                }
+                if (!admitted) break
+                AppLog.i("NativeAA: [ZBT] opening owner=${claim.id}, open=${opening.id}.")
                 val opened = try {
-                    openChannel(
+                    val candidate = openChannel(
+                        opening,
                         { id, body -> onControl(observed, id, body) },
                         { bytes -> onRfcomm(observed, bytes) },
-                    ).also {
-                        channel = it
+                    )
+                    val published = synchronized(observationLock) {
+                        if (!keepRunning() || observation !== observed || openingChannel !== opening) false else {
+                            channel = candidate
+                            openingChannel = null
+                            true
+                        }
                     }
+                    if (!published) {
+                        candidate.close()
+                        throw ZbtChannelOpening.Cancelled()
+                    }
+                    candidate
+                } catch (_: ZbtChannelOpening.Cancelled) {
+                    retireObservation(observed)
+                    AppLog.i("NativeAA: [ZBT] opening retired owner=${claim.id}, open=${opening.id}, initAdmitted=${opening.initWasAdmitted()}.")
+                    break
                 } catch (e: IOException) {
+                    opening.close()
                     retireObservation(observed, discardWake = false)
+                    if (!keepRunning()) break
                     // The one live test of whether this unit is really on this route. Detection says the
                     // Bluetooth is an external module; it cannot say the module is reachable this way,
                     // and one whole vendor family in that class is not.
@@ -160,32 +216,45 @@ class ZbtAaCarrier(
                         AppLog.i("NativeAA: [ZBT] still nothing listening on port ${ZbtByteChannel.PORT}.")
                     }
                     AppLog.i("NativeAA: [ZBT] daemon refused, retrying in ${wait / 1000}s (${e.message})")
-                    delay(wait)
+                    // close() wakes this wait immediately; an old refusal backoff must not
+                    // keep the daemon claim alive while a new connection is being armed.
+                    withTimeoutOrNull(wait) { stoppedSignal.await() }
                     continue
+                } finally {
+                    synchronized(observationLock) {
+                        if (openingChannel === opening) openingChannel = null
+                    }
+                    // On success channel owns this socket. On a failed/cancelled open close reaches
+                    // any resource a custom opener installed before failing.
+                    if (channel == null) opening.close()
                 }
 
                 refusals = 0
                 warnedNoDaemon = false
-                // The daemon serves one client, and from here that client is us. Held from the socket,
-                // because holding the socket is what holds the slot.
-                ZbtDaemonReachability.setCarrierLive(true)
+                // An OHU socket is open. Keep our diagnostics from dialing beside it; this does not
+                // prove that the server is processing this client or that the phone has working HFP.
+                claim.setLive(true)
                 AppLog.i(
                     "NativeAA: [ZBT] channel open to the Bluetooth module daemon on " +
-                        "${ZbtByteChannel.HOST}:${ZbtByteChannel.PORT} — asking it to carry Android Auto"
+                        "${ZbtByteChannel.HOST}:${ZbtByteChannel.PORT}, owner=${claim.id}, open=${opening.id} — asking it to carry Android Auto"
                 )
                 try {
                     watchAndServe(opened, observed)
                 } finally {
                     val reason = opened.closeReason
-                    ZbtDaemonReachability.setCarrierLive(false)
+                    claim.setLive(false)
                     retireObservation(observed)
                     opened.close()
                     channel = null
-                    AppLog.i("NativeAA: [ZBT] channel ended: ${reason ?: "closed"}")
+                    AppLog.i("NativeAA: [ZBT] channel ended owner=${claim.id}, open=${opening.id}: ${reason ?: "closed"}")
                 }
             }
         } finally {
-            ZbtDaemonReachability.setCarrierWantsClient(false)
+            claim.close()
+            synchronized(observationLock) {
+                if (carrierClaim === claim) carrierClaim = null
+            }
+            AppLog.i("NativeAA: [ZBT] carrier owner=${claim.id} released its OHU client claim.")
         }
         AppLog.i(
             "NativeAA: [ZBT] carrier stopped after $attempts handshake attempt(s), " +
@@ -364,12 +433,16 @@ class ZbtAaCarrier(
 
     /** Ends the carrier and unblocks whatever is reading. Safe from any thread. */
     override fun close() {
-        synchronized(observationLock) {
+        val closing = synchronized(observationLock) {
             stopped = true
             pendingWakeAt = null
+            observation = null
+            Triple(openingChannel, channel, carrierClaim).also { carrierClaim = null }
         }
-        runCatching { channel?.close() }
-        observation?.let { retireObservation(it) }
+        closing.first?.close()
+        runCatching { closing.second?.close() }
+        closing.third?.close()
+        stoppedSignal.complete(Unit)
     }
 
     private fun retireObservation(observed: ChannelObservation, discardWake: Boolean = true) {
@@ -402,8 +475,11 @@ class ZbtAaCarrier(
             }
             return@synchronized
         }
-        val previous = observed.presence
+        // Channel-local state starts unknown on every open; evidence compares with the carrier's
+        // history so a reopen's repeat of the same connected report is not a fresh arrival.
+        val previous = reportedPresence
         observed.presence = read
+        reportedPresence = read
         // is_connect is field 3 in both LinkInfo variants. A missing field or the
         // separate HFP scalar is not evidence that this RFCOMM link disconnected.
         // Permit a fresh wake only after the daemon explicitly reports is_connect=0.

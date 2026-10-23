@@ -7,6 +7,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.WppMessageType
 import com.andrerinas.openheadunit.aap.protocol.proto.Wireless
 import com.andrerinas.openheadunit.utils.AppLog
 import java.io.IOException
+import java.net.Socket
 
 /**
  * Asks a head unit's external Bluetooth module whether it will carry Android Auto for us, and
@@ -81,11 +82,14 @@ object ZbtProbe {
      * it, so it is off unless the caller asks, and the log says plainly when it goes out.
      *
      * [keepGoing] is polled between frames; return false to end the run early.
+     *
+     * [socketFactory] is the socket boundary, replaced only by tests.
      */
     fun run(
         askModuleToReconnect: Boolean = false,
         onProgress: (String) -> Unit = {},
-        keepGoing: () -> Boolean = { true }
+        keepGoing: () -> Boolean = { true },
+        socketFactory: () -> Socket = { Socket() }
     ): String {
         AppLog.i("ZbtProbe: starting — external Bluetooth module probe")
 
@@ -113,6 +117,20 @@ object ZbtProbe {
         var phoneConnected = false
         var phase = "hello"
 
+        // Registration is atomic with a new carrier claim. That claim also closes an observer
+        // already connecting/reading, rather than waiting for the next three-second read timeout.
+        // Every write after init (reconnect, version, link poll) is admitted against it again.
+        val opening = ZbtDaemonReachability.observerOpening(keepProbing)
+            ?: return busyCarrierVerdict()
+        // A carrier can claim and release the slot while this reader is waking from close.
+        // The opening remembers that cancellation after the global claim has disappeared.
+        // Keep this outside keepProbing: wasCancelled itself consults that callback.
+        fun stoppedVerdict(): String? {
+            val running = keepProbing()
+            return if (opening.wasCancelled() || !running) {
+                if (yielded) carrierTookOverVerdict() else "Probe stopped."
+            } else null
+        }
         val channel = try {
             ZbtByteChannel.open(
                 enableType = ZbtMessages.ENABLE_TYPE_ANDROID_AUTO,
@@ -147,9 +165,17 @@ object ZbtProbe {
                 // Everything this probe learns comes through the callbacks above; it never reads the
                 // stream. Buffering for a reader that never arrives would end a healthy channel as
                 // soon as the phone sent a few hundred kilobytes.
-                bufferRfcommData = false
+                bufferRfcommData = false,
+                opening = opening,
+                socketFactory = socketFactory
             )
-        } catch (e: IOException) {
+        } catch (e: Exception) {
+            val stopped = stoppedVerdict() // Before our own cleanup marks the opening closed.
+            opening.close()
+            ZbtDaemonReachability.releaseObserver(opening)
+            if (stopped != null || e is ZbtChannelOpening.Cancelled) {
+                return stopped ?: "Probe stopped."
+            }
             AppLog.i("ZbtProbe: ${e.message}")
             // A failure that is not a connect failure got past the connect, so something is there.
             return notConnectedVerdict(
@@ -165,6 +191,7 @@ object ZbtProbe {
             val helloDeadline = SystemClock.elapsedRealtime() + HELLO_BUDGET_MS
             while (SystemClock.elapsedRealtime() < helloDeadline && keepProbing()) {
                 val pump = channel.pumpOnce(helloDeadline, keepProbing)
+                stoppedVerdict()?.let { return it }
                 if (pump == ZbtByteChannel.Pump.ENDED) break
                 // A gap after the burst means the burst is over; there is nothing else coming until
                 // something happens on the module.
@@ -172,7 +199,7 @@ object ZbtProbe {
                 if (helloFrames > 0) onProgress("Module answered — $helloFrames message(s)…")
             }
 
-            if (yielded) return carrierTookOverVerdict()
+            stoppedVerdict()?.let { return it }
 
             if (helloFrames == 0) {
                 if (ZbtDaemonReachability.carrierLive()) return busyCarrierVerdict()
@@ -192,6 +219,9 @@ object ZbtProbe {
             if (askModuleToReconnect) {
                 AppLog.i("ZbtProbe: asking the module to reconnect for Android Auto (RequestReconn, enable_type=2)")
                 onProgress("Asking the module to reconnect…")
+                // keepProbing() above can be stale: a carrier may have claimed the daemon since,
+                // with this socket's close still in flight. Re-check at the write, outside any lock.
+                opening.admitCommand()
                 channel.requestReconnect(ZbtMessages.ENABLE_TYPE_ANDROID_AUTO)
             }
             onProgress("Watching for Android Auto — this takes about a minute and a half…")
@@ -207,7 +237,9 @@ object ZbtProbe {
                 // Wake at whichever comes first: the end of the watch, the next summary line, or the
                 // next link-state poll. Between those the pump is simply waiting for the phone.
                 val wakeAt = minOf(deadline, nextSummary, nextLinkInfo)
-                if (channel.pumpOnce(wakeAt, keepProbing) == ZbtByteChannel.Pump.ENDED) {
+                val pump = channel.pumpOnce(wakeAt, keepProbing)
+                stoppedVerdict()?.let { return it }
+                if (pump == ZbtByteChannel.Pump.ENDED) {
                     AppLog.w("ZbtProbe: the daemon ended the connection during the watch")
                     break
                 }
@@ -219,6 +251,7 @@ object ZbtProbe {
                 if (versionRequestAt == 0L && (rfcommFrames > 0 || linkedType != null)) {
                     rfcommBeforeVersionRequest = rfcommFrames
                     versionRequestAt = now
+                    opening.admitCommand()
                     sendVersionRequest(channel)
                     onProgress("Android Auto is on the module — asking it to talk to us…")
                 }
@@ -240,11 +273,12 @@ object ZbtProbe {
 
                 if (now >= nextLinkInfo) {
                     nextLinkInfo = now + LINK_INFO_EVERY_MS
+                    opening.admitCommand()
                     channel.requestLinkInfo()
                 }
             }
 
-            if (yielded) return carrierTookOverVerdict()
+            stoppedVerdict()?.let { return it }
 
             return verdict(
                 rfcommFrames = rfcommFrames,
@@ -257,6 +291,10 @@ object ZbtProbe {
                 askedToReconnect = askModuleToReconnect
             )
         } catch (e: Exception) {
+            // A refused admission is a yield, never an exchange failure, even if the claim that
+            // caused it has already been released by the time it is looked at here.
+            stoppedVerdict()?.let { return it }
+            if (e is ZbtChannelOpening.Cancelled) return "Probe stopped."
             AppLog.e("ZbtProbe: the exchange failed: ${e.javaClass.simpleName}: ${e.message}")
             return "Connected to the module but the exchange failed: ${e.javaClass.simpleName}."
         } finally {
@@ -264,6 +302,8 @@ object ZbtProbe {
             // the channel ended on its own is the more informative of the two.
             val ended = channel.closeReason
             channel.close()
+            opening.close()
+            ZbtDaemonReachability.releaseObserver(opening)
             AppLog.i(
                 "ZbtProbe: finished — RFCOMM $rfcommFrames message(s)/$rfcommBytes bytes, " +
                     "control $controlFrames message(s)" + (ended?.let { ", channel ended: $it" } ?: "")

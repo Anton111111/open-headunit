@@ -78,9 +78,19 @@ object ZbtAttemptPolicy {
      * The module re-sends link state on a timer — roughly every twelve seconds on the unit this was
      * measured on — so acting on every message would start an attempt every twelve seconds forever.
      * Only the edge is interesting.
+     *
+     * A usable report naming a different phone than a usable [previous] is also an arrival: that is
+     * a new peer, not a heartbeat. Only both addresses being present can show that; a report
+     * without one (legacy LinkInfo) never counts as a different phone.
      */
     fun isArrival(previous: Presence?, current: Presence): Boolean =
-        current.usable && previous?.usable != true
+        current.usable && (previous?.usable != true || isDifferentPhone(previous.phoneMac, current.phoneMac))
+
+    private fun isDifferentPhone(before: String?, now: String?): Boolean {
+        if (before == null || now == null) return false
+        fun canonical(mac: String) = mac.filter { it.isLetterOrDigit() }.uppercase()
+        return canonical(before) != canonical(now)
+    }
 
     /**
      * Whether an attempt may start now.

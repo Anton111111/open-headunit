@@ -9,6 +9,9 @@ import org.junit.Assert.*
 import org.mockito.Mockito.mockStatic
 
 class ZbtDiscoveryWaitTest {
+    private val claims = mutableListOf<ZbtDaemonReachability.CarrierClaim>()
+    private fun claim() = ZbtDaemonReachability.claimCarrier().also { claims.add(it) }
+
     private lateinit var clock: org.mockito.MockedStatic<SystemClock>
     private var elapsedMs = 1_000L
     private val decision = ZbtDiscoveryPolicy.Decision(ZbtDiscoveryPolicy.Mode.IDENTITY, "QF")
@@ -21,16 +24,15 @@ class ZbtDiscoveryWaitTest {
     @After fun cleanup() { reset(); clock.close() }
     private fun reset() {
         ZbtDaemonReachability.forget()
-        ZbtDaemonReachability.setCarrierLive(false)
-        ZbtDaemonReachability.setCarrierWantsClient(false)
+        claims.forEach { it.close() }
+        claims.clear()
         ZbtDiscovery.beginArming()
     }
 
     @Test fun stuckLiveOrReopeningCarrierTimesOutWithoutProbingOrPoisoningIdentity() = runBlocking {
         for (live in listOf(false, true)) {
             reset()
-            ZbtDaemonReachability.setCarrierLive(live)
-            ZbtDaemonReachability.setCarrierWantsClient(!live)
+            val owner = claim().also { it.setLive(live) }
             val measurement = ZbtDiscovery.measurement(decision)
             val startedAt = elapsedMs
             val result = measurement.awaitResolution(
@@ -43,8 +45,7 @@ class ZbtDiscoveryWaitTest {
             assertEquals(false, measurement.snapshot().reachable)
             assertNull(measurement.cached())
             // Repeated routing/UI reads stay on fallback even if the old carrier finally exits.
-            ZbtDaemonReachability.setCarrierLive(false)
-            ZbtDaemonReachability.setCarrierWantsClient(false)
+            owner.close()
             assertEquals(false, measurement.snapshot().reachable)
             ZbtDiscovery.beginArming()
             assertNull(measurement.snapshot().reachable)
@@ -52,13 +53,13 @@ class ZbtDiscoveryWaitTest {
     }
 
     @Test fun carrierReleaseBeforeDeadlineAllowsIdentityAndNeverUsesLegacyCache() = runBlocking {
-        ZbtDaemonReachability.setCarrierWantsClient(true)
+        val owner = claim()
         ZbtDaemonReachability.record(true)
         val measurement = ZbtDiscovery.measurement(decision)
         var probes = 0
         val result = measurement.awaitResolution(
             keepTrying = { true },
-            pause = { elapsedMs += it; ZbtDaemonReachability.setCarrierWantsClient(false) },
+            pause = { elapsedMs += it; owner.close() },
             probe = {
                 probes++
                 ZbtDaemonReachability.resolve(requireIdentity = true,
@@ -84,7 +85,7 @@ class ZbtDiscoveryWaitTest {
     }
 
     @Test fun cancelledArmingDoesNotProbeOrChooseFallback() = runBlocking {
-        ZbtDaemonReachability.setCarrierWantsClient(true)
+        val owner = claim()
         var active = true
         val measurement = ZbtDiscovery.measurement(decision)
         val result = measurement.awaitResolution(
