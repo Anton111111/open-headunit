@@ -143,13 +143,17 @@ class CustomizationFragment : Fragment() {
      * instead of turning on and showing a placeholder with no way to know why.
      */
     private val locationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        // GPS needs precise location. From Android 12 a request for it alone is ignored, so both
+        // are asked; approximate only leaves the dialog able to ask for precise next time.
+        val granted = result[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
         settings.showHomeSpeed = granted
         switchShowSpeed?.isChecked = granted
-        val canAskAgain = !granted && shouldShowRequestPermissionRationale(
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        )
+        val canAskAgain = !granted && (
+            result[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            )
         when (SpeedPermissionPolicy.afterRequest(granted, canAskAgain)) {
             // The switch was already on, so its listener does not run again to redraw the preview.
             SpeedPermissionPolicy.Outcome.SHOW_SPEED -> updatePreviewScale(settings.homeButtonScalePercent)
@@ -363,7 +367,12 @@ class CustomizationFragment : Fragment() {
         switchShowSpeed?.isChecked = settings.showHomeSpeed
         switchShowSpeed?.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked && !hasLocationPermission()) {
-                locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
                 return@setOnCheckedChangeListener
             }
             settings.showHomeSpeed = isChecked
