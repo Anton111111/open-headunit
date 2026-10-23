@@ -937,6 +937,7 @@
     <string name="ui_scale_description">पूरे ऐप में टेक्स्ट, मेन्यू और लेआउट के हिस्सों का आकार बदलता है। छोटे टेक्स्ट वाली हाई-रिज़ॉल्यूशन स्क्रीन के लिए सुझाया गया।</string>
     <string name="ui_scale_home">होम स्क्रीन</string>
     <string name="ui_scale_settings">सेटिंग्स स्क्रीन</string>
+    <string name="ui_scale_exit_dialog">बाहर निकलने का डायलॉग</string>
     <string name="category_vehicle">वाहन</string>
     <string name="category_head_unit">हेड यूनिट</string>
     <string name="vehicle_display_name_label">डिसप्ले नाम</string>

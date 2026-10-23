@@ -466,6 +466,7 @@
     <string name="vehicle_info_settings">车辆信息</string>
     <string name="vehicle_info_settings_description">自定义您的车辆在手机上的显示方式。</string>
     <string name="ui_scale">文字与显示大小</string>
+    <string name="ui_scale_exit_dialog">退出对话框</string>
     <string name="ui_scale_description">缩放整个应用中的文字、菜单和布局元素。建议在文字偏小的高分辨率屏幕上使用。</string>
     <string name="ui_scale_home">主屏幕</string>
     <string name="ui_scale_settings">设置屏幕</string>

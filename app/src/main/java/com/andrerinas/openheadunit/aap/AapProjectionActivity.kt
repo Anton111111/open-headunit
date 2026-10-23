@@ -1649,6 +1649,19 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun showExitDialog() {
+        // Copy the live configuration: a blank one resets the font scale on API 17-23.
+        val exitScale = settings.uiScaleExitDialogPercent / 100f
+        val dialogContext = if (exitScale != 1f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            androidx.appcompat.view.ContextThemeWrapper(this, theme).apply {
+                val configuration = android.content.res.Configuration(this@AapProjectionActivity.resources.configuration)
+                configuration.densityDpi = (this@AapProjectionActivity.resources.displayMetrics.densityDpi * exitScale).toInt()
+                applyOverrideConfiguration(configuration)
+            }
+        } else {
+            this
+        }
+        val builder = MaterialAlertDialogBuilder(dialogContext, R.style.DarkAlertDialog)
+        val dialogInflater = android.view.LayoutInflater.from(builder.context)
         val options = ProjectionExitMenuPolicy.options(
             ProjectionExitMenuPolicy.Input(
                 isHomeApp = CarLauncherManager.isDefaultLauncher(this),
@@ -1668,7 +1681,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             override fun getItem(position: Int): Any = options[position]
             override fun getItemId(position: Int): Long = position.toLong()
             override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                val view = convertView ?: layoutInflater.inflate(R.layout.dialog_exit_item, parent, false)
+                val view = convertView ?: dialogInflater.inflate(R.layout.dialog_exit_item, parent, false)
                 val option = options[position]
                 val iconView = view.findViewById<android.widget.ImageView>(R.id.icon)
                 val textView = view.findViewById<android.widget.TextView>(R.id.text)
@@ -1681,7 +1694,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             }
         }
 
-        val dialog = MaterialAlertDialogBuilder(this, R.style.DarkAlertDialog)
+        val dialog = builder
             .setTitle(R.string.exit_dialog_title)
             .setAdapter(adapter) { _, which ->
                 val selected = options[which]
@@ -1708,7 +1721,18 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 }
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+
+        val mode = activityFullscreenOverride ?: settings.fullscreenMode
+        val dialogWindow = dialog.window
+        // Let the window inherit immersive flags before it takes focus, avoiding a flash of bars.
+        dialogWindow?.addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        dialogWindow?.let { SystemUI.applySystemBars(it, mode) }
+        dialog.show()
+        dialogWindow?.let {
+            SystemUI.applySystemBars(it, mode)
+            it.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        }
 
         if (settings.hudMirroring) {
             val root = dialog.window?.findViewById<View>(android.R.id.content) ?: dialog.window?.decorView
