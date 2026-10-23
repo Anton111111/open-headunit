@@ -11,7 +11,6 @@ import kotlinx.coroutines.delay
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.util.concurrent.atomic.AtomicLong
 import com.andrerinas.openheadunit.utils.BluetoothHelper
 
 /**
@@ -59,6 +58,7 @@ class ZbtAaCarrier(
         )
     },
     private val now: () -> Long = { SystemClock.elapsedRealtime() },
+    private val elapsedNow: () -> Long = { SystemClock.elapsedRealtime() },
 ) : ExternalModuleCarrier {
 
     companion object {
@@ -83,7 +83,10 @@ class ZbtAaCarrier(
         @Volatile var presence: ZbtAttemptPolicy.Presence? = null
         @Volatile var everSawPresence = false
         @Volatile var moduleMac: String? = null
-        var sawRfcomm = false
+        // Progress belongs to this channel/link, not just the wake queued at receipt.
+        // Only an explicit link disconnect or channel replacement releases this guard.
+        @Volatile var sawRfcomm = false
+        var wakeSuppressionLogged = false
     }
 
     @Volatile
@@ -93,8 +96,8 @@ class ZbtAaCarrier(
     @Volatile
     private var lastWakeAt = 0L
 
-    /** When a wake was asked for and not yet sent, or 0. */
-    private val wakeRequestedAt = AtomicLong(0L)
+    /** Guarded with channel observations so a late caller cannot resurrect a consumed wake. */
+    private var pendingWakeAt: Long? = null
 
     @Volatile
     private var stopped = false
@@ -135,7 +138,7 @@ class ZbtAaCarrier(
                         channel = it
                     }
                 } catch (e: IOException) {
-                    retireObservation(observed)
+                    retireObservation(observed, discardWake = false)
                     // The one live test of whether this unit is really on this route. Detection says the
                     // Bluetooth is an external module; it cannot say the module is reachable this way,
                     // and one whole vendor family in that class is not.
@@ -195,9 +198,9 @@ class ZbtAaCarrier(
         var nextSummary = now() + SUMMARY_EVERY_MS
         var nextPoll = now() + LINK_POLL_EVERY_MS
         val openedAt = now()
+        val openedElapsedAt = elapsedNow()
 
         while (keepRunning() && !open.isFinished) {
-            sendPendingWake(open)
             val wake = minOf(nextSummary, nextPoll)
             val pumped = open.pumpOnce(wake) { keepRunning() }
             if (pumped == ZbtByteChannel.Pump.ENDED || !keepRunning() || open.isFinished) return
@@ -212,6 +215,10 @@ class ZbtAaCarrier(
                 onModuleAddress(namedNow)
             }
 
+            // InitInfo is not the end of the opening burst. Read the link reports before
+            // spending a queued cold-start wake; a connected phone needs a handshake, not
+            // another Bluetooth reconnect. Quiet daemons retain a bounded fallback.
+            sendPendingWake(open, observed, openedElapsedAt)
             if (keepRunning() && !open.isFinished && shouldAttemptNow(openedAt, observed) && !isSessionConnected()) {
                 serveOnce(open, observed, openForMs = now() - openedAt)
                 return
@@ -230,6 +237,9 @@ class ZbtAaCarrier(
     }
 
     private suspend fun serveOnce(open: ZbtByteChannel, observed: ChannelObservation, openForMs: Long) {
+        // The handshake consumes the request that led here. It must not replay after a
+        // failed exchange on another socket, even if the module never reported a peer.
+        synchronized(observationLock) { pendingWakeAt = null }
         val seen = observed.presence
         attempts++
         // Which of the two reasons fired is only ever visible in a reporter's exported log, and it
@@ -240,6 +250,8 @@ class ZbtAaCarrier(
                     (seen.phoneName?.let { " ($it)" } ?: "") +
                     " — starting handshake attempt #$attempts over the module."
             )
+        } else if (observed.sawRfcomm) {
+            AppLog.i("NativeAA: [ZBT] phone data is buffered — starting handshake attempt #$attempts without waiting for a link-state report.")
         } else {
             AppLog.i(
                 "NativeAA: [ZBT] the module has said nothing about a phone in ${openForMs / 1000}s " +
@@ -271,7 +283,7 @@ class ZbtAaCarrier(
 
     private fun shouldAttemptNow(openedAt: Long, observed: ChannelObservation): Boolean =
         ZbtAttemptPolicy.shouldAttempt(
-        phonePresent = observed.presence?.usable == true,
+        phonePresent = observed.presence?.usable == true || observed.sawRfcomm,
         attemptInFlight = isHandshakeInFlight(),
         sessionConnected = isSessionConnected(),
         sinceLastAttemptMs = lastAttemptEndedAt.takeIf { it != 0L }?.let { now() - it },
@@ -287,58 +299,64 @@ class ZbtAaCarrier(
      *
      * @param userAsked the WiFi button, whose wake is held through a busy link rather than dropped
      */
-    override fun requestWake(userAsked: Boolean) {
-        val open = channel
-        if (open == null || open.isFinished) {
-            // A cold bring-up asks before the channel exists, and nothing else would ask again.
-            wakeRequestedAt.set(now())
-            AppLog.i("NativeAA: [ZBT] wake requested before the module channel is open; it goes out once it is.")
-            return
+    override fun requestWake(userAsked: Boolean) = synchronized(observationLock) {
+        if (stopped || isSessionConnected() || observation?.presence?.usable == true) return@synchronized
+        val observed = observation
+        if (observed?.sawRfcomm == true) {
+            if (!observed.wakeSuppressionLogged) {
+                observed.wakeSuppressionLogged = true
+                AppLog.i("NativeAA: [ZBT] reconnect request ignored: phone data already received on this link; waiting for handshake.")
+            }
+            return@synchronized
         }
         val sendable = ZbtWakePolicy.shouldSend(
             lastSentAtMs = lastWakeAt,
-            nowMs = now(),
+            nowMs = elapsedNow(),
             settling = isSettling(),
             handshakeInFlight = isHandshakeInFlight(),
-            sessionConnected = isSessionConnected()
+            sessionConnected = false
         )
-        if (!sendable && !userAsked) return
-        wakeRequestedAt.set(now())
-        if (!sendable) {
-            AppLog.i("NativeAA: [ZBT] wake held: a handshake or handoff is running, or one went out under ${ZbtWakePolicy.MIN_INTERVAL_MS / 1000}s ago.")
+        if (!sendable && !userAsked) return@synchronized
+        // Repeated clicks coalesce without extending the original request's lifetime.
+        // Creation, progress and retirement share this lock; an older caller cannot
+        // insert a request after a phone arrival has already consumed it.
+        if (pendingWakeAt == null) {
+            pendingWakeAt = elapsedNow()
+            AppLog.i("NativeAA: [ZBT] reconnect request queued (${if (userAsked) "user" else "automatic"}); waiting for link observation and handoff readiness.")
         }
     }
 
-    /** Sends a recorded wake from the carrier's own thread, when [ZbtWakePolicy.pending] allows. */
-    private fun sendPendingWake(open: ZbtByteChannel) {
-        val requestedAt = wakeRequestedAt.get()
-        if (requestedAt == 0L) return
-        val verdict = ZbtWakePolicy.pending(
-            requestedAtMs = requestedAt,
-            lastSentAtMs = lastWakeAt,
-            nowMs = now(),
-            settling = isSettling(),
-            handshakeInFlight = isHandshakeInFlight(),
-            sessionConnected = isSessionConnected()
-        )
-        if (verdict == ZbtWakePolicy.Pending.HOLD) return
-        // A newer request arriving meanwhile keeps its own stamp and is judged on the next pass.
-        if (!wakeRequestedAt.compareAndSet(requestedAt, 0L)) return
-        when (verdict) {
-            ZbtWakePolicy.Pending.SESSION_UP -> {
-                AppLog.i("NativeAA: [ZBT] a session came up, so the pending wake is not sent.")
-                return
+    private fun sendPendingWake(open: ZbtByteChannel, observed: ChannelObservation, openedAt: Long) {
+        val send = synchronized(observationLock) {
+            if (stopped || observation !== observed || open.isFinished) return@synchronized false
+            val requestedAt = pendingWakeAt ?: return@synchronized false
+            val current = elapsedNow()
+            val verdict = ZbtWakePolicy.pending(
+                requestedAtMs = requestedAt,
+                lastSentAtMs = lastWakeAt,
+                nowMs = current,
+                settling = isSettling(),
+                handshakeInFlight = isHandshakeInFlight(),
+                sessionConnected = isSessionConnected(),
+                channelOpenForMs = current - openedAt,
+                phonePresent = observed.presence?.usable == true
+            )
+            if (verdict == ZbtWakePolicy.Pending.HOLD) return@synchronized false
+            pendingWakeAt = null
+            if (verdict != ZbtWakePolicy.Pending.SEND) {
+                AppLog.i("NativeAA: [ZBT] queued reconnect cancelled: $verdict, age=${current - requestedAt}ms.")
+                return@synchronized false
             }
-            ZbtWakePolicy.Pending.EXPIRED -> {
-                AppLog.i("NativeAA: [ZBT] a wake could not go out within ${ZbtWakePolicy.PENDING_MAX_MS / 1000}s, so it is dropped.")
-                return
-            }
-            else -> Unit
+            // Admission is serialized with close and callbacks, but socket I/O is not
+            // performed under their lock. A write already admitted may finish while
+            // close runs. Reserve the interval here, including a failed/partial write.
+            lastWakeAt = current
+            true
         }
+        if (!send) return
         try {
             open.requestReconnect(ZbtMessages.ENABLE_TYPE_ANDROID_AUTO)
-            lastWakeAt = now()
-            AppLog.i("NativeAA: [ZBT] asked the module to connect Android Auto (RequestReconn).")
+            AppLog.i("NativeAA: [ZBT] asked the module to connect Android Auto after observing its initial state.")
         } catch (e: Exception) {
             AppLog.w("NativeAA: [ZBT] could not ask the module to connect: ${e.javaClass.simpleName}: ${e.message}")
         }
@@ -346,15 +364,19 @@ class ZbtAaCarrier(
 
     /** Ends the carrier and unblocks whatever is reading. Safe from any thread. */
     override fun close() {
-        stopped = true
+        synchronized(observationLock) {
+            stopped = true
+            pendingWakeAt = null
+        }
         runCatching { channel?.close() }
         observation?.let { retireObservation(it) }
     }
 
-    private fun retireObservation(observed: ChannelObservation) {
+    private fun retireObservation(observed: ChannelObservation, discardWake: Boolean = true) {
         synchronized(observationLock) {
             if (observation === observed) {
                 observation = null
+                if (discardWake) pendingWakeAt = null
             }
         }
     }
@@ -374,11 +396,25 @@ class ZbtAaCarrier(
             "NativeAA: [ZBT] [RX] id=0x${Integer.toHexString(msgId)} ${ZbtMessages.describe(msgId, body)}"
         )
         val fields = ZbtMessages.parse(body)
-        val read = ZbtAttemptPolicy.readPresence(msgId, fields) ?: return@synchronized
+        val read = ZbtAttemptPolicy.readPresence(msgId, fields) ?: run {
+            if (msgId == ZbtMessages.LINK_INFO || msgId == ZbtMessages.LINK_INFO2) {
+                AppLog.d("NativeAA: [ZBT] incomplete link state ignored; preserving the current observation.")
+            }
+            return@synchronized
+        }
         val previous = observed.presence
         observed.presence = read
+        // is_connect is field 3 in both LinkInfo variants. A missing field or the
+        // separate HFP scalar is not evidence that this RFCOMM link disconnected.
+        // Permit a fresh wake only after the daemon explicitly reports is_connect=0.
+        if (fields?.int(3) == 0 && observed.sawRfcomm) {
+            observed.sawRfcomm = false
+            observed.wakeSuppressionLogged = false
+            AppLog.i("NativeAA: [ZBT] module reported link disconnected after phone data; a new reconnect request is allowed.")
+        }
         if (read.usable) {
             observed.everSawPresence = true
+            cancelPendingWake("module reports an Android Auto phone connected")
         }
         if (ZbtAttemptPolicy.isArrival(previous, read)) {
             AppLog.i(
@@ -396,6 +432,9 @@ class ZbtAaCarrier(
     private fun onRfcomm(observed: ChannelObservation, bytes: ByteArray) = synchronized(observationLock) {
         if (observation !== observed || stopped) return@synchronized
         if (bytes.isEmpty()) return@synchronized
+        // Real phone bytes are progress even on modules without LinkInfo. Keep them
+        // buffered for the handshake and consume any wake queued before that progress.
+        cancelPendingWake("received phone data (${bytes.size} bytes)")
         rfcommFrames++
         if (!observed.sawRfcomm) {
             observed.sawRfcomm = true
@@ -405,6 +444,13 @@ class ZbtAaCarrier(
             )
             onPhoneEvidence()
         }
+    }
+
+    /** Called under observationLock; log only when there was work to cancel. */
+    private fun cancelPendingWake(reason: String) {
+        val requestedAt = pendingWakeAt ?: return
+        pendingWakeAt = null
+        AppLog.i("NativeAA: [ZBT] queued reconnect cancelled: $reason, age=${elapsedNow() - requestedAt}ms.")
     }
 
     private fun logSummary(openedAt: Long, observed: ChannelObservation) {

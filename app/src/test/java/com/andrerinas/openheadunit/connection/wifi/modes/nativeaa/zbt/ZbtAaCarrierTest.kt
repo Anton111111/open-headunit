@@ -25,6 +25,7 @@ class ZbtAaCarrierTest {
     private var busy = false
     private var evidence = 0
     private var canServe = true
+    private val logs = mutableListOf<String>()
     private val sinks = mutableListOf<ByteArrayOutputStream>()
 
     @Before fun setup() {
@@ -33,7 +34,7 @@ class ZbtAaCarrierTest {
         ZbtDaemonReachability.forget()
         logger = AppLog.LOGGER
         AppLog.LOGGER = object : AppLog.Logger {
-            override fun println(priority: Int, tag: String, msg: String) = Unit
+            override fun println(priority: Int, tag: String, msg: String) { logs.add(msg) }
         }
     }
 
@@ -84,7 +85,7 @@ class ZbtAaCarrierTest {
         isSessionConnected = { connected }, isSettling = { false },
         isHandshakeInFlight = { busy }, mayServeHandshake = { canServe },
         onPhoneEvidence = { evidence++ }, openChannel = factory,
-        now = { wall }
+        now = { wall }, elapsedNow = { elapsed }
     )
 
     private fun ids(sink: ByteArrayOutputStream): List<Int> {
@@ -100,7 +101,160 @@ class ZbtAaCarrierTest {
     }
     private fun wakeCount() = sinks.sumOf { ids(it).count { id -> id == ZbtMessages.REQUEST_RECONN } }
 
-    @Test fun `reopened channel ignores old peer state and callbacks`() = runBlocking {
+    @Test fun `connected phone consumes startup wake and starts handshake without waiting`() = runBlocking {
+        val startedAt = elapsed
+        var served = false
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.INIT_INFO)), Step(presence())
+        ), control, rfcomm) }, { link ->
+            served = true
+            assertEquals(startedAt, elapsed)
+            assertEquals("AA:BB:CC:DD:EE:01", link.peerAddress)
+            running = false
+            link.close()
+        })
+        carrier.requestWake()
+        carrier.run()
+        assertTrue(served)
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `disconnected report followed by connected report does not spend an early wake`() = runBlocking {
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence(false)), Step(presence()) { advance(1_000) }
+        ), control, rfcomm) })
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(0, wakeCount())
+        assertEquals(1, evidence)
+    }
+
+    @Test fun `silent module gets one coalesced wake after the observation budget`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.INIT_INFO)),
+            Step { advance(7_999); assertEquals(0, wakeCount()); carrier.requestWake(true) },
+            Step { advance(1); assertEquals(0, wakeCount()) },
+            Step { advance(20_000); assertEquals(1, wakeCount()) }
+        ), control, rfcomm) })
+        carrier.requestWake()
+        carrier.requestWake(true)
+        carrier.run()
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `HFP zero and a pairing scalar do not bypass the opening wait`() = runBlocking {
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.HFP_LINK_INFO, byteArrayOf(0x10, 0))),
+            Step(frame(ZbtMessages.LINK_INFO, byteArrayOf(0x10, 1, 0x18, 0, 0x20, 1)))
+        ), control, rfcomm) }, { fail("no connected phone or blind deadline") })
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `anonymous module retains the blind handshake fallback`() = runBlocking {
+        var served = false
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.INIT_INFO)), Step { advance(8_000) },
+            Step { advance(2_001) }
+        ), control, rfcomm) }, { link ->
+            served = true
+            assertNull(link.peerAddress)
+            running = false
+            link.close()
+        })
+        carrier.requestWake()
+        carrier.run()
+        assertTrue(served)
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `real phone bytes cancel a queued wake without losing handshake data`() = runBlocking {
+        val payload = byteArrayOf(1, 2, 3)
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.RFCOMM_DATA, payload))
+        ), control, rfcomm) }, { link ->
+            assertEquals("phone bytes should be served immediately", 100_000L, elapsed)
+            assertEquals(1, link.input.read())
+            assertEquals(2, link.input.read())
+            assertEquals(3, link.input.read())
+            running = false
+            link.close()
+        })
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `phone bytes also suppress later automatic and user wake requests`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.RFCOMM_DATA, byteArrayOf(1))),
+            Step { advance(8_001); carrier.requestWake() },
+            Step { advance(16_000); repeat(20) { carrier.requestWake(true) } }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(0, wakeCount())
+        assertEquals(1, logs.count { "reconnect request ignored: phone data" in it })
+    }
+
+    @Test fun `explicit disconnect releases phone data wake suppression`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.RFCOMM_DATA, byteArrayOf(1))),
+            Step(presence(false)) { advance(8_001) },
+            Step { carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `incomplete link report and HFP zero do not erase phone data evidence`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.RFCOMM_DATA, byteArrayOf(1))),
+            Step(frame(ZbtMessages.LINK_INFO, byteArrayOf(0x10, 1))),
+            Step(frame(ZbtMessages.HFP_LINK_INFO, byteArrayOf(0x10, 0))),
+            Step { advance(8_001); carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `new channel does not inherit phone data suppression`() = runBlocking {
+        canServe = false
+        var opens = 0
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm ->
+            if (++opens == 1) {
+                open(listOf(Step(frame(ZbtMessages.RFCOMM_DATA, byteArrayOf(1)))),
+                    control, rfcomm, eof = {})
+            } else {
+                open(listOf(Step { advance(8_001); carrier.requestWake(true) }), control, rfcomm)
+            }
+        })
+        carrier.run()
+        assertEquals(2, opens)
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `empty phone frame does not suppress a new wake`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.RFCOMM_DATA)),
+            Step { advance(8_001); carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `reopened channel ignores old peer callbacks and old queued wakes`() = runBlocking {
         var opens = 0
         var oldControl: ((Int, ByteArray) -> Unit)? = null
         var oldRfcomm: ((ByteArray) -> Unit)? = null
@@ -121,7 +275,14 @@ class ZbtAaCarrierTest {
             }
         }, { link ->
             peers.add(link.peerAddress)
-            if (opens > 1) running = false
+            if (opens == 1) {
+                // A real disconnect during setup can allow a user wake to queue. The old
+                // socket's pending work must not transfer to the next phone/channel.
+                oldControl!!(ZbtMessages.LINK_INFO2, peer(false))
+                busy = true
+                carrier.requestWake(true)
+                busy = false
+            } else running = false
             link.close()
         })
         carrier.run()
@@ -130,12 +291,107 @@ class ZbtAaCarrierTest {
         assertEquals(0, wakeCount())
     }
 
-    @Test fun `closing during a read prevents another handshake`() = runBlocking {
+    @Test fun `a new request after a real disconnect can still wake the phone`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence()),
+            Step(presence(false)) { advance(9_000); carrier.requestWake(true) },
+            Step { carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(1, wakeCount())
+    }
+
+    @Test fun `projection that becomes live during observation consumes the pending wake`() = runBlocking {
+        val carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.INIT_INFO)), Step { advance(9_000); connected = true }
+        ), control, rfcomm) }, { fail("projection is already live") })
+        carrier.requestWake()
+        carrier.run()
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `closing during observation drops queued work`() = runBlocking {
         lateinit var carrier: ZbtAaCarrier
         carrier = carrier({ control, rfcomm -> open(listOf(
             Step(frame(ZbtMessages.INIT_INFO)), Step { advance(11_000); carrier.close() }
         ), control, rfcomm) }, { fail("closed carrier") })
+        carrier.requestWake()
+        carrier.run()
+        carrier.requestWake(true)
+        assertEquals(0, wakeCount())
+    }
+
+    @Test fun `repeated clicks cannot refresh an expired pending wake`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(frame(ZbtMessages.INIT_INFO)),
+            Step { busy = true; advance(59_999); carrier.requestWake(true) },
+            Step { advance(1); busy = false }, Step { advance(1) }
+        ), control, rfcomm) })
+        carrier.requestWake()
         carrier.run()
         assertEquals(0, wakeCount())
     }
+
+    @Test fun `incomplete legacy link report preserves a connected peer before its first bytes`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence()),
+            Step(frame(ZbtMessages.LINK_INFO, byteArrayOf(0x10, 1))),
+            Step { advance(8_001); carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(0, wakeCount())
+        assertEquals(1, evidence)
+    }
+
+    @Test fun `missing or invalid is_connect in LinkInfo2 cannot create a reconnect opportunity`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence()),
+            Step(frame(ZbtMessages.LINK_INFO2, byteArrayOf(0x10, 1))),
+            Step(frame(ZbtMessages.LINK_INFO2, byteArrayOf(0x10, 1, 0x18, 2))),
+            Step { advance(8_001); carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(0, wakeCount())
+        assertEquals(1, evidence)
+    }
+
+    @Test fun `legacy connected report without type preserves peer but explicit down still releases it`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence()),
+            Step(frame(ZbtMessages.LINK_INFO, byteArrayOf(0x18, 1))),
+            Step { advance(8_001); carrier.requestWake(true) },
+            Step(frame(ZbtMessages.LINK_INFO, byteArrayOf(0x18, 0))) { assertEquals(0, wakeCount()) },
+            Step { carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(1, wakeCount())
+        assertEquals(1, evidence)
+    }
+
+    @Test fun `LinkInfo2 missing type preserves peer while a valid non AA type keeps its behavior`() = runBlocking {
+        canServe = false
+        lateinit var carrier: ZbtAaCarrier
+        carrier = carrier({ control, rfcomm -> open(listOf(
+            Step(presence()),
+            Step(frame(ZbtMessages.LINK_INFO2, byteArrayOf(0x18, 1))),
+            Step { advance(8_001); carrier.requestWake(true) },
+            Step(frame(ZbtMessages.LINK_INFO2, byteArrayOf(0x10, 3, 0x18, 1))) { assertEquals(0, wakeCount()) },
+            Step { carrier.requestWake(true) }
+        ), control, rfcomm) })
+        carrier.run()
+        assertEquals(1, wakeCount())
+        assertEquals(1, evidence)
+    }
+
 }

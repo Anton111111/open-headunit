@@ -48,7 +48,13 @@ object ZbtAttemptPolicy {
      * than open-coded at the call site.
      */
     fun readPresence(msgId: Int, fields: ZbtMessages.Record?): Presence? {
-        if (fields == null) return null
+        if (fields == null || msgId !in setOf(ZbtMessages.LINK_INFO, ZbtMessages.LINK_INFO2)) return null
+        // The vendor LinkInfo descriptors require is_connect (field 3) and phone_type (2).
+        // Missing fields are unknown, not a down edge. An explicit is_connect=0 can still
+        // release the current link even if its phone type was omitted.
+        val connected = fields.int(3)
+        if (connected != 0 && connected != 1) return null
+        if (connected == 1 && fields.int(2) == null) return null
         return when (msgId) {
             // { 1 id, 2 phone_type, 3 is_connect, 4 is_pair, 5 local_mac_address }
             ZbtMessages.LINK_INFO -> Presence(
