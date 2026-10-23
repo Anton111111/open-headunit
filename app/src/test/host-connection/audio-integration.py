@@ -18,7 +18,8 @@ cache = Path.home() / ".gradle/caches/modules-2/files-2.1"
 
 
 def jar(group, artifact, version="*"):
-    matches = sorted((cache / group / artifact).glob(version + "/*/*.jar"))
+    matches = sorted(path for path in (cache / group / artifact).glob(version + "/*/*.jar")
+                     if path.name == artifact + "-" + path.parent.parent.name + ".jar")
     if not matches:
         raise SystemExit("Missing cached compiler dependency; run :app:testGithubDebugUnitTest first")
     return matches[0]
@@ -33,6 +34,10 @@ compiler = [jar("org.jetbrains.kotlin", "kotlin-compiler-embeddable", kotlin), s
             jar("org.jetbrains.kotlin", "kotlin-reflect", "1.6.10"),
             jar("org.jetbrains.kotlin", "kotlin-script-runtime", kotlin), coroutines, annotations]
 sources = [repo / line for line in (audio_base / "sources.txt").read_text().splitlines() if line]
+# observeConnectionState owns scan-control activation. Compile its real route policy and
+# strategy enum; only the Android launcher and Shizuku side effects are doubled below.
+sources += [repo / "app/src/main/java/com/andrerinas/openheadunit/connection/wifi/scan/ScanControlPolicy.kt",
+            repo / "app/src/main/java/com/andrerinas/openheadunit/connection/wifi/modes/nativeaa/NativeStrategy.kt"]
 overrides = {p.name for p in (base / "audio-stubs").glob("*.kt")}
 sources += [p for p in sorted((audio_base / "stubs").glob("*.kt")) if p.name not in overrides]
 sources += sorted((base / "audio-stubs").glob("*.kt"))
@@ -58,6 +63,7 @@ def member_block(declaration, source=service):
 
 
 comm = (repo / "app/src/main/java/com/andrerinas/openheadunit/connection/CommManager.kt").read_text()
+transport = (repo / "app/src/main/java/com/andrerinas/openheadunit/aap/AapTransport.kt").read_text()
 
 lifecycle_fixture = output / "LifecycleFixture.kt"
 lifecycle = (base / "LifecycleFixture.kt").read_text()
@@ -70,6 +76,8 @@ for marker, declaration, source in [
     ("DISCONNECTED_STATE", "class Disconnected(", comm),
     ("REACHED_SSL", "private fun reachedSsl()", comm),
     ("QUIT", "private fun transportedQuited(", comm),
+    ("MANAGER_FOCUS_SUPPRESSION", "fun setProjectionVideoFocusSuppressed(", comm),
+    ("TRANSPORT_FOCUS_SUPPRESSION", "internal fun setProjectionVideoFocusSuppressed(", transport),
     ("OBSERVER", "private fun observeConnectionState()", service),
 ]:
     lifecycle = lifecycle.replace("// PRODUCTION " + marker + "\n",

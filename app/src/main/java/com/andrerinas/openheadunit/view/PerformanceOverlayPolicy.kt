@@ -3,10 +3,20 @@ package com.andrerinas.openheadunit.view
 import java.util.Locale
 
 /** One overlay line each. Declaration order is the print order; the bit is the stored flag. */
-enum class PerformanceOverlayField(val bit: Int) { FPS(1), CPU(2), TEMP(4), FRAME(8) }
+enum class PerformanceOverlayField(val bit: Int) {
+    FPS(1), CPU(2), TEMP(4), FRAME(8), BATTERY(16), MEMORY(32), WIFI(64)
+}
 
 /** What the sampler must read for the chosen lines. */
-enum class PerformanceOverlaySource { CPU, TEMP }
+enum class PerformanceOverlaySource { CPU, TEMP, BATTERY, MEMORY, WIFI }
+
+/** The head unit's own state. Null is a value that could not be read and prints as dashes. */
+data class DeviceReadings(
+    val batteryPercent: Int? = null,
+    val pluggedIn: Boolean = false,
+    val freeMemoryMb: Long? = null,
+    val stationRssiDbm: Int? = null
+)
 
 /**
  * The decidable half of the projection performance overlay: which lines print, what they say, what
@@ -30,7 +40,8 @@ object PerformanceOverlayPolicy {
         totalCpu: Int?,
         loadAverage: Double?,
         tempC: Int?,
-        frameAgeMs: Long?
+        frameAgeMs: Long?,
+        device: DeviceReadings = DeviceReadings()
     ): String = PerformanceOverlayField.values().filter { it in fields }.joinToString("\n") { field ->
         when (field) {
             PerformanceOverlayField.FPS -> "FPS: ${fps?.toString() ?: "--"}"
@@ -43,6 +54,13 @@ object PerformanceOverlayPolicy {
             }
             PerformanceOverlayField.TEMP -> "Temp: ${tempC?.let { "${it}C" } ?: "--"}"
             PerformanceOverlayField.FRAME -> "Frame: ${frameAgeMs?.let { "${it}ms" } ?: "--"}"
+            PerformanceOverlayField.BATTERY -> {
+                val level = device.batteryPercent?.let { "$it%" } ?: "--"
+                // The mark says the car is feeding the unit, which a full battery alone does not.
+                if (device.batteryPercent != null && device.pluggedIn) "Batt: $level +" else "Batt: $level"
+            }
+            PerformanceOverlayField.MEMORY -> "Mem: ${device.freeMemoryMb?.let { "${it}MB" } ?: "--"}"
+            PerformanceOverlayField.WIFI -> "RSSI: ${device.stationRssiDbm?.let { "${it}dBm" } ?: "--"}"
         }
     }
 
@@ -50,6 +68,9 @@ object PerformanceOverlayPolicy {
         val sources = mutableSetOf<PerformanceOverlaySource>()
         if (PerformanceOverlayField.CPU in fields) sources.add(PerformanceOverlaySource.CPU)
         if (PerformanceOverlayField.TEMP in fields) sources.add(PerformanceOverlaySource.TEMP)
+        if (PerformanceOverlayField.BATTERY in fields) sources.add(PerformanceOverlaySource.BATTERY)
+        if (PerformanceOverlayField.MEMORY in fields) sources.add(PerformanceOverlaySource.MEMORY)
+        if (PerformanceOverlayField.WIFI in fields) sources.add(PerformanceOverlaySource.WIFI)
         return sources
     }
 
@@ -108,4 +129,17 @@ object PerformanceOverlayPolicy {
             }
         }
         .maxOrNull()
+
+    /** The sticky battery broadcast reports -1 for a missing extra; a scale of 0 is a broken ROM. */
+    fun batteryPercent(level: Int, scale: Int): Int? =
+        if (level < 0 || scale <= 0) null else (level * 100 / scale).coerceIn(0, 100)
+
+    fun megabytes(bytes: Long): Long? = if (bytes < 0L) null else bytes / (1024L * 1024L)
+
+    /**
+     * Only a station that finished association has a signal. A disconnected one reports -127 or
+     * an older platform's -200, and P2P groups have no public RSSI at all, so those print dashes.
+     */
+    fun stationRssi(rssi: Int, associated: Boolean): Int? =
+        if (associated && rssi in -126..-1) rssi else null
 }

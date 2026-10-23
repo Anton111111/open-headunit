@@ -6,6 +6,9 @@ import android.app.Application
 import android.media.AudioManager
 import android.os.*
 import com.andrerinas.openheadunit.aap.AapAudio
+import com.andrerinas.openheadunit.connection.wifi.scan.WifiScanControl
+import com.andrerinas.openheadunit.connection.wifi.modes.WifiLauncherNative
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.Settings
 import kotlinx.coroutines.*
@@ -32,13 +35,18 @@ private class QueuedCleanup : CoroutineDispatcher() {
 }
 private class AapTransport(
     decoder: AudioDecoder, video: Any, manager: AudioManager, settings: Settings, notification: Any,
-    context: Context, externalSsl: Any, onAaMediaMetadata: (Any) -> Unit, onAaPlaybackStatus: (Any) -> Unit
+    context: Context, externalSsl: Any, onAaMediaMetadata: (Any, Any) -> Unit, onAaPlaybackStatus: (Any, Any) -> Unit,
+    onAaPresentationClosed: (Any) -> Unit
 ) {
+    fun retirePresentation() {}
     val aapAudio = AapAudio(decoder, manager, settings)
     var onQuit: ((Boolean) -> Unit)? = null
     var onAudioFocusStateChanged: ((Boolean) -> Unit)? = null
     var onUpdateUiConfigReplyReceived: (() -> Unit)? = null
     var wasUserExit = false
+    @Volatile private var projectionVideoFocusSuppressed = false
+    val isProjectionVideoFocusSuppressed get() = projectionVideoFocusSuppressed
+    // PRODUCTION TRANSPORT_FOCUS_SUPPRESSION
     init { constructionHook?.invoke() }
     companion object { var constructionHook: (() -> Unit)? = null }
 }
@@ -64,13 +72,16 @@ private class ConnectionFixture(val settings: Settings = Settings()) {
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Connected)
     private var _connection: Any? = Any()
     private var _transport: AapTransport? = null
+    @Volatile private var projectionVideoFocusSuppressed = false
     private var _disconnectJob: Job? = null
-    private var onAaMediaMetadata: ((Any) -> Unit)? = null
-    private var onAaPlaybackStatus: ((Any) -> Unit)? = null
+    private var onAaMediaMetadata: ((Any, Any) -> Unit)? = null
+    private var onAaPlaybackStatus: ((Any, Any) -> Unit)? = null
+    private var onAaPresentationClosed: ((Any) -> Unit)? = null
     private var onAudioFocusStateChanged: ((Boolean) -> Unit)? = null
     private var onUpdateUiConfigReplyReceived: (() -> Unit)? = null
     val disconnected get() = _connectionState.value is ConnectionState.Disconnected
     val audio get() = checkNotNull(_transport).aapAudio
+    val isProjectionVideoFocusSuppressed get() = checkNotNull(_transport).isProjectionVideoFocusSuppressed
     fun quitCallback() = checkNotNull(_transport?.onQuit)
     fun publish() = runBlocking {
         withContext(Dispatchers.Default) {
@@ -89,6 +100,7 @@ private class ConnectionFixture(val settings: Settings = Settings()) {
     // PRODUCTION CANCEL_SETTINGS
     // PRODUCTION REACHED_SSL
     // PRODUCTION QUIT
+    // PRODUCTION MANAGER_FOCUS_SUPPRESSION
     private fun doDisconnect(sendByeBye: Boolean,
         byeByeReason: com.andrerinas.openheadunit.aap.protocol.proto.Control.ByeByeReason =
             com.andrerinas.openheadunit.aap.protocol.proto.Control.ByeByeReason.USER_SELECTION,
@@ -105,14 +117,31 @@ private object SessionStateIntent {
     const val REASON_SETTINGS_RESTART=4; const val REASON_USER_EXIT=1; const val REASON_LINK_LOST=2; const val REASON_PHONE_LEFT=3
 }
 private object StationStandDown { fun onSessionLive(context: Any, held: Long?) {} }
-private class ObserverFixture {
+private class ObserverFixture(
+    wireless: Boolean = false,
+    loopback: Boolean = false,
+    native: Boolean = true,
+    strategy: NativeStrategy = NativeStrategy.WIFI_DIRECT,
+    accepted: Any? = Any(),
+) {
     private fun wifiLockHeldForMs(): Long? = null
-    private class Connection {
+    private class Connection(
+        val isWirelessSession: Boolean,
+        val isLoopbackSession: Boolean,
+        var acceptedWirelessSession: Any?,
+    ) {
         val connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected())
         val attemptUserRequested = false
+        var isProjectionVideoFocusSuppressed = false
+        val videoFocus = mutableListOf<com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent>()
+        fun send(event: com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent) {
+            videoFocus.add(event)
+        }
     }
     private class Usb { var projectionHandshakeFailures=0; fun onHandshakeFailed() {} }
-    private val commManager = Connection()
+    private val commManager = Connection(wireless, loopback, accepted)
+    private class Wifi(val active: Any?)
+    private val wifiLauncherManager = Wifi(if (native) WifiLauncherNative(strategy) else Any())
     private class Self { fun onConnectionEstablished() {}; fun onConnectionEnded(state: ConnectionState.Disconnected) {} }
     private val selfLauncherManager = Self()
     private class ReconnectTimer { fun onStateChanged() {} }
@@ -139,14 +168,115 @@ private class ObserverFixture {
     private fun maybeAutoResumePlaybackOnReconnect() {}
     private fun stopDummyVpn(reason: DummyVpnPolicy.Reason) {}
     fun start() { observeConnectionState() }
-    fun connected() { commManager.connectionState.value = ConnectionState.Connected }
+    fun connected() { transition(ConnectionState.Connected) }
+    fun transition(state: ConnectionState) { commManager.connectionState.value = state }
+    fun replaceAccepted(connection: Any) { commManager.acceptedWirelessSession = connection }
+    fun suppressVideo(value: Boolean) { commManager.isProjectionVideoFocusSuppressed = value }
+    fun videoFocusEvents() = commManager.videoFocus.toList()
     fun disconnected() { commManager.connectionState.value = ConnectionState.Disconnected() }
     fun close() { serviceScope.cancel() }
     // PRODUCTION OBSERVER
 }
 
+/** Exercise the extracted production observer, including phases a conflated flow can skip. */
+private fun scanControlObserverRegression() {
+    val originalSdk = Build.VERSION.SDK_INT
+    val liveStates = listOf(ConnectionState.Connected, ConnectionState.StartingTransport,
+        ConnectionState.HandshakeComplete, ConnectionState.TransportStarted)
+    try {
+        for (sdk in listOf(26, 29, 30, 32, 33, 36)) {
+            Build.VERSION.SDK_INT = sdk
+            for (strategy in NativeStrategy.entries) {
+                // A collector can first see any live phase, not necessarily Connected.
+                for (firstLive in liveStates) {
+                    val accepted = Any()
+                    val observer = ObserverFixture(wireless = true, strategy = strategy, accepted = accepted)
+                    WifiScanControl.calls.clear()
+                    try {
+                        observer.start()
+                        check(WifiScanControl.calls.single() == WifiScanControl.Call(observer))
+                        observer.transition(firstLive)
+                        check(WifiScanControl.calls.last() == WifiScanControl.Call(observer, accepted,
+                            strategy == NativeStrategy.HOTSPOT)) { "scan start missing: SDK=$sdk phase=$firstLive" }
+                        observer.disconnected()
+                        check(WifiScanControl.calls.last() == WifiScanControl.Call(observer))
+                        val replacement = Any()
+                        observer.replaceAccepted(replacement)
+                        observer.transition(ConnectionState.TransportStarted)
+                        check(WifiScanControl.calls.last().connection === replacement) { "old connection identity reused" }
+                        observer.transition(ConnectionState.Error("handshake failed"))
+                        check(WifiScanControl.calls.last() == WifiScanControl.Call(observer))
+                        check(WifiScanControl.calls.size == 5)
+                    } finally { observer.close() }
+                }
+            }
+        }
+        Build.VERSION.SDK_INT = 33
+        // Unsupported routes must release any old lease, never acquire a new one.
+        val excluded = listOf(
+            "USB" to ObserverFixture(wireless = false),
+            "loopback" to ObserverFixture(wireless = true, loopback = true),
+            "non-native" to ObserverFixture(wireless = true, native = false),
+            "no accepted connection" to ObserverFixture(wireless = true, accepted = null),
+        )
+        for ((name, observer) in excluded) {
+            WifiScanControl.calls.clear()
+            try {
+                observer.start()
+                observer.transition(ConnectionState.Connecting)
+                liveStates.forEach(observer::transition)
+                observer.disconnected()
+                check(WifiScanControl.calls.size == 7)
+                check(WifiScanControl.calls.all { it == WifiScanControl.Call(observer) }) { "scan control acquired for $name" }
+            } finally { observer.close() }
+        }
+        Build.VERSION.SDK_INT = 25
+        val legacy = ObserverFixture(wireless = true)
+        WifiScanControl.calls.clear()
+        try {
+            legacy.start(); liveStates.forEach(legacy::transition); legacy.disconnected()
+            check(WifiScanControl.calls.isEmpty()) { "scan API called below Android 8" }
+        } finally { legacy.close() }
+    } finally {
+        Build.VERSION.SDK_INT = originalSdk
+        WifiScanControl.calls.clear()
+    }
+    println("PASS scan observer: Direct/Hotspot, skipped live phases, disconnect/error, new connection identity, excluded routes and SDK gate")
+}
+
 internal fun audioLifecycleBoundaryRegression() {
+    scanControlObserverRegression()
+    val suppressedObserver = ObserverFixture()
+    try {
+        suppressedObserver.start()
+        suppressedObserver.suppressVideo(true)
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().single().let { !it.gain && !it.unsolicited })
+        suppressedObserver.disconnected()
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().size == 2)
+        suppressedObserver.suppressVideo(false)
+        suppressedObserver.disconnected()
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().size == 2)
+    } finally { suppressedObserver.close() }
+    println("PASS service observer reapplies video suppression on replacement transport without an Activity")
     Handler.reset()
+    val focus = ConnectionFixture()
+    try {
+        focus.setProjectionVideoFocusSuppressed(true)
+        focus.publish()
+        check(focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(false)
+        check(!focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(true)
+        focus.nextConnection(); focus.publish()
+        check(focus.isProjectionVideoFocusSuppressed)
+        focus.setProjectionVideoFocusSuppressed(false)
+        check(!focus.isProjectionVideoFocusSuppressed)
+    } finally { focus.close(); Handler.reset() }
+    println("PASS audio lifecycle fixture preserves projection focus suppression across transport publication and replacement")
+
     val observer = ObserverFixture()
     try {
         observer.start(); check(!observer.resourcesHeld)

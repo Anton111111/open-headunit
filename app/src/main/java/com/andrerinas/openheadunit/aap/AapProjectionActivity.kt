@@ -3,6 +3,7 @@ package com.andrerinas.openheadunit.aap
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -42,6 +43,7 @@ import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.decoder.video.VideoDimensionsListener
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.BluetoothHelper
+import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.connection.self.SelfModeCallRaisePolicy
 import com.andrerinas.openheadunit.connection.usb.UsbSwitchClaim
 import com.andrerinas.openheadunit.decoder.audio.CallState
@@ -74,7 +76,6 @@ import com.andrerinas.openheadunit.main.AutoStartOfferPolicy
 import com.andrerinas.openheadunit.main.MainActivity
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTransportPolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeAaHandshakeManager
-import com.andrerinas.openheadunit.main.AppDrawerFragment
 import java.io.File
 import kotlin.math.abs
 
@@ -90,6 +91,8 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var ownedSurface: android.view.Surface? = null
     private var overlayState = OverlayState.STARTING
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val isProjectionPausedByDevice: Boolean
+        get() = commManager.isProjectionVideoFocusSuppressed
 
     /** When the session dropped, and when the reconnect last showed a sign of life. Realtime, so a
      * unit that sleeps mid-reconnect does not come back with the whole wait still ahead of it. */
@@ -161,6 +164,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                     hideLoadingOverlay(loadingOverlay)
                 }
             }
+            if (isProjectionPausedByDevice) {
+                watchdogHandler.postDelayed(this, 1500)
+                return
+            }
             if (!ProjectionWatchdogPolicy.shouldNudgeForFirstFrame(
                     sessionLive = ProjectionWatchdogPolicy.isSessionLive(commManager.connectionState.value),
                     surfaceSet = isSurfaceSet,
@@ -173,7 +180,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             // Shares one throttle clock with the reconnecting watchdog's mid-session
             // re-request, so the two never double-fire across the overlay transition.
             lastVideoFocusRequestMs = SystemClock.elapsedRealtime()
-            commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
+            sendProjectionVideoFocus(gain = true, unsolicited = true)
             watchdogHandler.postDelayed(this, 1500)
         }
     }
@@ -185,6 +192,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             // every session - which is why a video stream that died mid-session stayed black
             // with nothing ever asking for it back.
             if (!ProjectionWatchdogPolicy.isSessionLive(commManager.connectionState.value)) {
+                return
+            }
+            if (isProjectionPausedByDevice) {
+                watchdogHandler.postDelayed(this, ProjectionWatchdogPolicy.WATCHDOG_TICK_MS)
                 return
             }
             // Every tick, not only before the first frame: a codec rebuilt with cached parameter
@@ -255,6 +266,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * release/regain cycle instead, and why each gate is there.
      */
     private fun maybeRecoverWarmRelaunch() {
+        if (isProjectionPausedByDevice) return
         if (lastSurfaceSetMs == 0L) return
         val now = SystemClock.elapsedRealtime()
         if (!relaunchRecovery.loggedKeyframelessPicture &&
@@ -284,7 +296,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             WarmRelaunchKeyframePolicy.Action.NUDGE -> {
                 lastVideoFocusRequestMs = now
                 AppLog.w("AapProjectionActivity: relaunched surface still has no picture - requesting video focus (unsolicited)")
-                commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
+                sendProjectionVideoFocus(gain = true, unsolicited = true)
             }
             WarmRelaunchKeyframePolicy.Action.CYCLE_FOCUS -> {
                 // The transport's own escalation spends the same lever. If it holds it, no release
@@ -340,7 +352,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             AppLog.i("AapProjectionActivity: returned to a kept surface with a stopped decoder; re-arming keyframe recovery")
             armWarmRelaunch()
             if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted) {
-                commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
+                sendProjectionVideoFocus(gain = true, unsolicited = true)
             }
         }
     }
@@ -429,6 +441,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * failure this watchdog was revived to fix.
      */
     private fun maybeRequestVideoFocus(pictureStopped: Boolean) {
+        if (isProjectionPausedByDevice) return
         val now = SystemClock.elapsedRealtime()
         if (!ProjectionWatchdogPolicy.shouldRequestVideoFocus(
                 pictureStopped, now, lastVideoFocusRequestMs
@@ -436,8 +449,29 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         ) return
         lastVideoFocusRequestMs = now
         AppLog.w("AapProjectionActivity: connected but no frames - requesting video focus (unsolicited)")
-        commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
+        sendProjectionVideoFocus(gain = true, unsolicited = true)
     }
+
+    /**
+     * Sends video-focus changes without allowing a gain request to reclaim the screen while
+     * a device feature, such as the reverse camera, has paused projection. Loss is still allowed.
+     */
+    private fun sendProjectionVideoFocus(gain: Boolean, unsolicited: Boolean) {
+        if (gain && isProjectionPausedByDevice) return
+        commManager.send(VideoFocusEvent(gain = gain, unsolicited = unsolicited))
+    }
+
+    /** The service owns suppression; this screen cancels recovery and resumes only while visible. */
+    private fun onDeviceVideoSuppressionChanged(paused: Boolean) {
+        if (paused) settleFocusCycle()
+        AppLog.i("AapProjectionActivity: device projection pause changed to $paused")
+        if (!paused && isForeground && isSurfaceSet &&
+            commManager.connectionState.value is CommManager.ConnectionState.TransportStarted
+        ) {
+            sendProjectionVideoFocus(gain = true, unsolicited = true)
+        }
+    }
+
     /**
      * Re-asks [ReconnectGracePolicy] rather than firing at a fixed delay, because a reconnect that
      * is visibly in flight has to outlive the base grace: the AOA switch alone is sized at 10s.
@@ -1046,6 +1080,11 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
 
         videoDecoder.dimensionsListener = this
+        lifecycleScope.launch {
+            commManager.deviceVideoControl.suppressed.collect { paused ->
+                onDeviceVideoSuppressionChanged(paused)
+            }
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -1295,7 +1334,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         RenameNotice.maybeShow(this, App.provide(this).settings)
         Aa174Notice.maybeShow(this, App.provide(this).settings)
         applyStickyOrientation()
-        if (isSurfaceSet && commManager.isConnected) {
+        if (!isProjectionPausedByDevice && isSurfaceSet && commManager.isConnected) {
             commManager.retakeVideoFocusForKeyframe()
         }
         resumedAtMs = SystemClock.elapsedRealtime()
@@ -1664,38 +1703,51 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
     private data class ExitOption(val titleResId: Int, val iconResId: Int, val iconColor: Int)
 
+    private fun exitOption(option: ProjectionExitMenuPolicy.Option): ExitOption = when (option) {
+        ProjectionExitMenuPolicy.Option.STOP -> ExitOption(R.string.exit_dialog_stop, R.drawable.ic_stop, Color.RED)
+        ProjectionExitMenuPolicy.Option.END_STAY_ARMED ->
+            ExitOption(R.string.exit_dialog_end_stay_armed, R.drawable.ic_stop, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.PIP -> ExitOption(R.string.exit_dialog_pip, R.drawable.ic_pip, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.BACKGROUND -> ExitOption(R.string.exit_dialog_background, R.drawable.ic_home, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.SETTINGS ->
+            ExitOption(R.string.exit_dialog_settings, R.drawable.ic_settings_quick, Color.LTGRAY)
+        ProjectionExitMenuPolicy.Option.SWITCH_PHONE -> ExitOption(R.string.switch_driver, R.drawable.ic_phone, Color.LTGRAY)
+    }
+
     private fun showExitDialog() {
-        val options = mutableListOf<ExitOption>()
-        options.add(ExitOption(R.string.exit_dialog_stop, R.drawable.ic_stop, Color.RED))
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            options.add(ExitOption(R.string.exit_dialog_pip, R.drawable.ic_pip, Color.LTGRAY))
-        }
-
-        options.add(ExitOption(R.string.exit_dialog_background, R.drawable.ic_home, Color.LTGRAY))
-        options.add(ExitOption(R.string.exit_dialog_settings, R.drawable.ic_settings_quick, Color.LTGRAY))
-
-        if (settings.isCarLauncherActive) {
-            options.add(ExitOption(R.string.apps, R.drawable.ic_apps, Color.LTGRAY))
-        }
-
-        if (settings.wifiConnectionMode == com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode.NATIVE) {
-            if (!ExternalBtTransportPolicy.usesExternalModule(NativeAaHandshakeManager.transportRoute(this))) {
-                options.add(ExitOption(R.string.switch_driver, R.drawable.ic_phone, Color.LTGRAY))
+        // Copy the live configuration: a blank one resets the font scale on API 17-23.
+        val exitScale = settings.uiScaleExitDialogPercent / 100f
+        val dialogContext = if (exitScale != 1f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            androidx.appcompat.view.ContextThemeWrapper(this, theme).apply {
+                val configuration = android.content.res.Configuration(this@AapProjectionActivity.resources.configuration)
+                configuration.densityDpi = (this@AapProjectionActivity.resources.displayMetrics.densityDpi * exitScale).toInt()
+                applyOverrideConfiguration(configuration)
             }
-            // WiFi Direct only: the group is ours, created for the session. An access point is
-            // usually the user's own, and UserExitHotspotPolicy already leaves it alone.
-            if (settings.nativeApStrategy == com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy.WIFI_DIRECT) {
-                options.add(1, ExitOption(R.string.exit_dialog_end_stay_armed, R.drawable.ic_stop, Color.LTGRAY))
-            }
+        } else {
+            this
         }
+        val builder = MaterialAlertDialogBuilder(dialogContext, R.style.DarkAlertDialog)
+        val dialogInflater = android.view.LayoutInflater.from(builder.context)
+        val options = ProjectionExitMenuPolicy.options(
+            ProjectionExitMenuPolicy.Input(
+                isHomeApp = CarLauncherManager.isDefaultLauncher(this),
+                pipWorks = supportsPictureInPicture(),
+                nativeWireless = settings.wifiConnectionMode ==
+                    com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode.NATIVE,
+                externalBtModule = ExternalBtTransportPolicy.usesExternalModule(NativeAaHandshakeManager.transportRoute(this)),
+                // WiFi Direct only: the group is ours, created for the session. An access point is
+                // usually the user's own, and UserExitHotspotPolicy already leaves it alone.
+                wifiDirectGroup = settings.nativeApStrategy ==
+                    com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy.WIFI_DIRECT
+            )
+        ).map(::exitOption)
 
         val adapter = object : android.widget.BaseAdapter() {
             override fun getCount(): Int = options.size
             override fun getItem(position: Int): Any = options[position]
             override fun getItemId(position: Int): Long = position.toLong()
             override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                val view = convertView ?: layoutInflater.inflate(R.layout.dialog_exit_item, parent, false)
+                val view = convertView ?: dialogInflater.inflate(R.layout.dialog_exit_item, parent, false)
                 val option = options[position]
                 val iconView = view.findViewById<android.widget.ImageView>(R.id.icon)
                 val textView = view.findViewById<android.widget.TextView>(R.id.text)
@@ -1708,7 +1760,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             }
         }
 
-        val dialog = MaterialAlertDialogBuilder(this, R.style.DarkAlertDialog)
+        val dialog = builder
             .setTitle(R.string.exit_dialog_title)
             .setAdapter(adapter) { _, which ->
                 val selected = options[which]
@@ -1729,16 +1781,24 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                     R.string.exit_dialog_settings -> {
                         showQuickSettings()
                     }
-                    R.string.apps -> {
-                        showAppDrawer()
-                    }
                     R.string.switch_driver -> {
                         switchDriver()
                     }
                 }
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+
+        val mode = activityFullscreenOverride ?: settings.fullscreenMode
+        val dialogWindow = dialog.window
+        // Let the window inherit immersive flags before it takes focus, avoiding a flash of bars.
+        dialogWindow?.addFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        dialogWindow?.let { SystemUI.applySystemBars(it, mode) }
+        dialog.show()
+        dialogWindow?.let {
+            SystemUI.applySystemBars(it, mode)
+            it.clearFlags(android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
+        }
 
         if (settings.hudMirroring) {
             val root = dialog.window?.findViewById<View>(android.R.id.content) ?: dialog.window?.decorView
@@ -1750,11 +1810,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         // We will implement QuickSettingsFragment as a DialogFragment for easy overlay
         val quickSettings = com.andrerinas.openheadunit.main.QuickSettingsFragment()
         quickSettings.show(supportFragmentManager, "quick_settings")
-    }
-
-    private fun showAppDrawer() {
-        val appDrawer = AppDrawerFragment()
-        appDrawer.show(supportFragmentManager, "app_drawer")
     }
 
     /**
@@ -1781,6 +1836,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun enterPiP() {
+        if (!supportsPictureInPicture()) {
+            AppLog.i("PiP: this unit does not declare ${PackageManager.FEATURE_PICTURE_IN_PICTURE}")
+            return
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
                 var width = videoDecoder.videoWidth.coerceAtLeast(1).toFloat()
@@ -1818,10 +1877,32 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
     }
 
+    /**
+     * PiP needs both halves: the activity declaring it supports it, which it does in the manifest,
+     * and the unit declaring the feature. A unit without the feature throws instead of entering,
+     * which is what a user reported as "PiP does nothing".
+     */
+    // enterPiP acts from Android 8.0 only; offering it on 7.x left an option that did nothing.
+    private fun supportsPictureInPicture(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
     private fun moveToBackground() {
-        val startMain = Intent(Intent.ACTION_MAIN)
-        startMain.addCategory(Intent.CATEGORY_HOME)
+        // Sending the home intent by itself leaves the front to whichever home app the system picks,
+        // and on a unit that still has the factory launcher as its default that is not this app: the
+        // user reported being dropped into the factory launcher with the session left behind. When
+        // this app is the home app, it is named, so the projection goes behind our own home screen.
+        val isHome = CarLauncherManager.isDefaultLauncher(this)
+        val startMain = if (isHome) {
+            Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
+                addCategory(Intent.CATEGORY_HOME)
+            }
+        } else {
+            Intent(Intent.ACTION_MAIN).apply { addCategory(Intent.CATEGORY_HOME) }
+        }
         startMain.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        AppLog.i("AapProjectionActivity: moving the projection to the background, home app is this one=$isHome")
         startActivity(startMain)
     }
 
@@ -1946,35 +2027,22 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * Exact where the confirm window is a guess, and it is what catches an outgoing call whose
      * dialling outlasts the window. API 31+; below it the window is the whole story.
      */
-    // Untyped on purpose: the listener interface is API 31, and naming it here fails to resolve
-    // the whole class on Android 8 with a NoClassDefFoundError the guards below cannot prevent.
-    private var audioModeListener: Any? = null
+    // An opaque handle on purpose: the watcher names an interface that only exists from API 31, and
+    // a field of that type would be resolved when this class is verified on an older unit.
+    private var audioModeWatcher: Any? = null
 
     private fun registerAudioModeListener() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        try {
-            val listener = android.media.AudioManager.OnModeChangedListener { mode ->
-                val callish = CallState.isCallActive(mode, MicRecorder.holdsCommunicationMode) ||
-                    CallState.isCallStarting(mode)
-                if (!isForeground && callish) maybeOpenCallRaiseEpisode(fromModeChange = true)
-            }
-            (getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager)
-                .addOnModeChangedListener(ContextCompat.getMainExecutor(this), listener)
-            audioModeListener = listener
-        } catch (e: Exception) {
-            AppLog.w("AapProjectionActivity: Could not watch the audio mode: ${e.message}")
+        audioModeWatcher = AudioModeWatcher.start(this) { mode ->
+            val callish = CallState.isCallActive(mode, MicRecorder.holdsCommunicationMode) ||
+                CallState.isCallStarting(mode)
+            if (!isForeground && callish) maybeOpenCallRaiseEpisode(fromModeChange = true)
         }
     }
 
     private fun unregisterAudioModeListener() {
-        val listener = audioModeListener ?: return
-        audioModeListener = null
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        try {
-            (getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager)
-                .removeOnModeChangedListener(listener as android.media.AudioManager.OnModeChangedListener)
-        } catch (_: Exception) {
-        }
+        val handle = audioModeWatcher ?: return
+        audioModeWatcher = null
+        AudioModeWatcher.stop(handle)
     }
 
     override fun onUserLeaveHint() {
@@ -2108,10 +2176,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             }
             is CommManager.ConnectionState.TransportStarted -> {
                 // Surface recreated while transport was already running; request a keyframe.
-                if (surfaceChanged) commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
+                if (surfaceChanged) sendProjectionVideoFocus(gain = true, unsolicited = true)
             }
             else -> {
-                commManager.send(VideoFocusEvent(gain = true, unsolicited = false))
+                sendProjectionVideoFocus(gain = true, unsolicited = false)
             }
         }
 

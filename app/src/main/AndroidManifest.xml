@@ -4,9 +4,13 @@
 
     <uses-sdk tools:overrideLibrary="
         com.google.android.gms.nearby, com.google.android.gms.base, com.google.android.gms.tasks, com.google.android.gms.common,
-        rikka.shizuku.api, rikka.shizuku.shared, rikka.shizuku.aidl, com.topjohnwu.superuser" />
+        rikka.shizuku.provider, rikka.shizuku.api, rikka.shizuku.shared, rikka.shizuku.aidl, com.topjohnwu.superuser" />
 
     <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="com.syu.ms" />
+        <!-- Rootless HCT bridge discovery when SELinux hides /dev/goc_serial. -->
+        <package android:name="android.microntek.mtcser" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -242,9 +246,19 @@
             android:windowSoftInputMode="stateHidden|adjustResize"
             android:theme="@style/AppTheme" />
 
+        <!--
+            taskAffinity/excludeFromRecents: the first-run wizard lives in a task of its own. The
+            main screen is singleTask, so any Home intent (picking this app as home from the
+            wizard's launcher step, the Home key with the app as home) clears whatever sits above
+            it in its task. Out of that task the wizard survives at the step it was on, and
+            MainActivity's NEW_TASK start brings this task back instead of making a second wizard.
+            It stays out of Recents, where it would be a second card for the same app.
+        -->
         <activity
             android:name=".main.OnboardingActivity"
+            android:excludeFromRecents="true"
             android:exported="false"
+            android:taskAffinity="${applicationId}.onboarding"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/AppTheme" />
 
@@ -445,6 +459,11 @@
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="false" />
 
+        <provider android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:enabled="@bool/shizuku_provider_enabled"
+            android:exported="true" android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

@@ -1,25 +1,25 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
 /**
- * What one dial at the vendor daemon actually proved.
+ * Whether an established external-module route should proceed after one dial.
  *
- * A port that refuses and a port that is there but busy are different answers, and collapsing them
- * made the app tell a reporter whose module works that their hardware cannot do Bluetooth wireless.
+ * These outcomes preserve the existing retry policy. They are not hardware identity, ownership,
+ * or Android Auto success: an unconfirmed attempt can have several causes.
  */
 object ZbtReachabilityPolicy {
 
     enum class Verdict {
-        /** The daemon answered a frame. This unit's module carries Android Auto. */
+        /** A framed message arrived; this alone does not validate the phone or WPP exchange. */
         ANSWERED,
 
-        /** Something holds the port but did not answer. Present, and busy is not absent. */
+        /** Legacy name: also includes unconfirmed connect failures, not just an accepted silent socket. */
         LISTENING_SILENT,
 
-        /** The port refused the connection: no daemon here, whatever the hardware markers say. */
+        /** A ConnectException on this attempt; it does not prove that no daemon is installed. */
         NOTHING_LISTENING
     }
 
-    /** `ConnectException` is the only refusal; a loopback port with nobody on it always gives it. */
+    /** Preserve the existing classification of ConnectException as a refusal for retry policy. */
     private const val REFUSAL = "ConnectException"
 
     /**
@@ -28,17 +28,16 @@ object ZbtReachabilityPolicy {
      */
     fun classify(connectFailure: String?, answered: Boolean): Verdict = when {
         connectFailure == REFUSAL -> Verdict.NOTHING_LISTENING
-        // A timeout means the backlog is not being drained, which needs a listener to not drain it.
-        // Anything else unexpected is read the same way: on this hardware the alternative to trying
-        // is refusing Native AA outright, and the carrier retries where a one-shot dial cannot.
+        // Other failures remain unconfirmed. Do not infer a listener or competing owner from a
+        // timeout. Keep the established route available for its real carrier to try.
         connectFailure != null -> Verdict.LISTENING_SILENT
         answered -> Verdict.ANSWERED
         else -> Verdict.LISTENING_SILENT
     }
 
     /**
-     * Whether the module route is worth taking. Only an outright refusal rules it out: a daemon
-     * that is there and busy is retried by [ZbtAaCarrier], which a one-shot dial cannot do.
+     * Whether the established module route is worth attempting. Only the refusal outcome rules
+     * it out for this attempt; [ZbtAaCarrier] can retry an unconfirmed opening.
      */
     fun reachable(verdict: Verdict): Boolean = verdict != Verdict.NOTHING_LISTENING
 

@@ -19,12 +19,26 @@
         android:orientation="vertical"
         android:padding="12dp">
 
-        <ImageView
-            android:id="@+id/iv_app_icon"
-            android:layout_width="72dp"
-            android:layout_height="72dp"
-            android:contentDescription="@null"
-            tools:src="@mipmap/ic_launcher" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/iv_app_icon"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:contentDescription="@null"
+                tools:src="@mipmap/ic_launcher" />
+
+            <ImageView
+                android:id="@+id/iv_shortcut_badge"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="bottom|end"
+                android:contentDescription="@string/home_shortcut_badge"
+                android:visibility="gone"
+                app:srcCompat="@drawable/ic_shortcut_badge" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tv_app_name"

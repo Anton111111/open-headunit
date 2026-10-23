@@ -10,6 +10,10 @@ import android.location.Location
 import android.media.AudioManager
 import android.os.Build
 import com.andrerinas.openheadunit.input.KeyCode
+import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
+import com.andrerinas.openheadunit.main.FavoriteTarget
+import com.andrerinas.openheadunit.main.HomePagesPolicy
+import com.andrerinas.openheadunit.main.HomeWidgetsPolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
 import com.andrerinas.openheadunit.view.PerformanceOverlayPolicy
@@ -211,6 +215,10 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("ui-scale-settings-percent", 100)
         set(value) { prefs.edit().putInt("ui-scale-settings-percent", value).apply() }
 
+    var uiScaleExitDialogPercent: Int
+        get() = prefs.getInt("ui-scale-exit-dialog-percent", 100).coerceIn(100, 150)
+        set(value) { prefs.edit().putInt("ui-scale-exit-dialog-percent", value.coerceIn(100, 150)).apply() }
+
     /**
      * The rate the microphone hardware is opened at when 16 kHz cannot be opened. Not what the phone
      * receives: that is always 16 kHz mono, because Android Auto validates the announced config and
@@ -409,6 +417,30 @@ class Settings(private val context: Context) {
             prefs.edit().putString("static-p2p-bssid", value).apply()
         }
 
+    /**
+     * Restart WiFi by itself when the WiFi Direct stack wedges, through root or local ADB. Off by
+     * default: it switches WiFi off for every app on the unit, so it is the user's call. See
+     * [com.andrerinas.openheadunit.connection.wifi.direct.P2pStackWedgePolicy].
+     */
+    var autoRestartWifiWhenP2pStuck: Boolean
+        get() = prefs.getBoolean("auto-restart-wifi-p2p-stuck", false)
+        set(value) = prefs.edit().putBoolean("auto-restart-wifi-p2p-stuck", value).apply()
+
+    /**
+     * Whether root was granted when the user switched [autoRestartWifiWhenP2pStuck] on. A fresh
+     * process cannot know this until it opens a shell, and opening one raises the superuser prompt
+     * when there is no saved grant, so a restart only asks for root when this says the user already
+     * answered yes. Otherwise no prompt ever appears unprompted, at launch or on the road.
+     */
+    var wifiRestartRootGranted: Boolean
+        get() = prefs.getBoolean("wifi-restart-root-granted", false)
+        set(value) = prefs.edit().putBoolean("wifi-restart-root-granted", value).apply()
+
+    /** Whether a real local ADB command ran when the switch was turned on. Automatic restarts need it. */
+    var wifiRestartAdbVerified: Boolean
+        get() = prefs.getBoolean("wifi-restart-adb-verified", false)
+        set(value) = prefs.edit().putBoolean("wifi-restart-adb-verified", value).apply()
+
     var fakeSpeed: Boolean
         get() = prefs.getBoolean("fake_speed", true)
         set(value) {
@@ -582,7 +614,29 @@ class Settings(private val context: Context) {
             prefs.edit().putInt("wifi-direct-band", migrated).apply()
             return migrated
         }
-        set(value) = prefs.edit().putInt("wifi-direct-band", value).apply()
+        set(value) {
+            // A new choice is a new question: the remembered refusal below answered the old one.
+            prefs.edit()
+                .putInt("wifi-direct-band", value)
+                .remove(KEY_WIFI_DIRECT_BANDED_REFUSED_ON)
+                .apply()
+        }
+
+    /**
+     * The build fingerprint on which this unit refused every banded Native AA group request and
+     * then hosted the no-band group, or null. While it matches the running build, AUTO skips the
+     * banded ladder. See
+     * [com.andrerinas.openheadunit.connection.wifi.direct.NativeGroupBandPolicy.skipsBandedRequest].
+     */
+    var wifiDirectBandedRefusedOn: String?
+        get() = prefs.getString(KEY_WIFI_DIRECT_BANDED_REFUSED_ON, null)
+        set(value) {
+            val editor = prefs.edit()
+            if (value.isNullOrEmpty()) editor.remove(KEY_WIFI_DIRECT_BANDED_REFUSED_ON)
+            else editor.putString(KEY_WIFI_DIRECT_BANDED_REFUSED_ON, value)
+            // commit(), not apply(): written once per firmware, and a force-stop must not lose it.
+            editor.commit()
+        }
 
     /**
      * Which 5 GHz channel to ask for, on whichever transport is hosting the network.
@@ -1551,10 +1605,6 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("custom-wifi-button-color", 0)
         set(value) { prefs.edit().putInt("custom-wifi-button-color", value).apply() }
 
-    var customSettingsButtonColor: Int
-        get() = prefs.getInt("custom-settings-button-color", 0)
-        set(value) { prefs.edit().putInt("custom-settings-button-color", value).apply() }
-
     // Custom button scaling percentage for Home screen (default = 100%, valid range 60..120)
     var homeButtonScalePercent: Int
         get() {
@@ -1565,6 +1615,48 @@ class Settings(private val context: Context) {
             val valid = if (value in 60..120) value else 100
             prefs.edit().putInt("home-button-scale-percent", valid).apply()
         }
+
+    /** What each favorite slot holds, in slot order. See [FavoriteAppsPolicy]. */
+    var homeFavoriteApps: List<FavoriteTarget>
+        get() = FavoriteAppsPolicy.decode(prefs.getString("home-favorite-apps", "") ?: "")
+        set(value) { prefs.edit().putString("home-favorite-apps", FavoriteAppsPolicy.encode(value)).apply() }
+
+    /** The one-time hint on the launcher home that a touch and hold on an empty spot adds pages. */
+    var homePagesHintShown: Boolean
+        get() = prefs.getBoolean("home-pages-hint-shown", false)
+        set(value) { prefs.edit().putBoolean("home-pages-hint-shown", value).apply() }
+
+    /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
+    var showHomeFavoriteApps: Boolean
+        get() = prefs.getBoolean("show-home-favorite-apps", true)
+        set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
+
+    /** Date and time on the home screen. Off by default: the driver asks for them. */
+    var showHomeClock: Boolean
+        get() = prefs.getBoolean("show-home-clock", false)
+        set(value) { prefs.edit().putBoolean("show-home-clock", value).apply() }
+
+    /** The speed this unit's GPS reports, on the home screen. Off by default, and it needs the
+     *  location permission. */
+    var showHomeSpeed: Boolean
+        get() = prefs.getBoolean("show-home-speed", false)
+        set(value) { prefs.edit().putBoolean("show-home-speed", value).apply() }
+
+    /** The widgets shown under the main button, in order. See [HomeWidgetsPolicy]. */
+    var homeWidgets: List<Int>
+        get() = HomeWidgetsPolicy.decode(prefs.getString("home-widgets", "") ?: "")
+        set(value) { prefs.edit().putString("home-widgets", HomeWidgetsPolicy.encode(value)).apply() }
+
+    /** The widget pages the driver added after the main one, each with its widgets in order.
+     *  See [HomePagesPolicy]. */
+    var homeWidgetPages: List<List<Int>>
+        get() = HomePagesPolicy.decode(prefs.getString("home-widget-pages", "") ?: "")
+        set(value) { prefs.edit().putString("home-widget-pages", HomePagesPolicy.encode(value)).apply() }
+
+    /** The app widget host every bound widget names. 0 until the first widget is added. */
+    var homeWidgetHostId: Int
+        get() = prefs.getInt("home-widget-host-id", 0)
+        set(value) { prefs.edit().putInt("home-widget-host-id", value).apply() }
 
     @SuppressLint("ApplySharedPref")
     fun commit() {
@@ -1790,6 +1882,7 @@ class Settings(private val context: Context) {
         const val KEY_ASSISTANT_VOLUME_OFFSET = "assistant-volume-offset"
         const val KEY_NAVIGATION_VOLUME_OFFSET = "navigation-volume-offset"
         const val KEY_ENABLE_CAR_LAUNCHER = "enable-car-launcher"
+        const val KEY_WIFI_DIRECT_BANDED_REFUSED_ON = "wifi-direct-banded-refused-on"
 
         const val AUTO_CONNECT_LAST_SESSION = "last-session"
         const val AUTO_CONNECT_SELF_MODE = "self-mode"
@@ -2372,6 +2465,10 @@ class Settings(private val context: Context) {
     var connectionIssueWifiDirectCycledAtEpochMs: Long
         get() = prefs.getLong("connection-issue-p2p-cycled", 0L)
         set(value) = prefs.edit().putLong("connection-issue-p2p-cycled", value).apply()
+
+    var connectionIssueWifiDirectStuckAtEpochMs: Long
+        get() = prefs.getLong("connection-issue-p2p-stuck", 0L)
+        set(value) = prefs.edit().putLong("connection-issue-p2p-stuck", value).apply()
 
     /** This unit's WiFi was off and this Android would not let the app switch it on. */
     var connectionIssueWifiRadioOffAtEpochMs: Long
