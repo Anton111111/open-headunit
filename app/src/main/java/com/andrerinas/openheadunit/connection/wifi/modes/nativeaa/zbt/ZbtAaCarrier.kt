@@ -55,10 +55,10 @@ class ZbtAaCarrier(
             onControlFrame = onControl,
             onRfcommData = onRfcomm,
             // The handshake reads these bytes through the link, so they must be kept.
-            bufferRfcommData = true
+            bufferRfcommData = true,
         )
     },
-    private val now: () -> Long = { SystemClock.elapsedRealtime() }
+    private val now: () -> Long = { SystemClock.elapsedRealtime() },
 ) : ExternalModuleCarrier {
 
     companion object {
@@ -78,16 +78,17 @@ class ZbtAaCarrier(
     @Volatile
     private var channel: ZbtByteChannel? = null
 
-    /** What the module last said about the phone. Written from the pump thread, read anywhere. */
-    @Volatile
-    private var presence: ZbtAttemptPolicy.Presence? = null
+    /** Each open starts unknown; a callback from an old socket cannot populate the new one. */
+    private class ChannelObservation {
+        @Volatile var presence: ZbtAttemptPolicy.Presence? = null
+        @Volatile var everSawPresence = false
+        @Volatile var moduleMac: String? = null
+        var sawRfcomm = false
+    }
 
-    /** Whether this channel has ever named a usable phone, which decides if we may speak blind. */
     @Volatile
-    private var everSawPresence = false
-
-    @Volatile
-    private var moduleMac: String? = null
+    private var observation: ChannelObservation? = null
+    private val observationLock = Any()
 
     @Volatile
     private var lastWakeAt = 0L
@@ -124,9 +125,17 @@ class ZbtAaCarrier(
         ZbtDaemonReachability.setCarrierWantsClient(true)
         try {
             while (keepRunning()) {
+                val observed = ChannelObservation()
+                synchronized(observationLock) { observation = observed }
                 val opened = try {
-                    openChannel(::onControl, ::onRfcomm).also { channel = it }
+                    openChannel(
+                        { id, body -> onControl(observed, id, body) },
+                        { bytes -> onRfcomm(observed, bytes) },
+                    ).also {
+                        channel = it
+                    }
                 } catch (e: IOException) {
+                    retireObservation(observed)
                     // The one live test of whether this unit is really on this route. Detection says the
                     // Bluetooth is an external module; it cannot say the module is reachable this way,
                     // and one whole vendor family in that class is not.
@@ -162,10 +171,11 @@ class ZbtAaCarrier(
                         "${ZbtByteChannel.HOST}:${ZbtByteChannel.PORT} — asking it to carry Android Auto"
                 )
                 try {
-                    watchAndServe(opened)
+                    watchAndServe(opened, observed)
                 } finally {
                     val reason = opened.closeReason
                     ZbtDaemonReachability.setCarrierLive(false)
+                    retireObservation(observed)
                     opened.close()
                     channel = null
                     AppLog.i("NativeAA: [ZBT] channel ended: ${reason ?: "closed"}")
@@ -181,33 +191,29 @@ class ZbtAaCarrier(
     }
 
     /** Pump this channel until a phone appears, then hand it to the handshake. */
-    private suspend fun watchAndServe(open: ZbtByteChannel) {
+    private suspend fun watchAndServe(open: ZbtByteChannel, observed: ChannelObservation) {
         var nextSummary = now() + SUMMARY_EVERY_MS
         var nextPoll = now() + LINK_POLL_EVERY_MS
         val openedAt = now()
-        everSawPresence = false
 
         while (keepRunning() && !open.isFinished) {
-            // A quiet pump returns within the read timeout, so a request waits a few seconds at most.
             sendPendingWake(open)
             val wake = minOf(nextSummary, nextPoll)
             val pumped = open.pumpOnce(wake) { keepRunning() }
-            if (pumped == ZbtByteChannel.Pump.ENDED) return
+            if (pumped == ZbtByteChannel.Pump.ENDED || !keepRunning() || open.isFinished) return
 
             // A connect proves something listens; only a frame proves it will carry Android Auto,
             // and a daemon busy with another client accepts the socket and answers nothing.
             if (pumped == ZbtByteChannel.Pump.FRAME) ZbtDaemonReachability.record(true)
 
             val namedNow = open.moduleMac
-            if (namedNow != null && namedNow != moduleMac) {
-                moduleMac = namedNow
+            if (namedNow != null && namedNow != observed.moduleMac) {
+                observed.moduleMac = namedNow
                 onModuleAddress(namedNow)
             }
 
-            if (shouldAttemptNow(openedAt)) {
-                serveOnce(open, openForMs = now() - openedAt)
-                // The handshake owns the channel's lifetime: its finally closes the link, which
-                // closes the channel. Reopening is the outer loop's job.
+            if (keepRunning() && !open.isFinished && shouldAttemptNow(openedAt, observed) && !isSessionConnected()) {
+                serveOnce(open, observed, openForMs = now() - openedAt)
                 return
             }
 
@@ -218,13 +224,13 @@ class ZbtAaCarrier(
             }
             if (now() >= nextSummary) {
                 nextSummary = now() + SUMMARY_EVERY_MS
-                logSummary(openedAt)
+                logSummary(openedAt, observed)
             }
         }
     }
 
-    private suspend fun serveOnce(open: ZbtByteChannel, openForMs: Long) {
-        val seen = presence
+    private suspend fun serveOnce(open: ZbtByteChannel, observed: ChannelObservation, openForMs: Long) {
+        val seen = observed.presence
         attempts++
         // Which of the two reasons fired is only ever visible in a reporter's exported log, and it
         // is the whole point of the blind path.
@@ -247,7 +253,7 @@ class ZbtAaCarrier(
             // The module reports it without separators, and everything downstream compares it
             // with android.bluetooth's colon form, so a raw one could never match.
             peerAddress = BluetoothHelper.normalizeMacAddress(seen?.phoneMac),
-            moduleMac = moduleMac,
+            moduleMac = observed.moduleMac,
             peerReportedPresent = seen?.usable == true
         )
         try {
@@ -263,14 +269,15 @@ class ZbtAaCarrier(
         }
     }
 
-    private fun shouldAttemptNow(openedAt: Long): Boolean = ZbtAttemptPolicy.shouldAttempt(
-        phonePresent = presence?.usable == true,
+    private fun shouldAttemptNow(openedAt: Long, observed: ChannelObservation): Boolean =
+        ZbtAttemptPolicy.shouldAttempt(
+        phonePresent = observed.presence?.usable == true,
         attemptInFlight = isHandshakeInFlight(),
         sessionConnected = isSessionConnected(),
         sinceLastAttemptMs = lastAttemptEndedAt.takeIf { it != 0L }?.let { now() - it },
         minIntervalMs = retryDelayMs(),
         channelOpenForMs = now() - openedAt,
-        everSawPresence = everSawPresence
+        everSawPresence = observed.everSawPresence
     ) && mayServeHandshake()
 
     /**
@@ -341,6 +348,15 @@ class ZbtAaCarrier(
     override fun close() {
         stopped = true
         runCatching { channel?.close() }
+        observation?.let { retireObservation(it) }
+    }
+
+    private fun retireObservation(observed: ChannelObservation) {
+        synchronized(observationLock) {
+            if (observation === observed) {
+                observation = null
+            }
+        }
     }
 
     private fun keepRunning(): Boolean =
@@ -351,15 +367,19 @@ class ZbtAaCarrier(
     // -----------------------------------------------------------------------------------------
 
     /** Wired into the channel. Runs on whichever thread is pumping — logs and volatiles only. */
-    private fun onControl(msgId: Int, body: ByteArray) {
+    private fun onControl(observed: ChannelObservation, msgId: Int, body: ByteArray) = synchronized(observationLock) {
+        if (observation !== observed || stopped) return@synchronized
         controlFrames++
         AppLog.i(
             "NativeAA: [ZBT] [RX] id=0x${Integer.toHexString(msgId)} ${ZbtMessages.describe(msgId, body)}"
         )
-        val read = ZbtAttemptPolicy.readPresence(msgId, ZbtMessages.parse(body)) ?: return
-        val previous = presence
-        presence = read
-        if (read.usable) everSawPresence = true
+        val fields = ZbtMessages.parse(body)
+        val read = ZbtAttemptPolicy.readPresence(msgId, fields) ?: return@synchronized
+        val previous = observed.presence
+        observed.presence = read
+        if (read.usable) {
+            observed.everSawPresence = true
+        }
         if (ZbtAttemptPolicy.isArrival(previous, read)) {
             AppLog.i(
                 "NativeAA: [ZBT] the phone" + (read.phoneName?.let { " ($it)" } ?: "") +
@@ -372,10 +392,13 @@ class ZbtAaCarrier(
         }
     }
 
-    /** Wired into the channel. Only counts: the bytes themselves belong to the handshake. */
-    private fun onRfcomm(bytes: ByteArray) {
+    /** Records progress; the bytes themselves stay buffered for the handshake. */
+    private fun onRfcomm(observed: ChannelObservation, bytes: ByteArray) = synchronized(observationLock) {
+        if (observation !== observed || stopped) return@synchronized
+        if (bytes.isEmpty()) return@synchronized
         rfcommFrames++
-        if (rfcommFrames == 1) {
+        if (!observed.sawRfcomm) {
+            observed.sawRfcomm = true
             AppLog.i(
                 "NativeAA: [ZBT] first bytes from the phone over the module (${bytes.size} bytes) " +
                     "— the byte channel is live in this direction."
@@ -384,9 +407,9 @@ class ZbtAaCarrier(
         }
     }
 
-    private fun logSummary(openedAt: Long) {
+    private fun logSummary(openedAt: Long, observed: ChannelObservation) {
         val seconds = (now() - openedAt) / 1000
-        val seen = presence
+        val seen = observed.presence
         AppLog.i(
             "NativeAA: [ZBT] ${seconds}s on the module channel — " +
                 "control $controlFrames, from phone $rfcommFrames, attempts $attempts. " +
@@ -396,7 +419,7 @@ class ZbtAaCarrier(
                     seen.connected -> "connected${seen.phoneName?.let { " ($it)" } ?: ""}, " +
                         "but not as an Android Auto device"
                     else -> "not connected"
-                } + ". Module MAC ${moduleMac ?: "unknown"}."
+                } + ". Module MAC ${observed.moduleMac ?: "unknown"}."
         )
     }
 }
