@@ -1649,11 +1649,12 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun showExitDialog() {
-        val dialogContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        // Copy the live configuration: a blank one resets the font scale on API 17-23.
+        val exitScale = settings.uiScaleExitDialogPercent / 100f
+        val dialogContext = if (exitScale != 1f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             androidx.appcompat.view.ContextThemeWrapper(this, theme).apply {
-                val configuration = android.content.res.Configuration()
-                configuration.densityDpi = (this@AapProjectionActivity.resources.displayMetrics.densityDpi *
-                    settings.uiScaleExitDialogPercent / 100f).toInt()
+                val configuration = android.content.res.Configuration(this@AapProjectionActivity.resources.configuration)
+                configuration.densityDpi = (this@AapProjectionActivity.resources.displayMetrics.densityDpi * exitScale).toInt()
                 applyOverrideConfiguration(configuration)
             }
         } else {

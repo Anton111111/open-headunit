@@ -1050,7 +1050,8 @@ class CustomizationFragment : Fragment() {
 
                 settings.uiScaleHomePercent = newHome
                 settings.uiScaleSettingsPercent = newSettings
-                settings.uiScaleExitDialogPercent = 100 + exitSeek.progress * 10
+                val newExit = 100 + exitSeek.progress * 10
+                if (newExit != settings.uiScaleExitDialogPercent) settings.uiScaleExitDialogPercent = newExit
                 settings.commit()
 
                 updateUiScaleValue()
