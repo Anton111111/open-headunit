@@ -68,4 +68,72 @@ class HctAdmissionTest {
         assertFalse(HctAdmission.matchesAddress("123", "00:11:22:33:44:55"))
         assertFalse(HctAdmission.matchesAddress(null, "00:11:22:33:44:55"))
     }
+    @Test fun `call report after idle reads invalidates wake but preserves current AA handoff`() {
+        val admission = HctAdmission()
+        val ticket = admission.report(aa, null, null, 0, true)!!
+        val idleEpoch = admission.epoch()
+        val idle = HctWakePolicy.Snapshot(1, 0x112233445566L)
+        val attempts = HctWakeAttempts()
+        val selected = attempts.select("11:22:33:44:55:66", 0)!!
+        admission.noteStatusReport()
+        admission.report(null, 2, null, 1, false)
+        val decision = HctWakePolicy.decide(selected.target, true, idle, idle,
+            idleEpoch == admission.epoch(), true)
+        assertEquals(HctWakePolicy.Result.STATE_CHANGED, decision)
+        var sends = 0
+        if (decision == HctWakePolicy.Result.REQUESTED && attempts.claim(selected, 2)) sends++
+        attempts.finishUnsent(selected)
+        assertEquals(0, sends)
+        assertFalse(attempts.outstanding(selected))
+        assertNotNull(attempts.select(selected.target, 3))
+        assertTrue(admission.current(ticket))
+    }
+
+    @Test fun `peer-only report also invalidates earlier wake reads`() {
+        val admission = HctAdmission()
+        val before = admission.epoch()
+        admission.noteStatusReport()
+        assertNotEquals(before, admission.epoch())
+    }
+
+    @Test fun `unused event retirement requires another standalone report`() {
+        val admission = HctAdmission()
+        val unused = admission.report(aa, null, null, 0, true)!!
+        admission.retireUnused(unused)
+        assertFalse(admission.current(unused))
+        assertNull(admission.report(aa, 1, 2, 10, false))
+        val next = admission.report(aa, null, null, 20, true)!!
+        admission.retireUnused(unused)
+        assertTrue(admission.current(next))
+        assertNotEquals(unused.generation, next.generation)
+    }
+
+    @Test fun `failed or cancelled pre-socket work releases only its own admission`() = kotlinx.coroutines.runBlocking {
+        for (cancelled in listOf(false, true)) {
+            val admission = HctAdmission()
+            val ticket = admission.report(aa, null, null, 0, true)!!
+            try {
+                admission.handoff(ticket) {
+                    if (cancelled) throw kotlinx.coroutines.CancellationException("cancel before connect")
+                    throw java.io.IOException("Binder peer read failed")
+                }
+            } catch (_: Exception) {}
+            assertFalse(admission.current(ticket))
+            assertNotNull(admission.report(aa, null, null, 1, true))
+        }
+    }
+
+    @Test fun `failed connect keeps admission spent because shared ownership may have changed`() = kotlinx.coroutines.runBlocking {
+        val admission = HctAdmission()
+        val ticket = admission.report(aa, null, null, 0, true)!!
+        try {
+            admission.handoff(ticket) { touchingSocket ->
+                touchingSocket()
+                throw java.io.IOException("connect failed")
+            }
+        } catch (_: java.io.IOException) {}
+        assertTrue(admission.current(ticket))
+        assertNull(admission.report(aa, null, null, 1, true))
+    }
+
 }

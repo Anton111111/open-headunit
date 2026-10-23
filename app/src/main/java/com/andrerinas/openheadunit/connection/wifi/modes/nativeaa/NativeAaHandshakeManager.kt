@@ -480,6 +480,31 @@ class NativeAaHandshakeManager(
      * Targets a specific driver device, ending the prompt window and waking only that device.
      */
     fun selectDriver(mac: String, explicit: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            (moduleCarrier as? HctAaCarrier)?.let { carrier ->
+                val accepted = carrier.requestWakeFor(mac) {
+                    commitDriverSelection(mac, explicit)
+                    wakeStoodDown = false
+                    sessionEndedAt = 0L
+                    resetHandshakeBackoff()
+                    resetJoinRefusals()
+                }
+                if (!accepted) {
+                    // Resolved UI selections close the picker even when the target is held.
+                    // On success its hold is released inside the admission transaction; doing
+                    // that earlier would let incoming AA reserve opening against the old target.
+                    clearSelectionPrompt()
+                    ToastUtils.showToast(context, context.getString(R.string.hct_aa_selection_pending),
+                        Toast.LENGTH_LONG, force = true)
+                }
+                return
+            }
+        }
+        commitDriverSelection(mac, explicit)
+        manualPoke(mac)
+    }
+
+    private fun commitDriverSelection(mac: String, explicit: Boolean) {
         AppLog.i("NativeAA: Driver selected: $mac (${if (explicit) "explicit" else "automatic"} pick)")
         clearSelectionPrompt()
         isSelectionCanceled = false
@@ -489,10 +514,9 @@ class NativeAaHandshakeManager(
         chosenExplicit = explicit
         chosenWakeAnswered = false
         chosenWakeUnanswered = false
-        // The switch-away stamps deliberately survive the pick. Choosing who to let in is not the
-        // same question as whether the phone the driver just left may come straight back.
+        // The switch-away stamps survive the pick: choosing a driver does not authorize
+        // the phone just left to reconnect immediately.
         clearGateRefusals()
-        manualPoke(mac)
     }
 
     /**
@@ -1215,6 +1239,21 @@ class NativeAaHandshakeManager(
      */
     fun reportsWake(): Boolean = moduleCarrier?.sendsWake ?: true
 
+    /** Credentials and carrier selection can complete in either order. Report readiness from both. */
+    fun reportHctNetworkReady() {
+        scope.launch(Dispatchers.Main.immediate) {
+            if (!usesHctCarrier() || !isRunning || aaListenersClosedForSession || context.userExitedAA ||
+                !wakesPhone() || credentials?.let { NativeCredentialsPolicy.isUsablePassphrase(it.psk) } != true ||
+                commManager.isConnected || commManager.connectionState.value is CommManager.ConnectionState.Connecting) return@launch
+            // A pre-selection credential callback can have reported an Android-radio wake.
+            // This carrier waits for the OEM event; its command submission is not AA readiness.
+            ConnectionStageTracker.reportWirelessWaiting()
+        }
+    }
+
+    private fun usesHctCarrier(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && moduleCarrier is HctAaCarrier
+
     /**
      * Puts the Bluetooth side back where it was before the session, without taking it down.
      *
@@ -1248,11 +1287,12 @@ class NativeAaHandshakeManager(
         handoffSettlingSince = 0L
         resetHandshakeBackoff()
 
-        if (ExternalBtTransportPolicy.rearmsWithoutAndroidRadio(transportRoute(context))) {
+        val route = transportRoute(context)
+        if (ExternalBtTransportPolicy.rearmsWithoutAndroidRadio(route)) {
             aaListenersClosedForSession = false
             aaListenerLost = false
             aaReopenAttempts = 0
-            AppLog.i("NativeAA: [BLINK] session state re-armed; the module bridge remains ready for the next phone channel.")
+            AppLog.i("NativeAA: [$route] session state re-armed; waiting for the next manufacturer phone channel.")
             return
         }
 
@@ -1967,6 +2007,9 @@ class NativeAaHandshakeManager(
      * nothing answered: a budget counted in attempts must not spend one on the first.
      */
     private suspend fun pokeDevice(device: BluetoothDevice, holdMs: Long): BluetoothWakePolicy.WakeOutcome {
+        // Credentials may queue this worker before the OEM carrier is selected. Never let
+        // that stale Android-radio job compete with the manufacturer's HFP/AA connection.
+        if (usesHctCarrier()) return BluetoothWakePolicy.WakeOutcome.STOOD_DOWN
         // A poke that connects takes the phone's single hands-free slot, and this unit's own client
         // is dropped to make room. The link reads are adapter-wide, so the policy is told which role
         // is up and what the target itself is doing, and says whose link it takes it to be.
@@ -2262,6 +2305,10 @@ class NativeAaHandshakeManager(
             while (!isActive() && waitedMs < POKE_READY_WAIT_MS && isActive) {
                 delay(POKE_READY_POLL_MS)
                 waitedMs += POKE_READY_POLL_MS
+            }
+            if (usesHctCarrier()) {
+                reportHctNetworkReady()
+                return@launch
             }
             AppLog.d("NativeAA: wake poke starting (listeners ready after ${waitedMs}ms).")
 
@@ -2641,6 +2688,10 @@ class NativeAaHandshakeManager(
                     )
                     while (keepWaking()) {
                         if (!isActive() || !isActive || isHandshakeInFlight() || isHandoffSettling()) break
+                        if (usesHctCarrier()) {
+                            reportHctNetworkReady()
+                            break
+                        }
                         // The escalation now fires on this path too, so its give-back has to hold
                         // here as well: re-poking inside the window is what it exists to prevent.
                         val probeLeftMs = (escalationProbeUntil[device.address] ?: 0L) - SystemClock.elapsedRealtime()
@@ -2775,7 +2826,6 @@ class NativeAaHandshakeManager(
     }
     @SuppressLint("NewApi") // The route is gated by HctServiceObserver.available (API 21+).
     private fun startOverHctModule() {
-        isRunning = true
         notStartedReason = null
         aaListenersClosedForSession = false
         localRadioName = "HCT external Bluetooth module"
@@ -2809,6 +2859,8 @@ class NativeAaHandshakeManager(
                 val message = when (result) {
                     HctWakePolicy.Result.HFP_ALREADY_CONNECTED -> R.string.hct_aa_waiting_existing_bluetooth
                     HctWakePolicy.Result.HFP_BUSY -> R.string.hct_aa_bluetooth_busy
+                    HctWakePolicy.Result.WAKE_UNCONFIRMED -> R.string.hct_aa_wake_unconfirmed
+                    HctWakePolicy.Result.LOCAL_NOT_READY -> R.string.hct_aa_wake_not_sent
                     else -> R.string.hct_aa_handoff_unavailable
                 }
                 scope.launch(Dispatchers.Main) {
@@ -2817,7 +2869,9 @@ class NativeAaHandshakeManager(
             }
         )
         moduleCarrier = carrier
+        isRunning = true
         wakeAwaitingModule = false
+        reportHctNetworkReady()
         scope.launch(Dispatchers.IO + CoroutineName("NativeAa-HctCarrier")) {
             try {
                 carrier.run()

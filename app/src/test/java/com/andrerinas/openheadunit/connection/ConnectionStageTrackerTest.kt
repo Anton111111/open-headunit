@@ -100,4 +100,21 @@ class ConnectionStageTrackerTest {
         ConnectionStageTracker.beginAttempt(ConnectionStage.ARMED)
         assertEquals(ConnectionNetworkDetail(5805), ConnectionStageTracker.network.value)
     }
+    @Test
+    fun passiveWirelessReadinessPreservesUsbAndLaterProgress() {
+        for (stage in ConnectionStage.values()) {
+            ConnectionStageTracker.beginAttempt(stage)
+            ConnectionStageTracker.reportWirelessWaiting()
+            val expected = when (stage) {
+                ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK,
+                ConnectionStage.WAKING_PHONE -> ConnectionStage.WAITING_FOR_PHONE
+                else -> stage
+            }
+            assertEquals(expected, ConnectionStageTracker.stage.value)
+        }
+        ConnectionStageTracker.endAttempt()
+        ConnectionStageTracker.reportWirelessWaiting()
+        assertEquals(null, ConnectionStageTracker.stage.value)
+    }
+
 }

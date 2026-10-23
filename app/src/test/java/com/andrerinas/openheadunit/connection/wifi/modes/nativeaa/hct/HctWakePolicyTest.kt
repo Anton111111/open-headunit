@@ -13,8 +13,9 @@ class HctWakePolicyTest {
         paired: Boolean? = true,
         before: HctWakePolicy.Snapshot? = disconnected,
         after: HctWakePolicy.Snapshot? = disconnected,
-        generation: Boolean = true
-    ) = HctWakePolicy.decide(target, paired, before, after, generation)
+        generation: Boolean = true,
+        reconnect: Boolean = false
+    ) = HctWakePolicy.decide(target, paired, before, after, generation, reconnect)
 
     @Test fun `only explicit verified paired target may wake`() {
         assertEquals(HctWakePolicy.Result.REQUESTED, decide())
@@ -24,7 +25,7 @@ class HctWakePolicyTest {
         assertEquals(HctWakePolicy.Result.NOT_PAIRED, decide(paired = null))
     }
 
-    @Test fun `already connected target is never poked again`() {
+    @Test fun `background wake never reconnects an existing HFP connection`() {
         for (peer in listOf(0x001122334455L, other)) {
             val connected = HctWakePolicy.Snapshot(1, peer)
             assertEquals(HctWakePolicy.Result.HFP_ALREADY_CONNECTED, decide(before = connected, after = connected))
@@ -33,11 +34,47 @@ class HctWakePolicyTest {
         }
     }
 
+    @Test fun `explicit selection can reconnect the same or another idle phone`() {
+        for (peer in listOf(0x001122334455L, other)) {
+            val connected = HctWakePolicy.Snapshot(1, peer)
+            assertEquals(HctWakePolicy.Result.REQUESTED,
+                decide(before = connected, after = connected, reconnect = true))
+        }
+        assertEquals(HctWakePolicy.Result.REQUESTED, decide(reconnect = true))
+    }
+
+    @Test fun `reconnect still requires stable state valid peer pairing and generation`() {
+        val connected = HctWakePolicy.Snapshot(1, 0x001122334455L)
+        assertEquals(HctWakePolicy.Result.STATE_CHANGED,
+            decide(before = connected, after = connected.copy(hfp = 0), reconnect = true))
+        assertEquals(HctWakePolicy.Result.STATE_CHANGED,
+            decide(before = connected.copy(hfp = 0), after = connected, reconnect = true))
+        assertEquals(HctWakePolicy.Result.STATE_CHANGED,
+            decide(before = connected, after = connected.copy(peer = other), reconnect = true))
+        assertEquals(HctWakePolicy.Result.STATE_CHANGED,
+            decide(before = connected, after = connected, generation = false, reconnect = true))
+        for (peer in listOf(0L, 0xffffffffffffL, 0x020000000000L)) {
+            val invalid = HctWakePolicy.Snapshot(1, peer)
+            assertEquals(HctWakePolicy.Result.UNKNOWN_STATE,
+                decide(before = invalid, after = invalid, reconnect = true))
+        }
+        for (paired in listOf(false, null)) {
+            assertEquals(HctWakePolicy.Result.NOT_PAIRED,
+                decide(paired = paired, before = connected, after = connected, reconnect = true))
+        }
+        assertEquals(HctWakePolicy.Result.UNKNOWN_STATE, decide(before = null, reconnect = true))
+        assertEquals(HctWakePolicy.Result.UNKNOWN_STATE,
+            decide(after = HctWakePolicy.Snapshot(6, other), reconnect = true))
+    }
+
     @Test fun `dialing ringing or calls cannot be interrupted by wake`() {
         for (state in 2..5) {
             val busy = HctWakePolicy.Snapshot(state, other)
             assertEquals(HctWakePolicy.Result.HFP_BUSY, decide(before = busy))
             assertEquals(HctWakePolicy.Result.HFP_BUSY, decide(after = busy))
+            assertEquals(HctWakePolicy.Result.HFP_BUSY, decide(before = busy, reconnect = true))
+            assertEquals(HctWakePolicy.Result.HFP_BUSY, decide(after = busy, reconnect = true))
+            assertEquals(HctWakePolicy.Result.HFP_BUSY, decide(before = busy, after = busy, reconnect = true))
         }
     }
 

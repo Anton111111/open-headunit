@@ -43,7 +43,7 @@ internal object HctOpening {
             .build()
 
     /**
-     * Sends one request and returns a successful VersionResponse for the normal WPP reader to
+     * Sends one request and returns a compatible VersionResponse for the normal WPP reader to
      * replay. At most two early phone StartRequests may precede it; later bytes stay in [input].
      *
      * AA 18.0.664204's version handler (pum -> pua) sends a new response to a repeated request and
@@ -159,13 +159,17 @@ internal object HctOpening {
             throw IOException("HCT WPP version response is malformed", e)
         }
         // The schema is optional for compatibility, but absent fields are not a successful
-        // handshake. In particular, protobuf's absent status default of zero is not acceptance.
+        // handshake. In particular, protobuf's absent status default of 0(SUCCESS) is not acceptance.
         if (!response.hasMajor() || response.major <= 0 ||
             !response.hasMinor() || response.minor < 0 || !response.hasStatus()
         ) {
             throw IOException("HCT WPP version response is incomplete")
         }
-        if (response.status != 0) {
+        // WPP -8(NO_SUPPORTED_WIFI_CHANNELS) can occur on 2.4 GHz/hotspot sessions that
+        // still proceed to Wi-Fi setup. Accept it alongside 0(SUCCESS), as the Android radio
+        // route does; neither status proves that Wi-Fi joined. These are WPP status codes,
+        // not GAL MessageStatus values, where the same -8 means STATUS_MEDIA_CONFIG_MISMATCH.
+        if (response.status != 0 && response.status != NO_SUPPORTED_WIFI_CHANNELS) {
             throw IOException("Phone rejected HCT WPP opening: status=${response.status}")
         }
         // Lower or higher versions are not assumed compatible with this carrier's opening.
@@ -175,4 +179,6 @@ internal object HctOpening {
         }
         return response
     }
+
+    private const val NO_SUPPORTED_WIFI_CHANNELS = -8
 }

@@ -160,7 +160,10 @@ class HctOpeningTest {
         }
         for (frame in listOf(
             response(0, 7), response(-1, 7), response(1, -1),
-            response(status = -8), response(status = 1),
+            response(status = -2), // -2(WIFI_INACCESSIBLE_CHANNEL)
+            response(status = -7), // -7(INVALID_HOST)
+            response(status = -9), // -9(INSTRUCT_USER_TO_CHECK_THE_PHONE)
+            response(status = 1), // 1(UNSOLICITED_MESSAGE)
         )) {
             assertThrows(IOException::class.java) { exchange(ByteArrayInputStream(frame)) }
         }
@@ -225,7 +228,7 @@ class HctOpeningTest {
     @Test
     fun `later response is validated independently after a queued success`() {
         val initial = response()
-        val rejected = response(status = -8)
+        val rejected = response(status = -2)
         val input = ByteArrayInputStream(initial + rejected)
         assertArrayEquals(initial, exchange(input))
         val later = input.readBytes()
@@ -322,5 +325,20 @@ class HctOpeningTest {
         val output = ByteArrayOutputStream()
         assertThrows(EOFException::class.java) { exchange(ByteArrayInputStream(start()), output) }
         assertArrayEquals(expectedRequest, output.toByteArray())
+    }
+
+    @Test
+    fun `no supported channels preserves opening and later frames for WiFi setup`() {
+        val frame = response(status = -8) // -8(NO_SUPPORTED_WIFI_CHANNELS)
+        val next = start()
+        val input = ByteArrayInputStream(frame + next)
+        assertArrayEquals(frame, exchange(input))
+        assertArrayEquals(next, input.readBytes())
+        assertArrayEquals(frame + next, exchange(ByteArrayInputStream(next + frame)))
+        // The common handshake validates later responses with this same entry point.
+        assertEquals(-8, HctOpening.validateResponse(frame.copyOfRange(WppFraming.HEADER_SIZE, frame.size)).status)
+        for (unsupported in listOf(response(1, 6, -8), response(1, 8, -8), response(2, 7, -8))) {
+            assertThrows(IOException::class.java) { exchange(ByteArrayInputStream(unsupported)) }
+        }
     }
 }

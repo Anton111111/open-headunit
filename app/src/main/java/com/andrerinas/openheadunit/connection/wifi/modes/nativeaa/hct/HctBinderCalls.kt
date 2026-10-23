@@ -29,10 +29,14 @@ internal class HctCallGate(
     }
 
     @Synchronized
-    fun claim() {
+    fun claim(admit: () -> Boolean = { true }): Boolean {
         checkActive()
         if (claimed) throw IOException("HCT: wake request already admitted")
+        // Local admission only: cancellation cannot publish an outcome between reserving
+        // native work and recording that reservation. Never do Binder IPC in this callback.
+        if (!admit()) return false
         claimed = true
+        return true
     }
 }
 

@@ -53,7 +53,9 @@ object ZbtIdentityProbe {
             return ((left + 999_999L) / 1_000_000L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
         }
         return try {
-            Socket().use { socket ->
+            // Socket is Closeable only from API 19, so close it by hand rather than with use().
+            val socket = Socket()
+            try {
                 try {
                     socket.connect(InetSocketAddress(host, port), remainingMs())
                 } catch (_: ConnectException) {
@@ -83,6 +85,8 @@ object ZbtIdentityProbe {
                     }
                 }
                 Outcome.UNCONFIRMED
+            } finally {
+                try { socket.close() } catch (_: IOException) {}
             }
         } catch (_: IOException) {
             Outcome.UNCONFIRMED

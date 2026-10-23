@@ -102,4 +102,19 @@ class HctRoutingTest {
         assertFalse(ExternalBtTransportPolicy.rearmsWithoutAndroidRadio(Route.NORMAL))
         assertFalse(ExternalBtTransportPolicy.rearmsWithoutAndroidRadio(Route.ZBT))
     }
+    @Test
+    fun `radio override visibility follows effective module controls`() {
+        fun visible(mode: ZbtDiscoveryPolicy.Mode = ZbtDiscoveryPolicy.Mode.NONE,
+                    zbt: Boolean = false, ignore: Boolean = false, blink: Boolean = false,
+                    fyt: String? = null, hct: Boolean = true) =
+            ExternalBtTransportPolicy.showsAndroidRadioOverride(snapshot(mode), zbt, ignore, blink, fyt, hct)
+        assertTrue(visible(zbt = true)) // Stale ZBT preference on an HCT-only unit.
+        assertFalse(visible(ZbtDiscoveryPolicy.Mode.IDENTITY, zbt = true))
+        assertTrue(visible(ZbtDiscoveryPolicy.Mode.IDENTITY, zbt = true, ignore = true))
+        assertFalse(visible(blink = true))
+        assertTrue(visible(blink = true, ignore = true))
+        assertFalse(visible(hct = false))
+        assertTrue(visible(zbt = true, fyt = "FYT", hct = false))
+    }
+
 }

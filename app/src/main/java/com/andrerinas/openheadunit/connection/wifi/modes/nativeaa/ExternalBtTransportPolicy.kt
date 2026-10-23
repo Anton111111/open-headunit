@@ -163,6 +163,23 @@ object ExternalBtTransportPolicy {
     fun showBlinkToggle(fytModuleEvidence: String?, enabled: Boolean): Boolean =
         fytModuleEvidence != null || enabled
 
+    /** Keep the radio escape visible only where it can affect routing, or is already checked. */
+    fun showsAndroidRadioOverride(
+        discovery: ZbtDiscoveryPolicy.Snapshot,
+        zbtTransportEnabled: Boolean,
+        ignoreExternalBt: Boolean,
+        blinkTransportEnabled: Boolean = false,
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
+    ): Boolean {
+        val detected = discovery.decision.available || fytModuleEvidence != null || hctServiceAvailable
+        // A stale ZBT toggle without matching evidence cannot select ZBT and must not hide
+        // the escape on an HCT-only unit. BLINK remains an explicit override even without evidence.
+        val explicitModule = blinkTransportEnabled ||
+            (fytModuleEvidence == null && discovery.decision.available && zbtTransportEnabled)
+        return detected && (ignoreExternalBt || !explicitModule)
+    }
+
     /**
      * What the main screen's WiFi button arms. A daemon not measured yet, or one whose refusal
      * the press re-asks, goes to the module route, because the bring-up is what measures it.

@@ -16,10 +16,12 @@ import android.os.Looper
 import android.os.Parcel
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerDiscovery
 import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerInventory
 import java.io.Closeable
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -36,6 +38,7 @@ import kotlinx.coroutines.sync.withLock
  */
 internal class HctServiceObserver(
     context: Context,
+    private val onAaReport: () -> Unit,
     private val onInvalidated: () -> Unit
 ) : Closeable {
     private val context = context.applicationContext
@@ -52,6 +55,30 @@ internal class HctServiceObserver(
     @Volatile private var address: String? = null
     @Volatile private var reportedPeer: String? = null
     @Volatile private var addressAck: CompletableDeferred<Unit>? = null
+
+    // Each report is partial: absent fields are not zero and are not evidence of disconnect.
+    // HFP and AA are separate firmware state machines. Keep the actual fields together with
+    // their report age rather than merging an old HFP state into a newer peer/UUID report.
+    @Volatile private var lastReport = "no manufacturer report"
+    @Volatile private var lastReportAt: Long? = null
+
+    fun observationSummary(): String {
+        val age = lastReportAt?.let { SystemClock.elapsedRealtime() - it }
+        return "lastReportAgeMs=${age ?: "none"}; $lastReport"
+    }
+
+    private fun recordReport(intent: Intent) {
+        fun field(key: String) = if (intent.hasExtra(key)) intent.getIntExtra(key, -1).toString() else "missing"
+        val aa = if (intent.hasExtra("phone_uuids"))
+            (intent.getStringArrayListExtra("phone_uuids")?.contains(HctAdmission.AA_MARKER) == true).toString()
+            else "missing"
+        val report = "hfp=${field("connect_state")}, spp=${field("spp_state")}, aa=$aa, " +
+            "phoneField=${intent.hasExtra("phone_mac")}, connectedField=${intent.hasExtra("connected_mac")}, " +
+            "standalone=${intent.extras?.keySet() == setOf("phone_uuids")}"
+        if (report != lastReport) AppLog.i("NativeAA: [HCT] manufacturer report: $report")
+        lastReport = report
+        lastReportAt = SystemClock.elapsedRealtime()
+    }
 
     private fun invalidate() = synchronized(lifecycle) {
         admission.invalidate()
@@ -111,41 +138,50 @@ internal class HctServiceObserver(
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (closed || intent.action != REPORT) return
-            runCatching {
-                if (intent.hasExtra("phone_mac")) {
-                    val current = HctAdmission.address(intent.getLongExtra("phone_mac", 0))
-                    val previous = reportedPeer
-                    if (current == null || (previous != null && previous != current)) invalidate()
-                    reportedPeer = current
-                }
-                val peer = address
-                if (peer != null &&
-                    ((intent.hasExtra("phone_mac") &&
-                        HctAdmission.address(intent.getLongExtra("phone_mac", 0)) != peer) ||
-                     (intent.hasExtra("connected_mac") &&
-                        !HctAdmission.matchesAddress(intent.getStringExtra("connected_mac"), peer)))) {
-                    invalidate()
-                    return
-                }
-                val uuids = if (intent.hasExtra("phone_uuids")) {
-                    intent.getStringArrayListExtra("phone_uuids") ?: emptyList()
-                } else null
-                val state = if (intent.hasExtra("connect_state")) intent.getIntExtra("connect_state", -1) else null
-                val spp = if (intent.hasExtra("spp_state")) intent.getIntExtra("spp_state", -1) else null
-                if ((state != null && state !in 1..5) || (spp != null && spp != 2) ||
-                    (uuids != null && HctAdmission.AA_MARKER !in uuids)) {
-                    invalidate()
-                    return
-                }
-                val standalone = intent.extras?.keySet() == setOf("phone_uuids")
-                admission.report(uuids, state, spp, SystemClock.elapsedRealtime(), standalone)?.let {
-                    arrivals.trySend(it)
-                }
-                // SPC2 is also emitted for iAP. It is only an address-consumption hint; the
-                // carrier must separately require a valid WPP frame and matching Binder peer.
-                if (spp == 2) addressAck?.complete(Unit)
-            }.onFailure { invalidate() }
+            synchronized(lifecycle) {
+                if (closed || intent.action != REPORT) return
+                runCatching {
+                    if (listOf("connect_state", "spp_state", "phone_mac", "connected_mac", "phone_uuids")
+                            .any(intent::hasExtra)) admission.noteStatusReport()
+                    recordReport(intent)
+                    if (intent.hasExtra("phone_mac")) {
+                        val current = HctAdmission.address(intent.getLongExtra("phone_mac", 0))
+                        val previous = reportedPeer
+                        if (current == null || (previous != null && previous != current)) invalidate()
+                        reportedPeer = current
+                    }
+                    val peer = address
+                    if (peer != null &&
+                        ((intent.hasExtra("phone_mac") &&
+                            HctAdmission.address(intent.getLongExtra("phone_mac", 0)) != peer) ||
+                         (intent.hasExtra("connected_mac") &&
+                            !HctAdmission.matchesAddress(intent.getStringExtra("connected_mac"), peer)))) {
+                        invalidate()
+                        return
+                    }
+                    val uuids = if (intent.hasExtra("phone_uuids")) {
+                        intent.getStringArrayListExtra("phone_uuids") ?: emptyList()
+                    } else null
+                    val state = if (intent.hasExtra("connect_state")) intent.getIntExtra("connect_state", -1) else null
+                    val spp = if (intent.hasExtra("spp_state")) intent.getIntExtra("spp_state", -1) else null
+                    if ((state != null && state !in 1..5) || (spp != null && spp != 2) ||
+                        (uuids != null && HctAdmission.AA_MARKER !in uuids)) {
+                        invalidate()
+                        return
+                    }
+                    val standalone = intent.extras?.keySet() == setOf("phone_uuids")
+                    admission.report(uuids, state, spp, SystemClock.elapsedRealtime(), standalone)?.let {
+                        // Serialize fresh-event publication with final wake admission. Invalidate
+                        // an unsent selection before the carrier starts its asynchronous Binder reads.
+                        onAaReport()
+                        AppLog.i("NativeAA: [HCT] fresh AA report admitted")
+                        arrivals.trySend(it)
+                    }
+                    // SPC2 is also emitted for iAP. It is only an address-consumption hint; the
+                    // carrier must separately require a valid WPP frame and matching Binder peer.
+                    if (spp == 2) addressAck?.complete(Unit)
+                }.onFailure { invalidate() }
+            }
         }
     }
 
@@ -155,6 +191,11 @@ internal class HctServiceObserver(
         synchronized(lifecycle) {
             check(!closed && !registered && !bound)
             if (!available(context)) throw IOException("HCT: manufacturer interface is unavailable")
+            // Related HCT builds select different FSC handlers with these properties. Record
+            // them for diagnosis only; neither value proves a command ABI or reconnect outcome.
+            AppLog.i("NativeAA: [HCT] module hints: gocType=" +
+                com.andrerinas.openheadunit.utils.SystemProperties.get("bt.goc.type", "unavailable") +
+                ", bluewareSoc=" + com.andrerinas.openheadunit.utils.SystemProperties.get("vendor.blueware.soc.type", "unavailable"))
             try {
                 ContextCompat.registerReceiver(
                     context, receiver, IntentFilter(REPORT), SENDER_PERMISSION, null,
@@ -247,6 +288,9 @@ internal class HctServiceObserver(
             if (before.hfp !in 1..5) throw IOException("HCT: phone disconnected")
             val uuids = readUuids(gate, remote)
             val after = snapshot(gate, remote, stateLast = true)
+            AppLog.i("NativeAA: [HCT] handoff status: hfp=${before.hfp}->${after.hfp}, " +
+                "peerStable=${before.peer == after.peer}, cachedAa=${HctAdmission.AA_MARKER in uuids}, " +
+                "eventCurrent=${admission.current(ticket)}")
             if (HctAdmission.AA_MARKER !in uuids || after.peer != before.peer ||
                 after.hfp !in 1..5 || (reportedPeer != null && reportedPeer != mac) ||
                 !admission.current(ticket)) {
@@ -273,17 +317,20 @@ internal class HctServiceObserver(
 
     /**
      * User-directed wake only. A new HFP connection can trigger the phone's AA SDP discovery.
-     * AT-CC disconnects an existing HFP connection, even to the same phone, so unknown/active
-     * states refuse this operation. Sending the request does not mean AA has connected.
+     * AT-CC disconnects an existing HFP connection, even to the same phone. An explicit
+     * selection may allow one such reconnect while HFP is idle; calls and unknown/changing
+     * states refuse it. Sending the request does not mean AA has connected.
      */
     suspend fun requestWake(
         targetMac: String?,
-        mayWake: () -> Boolean = { true }
+        allowReconnect: Boolean = false,
+        mayWake: () -> HctWakePolicy.Result = { HctWakePolicy.Result.REQUESTED }
     ): HctWakePolicy.Result {
         if (closed) return HctWakePolicy.Result.CLOSED
         val target = targetMac?.let { BluetoothPeerInventory.normalizeAddress(it) }
             ?: return HctWakePolicy.Result.NO_TARGET
         if (binder == null) return HctWakePolicy.Result.SERVICE_UNAVAILABLE
+        val submitted = AtomicBoolean(false)
         return try {
             statusCalls.withLock {
                 HctBinderCalls.call { gate ->
@@ -292,16 +339,25 @@ internal class HctServiceObserver(
                     val before = snapshot(gate, remote)
                     val paired = BluetoothPeerDiscovery.manufacturerInventory(context).manufacturerPairing(target)
                     val after = snapshot(gate, remote, stateLast = true)
-                    val result = HctWakePolicy.decide(target, paired, before, after, epoch == admission.epoch())
+                    val result = HctWakePolicy.decide(target, paired, before, after, epoch == admission.epoch(), allowReconnect)
+                    AppLog.i("NativeAA: [HCT] wake status: hfp=${before.hfp}->${after.hfp}, " +
+                        "peerStable=${before.peer == after.peer}, targetIsPeer=${HctAdmission.address(after.peer) == target}, " +
+                        "decision=$result")
                     if (result != HctWakePolicy.Result.REQUESTED) return@call result
                     synchronized(lifecycle) {
                         if (closed) return@call HctWakePolicy.Result.CLOSED
                         if (epoch != admission.epoch() || binder !== remote) return@call HctWakePolicy.Result.STATE_CHANGED
-                        if (!mayWake()) return@call HctWakePolicy.Result.STATE_CHANGED
-                        gate.claim()
+                        var localDecision = HctWakePolicy.Result.STATE_CHANGED
+                        if (!gate.claim {
+                            localDecision = mayWake()
+                            (localDecision == HctWakePolicy.Result.REQUESTED).also {
+                                if (it) submitted.set(true)
+                            }
+                        }) return@call localDecision
                     }
                     // Close/cancel before admission prevents this request. Once admitted, IPC
                     // cannot be recalled; keep it outside lifecycle so close never waits on it.
+                    AppLog.i("NativeAA: [HCT] submitting one settingsaccess=5 HFP reconnect")
                     context.sendBroadcast(Intent(SETTINGS_ACCESS).setPackage(PACKAGE)
                         .putExtra("accesstype", 5).putExtra("accesscommand", target.replace(":", "")))
                     HctWakePolicy.Result.REQUESTED
@@ -309,8 +365,12 @@ internal class HctServiceObserver(
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
-            HctWakePolicy.Result.UNKNOWN_STATE
+        } catch (error: Exception) {
+            AppLog.w("NativeAA: [HCT] wake result uncertain: ${error.message}")
+            // Submission is not an OEM completion ACK. Keep this stable even if a
+            // matching WPP has already reconciled the process-wide pending record.
+            if (submitted.get()) HctWakePolicy.Result.SUBMISSION_UNCONFIRMED
+            else HctWakePolicy.Result.UNKNOWN_STATE
         }
     }
 

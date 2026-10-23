@@ -1548,14 +1548,19 @@ class SettingsFragment : Fragment() {
             val radioDiscovery = ZbtDiscovery.snapshot()
             val radioFytEvidence = BluetoothHelper.fytModuleEvidence
             val ignoreChecked = pendingNativeAaIgnoreExternalBt ?: settings.nativeAaIgnoreExternalBt
-            val explicitModule = (pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport) ||
-                (radioFytEvidence == null && (pendingExternalBtZbtTransport ?: settings.externalBtZbtTransport))
-            if ((radioDiscovery.decision.available || radioFytEvidence != null) &&
-                (ignoreChecked || !explicitModule)) {
+            val hctService = HctServiceObserver.available(requireContext())
+            if (ExternalBtTransportPolicy.showsAndroidRadioOverride(
+                    radioDiscovery,
+                    pendingExternalBtZbtTransport ?: settings.externalBtZbtTransport,
+                    ignoreChecked,
+                    pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
+                    radioFytEvidence,
+                    hctService
+                )) {
                 items.add(SettingItem.ToggleSettingEntry(
                     stableId = "nativeAaIgnoreExternalBt",
                     nameResId = R.string.native_aa_ignore_external_bt,
-                    descriptionResId = if (radioDiscovery.decision.requiresIdentity && radioFytEvidence == null)
+                    descriptionResId = if ((radioDiscovery.decision.requiresIdentity || hctService) && radioFytEvidence == null)
                         R.string.native_aa_candidate_android_radio_description else R.string.native_aa_ignore_external_bt_description,
                     isChecked = ignoreChecked,
                     searchKeywords = "external bluetooth module rfcomm override compatibility anyway",

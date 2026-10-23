@@ -7,6 +7,7 @@ internal class HctAdmission {
     data class Ticket(val generation: Long, val reportedAt: Long)
 
     private var generation = 0L
+    private var wakeRevision = 0L
     private var ticket: Ticket? = null
 
     /**
@@ -35,14 +36,42 @@ internal class HctAdmission {
         return null
     }
 
+    /** The carrier marks this boundary immediately before LocalSocket.connect, never after it. */
+    suspend fun <T> handoff(value: Ticket, body: suspend (socketAttempted: () -> Unit) -> T): T {
+        var touched = false
+        try {
+            return body { touched = true }
+        } finally {
+            if (!touched) retireUnused(value)
+        }
+    }
+
+    /**
+     * Release only an event abandoned before touching the shared local socket. This does
+     * not retry that event: a later standalone AA report must supply the next admission.
+     * Once connect has been attempted, its ownership effects are uncertain, even on error.
+     */
     @Synchronized
-    fun invalidate() {
-        generation++
-        ticket = null
+    fun retireUnused(value: Ticket) {
+        if (ticket == value) invalidate()
     }
 
     @Synchronized
-    fun epoch(): Long = generation
+    fun invalidate() {
+        generation++
+        wakeRevision++
+        ticket = null
+    }
+
+    /**
+     * A call can start without withdrawing the AA link. Such a report must invalidate a
+     * reconnect decision based on older Binder reads, while preserving the active AA ticket.
+     */
+    @Synchronized
+    fun noteStatusReport() { wakeRevision++ }
+
+    @Synchronized
+    fun epoch(): Long = wakeRevision
 
     @Synchronized
     fun current(value: Ticket): Boolean = ticket == value

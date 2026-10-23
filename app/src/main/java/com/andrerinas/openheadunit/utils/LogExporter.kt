@@ -15,6 +15,7 @@ import com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode
 import com.andrerinas.openheadunit.connection.wifi.direct.StationStandDown
 import com.andrerinas.openheadunit.connection.wifi.direct.StationStandDownMode
 import com.andrerinas.openheadunit.connection.wifi.direct.WifiBandCapability
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTransportPolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeAaHandshakeManager
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
 import com.andrerinas.openheadunit.decoder.video.VideoFaultInjector
@@ -193,6 +194,10 @@ object LogExporter {
     private fun bluetoothRoute(context: Context): String {
         val discovery = ZbtDiscovery.snapshot()
         val decision = discovery.decision
+        // HCT can route with no ZBT markers, which the decision below would call internal.
+        if (NativeAaHandshakeManager.transportRoute(context, discovery) == ExternalBtTransportPolicy.Route.HCT) {
+            return "module:HCT"
+        }
         return when {
             !decision.available -> "internal"
             decision.requiresIdentity -> "zbt-candidate:${NativeAaHandshakeManager.transportRoute(context, discovery)}"

@@ -108,4 +108,58 @@ class HctBinderCallsTest {
         }
         assertEquals(0, wakes.get())
     }
+    @Test
+    fun postSubmissionFailureDoesNotMakeASecondWakeSafe() = runBlocking {
+        val attempts = HctWakeAttempts()
+        val ticket = attempts.select("11:22:33:44:55:66", 0)!!
+        val sends = AtomicInteger()
+        val result = runCatching {
+            HctBinderCalls.call { gate ->
+                gate.claim()
+                assertTrue(attempts.claim(ticket, 1))
+                sends.incrementAndGet()
+                // A cancellation after the external IPC is caught by the worker's final
+                // check. Its caller gets an error even though the operation was submitted.
+                gate.cancel()
+                HctWakePolicy.Result.REQUESTED
+            }
+        }
+        assertTrue(result.exceptionOrNull() is IOException)
+        attempts.finishUnsent(ticket)
+        assertTrue(attempts.outstanding(ticket))
+        assertNull(attempts.select(ticket.target, 30_000))
+        assertEquals(1, sends.get())
+    }
+
+    @Test fun `refused local admission does not consume the gate`() {
+        val gate = HctCallGate(Long.MAX_VALUE) { 0 }
+        assertFalse(gate.claim { false })
+        assertTrue(gate.claim { true })
+        assertThrows(IOException::class.java) { gate.claim() }
+    }
+
+    @Test fun `cancel cannot overtake recording an admitted OEM request`() {
+        val gate = HctCallGate(Long.MAX_VALUE) { 0 }
+        val admitted = java.util.concurrent.atomic.AtomicBoolean(false)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val claim = executor.submit<Boolean> { gate.claim {
+                entered.countDown()
+                check(release.await(2, TimeUnit.SECONDS))
+                admitted.set(true)
+                true
+            } }
+            assertTrue(entered.await(2, TimeUnit.SECONDS))
+            val cancel = executor.submit<Boolean> { gate.cancel(); admitted.get() }
+            release.countDown()
+            assertTrue(claim.get(2, TimeUnit.SECONDS))
+            assertTrue(cancel.get(2, TimeUnit.SECONDS))
+        } finally {
+            release.countDown()
+            executor.shutdownNow()
+        }
+    }
+
 }

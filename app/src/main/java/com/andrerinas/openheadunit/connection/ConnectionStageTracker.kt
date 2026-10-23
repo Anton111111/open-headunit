@@ -2,6 +2,7 @@ package com.andrerinas.openheadunit.connection
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 /**
  * Where bring-up reports the step it is on, for MainActivity's status pill.
@@ -44,6 +45,17 @@ object ConnectionStageTracker {
     /** A step that ended with nothing to show: [from] gives way to [to], and any other stage stays. */
     fun retreat(from: ConnectionStage, to: ConnectionStage) {
         if (ConnectionStagePolicy.shouldRetreat(_stage.value, from)) _stage.value = to
+    }
+
+    /** A passive wireless carrier is ready; preserve USB, completed handoffs and a hidden pill. */
+    fun reportWirelessWaiting() {
+        _stage.update { current ->
+            when (current) {
+                ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK,
+                ConnectionStage.WAKING_PHONE -> ConnectionStage.WAITING_FOR_PHONE
+                else -> current
+            }
+        }
     }
 
     /** The group came up, changed, or (null) went down. Equal deliveries are conflated. */
