@@ -10,6 +10,10 @@ import android.location.Location
 import android.media.AudioManager
 import android.os.Build
 import com.andrerinas.openheadunit.input.KeyCode
+import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
+import com.andrerinas.openheadunit.main.FavoriteTarget
+import com.andrerinas.openheadunit.main.HomePagesPolicy
+import com.andrerinas.openheadunit.main.HomeWidgetsPolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
 import com.andrerinas.openheadunit.view.PerformanceOverlayPolicy
@@ -1597,10 +1601,6 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("custom-wifi-button-color", 0)
         set(value) { prefs.edit().putInt("custom-wifi-button-color", value).apply() }
 
-    var customSettingsButtonColor: Int
-        get() = prefs.getInt("custom-settings-button-color", 0)
-        set(value) { prefs.edit().putInt("custom-settings-button-color", value).apply() }
-
     // Custom button scaling percentage for Home screen (default = 100%, valid range 60..120)
     var homeButtonScalePercent: Int
         get() {
@@ -1611,6 +1611,48 @@ class Settings(private val context: Context) {
             val valid = if (value in 60..120) value else 100
             prefs.edit().putInt("home-button-scale-percent", valid).apply()
         }
+
+    /** What each favorite slot holds, in slot order. See [FavoriteAppsPolicy]. */
+    var homeFavoriteApps: List<FavoriteTarget>
+        get() = FavoriteAppsPolicy.decode(prefs.getString("home-favorite-apps", "") ?: "")
+        set(value) { prefs.edit().putString("home-favorite-apps", FavoriteAppsPolicy.encode(value)).apply() }
+
+    /** The one-time hint on the launcher home that a touch and hold on an empty spot adds pages. */
+    var homePagesHintShown: Boolean
+        get() = prefs.getBoolean("home-pages-hint-shown", false)
+        set(value) { prefs.edit().putBoolean("home-pages-hint-shown", value).apply() }
+
+    /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
+    var showHomeFavoriteApps: Boolean
+        get() = prefs.getBoolean("show-home-favorite-apps", true)
+        set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
+
+    /** Date and time on the home screen. Off by default: the driver asks for them. */
+    var showHomeClock: Boolean
+        get() = prefs.getBoolean("show-home-clock", false)
+        set(value) { prefs.edit().putBoolean("show-home-clock", value).apply() }
+
+    /** The speed this unit's GPS reports, on the home screen. Off by default, and it needs the
+     *  location permission. */
+    var showHomeSpeed: Boolean
+        get() = prefs.getBoolean("show-home-speed", false)
+        set(value) { prefs.edit().putBoolean("show-home-speed", value).apply() }
+
+    /** The widgets shown under the main button, in order. See [HomeWidgetsPolicy]. */
+    var homeWidgets: List<Int>
+        get() = HomeWidgetsPolicy.decode(prefs.getString("home-widgets", "") ?: "")
+        set(value) { prefs.edit().putString("home-widgets", HomeWidgetsPolicy.encode(value)).apply() }
+
+    /** The widget pages the driver added after the main one, each with its widgets in order.
+     *  See [HomePagesPolicy]. */
+    var homeWidgetPages: List<List<Int>>
+        get() = HomePagesPolicy.decode(prefs.getString("home-widget-pages", "") ?: "")
+        set(value) { prefs.edit().putString("home-widget-pages", HomePagesPolicy.encode(value)).apply() }
+
+    /** The app widget host every bound widget names. 0 until the first widget is added. */
+    var homeWidgetHostId: Int
+        get() = prefs.getInt("home-widget-host-id", 0)
+        set(value) { prefs.edit().putInt("home-widget-host-id", value).apply() }
 
     @SuppressLint("ApplySharedPref")
     fun commit() {
