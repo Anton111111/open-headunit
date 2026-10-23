@@ -30,6 +30,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import androidx.core.content.PermissionChecker
 import com.andrerinas.openheadunit.App
+import com.andrerinas.openheadunit.device.DeviceHackManager
+import com.andrerinas.openheadunit.device.DeviceProfiles
+import com.andrerinas.openheadunit.device.DeviceSpecificHeadUnitSettings
 import com.andrerinas.openheadunit.app.AccPowerState
 import com.andrerinas.openheadunit.app.ActivityLaunchPolicy
 import com.andrerinas.openheadunit.app.BootCompleteReceiver
@@ -195,6 +198,19 @@ class AapService : Service() {
     /** Decoded on a background thread in [scheduleApplyAaMediaMetadata]; reused for notification updates on position ticks. */
     private var cachedAaAlbumArtBitmap: Bitmap? = null
     private var settingsPrefs: SharedPreferences? = null
+    private var deviceHackManager: DeviceHackManager? = null
+    private val deviceHackPreferenceListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+            serviceScope.launch { refreshDeviceHacks() }
+        }
+
+    private fun refreshDeviceHacks() {
+        deviceHackManager?.reconcile(
+            DeviceProfiles.enabledHacks(DeviceSpecificHeadUnitSettings(this)),
+            projectionActive = !isDestroying &&
+                commManager.connectionState.value is CommManager.ConnectionState.TransportStarted
+        )
+    }
     private val settings: Settings by lazy { App.provide(this).settings }
     private val mediaNotification by lazy { BackgroundNotification(this) }
 
@@ -1161,6 +1177,14 @@ class AapService : Service() {
         commManager.onAaPresentationClosed = ::onAaPresentationClosed
         settingsPrefs = getSharedPreferences("settings", MODE_PRIVATE).also { prefs ->
             prefs.registerOnSharedPreferenceChangeListener(settingsPreferenceListener)
+            prefs.registerOnSharedPreferenceChangeListener(deviceHackPreferenceListener)
+        }
+        deviceHackManager = DeviceHackManager(commManager.deviceVideoControl) { id, started ->
+            AppLog.i("DeviceHack: $id ${if (started) "started" else "stopped"}")
+        }
+        refreshDeviceHacks()
+        serviceScope.launch {
+            commManager.connectionState.collect { refreshDeviceHacks() }
         }
 
         AppLog.init(settings, this)
@@ -1300,6 +1324,11 @@ class AapService : Service() {
                         armProjectionRaiseDeadline(launchAapProjectionActivity())
                     }
                     is CommManager.ConnectionState.TransportStarted -> {
+                        if (commManager.isProjectionVideoFocusSuppressed) {
+                            commManager.send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(
+                                gain = false, unsolicited = false
+                            ))
+                        }
                         quiesceWirelessForWiredSession() // The flow is conflated: HandshakeComplete can be skipped.
                         StationStandDown.onSessionLive(this@AapService, wifiLockHeldForMs())
                         // Backstop for a skipped Connected; a no-op once onConnected released it.
@@ -2946,6 +2975,8 @@ class AapService : Service() {
         AppLog.i("AapService destroying... (wakeLock held=${bootWakeLock?.isHeld == true})")
         FloatingButtonManager.removeOverlay(this)
         isDestroying = true
+        deviceHackManager?.stop()
+        deviceHackManager = null
         if (Build.VERSION.SDK_INT >= 26) WifiScanControl.end(this)
         ConnectionArbiter.actions = null
         // The hold outlives this instance; the next one arms from its own onCreate.
@@ -2962,6 +2993,7 @@ class AapService : Service() {
         commManager.onAaPlaybackStatus = null
         commManager.onAaPresentationClosed = null
         settingsPrefs?.unregisterOnSharedPreferenceChangeListener(settingsPreferenceListener)
+        settingsPrefs?.unregisterOnSharedPreferenceChangeListener(deviceHackPreferenceListener)
         settingsPrefs = null
         releaseBootWakeLock()
 

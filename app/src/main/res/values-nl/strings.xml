@@ -1167,6 +1167,15 @@
     <string name="debug_video_feed_hold">Trage decoder simuleren</string>
 
     <string name="category_more_features">Meer functies</string>
+    <string name="device_specific_settings">Apparaatspecifieke instellingen</string>
+    <string name="device_specific_settings_description">Instellingen voor ondersteunde headunitmodellen</string>
+    <string name="device_specific_mcu_checking">MCU-toegang controleren...</string>
+    <string name="device_specific_mcu_unavailable">MCU-toegang is niet beschikbaar. Het pauzeren van de projectie in de achteruitversnelling is op dit apparaat uitgeschakeld.</string>
+    <string name="device_specific_head_unit_model">Headunitmodel</string>
+    <string name="device_specific_model_none">Niet geselecteerd</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Android Auto-projectie pauzeren in de achteruitversnelling</string>
+    <string name="device_specific_pause_projection_reverse_description">De videofocus van Android Auto vrijgeven zolang de achteruitrijcamera actief is en de projectie herstellen zodra de achteruitversnelling wordt uitgeschakeld.</string>
     <string name="pref_enable_floating_button_title">Zwevende startknop</string>
     <string name="pref_enable_floating_button_summary">Toont een zwevende knop boven de OEM-launcher en andere apps om snel terug te keren naar Open Headunit.</string>
     <string name="pref_floating_button_connection_status_title">Verbindingsstatus-indicator</string>

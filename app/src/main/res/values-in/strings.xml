@@ -511,6 +511,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">Fitur Lainnya</string>
+    <string name="device_specific_settings">Setelan Khusus Perangkat</string>
+    <string name="device_specific_settings_description">Setelan untuk model head unit yang didukung</string>
+    <string name="device_specific_mcu_checking">Memeriksa akses MCU…</string>
+    <string name="device_specific_mcu_unavailable">Akses MCU tidak tersedia. Fungsi jeda proyeksi saat gigi mundur aktif dinonaktifkan pada perangkat ini.</string>
+    <string name="device_specific_head_unit_model">Model head unit</string>
+    <string name="device_specific_model_none">Belum dipilih</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Jeda proyeksi Android Auto saat gigi mundur aktif</string>
+    <string name="device_specific_pause_projection_reverse_description">Lepaskan fokus video Android Auto saat kamera belakang aktif, lalu pulihkan proyeksi setelah gigi mundur dinonaktifkan.</string>
     <string name="pref_enable_car_launcher_title">Gunakan sebagai Peluncur Mobil</string>
     <string name="pref_enable_car_launcher_summary">Mendaftarkan Open Headunit sebagai aplikasi layar Beranda, sehingga terbuka saat tombol Home mobil atau head unit ditekan.</string>
     <string name="pref_set_default_launcher_title">Aplikasi Beranda Default</string>

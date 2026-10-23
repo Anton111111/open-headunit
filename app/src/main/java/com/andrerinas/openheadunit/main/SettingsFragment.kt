@@ -1651,6 +1651,16 @@ class SettingsFragment : Fragment() {
         // --- More Features Settings ---
         items.add(SettingItem.CategoryHeader("moreFeatures", R.string.category_more_features))
 
+        items.add(SettingItem.SettingEntry(
+            stableId = "deviceSpecificSettings",
+            nameResId = R.string.device_specific_settings,
+            value = getString(R.string.device_specific_settings_description),
+            searchKeywords = "head unit model Adayo Haval reverse gear MCU",
+            onClick = {
+                findNavController().navigate(R.id.action_settingsFragment_to_deviceSpecificSettingsFragment)
+            }
+        ))
+
         val isCarLauncherEnabled = pendingEnableCarLauncher ?: settings.enableCarLauncher
 
         items.add(SettingItem.ToggleSettingEntry(
@@ -3101,6 +3111,8 @@ class SettingsFragment : Fragment() {
         // in BOTH tabs and in search. USB hides WiFi settings, WiFi hides USB settings,
         // Self Mode hides both, All/unset show everything.
         if (isHiddenByConnection(item, categoryId)) return false
+
+        if (item.stableId == "deviceSpecificSettings" && !settings.isAdvancedSettingsActive) return false
 
         if (query.isNotEmpty()) {
             return headerMatchesQuery || searchableText(item).contains(query, ignoreCase = true)

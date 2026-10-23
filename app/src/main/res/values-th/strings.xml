@@ -511,6 +511,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">คุณสมบัติเพิ่มเติม</string>
+    <string name="device_specific_settings">การตั้งค่าเฉพาะอุปกรณ์</string>
+    <string name="device_specific_settings_description">การตั้งค่าสำหรับเครื่องเสียงรถยนต์รุ่นที่รองรับ</string>
+    <string name="device_specific_mcu_checking">กำลังตรวจสอบการเข้าถึง MCU…</string>
+    <string name="device_specific_mcu_unavailable">ไม่สามารถเข้าถึง MCU ได้ ฟังก์ชันหยุดการฉายภาพชั่วคราวเมื่อเข้าเกียร์ถอยหลังถูกปิดใช้งานบนอุปกรณ์นี้</string>
+    <string name="device_specific_head_unit_model">รุ่นเครื่องเสียงรถยนต์</string>
+    <string name="device_specific_model_none">ยังไม่ได้เลือก</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">หยุดการฉายภาพ Android Auto ชั่วคราวเมื่อเข้าเกียร์ถอยหลัง</string>
+    <string name="device_specific_pause_projection_reverse_description">ปล่อยโฟกัสวิดีโอของ Android Auto ขณะกล้องมองหลังทำงาน แล้วกลับมาฉายภาพเมื่อออกจากเกียร์ถอยหลัง</string>
     <string name="pref_enable_car_launcher_title">ใช้เป็น Car Launcher</string>
     <string name="pref_enable_car_launcher_summary">ลงทะเบียน Open Headunit เป็นแอปหน้าจอหลัก เพื่อให้เปิดขึ้นเมื่อกดปุ่ม Home ของรถหรือเฮดยูนิต</string>
     <string name="pref_set_default_launcher_title">แอปหน้าจอหลักเริ่มต้น</string>

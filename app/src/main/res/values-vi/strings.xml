@@ -1163,6 +1163,15 @@
     <string name="debug_video_feed_hold">Mô phỏng bộ giải mã chậm</string>
 
     <string name="category_more_features">Tính năng khác</string>
+    <string name="device_specific_settings">Cài đặt riêng cho thiết bị</string>
+    <string name="device_specific_settings_description">Cài đặt cho các mẫu đầu xe được hỗ trợ</string>
+    <string name="device_specific_mcu_checking">Đang kiểm tra quyền truy cập MCU…</string>
+    <string name="device_specific_mcu_unavailable">Không thể truy cập MCU. Chức năng tạm dừng trình chiếu khi vào số lùi bị tắt trên thiết bị này.</string>
+    <string name="device_specific_head_unit_model">Mẫu đầu xe</string>
+    <string name="device_specific_model_none">Chưa chọn</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Tạm dừng trình chiếu Android Auto khi vào số lùi</string>
+    <string name="device_specific_pause_projection_reverse_description">Nhả tiêu điểm video của Android Auto khi camera lùi hoạt động, sau đó khôi phục trình chiếu khi thoát số lùi.</string>
     <string name="pref_enable_floating_button_title">Nút khởi chạy nổi</string>
     <string name="pref_enable_floating_button_summary">Hiển thị nút nổi trên trình khởi chạy gốc và các ứng dụng khác để nhanh chóng quay lại Open Headunit.</string>
     <string name="pref_floating_button_connection_status_title">Chỉ báo trạng thái kết nối</string>

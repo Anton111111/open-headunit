@@ -1159,6 +1159,15 @@
     <string name="debug_video_feed_hold">模拟慢速解码器</string>
 
     <string name="category_more_features">更多功能</string>
+    <string name="device_specific_settings">设备专用设置</string>
+    <string name="device_specific_settings_description">支持的车机型号的专用设置</string>
+    <string name="device_specific_mcu_checking">正在检查 MCU 访问权限...</string>
+    <string name="device_specific_mcu_unavailable">无法访问 MCU。此设备已禁用挂入倒挡时暂停投屏的功能。</string>
+    <string name="device_specific_head_unit_model">车机型号</string>
+    <string name="device_specific_model_none">未选择</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">挂入倒挡时暂停 Android Auto 投屏</string>
+    <string name="device_specific_pause_projection_reverse_description">后视摄像头启用时释放 Android Auto 的视频焦点，退出倒挡后恢复投屏。</string>
     <string name="pref_enable_floating_button_title">悬浮快捷按钮</string>
     <string name="pref_enable_floating_button_summary">在原厂启动器及其他应用上方显示悬浮按钮，以便快速返回 Open Headunit。</string>
     <string name="pref_floating_button_connection_status_title">连接状态指示</string>

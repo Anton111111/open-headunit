@@ -512,6 +512,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">Mais funcionalidades</string>
+    <string name="device_specific_settings">Definições específicas do dispositivo</string>
+    <string name="device_specific_settings_description">Definições para modelos de unidades multimédia compatíveis</string>
+    <string name="device_specific_mcu_checking">A verificar o acesso à MCU…</string>
+    <string name="device_specific_mcu_unavailable">O acesso à MCU não está disponível. A função de pausa da projeção ao engatar a marcha-atrás está desativada neste dispositivo.</string>
+    <string name="device_specific_head_unit_model">Modelo da unidade multimédia</string>
+    <string name="device_specific_model_none">Não selecionado</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Pausar a projeção do Android Auto em marcha-atrás</string>
+    <string name="device_specific_pause_projection_reverse_description">Libertar o foco de vídeo do Android Auto enquanto a câmara de marcha-atrás estiver ativa e restaurar a projeção ao desengatar a marcha-atrás.</string>
     <string name="pref_enable_car_launcher_title">Utilizar como Car Launcher</string>
     <string name="pref_enable_car_launcher_summary">Regista o Open Headunit como aplicação do ecrã inicial, para que abra quando o botão Home do carro ou da unidade é premido.</string>
     <string name="pref_set_default_launcher_title">Aplicação de ecrã inicial predefinida</string>

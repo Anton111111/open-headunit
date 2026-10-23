@@ -537,6 +537,15 @@
 
     <!-- More Features Settings -->
     <string name="category_more_features">More Features</string>
+    <string name="device_specific_settings">Device-Specific Settings</string>
+    <string name="device_specific_settings_description">Settings for supported head unit models</string>
+    <string name="device_specific_mcu_checking">Checking MCU access…</string>
+    <string name="device_specific_mcu_unavailable">MCU access is unavailable. The reverse-gear projection pause function is disabled on this device.</string>
+    <string name="device_specific_head_unit_model">Head unit model</string>
+    <string name="device_specific_model_none">Not selected</string>
+    <string name="device_specific_model_adayo_haval">Adayo (Haval)</string>
+    <string name="device_specific_pause_projection_reverse">Pause Android Auto projection on Reverse gear</string>
+    <string name="device_specific_pause_projection_reverse_description">Release Android Auto video focus while the rear camera is active, then restore projection when Reverse is turned off.</string>
     <string name="pref_enable_car_launcher_title">Use as Car Launcher</string>
     <string name="pref_enable_car_launcher_summary">Registers Open Headunit as a Home screen app, so it opens when the car or headunit Home button is pressed.</string>
     <string name="pref_set_default_launcher_title">Default Home App</string>
