@@ -949,3 +949,6 @@ subprocess.run(["python3", str(Path(__file__).with_name("wireless-cleanup.py"))]
 
 # VPN startService delivery can outlive a synchronous stop on the bound instance.
 subprocess.run(["python3", str(Path(__file__).with_name("vpn-start.py"))], check=True)
+
+# Platform-version configuration: session exclusion must not silently become an all-app VPN.
+subprocess.run(["python3", str(Path(__file__).with_name("vpn-config.py"))], check=True)

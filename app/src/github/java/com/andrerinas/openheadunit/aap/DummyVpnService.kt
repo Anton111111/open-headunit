@@ -39,6 +39,12 @@ class DummyVpnService : VpnService() {
     // binder callback, and closeRunningTun() runs on whichever thread asked for the stop.
     @Synchronized
     private fun startVpn(excludeSelf: Boolean) {
+        // Also guard delivered commands and restored preferences. The legacy offline Self VPN
+        // intentionally includes OHU, so only the session configuration requires API 21.
+        if (excludeSelf && !com.andrerinas.openheadunit.utils.DummyVpnPolicy.supportsSessionVpn(Build.VERSION.SDK_INT)) {
+            AppLog.w("DummyVpnService: session VPN requires per-app exclusion (Android 5.0+)")
+            return
+        }
         // Idempotent for the same configuration, but a different one has to re-establish: the two
         // callers want opposite things from the route set.
         if (vpnInterface != null && establishedExcludingSelf == excludeSelf) return
@@ -56,10 +62,8 @@ class DummyVpnService : VpnService() {
                 try {
                     builder.addDisallowedApplication(packageName)
                 } catch (e: PackageManager.NameNotFoundException) {
-                    AppLog.w(
-                        "DummyVpnService: could not exclude this app from the tun, so the " +
-                            "projection link will be routed through it"
-                    )
+                    // Do not establish a blackhole route that includes our own reconnects.
+                    throw IllegalStateException("Cannot exclude OHU from the session VPN", e)
                 }
             }
 

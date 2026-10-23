@@ -2972,7 +2972,8 @@ class AapService : Service() {
     private fun maybeStartSessionDummyVpn() {
         selfLauncherManager.stopDummyVpnWatchdog()
 
-        val available = VpnControl.isVpnAvailable()
+        val available = VpnControl.isVpnAvailable() &&
+            DummyVpnPolicy.supportsSessionVpn(Build.VERSION.SDK_INT)
         val wanted = DummyVpnPolicy.shouldStartForSession(
             keepDuringSession = App.provide(this).settings.keepDummyVpnDuringSession,
             // The same value the settings list gates the toggle on, so what a user can see and
