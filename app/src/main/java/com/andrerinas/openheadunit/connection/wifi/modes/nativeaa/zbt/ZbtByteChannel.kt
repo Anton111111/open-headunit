@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
+import android.os.SystemClock
 import com.andrerinas.openheadunit.utils.AppLog
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
@@ -342,7 +343,8 @@ class ZbtByteChannel(
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Read and dispatch at most one frame, giving up at [deadlineMs] or when [keepGoing] turns false.
+     * Read and dispatch at most one frame, giving up at elapsed-realtime [deadlineMs] or when
+     * [keepGoing] turns false. All callers must use that same monotonic clock.
      *
      * This is the whole receive loop. [input] calls it too, so a caller that only wants the byte
      * stream needs nothing else.
@@ -513,8 +515,8 @@ class ZbtByteChannel(
                 AppLog.w("ZbtByteChannel: stopped with $have of ${buf.size} bytes in hand")
                 return Fill.DESYNC
             }
-            if (have == 0 && System.currentTimeMillis() >= deadlineMs) return Fill.EXPIRED
-            if (have > 0 && System.currentTimeMillis() >= midFrameDeadline) {
+            if (have == 0 && SystemClock.elapsedRealtime() >= deadlineMs) return Fill.EXPIRED
+            if (have > 0 && SystemClock.elapsedRealtime() >= midFrameDeadline) {
                 AppLog.w("ZbtByteChannel: gave up with $have of ${buf.size} bytes — the peer stopped mid-frame")
                 return Fill.DESYNC
             }
@@ -528,7 +530,7 @@ class ZbtByteChannel(
                 continue  // mid-frame: the rest is still coming
             }
             if (read < 0) throw EOFException("stream ended with $have of ${buf.size} bytes read")
-            if (have == 0 && read > 0) midFrameDeadline = System.currentTimeMillis() + MID_FRAME_TIMEOUT_MS
+            if (have == 0 && read > 0) midFrameDeadline = plusSaturating(SystemClock.elapsedRealtime(), MID_FRAME_TIMEOUT_MS)
             have += read
         }
         return Fill.FILLED

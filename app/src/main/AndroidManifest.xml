@@ -9,6 +9,8 @@
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
         <package android:name="com.syu.ms" />
+        <!-- Rootless HCT bridge discovery when SELinux hides /dev/goc_serial. -->
+        <package android:name="android.microntek.mtcser" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

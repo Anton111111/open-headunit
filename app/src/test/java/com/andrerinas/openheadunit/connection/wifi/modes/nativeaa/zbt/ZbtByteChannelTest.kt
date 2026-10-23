@@ -1,5 +1,7 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
+import android.os.SystemClock
+import org.mockito.Mockito.mockStatic
 import com.andrerinas.openheadunit.utils.AppLog
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -23,6 +25,8 @@ import java.net.SocketTimeoutException
  * phone talking nonsense.
  */
 class ZbtByteChannelTest {
+    private lateinit var clock: org.mockito.MockedStatic<SystemClock>
+    private var elapsedMs = 10_000L
 
     // ---------------------------------------------------------------------------------------------
     // Fixtures
@@ -83,6 +87,8 @@ class ZbtByteChannelTest {
 
     @Before
     fun setUp() {
+        clock = mockStatic(SystemClock::class.java)
+        clock.`when`<Long> { SystemClock.elapsedRealtime() }.thenAnswer { elapsedMs }
         // AppLog's default logger calls android.util.Log, which is not mocked in a JVM unit test and
         // throws. Swap it for one that keeps the lines: the channel's logging is not incidental —
         // reporters attach these logs and every round of this investigation has been read out of
@@ -98,7 +104,25 @@ class ZbtByteChannelTest {
 
     @After
     fun tearDown() {
+        clock.close()
         savedLogger?.let { AppLog.LOGGER = it }
+    }
+
+    @Test fun partialFrameExpiresOnElapsedTime() {
+        var reads = 0
+        val input = object : InputStream() {
+            override fun read(): Int = error("bulk read only")
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                check(++reads <= 3) { "mid-frame deadline did not expire" }
+                if (reads == 1) { b[off] = 0; return 1 }
+                elapsedMs += 10_000
+                throw SocketTimeoutException()
+            }
+        }
+        val channel = ZbtByteChannel(input, sink)
+        assertEquals(ZbtByteChannel.Pump.ENDED, channel.pumpOnce(elapsedMs + 3_000))
+        assertTrue(channel.isFinished)
+        assertEquals(2, reads)
     }
 
     private fun channel(source: Source) = ZbtByteChannel(
@@ -204,14 +228,14 @@ class ZbtByteChannelTest {
     @Test
     fun `a quiet daemon is not a finished one`() {
         val c = channel(Source().timeout())
-        assertEquals(ZbtByteChannel.Pump.QUIET, c.pumpOnce(System.currentTimeMillis() + 60_000))
+        assertEquals(ZbtByteChannel.Pump.QUIET, c.pumpOnce(SystemClock.elapsedRealtime() + 60_000))
         assertFalse(c.isFinished)
     }
 
     @Test
     fun `a deadline already past expires without reading`() {
         val c = channel(Source().data(rfcommFrame(0x01)))
-        assertEquals(ZbtByteChannel.Pump.EXPIRED, c.pumpOnce(System.currentTimeMillis() - 1))
+        assertEquals(ZbtByteChannel.Pump.EXPIRED, c.pumpOnce(SystemClock.elapsedRealtime() - 1))
         assertFalse("expiring is not a failure of the channel", c.isFinished)
         // and the frame is still there to be read afterwards
         assertEquals(ZbtByteChannel.Pump.FRAME, c.pumpOnce(Long.MAX_VALUE))
