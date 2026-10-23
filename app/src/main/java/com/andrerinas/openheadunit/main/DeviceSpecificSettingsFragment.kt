@@ -10,7 +10,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.andrerinas.openheadunit.R
-import com.andrerinas.openheadunit.device.DeviceSpecificHeadUnitPlugins
+import com.andrerinas.openheadunit.device.DeviceProfiles
 import com.andrerinas.openheadunit.device.DeviceSpecificHeadUnitSettings
 import com.andrerinas.openheadunit.main.settings.SettingItem
 import com.andrerinas.openheadunit.main.settings.SettingsAdapter
@@ -23,9 +23,9 @@ import kotlinx.coroutines.withContext
 class DeviceSpecificSettingsFragment : Fragment() {
     private lateinit var deviceSettings: DeviceSpecificHeadUnitSettings
     private lateinit var settingsAdapter: SettingsAdapter
-    private var mcuAccessAvailable: Boolean? = null
-    private var mcuCheckInProgress = false
-    private var mcuCheckGeneration = 0
+    private val availability = mutableMapOf<String, Boolean>()
+    private val checking = mutableSetOf<String>()
+    private var checkGeneration = 0
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
         inflater.inflate(R.layout.fragment_device_specific_settings, container, false)
@@ -42,91 +42,84 @@ class DeviceSpecificSettingsFragment : Fragment() {
             if (!findNavController().navigateUp()) requireActivity().finish()
         }
         updateSettingsList()
-        checkMcuAccessIfSelected()
+        checkAvailability()
     }
 
     private fun updateSettingsList() {
         if (!::settingsAdapter.isInitialized || !::deviceSettings.isInitialized) return
-        val available = mcuAccessAvailable == true
         val items = mutableListOf<SettingItem>()
 
-        val models = DeviceSpecificHeadUnitSettings.Model.values()
-        val currentModel = deviceSettings.model
+        val profiles = DeviceProfiles.all
+        val currentProfile = DeviceProfiles.selected(deviceSettings)
         items.add(SettingItem.SettingEntry(
             stableId = "deviceSpecificHeadUnitModel",
             nameResId = R.string.device_specific_head_unit_model,
-            value = getString(
-                if (currentModel == DeviceSpecificHeadUnitSettings.Model.ADAYO_HAVAL) {
-                    R.string.device_specific_model_adayo_haval
-                } else {
-                    R.string.device_specific_model_none
-                }
-            ),
+            value = getString(currentProfile.titleResId),
             isEnabled = true,
             onClick = {
-                val labels = arrayOf(
-                    getString(R.string.device_specific_model_none),
-                    getString(R.string.device_specific_model_adayo_haval)
-                )
+                val labels = profiles.map { getString(it.titleResId) }.toTypedArray()
                 MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
                     .setTitle(R.string.device_specific_head_unit_model)
-                    .setSingleChoiceItems(labels, models.indexOf(currentModel)) { dialog, which ->
-                        deviceSettings.model = models[which]
-                        mcuCheckGeneration++
-                        mcuAccessAvailable = null
-                        mcuCheckInProgress = false
+                    .setSingleChoiceItems(labels, profiles.indexOf(currentProfile)) { dialog, which ->
+                        deviceSettings.modelKey = profiles[which].id
+                        checkGeneration++
+                        availability.clear()
+                        checking.clear()
                         dialog.dismiss()
                         updateSettingsList()
-                        checkMcuAccessIfSelected()
+                        checkAvailability()
                     }
                     .show()
             }
         ))
 
-        if (currentModel == DeviceSpecificHeadUnitSettings.Model.ADAYO_HAVAL) {
+        currentProfile.hacks.forEach { hack ->
             items.add(SettingItem.ToggleSettingEntry(
-                stableId = "pauseProjectionOnReverse",
-                nameResId = R.string.device_specific_pause_projection_reverse,
-                descriptionResId = R.string.device_specific_pause_projection_reverse_description,
-                isChecked = deviceSettings.pauseProjectionOnReverse,
-                isEnabled = available,
-                descriptionOverride = if (mcuCheckInProgress) {
-                    getString(R.string.device_specific_mcu_checking)
+                stableId = hack.id,
+                nameResId = hack.titleResId,
+                descriptionResId = hack.descriptionResId,
+                isChecked = deviceSettings.isEnabled(hack),
+                isEnabled = availability[hack.id] == true || deviceSettings.isEnabled(hack),
+                descriptionOverride = if (hack.id in checking) {
+                    getString(hack.checkingResId)
                 } else {
                     null
                 },
                 onCheckedChanged = { enabled ->
-                    deviceSettings.pauseProjectionOnReverse = enabled
+                    deviceSettings.setEnabled(hack, enabled)
                 }
             ))
-            if (mcuAccessAvailable == false) {
+            if (availability[hack.id] == false) {
                 items.add(SettingItem.InfoBanner(
-                    stableId = "mcuUnavailable",
-                    textResId = R.string.device_specific_mcu_unavailable
+                    stableId = "${hack.id}.unavailable",
+                    textResId = hack.unavailableResId
                 ))
             }
         }
         settingsAdapter.submitList(items)
     }
 
-    private fun checkMcuAccessIfSelected() {
-        if (deviceSettings.model != DeviceSpecificHeadUnitSettings.Model.ADAYO_HAVAL ||
-            mcuAccessAvailable != null || mcuCheckInProgress
-        ) return
-
-        mcuCheckInProgress = true
-        val checkGeneration = ++mcuCheckGeneration
-        updateSettingsList()
-        viewLifecycleOwner.lifecycleScope.launch {
-            val available = withContext(Dispatchers.IO) {
-                DeviceSpecificHeadUnitPlugins.canAccessMcu()
+    private fun checkAvailability() {
+        val profile = DeviceProfiles.selected(deviceSettings)
+        val generation = checkGeneration
+        profile.hacks.forEach { hack ->
+            if (hack.id in availability || !checking.add(hack.id)) return@forEach
+            viewLifecycleOwner.lifecycleScope.launch {
+                val available = withContext(Dispatchers.IO) { hack.isAvailable() }
+                if (generation != checkGeneration ||
+                    DeviceProfiles.selected(deviceSettings).id != profile.id
+                ) return@launch
+                checking.remove(hack.id)
+                availability[hack.id] = available
+                updateSettingsList()
             }
-            if (checkGeneration != mcuCheckGeneration ||
-                deviceSettings.model != DeviceSpecificHeadUnitSettings.Model.ADAYO_HAVAL
-            ) return@launch
-            mcuCheckInProgress = false
-            mcuAccessAvailable = available
-            updateSettingsList()
         }
+        updateSettingsList()
+    }
+
+    override fun onDestroyView() {
+        checkGeneration++
+        checking.clear()
+        super.onDestroyView()
     }
 }

@@ -132,6 +132,11 @@ private class ObserverFixture(
     ) {
         val connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected())
         val attemptUserRequested = false
+        var isProjectionVideoFocusSuppressed = false
+        val videoFocus = mutableListOf<com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent>()
+        fun send(event: com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent) {
+            videoFocus.add(event)
+        }
     }
     private class Usb { var projectionHandshakeFailures=0; fun onHandshakeFailed() {} }
     private val commManager = Connection(wireless, loopback, accepted)
@@ -166,6 +171,8 @@ private class ObserverFixture(
     fun connected() { transition(ConnectionState.Connected) }
     fun transition(state: ConnectionState) { commManager.connectionState.value = state }
     fun replaceAccepted(connection: Any) { commManager.acceptedWirelessSession = connection }
+    fun suppressVideo(value: Boolean) { commManager.isProjectionVideoFocusSuppressed = value }
+    fun videoFocusEvents() = commManager.videoFocus.toList()
     fun disconnected() { commManager.connectionState.value = ConnectionState.Disconnected() }
     fun close() { serviceScope.cancel() }
     // PRODUCTION OBSERVER
@@ -239,6 +246,21 @@ private fun scanControlObserverRegression() {
 
 internal fun audioLifecycleBoundaryRegression() {
     scanControlObserverRegression()
+    val suppressedObserver = ObserverFixture()
+    try {
+        suppressedObserver.start()
+        suppressedObserver.suppressVideo(true)
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().single().let { !it.gain && !it.unsolicited })
+        suppressedObserver.disconnected()
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().size == 2)
+        suppressedObserver.suppressVideo(false)
+        suppressedObserver.disconnected()
+        suppressedObserver.transition(ConnectionState.TransportStarted)
+        check(suppressedObserver.videoFocusEvents().size == 2)
+    } finally { suppressedObserver.close() }
+    println("PASS service observer reapplies video suppression on replacement transport without an Activity")
     Handler.reset()
     val focus = ConnectionFixture()
     try {

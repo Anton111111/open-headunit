@@ -227,6 +227,12 @@ class CommManager(
     @Volatile private var projectionVideoFocusSuppressed = false
     val isProjectionVideoFocusSuppressed: Boolean
         get() = projectionVideoFocusSuppressed
+    val deviceVideoControl = com.andrerinas.openheadunit.device.ProjectionVideoSuppression { suppressed ->
+        setProjectionVideoFocusSuppressed(suppressed)
+        if (suppressed) {
+            send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = false, unsolicited = false))
+        }
+    }
 
     /**
      * `ip:port` of the most recent connection attempt, or `null` when it was not a socket
@@ -1360,7 +1366,7 @@ class CommManager(
         }
     }
 
-    fun setProjectionVideoFocusSuppressed(suppressed: Boolean) {
+    private fun setProjectionVideoFocusSuppressed(suppressed: Boolean) {
         synchronized(transportLifecycleLock) {
             projectionVideoFocusSuppressed = suppressed
             _transport?.setProjectionVideoFocusSuppressed(suppressed)

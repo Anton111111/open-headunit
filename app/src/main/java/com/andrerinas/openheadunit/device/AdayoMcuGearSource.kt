@@ -8,8 +8,7 @@ import com.andrerinas.openheadunit.utils.AppLog
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
-internal class AdayoHavalProjectionPlugin : ProjectionDevicePlugin {
-    override val configurationKey = "adayo_haval:pause_projection_on_reverse"
+internal class AdayoMcuGearSource : AdayoGearSource {
 
     private val worker = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "Adayo-MCU-gear").apply { isDaemon = true }
@@ -18,7 +17,8 @@ internal class AdayoHavalProjectionPlugin : ProjectionDevicePlugin {
     private val lastGear = AtomicInteger(-1)
     @Volatile private var active = false
     private var subscribed = false
-    private var listener: ((Boolean) -> Unit)? = null
+    private var listener: ((Int) -> Unit)? = null
+    private var stopped = false
 
     private val callback = IMcuCommCallback { data, length ->
         val gear = try {
@@ -29,17 +29,17 @@ internal class AdayoHavalProjectionPlugin : ProjectionDevicePlugin {
         }
         if (gear < 0 || lastGear.getAndSet(gear) == gear) return@IMcuCommCallback
 
-        val reverse = gear == REVERSE_GEAR
-        AppLog.i("Adayo MCU: gear=$gear, reverse=$reverse")
+        AppLog.i("Adayo MCU: gear=$gear")
         mainHandler.post {
-            if (active) listener?.invoke(reverse)
+            if (active) listener?.invoke(gear)
         }
     }
 
-    override fun start(onReverseGearChanged: (Boolean) -> Unit) {
+    override fun start(onGear: (Int) -> Unit) {
+        check(!stopped) { "Stopped Adayo gear source cannot be restarted" }
         if (active) return
         active = true
-        listener = onReverseGearChanged
+        listener = onGear
         worker.execute {
             if (!active) return@execute
             if (!AdayoMcuAccess.connect()) {
@@ -56,8 +56,9 @@ internal class AdayoHavalProjectionPlugin : ProjectionDevicePlugin {
     }
 
     override fun stop() {
-        if (!active) return
+        if (stopped) return
         active = false
+        stopped = true
         listener = null
         worker.execute {
             try {
@@ -76,8 +77,6 @@ internal class AdayoHavalProjectionPlugin : ProjectionDevicePlugin {
     }
 
     companion object {
-        private const val REVERSE_GEAR = 8
-
         fun canAccessMcu(): Boolean = AdayoMcuAccess.canAccess()
     }
 }

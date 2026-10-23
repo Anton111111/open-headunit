@@ -76,8 +76,6 @@ import com.andrerinas.openheadunit.main.AutoStartOfferPolicy
 import com.andrerinas.openheadunit.main.MainActivity
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTransportPolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeAaHandshakeManager
-import com.andrerinas.openheadunit.device.DeviceSpecificHeadUnitPlugins
-import com.andrerinas.openheadunit.device.ProjectionDevicePlugin
 import java.io.File
 import kotlin.math.abs
 
@@ -93,8 +91,8 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var ownedSurface: android.view.Surface? = null
     private var overlayState = OverlayState.STARTING
     private val watchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private var projectionDevicePlugin: ProjectionDevicePlugin? = null
-    private var isProjectionPausedByDevice = false
+    private val isProjectionPausedByDevice: Boolean
+        get() = commManager.isProjectionVideoFocusSuppressed
 
     /** When the session dropped, and when the reconnect last showed a sign of life. Realtime, so a
      * unit that sleeps mid-reconnect does not come back with the whole wait still ahead of it. */
@@ -463,46 +461,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         commManager.send(VideoFocusEvent(gain = gain, unsolicited = unsolicited))
     }
 
-    /**
-     * Replaces the device plugin only when its configuration changes, or clears its pause when
-     * no plugin is enabled. Callbacks run on main and are ignored if their plugin or activity
-     * no longer owns device integration.
-     */
-    private fun configureProjectionDevicePlugin() {
-        val nextPlugin = DeviceSpecificHeadUnitPlugins.createProjectionPlugin(this)
-        val currentPlugin = projectionDevicePlugin
-        if (nextPlugin != null && nextPlugin.configurationKey == currentPlugin?.configurationKey) return
-
-        currentPlugin?.stop()
-        projectionDevicePlugin = nextPlugin
-        if (nextPlugin == null) {
-            setDeviceProjectionPaused(false)
-            return
-        }
-
-        nextPlugin.start { reverse ->
-            runOnUiThread {
-                if (devicePluginOwner === this && projectionDevicePlugin === nextPlugin) {
-                    setDeviceProjectionPaused(reverse)
-                }
-            }
-        }
-    }
-
-    /**
-     * Yields video focus to a device feature and suppresses focus recovery until it releases
-     * projection. On release, requests video back only if this activity is foreground, has a
-     * surface and is connected. This changes video focus only, not audio playback.
-     */
-    private fun setDeviceProjectionPaused(paused: Boolean) {
-        if (isProjectionPausedByDevice == paused) return
+    /** The service owns suppression; this screen cancels recovery and resumes only while visible. */
+    private fun onDeviceVideoSuppressionChanged(paused: Boolean) {
         if (paused) settleFocusCycle()
-        isProjectionPausedByDevice = paused
-        commManager.setProjectionVideoFocusSuppressed(paused)
         AppLog.i("AapProjectionActivity: device projection pause changed to $paused")
-        if (paused) {
-            sendProjectionVideoFocus(gain = false, unsolicited = false)
-        } else if (isForeground && isSurfaceSet && commManager.isConnected) {
+        if (!paused && isForeground && isSurfaceSet &&
+            commManager.connectionState.value is CommManager.ConnectionState.TransportStarted
+        ) {
             sendProjectionVideoFocus(gain = true, unsolicited = true)
         }
     }
@@ -1087,6 +1052,11 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
 
         videoDecoder.dimensionsListener = this
+        lifecycleScope.launch {
+            commManager.deviceVideoControl.suppressed.collect { paused ->
+                onDeviceVideoSuppressionChanged(paused)
+            }
+        }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -1186,9 +1156,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                         }
                         is CommManager.ConnectionState.TransportStarted -> {
                             watchdogHandler.removeCallbacks(exitRunnable)
-                            if (isProjectionPausedByDevice) {
-                                sendProjectionVideoFocus(gain = false, unsolicited = false)
-                            }
                         }
                         // The reconnect is answering. Each of these refreshes the grace.
                         is CommManager.ConnectionState.Connecting -> noteReconnectProgress("connecting")
@@ -1329,19 +1296,9 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (devicePluginOwner !== this) {
-            isProjectionPausedByDevice = commManager.isProjectionVideoFocusSuppressed
-        }
-        devicePluginOwner = this
-        configureProjectionDevicePlugin()
-    }
-
     override fun onResume() {
         super.onResume()
         isForeground = true
-        configureProjectionDevicePlugin()
         userLeftDeliberately = false
         closeCallRaiseEpisode("the projection is back in front")
         AppLog.i("AapProjectionActivity: onResume")
@@ -2428,12 +2385,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     override fun onDestroy() {
-        projectionDevicePlugin?.stop()
-        projectionDevicePlugin = null
-        if (devicePluginOwner === this) {
-            devicePluginOwner = null
-            if (!isForeground) commManager.setProjectionVideoFocusSuppressed(false)
-        }
         // TextureView/GLES destruction can arrive after this activity removes its callback.
         // Stop our target now, while it is still valid, without touching a replacement owner.
         ownedSurface?.let {
@@ -2480,8 +2431,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     companion object {
-        @Volatile private var devicePluginOwner: AapProjectionActivity? = null
-
         /** Long enough for a surface callback to arrive first on a return, short enough to beat the stall window. */
         private const val RETURN_REARM_DELAY_MS = 300L
         const val EXTRA_FOCUS = "focus"
