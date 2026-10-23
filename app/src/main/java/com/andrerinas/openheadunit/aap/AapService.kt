@@ -100,6 +100,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeAaHandsh
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeStrategy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ProjectionQrSnapshot
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.SessionEndGroupPolicy
+import com.andrerinas.openheadunit.connection.wifi.direct.NativeGroupKeepPolicy
 import com.andrerinas.openheadunit.utils.HotspotManager
 import com.andrerinas.openheadunit.connection.wifi.WifiLauncherManager
 import com.andrerinas.openheadunit.connection.wifi.WifiLauncherMode
@@ -2964,6 +2965,15 @@ class AapService : Service() {
         settingsPrefs = null
         releaseBootWakeLock()
 
+        // Read before the first stop below: a destroy nobody asked for leaves the group up for the
+        // next service to read, while the user's own stop takes it down.
+        val keepNativeGroup = NativeGroupKeepPolicy.keepsOnDestroy(
+            userStop = destroyIsUserStop,
+            nativeWifiDirect = wifiLauncherManager.activeMode == WifiLauncherMode.NATIVE &&
+                wifiLauncherManager.active?.hasWifiDirect() == true,
+            stableIdentity = settings.wifiDirectStableIdentity,
+            rotationPending = settings.wifiDirectRotationPending,
+        )
         wifiLauncherManager.stop(WifiLauncherStopSequence.BEFORE_HOTSPOT_DISABLE)
         // The access point is left up here. Taking it down serves one purpose, putting the phone
         // off the network, and onDisconnected already decides that through UserExitHotspotPolicy:
@@ -2985,7 +2995,8 @@ class AapService : Service() {
         releaseWifiLock()
         unregisterNetworkMonitor()
         stopForeground(true)
-        wifiLauncherManager.stop(WifiLauncherStopSequence.LAST)
+        wifiLauncherManager.stop(WifiLauncherStopSequence.LAST, keepNativeGroup)
+        destroyIsUserStop = false
         stopDummyVpn(DummyVpnPolicy.Reason.SERVICE_DESTROYED)
         try {
             mediaSession?.let {
@@ -3085,6 +3096,7 @@ class AapService : Service() {
         // Handle stop before re-posting the notification to avoid a flash
         if (intent?.action == ACTION_STOP_SERVICE) {
             AppLog.i("Stop action received. Broadcasting finish request to activities.")
+            destroyIsUserStop = true
             sendBroadcast(Intent("com.andrerinas.openheadunit.ACTION_FINISH_ACTIVITIES").apply {
                 setPackage(packageName)
             })
@@ -3252,7 +3264,8 @@ class AapService : Service() {
                             )
                             activeLauncher.handshakeManager?.start()
                             // start() logs why it gave up; the person who pressed the button gets told too.
-                            if (activeLauncher.handshakeManager?.notStartedReason() != null) {
+                            if (activeLauncher.handshakeManager?.isMeasuringDaemon() != true &&
+                                activeLauncher.handshakeManager?.notStartedReason() != null) {
                                 ToastUtils.showToast(this, getString(R.string.native_aa_poke_not_running))
                             }
                         } else if (activeLauncher is WifiLauncherNative && activeLauncher.handshakeManager?.isActive() != true) {
@@ -3860,6 +3873,13 @@ class AapService : Service() {
          * before the process dies.
          */
         var killProcessOnDestroy: Boolean = false
+
+        /**
+         * Set by the user's stop, so onDestroy removes the Native group instead of keeping it. A
+         * kill-on-disconnect stops the service without onStartCommand, so CommManager sets it too.
+         */
+        @Volatile
+        var destroyIsUserStop: Boolean = false
 
         val wifiDirectName = MutableStateFlow<String?>(null)
 

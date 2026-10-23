@@ -1,5 +1,7 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
 
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscoveryPolicy
+
 /**
  * Which Bluetooth route the Native AA handshake takes on this unit.
  *
@@ -12,9 +14,11 @@ package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
  *
  * So reachability is an input, and a *measured* one: the daemon is dialled once and its answer is
  * passed in here. A unit whose module answers takes that route without the user finding a setting,
- * and a unit whose module refuses is refused exactly as before. `Settings.externalBtZbtTransport`
- * stays as a manual override for a daemon that is slow or intermittent, rather than as the
- * precondition it used to be.
+ * and an established external-module unit whose daemon refuses keeps the existing refusal.
+ * Firmware-only candidates instead require a compatible greeting and retain Android Bluetooth
+ * when it is absent: installed files alone do not establish the hardware or active backend.
+ * `Settings.externalBtZbtTransport` stays as a manual override for a slow or intermittent daemon,
+ * rather than as the precondition it used to be.
  *
  * Pure, because the same decision is read at four call sites — `WifiLauncherNative.start`,
  * `NativeAaHandshakeManager.start`, `checkCompatibility` and the settings UI — and they drifted
@@ -23,11 +27,14 @@ package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
 object ExternalBtTransportPolicy {
 
     enum class Route {
-        /** This unit's own Bluetooth. What every unit without external-BT markers does. */
+        /** Android Bluetooth, including unconfirmed firmware candidates and the radio override. */
         NORMAL,
 
         /** The external module, through the vendor daemon. */
         ZBT,
+
+        /** HCT's verified Bluetooth service and its bounded local AA carrier. */
+        HCT,
 
         /** External Bluetooth, and no route through it: refuse mode 3 and say why. */
         BLOCKED,
@@ -45,20 +52,20 @@ object ExternalBtTransportPolicy {
      * on the air. The module route is the one that can actually carry bytes, so a user who asked
      * for both gets it.
      *
-     * @param externalBtEvidence what `ExternalBtPolicy.detect` found, or null on ordinary hardware
+     * @param discovery the unified ZBT decision and the result from its selected cache
      * @param zbtTransportEnabled the user's opt-in, `Settings.externalBtZbtTransport`
      * @param ignoreExternalBt the compatibility override, `Settings.nativeAaIgnoreExternalBt`
-     * @param daemonReachable whether the vendor daemon answered, or null if it has not been asked
      * @param blinkTransportEnabled the user's opt-in, `Settings.externalBtBlinkTransport`
      * @param fytModuleEvidence what `ExternalBtPolicy.detectFytModule` found, or null
+     * @param hctServiceAvailable a verified HCT service contract, not a firmware/model hint
      */
     fun route(
-        externalBtEvidence: String?,
+        discovery: ZbtDiscoveryPolicy.Snapshot,
         zbtTransportEnabled: Boolean,
         ignoreExternalBt: Boolean,
-        daemonReachable: Boolean? = null,
         blinkTransportEnabled: Boolean = false,
-        fytModuleEvidence: String? = null
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
     ): Route = when {
         // Before the evidence checks: an enabled toggle is a recovery control too, and must win
         // even where detection cannot see the node.
@@ -68,34 +75,40 @@ object ExternalBtTransportPolicy {
         // Never the ZLink daemon measurement or route: FYT units have no such daemon, so a ZBT
         // toggle left on (or offered because a ZLink marker also matched) is refused too.
         fytModuleEvidence != null -> if (ignoreExternalBt) Route.NORMAL else Route.BLOCKED
-        externalBtEvidence == null -> Route.NORMAL
-        zbtTransportEnabled -> Route.ZBT
+        discovery.decision.available && zbtTransportEnabled -> Route.ZBT
         ignoreExternalBt -> Route.NORMAL
-        daemonReachable == true -> Route.ZBT
+        discovery.decision.available && discovery.reachable == true -> Route.ZBT
+        // A verified service can expose AA without any ZBT markers or listener. Preserve an
+        // already measured ZBT route, but do not probe another daemon just to prefer it over a
+        // service we can use. HCT still verifies each fresh AA carrier before sending credentials.
+        hctServiceAvailable -> Route.HCT
+        !discovery.decision.available -> Route.NORMAL
+        discovery.decision.allowsAndroidFallback -> Route.NORMAL
         else -> Route.BLOCKED
     }
 
     /**
      * Whether this unit refuses to bring Native AA up at all over its external Bluetooth.
      *
-     * The exact complement of [needsDaemonMeasurement] on the BLOCKED arm: a daemon that has not
-     * been asked yet is not a refusal, and treating it as one skipped the very code that asks.
+     * Refusal and measurement are mutually exclusive and together cover every BLOCKED route.
+     * An unconfirmed firmware candidate can also need measurement on the NORMAL route: it
+     * retains Android fallback. Treating every unknown daemon as a refusal skips the probe.
      */
     fun refusesBringUp(
-        externalBtEvidence: String?,
+        discovery: ZbtDiscoveryPolicy.Snapshot,
         zbtTransportEnabled: Boolean,
         ignoreExternalBt: Boolean,
-        cachedDaemonReachable: Boolean?,
         blinkTransportEnabled: Boolean = false,
-        fytModuleEvidence: String? = null
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
     ): Boolean =
         route(
-            externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-            blinkTransportEnabled, fytModuleEvidence
+            discovery, zbtTransportEnabled, ignoreExternalBt,
+            blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
         ) == Route.BLOCKED &&
             !needsDaemonMeasurement(
-                externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-                blinkTransportEnabled, fytModuleEvidence
+                discovery, zbtTransportEnabled, ignoreExternalBt,
+                blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
             )
 
     /**
@@ -106,38 +119,42 @@ object ExternalBtTransportPolicy {
      * pay for a socket connect are the ones the answer can help.
      */
     fun needsDaemonMeasurement(
-        externalBtEvidence: String?,
+        discovery: ZbtDiscoveryPolicy.Snapshot,
         zbtTransportEnabled: Boolean,
         ignoreExternalBt: Boolean,
-        cachedDaemonReachable: Boolean?,
         blinkTransportEnabled: Boolean = false,
-        fytModuleEvidence: String? = null
-    ): Boolean = !blinkTransportEnabled && fytModuleEvidence == null && externalBtEvidence != null &&
-        !zbtTransportEnabled && !ignoreExternalBt && cachedDaemonReachable == null
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
+    ): Boolean = !blinkTransportEnabled && fytModuleEvidence == null && !hctServiceAvailable &&
+        discovery.decision.available &&
+        !zbtTransportEnabled && !ignoreExternalBt && discovery.reachable == null
 
     enum class WifiButton { MODULE, REFUSED, ANDROID_RADIO }
 
     /**
      * A press on a measured ZLink refusal asks the daemon again, since it may be up by now. True
-     * only where the dial would have run had nothing been cached, so FYT and toggles stay out.
+     * only for known external modules where [needsDaemonMeasurement] allows it; FYT and explicit
+     * transport overrides stay out. An unconfirmed ZBT candidate keeps the Android button
+     * so the user can select a phone after the passive probe falls back to the normal radio.
      */
     fun remeasuresOnPress(
-        externalBtEvidence: String?,
+        discovery: ZbtDiscoveryPolicy.Snapshot,
         zbtTransportEnabled: Boolean,
         ignoreExternalBt: Boolean,
-        cachedDaemonReachable: Boolean?,
         blinkTransportEnabled: Boolean = false,
-        fytModuleEvidence: String? = null
-    ): Boolean = cachedDaemonReachable == false && needsDaemonMeasurement(
-        externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, null,
-        blinkTransportEnabled, fytModuleEvidence
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
+    ): Boolean = discovery.decision.retriesOnPress && discovery.reachable == false && needsDaemonMeasurement(
+        discovery.copy(reachable = null), zbtTransportEnabled, ignoreExternalBt,
+        blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
     )
 
     /** External-module routes cannot use Android's bonded-device and driver-selection controls. */
-    fun usesExternalModule(route: Route): Boolean = route == Route.ZBT || route == Route.BLINK
+    fun usesExternalModule(route: Route): Boolean =
+        route == Route.ZBT || route == Route.BLINK || route == Route.HCT
 
-    /** BLINK keeps its module bridge open across sessions and must not touch Android RFCOMM. */
-    fun rearmsWithoutAndroidRadio(route: Route): Boolean = route == Route.BLINK
+    /** BLINK and HCT rearm through their module service, never through Android RFCOMM. */
+    fun rearmsWithoutAndroidRadio(route: Route): Boolean = route == Route.BLINK || route == Route.HCT
 
     /**
      * Offered wherever the FYT module is detected, and kept while enabled even if detection stops
@@ -146,34 +163,51 @@ object ExternalBtTransportPolicy {
     fun showBlinkToggle(fytModuleEvidence: String?, enabled: Boolean): Boolean =
         fytModuleEvidence != null || enabled
 
+    /** Keep the radio escape visible only where it can affect routing, or is already checked. */
+    fun showsAndroidRadioOverride(
+        discovery: ZbtDiscoveryPolicy.Snapshot,
+        zbtTransportEnabled: Boolean,
+        ignoreExternalBt: Boolean,
+        blinkTransportEnabled: Boolean = false,
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
+    ): Boolean {
+        val detected = discovery.decision.available || fytModuleEvidence != null || hctServiceAvailable
+        // A stale ZBT toggle without matching evidence cannot select ZBT and must not hide
+        // the escape on an HCT-only unit. BLINK remains an explicit override even without evidence.
+        val explicitModule = blinkTransportEnabled ||
+            (fytModuleEvidence == null && discovery.decision.available && zbtTransportEnabled)
+        return detected && (ignoreExternalBt || !explicitModule)
+    }
+
     /**
      * What the main screen's WiFi button arms. A daemon not measured yet, or one whose refusal
      * the press re-asks, goes to the module route, because the bring-up is what measures it.
      */
     fun wifiButton(
-        externalBtEvidence: String?,
+        discovery: ZbtDiscoveryPolicy.Snapshot,
         zbtTransportEnabled: Boolean,
         ignoreExternalBt: Boolean,
-        cachedDaemonReachable: Boolean?,
         blinkTransportEnabled: Boolean = false,
-        fytModuleEvidence: String? = null
+        fytModuleEvidence: String? = null,
+        hctServiceAvailable: Boolean = false
     ): WifiButton = when {
         remeasuresOnPress(
-            externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-            blinkTransportEnabled, fytModuleEvidence
+            discovery, zbtTransportEnabled, ignoreExternalBt,
+            blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
         ) -> WifiButton.MODULE
         refusesBringUp(
-            externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-            blinkTransportEnabled, fytModuleEvidence
+            discovery, zbtTransportEnabled, ignoreExternalBt,
+            blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
         ) -> WifiButton.REFUSED
         usesExternalModule(
             route(
-                externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-                blinkTransportEnabled, fytModuleEvidence
+                discovery, zbtTransportEnabled, ignoreExternalBt,
+                blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
             )
         ) || needsDaemonMeasurement(
-            externalBtEvidence, zbtTransportEnabled, ignoreExternalBt, cachedDaemonReachable,
-            blinkTransportEnabled, fytModuleEvidence
+            discovery, zbtTransportEnabled, ignoreExternalBt,
+            blinkTransportEnabled, fytModuleEvidence, hctServiceAvailable
         ) -> WifiButton.MODULE
         else -> WifiButton.ANDROID_RADIO
     }

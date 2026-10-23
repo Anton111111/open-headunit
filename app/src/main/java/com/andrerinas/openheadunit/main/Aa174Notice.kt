@@ -24,6 +24,8 @@ object Aa174Notice {
 
     private var dialog: AlertDialog? = null
 
+    fun isShowing(): Boolean = dialog?.isShowing == true
+
     fun maybeShow(activity: Activity?, settings: Settings) {
         if (activity == null || activity.isFinishing) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && activity.isDestroyed) return

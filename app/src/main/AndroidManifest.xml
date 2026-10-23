@@ -9,6 +9,8 @@
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
         <package android:name="com.syu.ms" />
+        <!-- Rootless HCT bridge discovery when SELinux hides /dev/goc_serial. -->
+        <package android:name="android.microntek.mtcser" />
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
@@ -244,9 +246,19 @@
             android:windowSoftInputMode="stateHidden|adjustResize"
             android:theme="@style/AppTheme" />
 
+        <!--
+            taskAffinity/excludeFromRecents: the first-run wizard lives in a task of its own. The
+            main screen is singleTask, so any Home intent (picking this app as home from the
+            wizard's launcher step, the Home key with the app as home) clears whatever sits above
+            it in its task. Out of that task the wizard survives at the step it was on, and
+            MainActivity's NEW_TASK start brings this task back instead of making a second wizard.
+            It stays out of Recents, where it would be a second card for the same app.
+        -->
         <activity
             android:name=".main.OnboardingActivity"
+            android:excludeFromRecents="true"
             android:exported="false"
+            android:taskAffinity="${applicationId}.onboarding"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/AppTheme" />
 
