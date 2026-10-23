@@ -857,6 +857,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Suhu</string>
     <string name="overlay_field_frame_age">Usia frame</string>
+    <string name="overlay_field_battery">Baterai</string>
+    <string name="overlay_field_memory">Memori kosong</string>
+    <string name="overlay_field_wifi_signal">Sinyal Wi-Fi</string>
     <string name="performance_overlay_no_lines">Tanpa baris</string>
     <string name="show_performance_overlay">Tampilkan Overlay Performa</string>
     <string name="overlay_position">Posisi overlay performa</string>

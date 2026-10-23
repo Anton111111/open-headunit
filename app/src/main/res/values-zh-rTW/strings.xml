@@ -434,6 +434,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">溫度</string>
     <string name="overlay_field_frame_age">影格時間</string>
+    <string name="overlay_field_battery">電池</string>
+    <string name="overlay_field_memory">可用記憶體</string>
+    <string name="overlay_field_wifi_signal">Wi-Fi 訊號</string>
     <string name="performance_overlay_no_lines">不顯示項目</string>
     <string name="show_performance_overlay">顯示效能浮層</string>
     <string name="overlay_position">效能浮層位置</string>

@@ -857,6 +857,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">อุณหภูมิ</string>
     <string name="overlay_field_frame_age">อายุเฟรม</string>
+    <string name="overlay_field_battery">แบตเตอรี่</string>
+    <string name="overlay_field_memory">หน่วยความจำว่าง</string>
+    <string name="overlay_field_wifi_signal">สัญญาณ Wi-Fi</string>
     <string name="performance_overlay_no_lines">ไม่มีบรรทัด</string>
     <string name="show_performance_overlay">แสดงข้อมูลประสิทธิภาพ</string>
     <string name="overlay_position">ตำแหน่งข้อมูลประสิทธิภาพ</string>

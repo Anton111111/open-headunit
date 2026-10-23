@@ -434,6 +434,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatuur</string>
     <string name="overlay_field_frame_age">Frameleeftijd</string>
+    <string name="overlay_field_battery">Accu</string>
+    <string name="overlay_field_memory">Vrij geheugen</string>
+    <string name="overlay_field_wifi_signal">Wifi-signaal</string>
     <string name="performance_overlay_no_lines">Geen regels</string>
     <string name="show_performance_overlay">Prestatie-overlay tonen</string>
     <string name="overlay_position">Positie van prestatie-overlay</string>

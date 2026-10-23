@@ -2577,7 +2577,10 @@ class SettingsFragment : Fragment() {
             PerformanceOverlayField.FPS to getString(R.string.overlay_field_fps),
             PerformanceOverlayField.CPU to getString(R.string.overlay_field_cpu),
             PerformanceOverlayField.TEMP to getString(R.string.overlay_field_temperature),
-            PerformanceOverlayField.FRAME to getString(R.string.overlay_field_frame_age)
+            PerformanceOverlayField.FRAME to getString(R.string.overlay_field_frame_age),
+            PerformanceOverlayField.BATTERY to getString(R.string.overlay_field_battery),
+            PerformanceOverlayField.MEMORY to getString(R.string.overlay_field_memory),
+            PerformanceOverlayField.WIFI to getString(R.string.overlay_field_wifi_signal)
         )
         items.add(SettingItem.SettingEntry(
             stableId = "performanceOverlay",
@@ -2592,7 +2595,8 @@ class SettingsFragment : Fragment() {
             ),
             searchKeywords = kw(
                 R.string.overlay_field_fps, R.string.overlay_field_cpu, R.string.overlay_field_temperature,
-                R.string.overlay_field_frame_age, R.string.overlay_position
+                R.string.overlay_field_frame_age, R.string.overlay_field_battery, R.string.overlay_field_memory,
+                R.string.overlay_field_wifi_signal, R.string.overlay_position
             ),
             onClick = {
                 findNavController().navigate(R.id.action_settingsFragment_to_performanceOverlaySettingsFragment)

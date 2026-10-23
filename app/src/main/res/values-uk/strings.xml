@@ -435,6 +435,9 @@
     <string name="overlay_field_cpu">Процесор</string>
     <string name="overlay_field_temperature">Температура</string>
     <string name="overlay_field_frame_age">Вік кадру</string>
+    <string name="overlay_field_battery">Акумулятор</string>
+    <string name="overlay_field_memory">Вільна пам\'ять</string>
+    <string name="overlay_field_wifi_signal">Сигнал Wi-Fi</string>
     <string name="performance_overlay_no_lines">Немає рядків</string>
     <string name="show_performance_overlay">Показувати панель продуктивності</string>
     <string name="overlay_position">Положення панелі продуктивності</string>

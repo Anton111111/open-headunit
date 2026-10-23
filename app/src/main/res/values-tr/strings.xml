@@ -433,6 +433,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Sıcaklık</string>
     <string name="overlay_field_frame_age">Kare yaşı</string>
+    <string name="overlay_field_battery">Pil</string>
+    <string name="overlay_field_memory">Boş bellek</string>
+    <string name="overlay_field_wifi_signal">Wi-Fi sinyali</string>
     <string name="performance_overlay_no_lines">Satır yok</string>
     <string name="show_performance_overlay">Performans katmanını göster</string>
     <string name="overlay_position">Performans katmanının konumu</string>

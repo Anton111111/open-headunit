@@ -435,6 +435,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">Temperatură</string>
     <string name="overlay_field_frame_age">Vechimea cadrului</string>
+    <string name="overlay_field_battery">Baterie</string>
+    <string name="overlay_field_memory">Memorie liberă</string>
+    <string name="overlay_field_wifi_signal">Semnal Wi-Fi</string>
     <string name="performance_overlay_no_lines">Fără linii</string>
     <string name="show_performance_overlay">Afișează suprapunerea de performanță</string>
     <string name="overlay_position">Poziția suprapunerii de performanță</string>

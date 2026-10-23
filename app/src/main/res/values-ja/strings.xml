@@ -438,6 +438,9 @@
     <string name="overlay_field_cpu">CPU</string>
     <string name="overlay_field_temperature">温度</string>
     <string name="overlay_field_frame_age">フレーム経過時間</string>
+    <string name="overlay_field_battery">バッテリー</string>
+    <string name="overlay_field_memory">空きメモリ</string>
+    <string name="overlay_field_wifi_signal">Wi-Fi信号</string>
     <string name="performance_overlay_no_lines">行なし</string>
     <string name="show_performance_overlay">パフォーマンス表示を有効にする</string>
     <string name="overlay_position">パフォーマンス表示の位置</string>

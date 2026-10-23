@@ -136,6 +136,9 @@ class PerformanceOverlaySettingsFragment : Fragment() {
         items.add(fieldRow(PerformanceOverlayField.CPU, R.string.overlay_field_cpu))
         items.add(fieldRow(PerformanceOverlayField.TEMP, R.string.overlay_field_temperature))
         items.add(fieldRow(PerformanceOverlayField.FRAME, R.string.overlay_field_frame_age))
+        items.add(fieldRow(PerformanceOverlayField.BATTERY, R.string.overlay_field_battery))
+        items.add(fieldRow(PerformanceOverlayField.MEMORY, R.string.overlay_field_memory))
+        items.add(fieldRow(PerformanceOverlayField.WIFI, R.string.overlay_field_wifi_signal))
 
         // The overlay sits in a top corner, and on a panel with an OEM bar that corner is covered.
         val overlayPositions = arrayOf(getString(R.string.margin_left), getString(R.string.margin_right))
