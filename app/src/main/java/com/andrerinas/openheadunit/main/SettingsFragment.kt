@@ -24,6 +24,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import com.andrerinas.openheadunit.aap.protocol.messages.BluetoothAnnouncePolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketProbe
 import com.andrerinas.openheadunit.utils.OemAppManager
 import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
@@ -1282,7 +1283,8 @@ class SettingsFragment : Fragment() {
                     ignoreChecked,
                     pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
                     radioFytEvidence,
-                    hctService
+                    hctService,
+                    zjSocketConnects = ZjSocketProbe.answer()
                 )) {
                 items.add(SettingItem.ToggleSettingEntry(
                     stableId = "nativeAaIgnoreExternalBt",
@@ -4213,7 +4215,8 @@ class SettingsFragment : Fragment() {
             pendingNativeAaIgnoreExternalBt ?: settings.nativeAaIgnoreExternalBt,
             blinkTransportEnabled = pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
             fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-            hctServiceAvailable = HctServiceObserver.available(requireContext())
+            hctServiceAvailable = HctServiceObserver.available(requireContext()),
+            zjSocketConnects = ZjSocketProbe.answer()
         )
 
     /** The WiFi Direct band the block is currently showing settings for. */
