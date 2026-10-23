@@ -46,6 +46,7 @@ import com.andrerinas.openheadunit.connection.PhoneExitQuietPolicy
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.AppPermissions
 import com.andrerinas.openheadunit.utils.CarLauncherManager
+import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.ConnectionIssue
 import com.andrerinas.openheadunit.utils.ConnectionIssues
 import android.content.res.Configuration
@@ -217,7 +218,12 @@ class MainActivity : BaseActivity() {
         // Sync UsbAttachedActivity and CarLauncher component states with settings.
         lifecycleScope.launch(Dispatchers.IO) {
             Settings.setUsbAttachedActivityEnabled(applicationContext, appSettings.listenForUsbDevices)
-            CarLauncherManager.syncWithSettings(applicationContext, appSettings.enableCarLauncher)
+            val launcherStored = appSettings.enableCarLauncher
+            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, CarLauncherManager.isDefaultLauncher(applicationContext))) {
+                CarLauncherManager.syncWithSettings(applicationContext, launcherStored)
+            } else {
+                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, keeping the launcher alias")
+            }
         }
 
         // Start main service immediately to handle connections and wireless server
@@ -393,16 +399,21 @@ class MainActivity : BaseActivity() {
     }
 
     /**
-     * The pill's X: ends the attempt this activity may be tracking, then has the service stop the
-     * stack and hold it down. [cancelAutoConnect] alone cannot reach the pre-handshake stages,
-     * which are the ones the pill spends most of its life showing.
+     * The pill's X, and the new home's Cancel that took the pill's place there: ends the attempt
+     * this activity may be tracking, then has the service stop the stack and hold it down.
+     * [cancelAutoConnect] alone cannot reach the pre-handshake stages, which are the ones the pill
+     * spends most of its life showing.
      */
-    private fun cancelBringUp() {
-        AppLog.i("MainActivity: status pill X pressed, stopping the bring-up")
+    fun cancelBringUp(source: String = "status pill X") {
+        AppLog.i("MainActivity: $source pressed, stopping the bring-up")
         // Read before the disconnect below, which drops the connection the service would ask.
         val stage = ConnectionStageTracker.stage.value
         val usbAttempt = App.provide(this).commManager.isUsbSession ||
             stage == ConnectionStage.USB_ATTACHED || stage == ConnectionStage.USB_SWITCHING
+        // The home's own auto-connect countdown lives in HomeFragment, not here. The countdown
+        // only runs while the home's view is up, so the home in the nav host is the one to tell.
+        supportFragmentManager.findFragmentById(R.id.main_content)?.childFragmentManager?.fragments
+            ?.filterIsInstance<HomeFragment>()?.forEach { it.stopAutoConnectCountdown() }
         cancelAutoConnect()
         ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
             action = AapService.ACTION_CANCEL_WIRELESS
@@ -541,7 +552,8 @@ class MainActivity : BaseActivity() {
         applyStageText(ConnectionStageTracker.stage.value, animate = false)
         applyNetworkText(ConnectionStageTracker.network.value, animate = false)
         pill.visibility = View.VISIBLE
-        pill.bringToFront()
+        // The pill lives in the notice stack, so the stack is what has to come up.
+        findViewById<View>(R.id.status_notices)?.bringToFront()
         // If the splash overlay is still showing, keep it on top of the pill until the splash finishes
         findViewById<View>(R.id.splash_overlay)?.let { splash ->
             if (splash.visibility == View.VISIBLE) {
@@ -566,6 +578,8 @@ class MainActivity : BaseActivity() {
                 ConnectionStageTracker.stage.collect { renderStagePill(it) }
             }
         }
+        // It does not move the tracker, so the pill has to be asked again when it changes.
+        viewModel.homeShowsBringUp.observe(this) { renderStagePill(ConnectionStageTracker.stage.value) }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 ConnectionStageTracker.network.collect { renderNetworkLine(it) }
@@ -620,9 +634,10 @@ class MainActivity : BaseActivity() {
         val now = SystemClock.elapsedRealtime()
         val phoneLeftQuiet =
             PhoneExitQuietPolicy.suppressesPill(ConnectionStageTracker.phoneLeftAtMs, now)
+        val homeTellsIt = viewModel.homeShowsBringUp.value == true
         // PILL_THEN_OVERLAY hands the screen to the overlay part-way through an attempt.
         // Re-raising the pill under it would undo that promotion.
-        val shown = if (stage == null || overlayOwnsScreen() || phoneLeftQuiet) null else stage
+        val shown = if (stage == null || overlayOwnsScreen() || phoneLeftQuiet || homeTellsIt) null else stage
         // What the user is actually being told, which no other line records. A reporter's
         // screenshot and their log can then be read against each other. A step the overlay hides
         // is still named: without that, a session where an auto-connect happened to be in flight
@@ -633,6 +648,7 @@ class MainActivity : BaseActivity() {
             val step = when {
                 shown != null -> shown.name
                 stage != null && phoneLeftQuiet -> "${stage.name} (not shown, the phone ended the session)"
+                stage != null && homeTellsIt -> "${stage.name} (not shown, the home's main button tells it)"
                 stage != null -> "${stage.name} (not shown, the overlay owns the screen)"
                 else -> "hidden"
             }
@@ -1027,6 +1043,9 @@ class MainActivity : BaseActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            viewModel.homePressed.value = SystemClock.uptimeMillis()
+        }
         handleLaunchIntent(intent)
     }
 
@@ -1216,8 +1235,13 @@ class MainActivity : BaseActivity() {
         ContextCompat.registerReceiver(this, orientationReceiver, android.content.IntentFilter(AapService.ACTION_ORIENTATION_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
         isOrientationReceiverRegistered = true
 
-        // If an Android Auto session is active, bring the projection activity to front
-        if (App.provide(this).commManager.isConnected && !App.isPiPActive && !AapProjectionActivity.isForeground) {
+        // If an Android Auto session is active, bring the projection activity to front. As the
+        // unit's launcher the home is the base screen and the session keeps running behind it, so
+        // there the projection is opened from the main button. Without this, moving the projection
+        // to the background looked like it restarted the session two seconds later.
+        if (App.provide(this).commManager.isConnected && !App.isPiPActive &&
+            !AapProjectionActivity.isForeground && !CarLauncherManager.isDefaultLauncher(this)
+        ) {
             AppLog.i("MainActivity: Active session detected, bringing projection to front")
             bringProjectionToFront()
         }
@@ -1255,6 +1279,10 @@ class MainActivity : BaseActivity() {
      */
     /** The condition the banner is currently reporting, so the log line is not repeated. */
     private var loggedBannerIssue: ConnectionIssue? = null
+
+    /** Whether the connection issue banner is on screen, so the home holds its own hints back. */
+    fun connectionIssueBannerShown(): Boolean =
+        findViewById<View>(R.id.connection_issue_banner)?.visibility == View.VISIBLE
 
     private fun updateConnectionIssueBanner() {
         val banner = findViewById<View>(R.id.connection_issue_banner) ?: return
@@ -1456,7 +1484,11 @@ class MainActivity : BaseActivity() {
         val wizardPending = appSettings.onboardingVersion < OnboardingActivity.CURRENT_ONBOARDING_VERSION
         if (wizardPending && !OnboardingActivity.deferredThisSession) {
             // The wizard's permissions step handles runtime permissions, so don't also prompt here.
-            startActivity(Intent(this, OnboardingActivity::class.java))
+            // The wizard has a task of its own (see the manifest), so a Home intent that clears
+            // this singleTask activity's task leaves it alive. NEW_TASK with the same plain intent
+            // brings that task back as it was, at the step and screen the user left, instead of
+            // starting a second wizard, however many times this runs.
+            startActivity(Intent(this, OnboardingActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } else if (!wizardPending) {
             // Onboarding already completed (e.g. upgraders): request runtime permissions directly.
             requestPermissions()
