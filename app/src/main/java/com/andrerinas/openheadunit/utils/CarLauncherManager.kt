@@ -58,9 +58,24 @@ object CarLauncherManager {
     }
 
     /**
-     * Checks whether Open Headunit is currently resolved as the default Home handler.
+     * Checks whether Open Headunit is the unit's home app.
+     *
+     * From Android 10 the home app is a role, and the package manager answers this question with
+     * this app's own alias as soon as the alias is enabled, which is not the same as the system
+     * having picked it. The role manager is the one that knows, and the intent check stays for the
+     * older units and for the ones where the role is not available.
      */
     fun isDefaultLauncher(context: Context): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val roleManager = context.getSystemService(RoleManager::class.java)
+                if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) {
+                    return roleManager.isRoleHeld(RoleManager.ROLE_HOME)
+                }
+            } catch (e: Exception) {
+                AppLog.w("CarLauncherManager: RoleManager failed: ${e.message}, falling back to the intent check")
+            }
+        }
         return try {
             val pm = context.packageManager ?: return false
             val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)

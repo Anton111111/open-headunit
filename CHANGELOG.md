@@ -7,6 +7,7 @@
 - WiFi Direct: detect a wedged P2P stack and offer a WiFi restart
 - WiFi: Pause automatic searches during wireless sessions with Shizuku
 - Native AA: remember a unit that refuses every banded WiFi Direct group
+- Native AA: connect faster
 
 ### v.3.5.0
 - Native AA: reconnect to a network that is still there, wake the phone over Bluetooth or the external module, bring a lost group or hotspot back after sleep, boot or ACC wake, stop advertising an address that moves, and pick, wake or hold back only for a phone that is on

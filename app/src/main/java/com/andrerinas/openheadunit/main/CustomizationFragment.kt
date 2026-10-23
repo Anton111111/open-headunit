@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.content.pm.PackageManager
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -14,7 +15,10 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,7 +27,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
+import androidx.core.view.doOnLayout
 import androidx.core.widget.doOnTextChanged
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -33,11 +40,13 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.textfield.TextInputEditText
 import com.andrerinas.openheadunit.App
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.app.BaseActivity
+import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.ColorUtils
 import com.andrerinas.openheadunit.utils.HomeUiHelper
@@ -48,6 +57,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+
+/** Long enough to read the blocked-location notice on a car screen and reach its button. */
+private const val LOCATION_NOTICE_DURATION_MS = 8000
 
 class CustomizationFragment : Fragment() {
 
@@ -71,27 +83,30 @@ class CustomizationFragment : Fragment() {
     private var btnNightPureBlack: MaterialButton? = null
     private var btnNightNone: MaterialButton? = null
 
-    // Button color previews & rows
-    private var previewBtnSelfMode: MaterialButton? = null
-    private var previewBtnUsb: MaterialButton? = null
-    private var previewBtnWifi: MaterialButton? = null
-    private var previewBtnSettings: MaterialButton? = null
-
+    // Connection color rows
     private var indicatorSelfMode: View? = null
     private var indicatorUsb: View? = null
     private var indicatorWifi: View? = null
-    private var indicatorSettings: View? = null
 
     private var rowColorSelfMode: View? = null
     private var rowColorUsb: View? = null
     private var rowColorWifi: View? = null
-    private var rowColorSettings: View? = null
     private var switchAutoMonochromeNight: SwitchMaterial? = null
+    private var switchShowFavoriteApps: SwitchMaterial? = null
+    private var switchShowClock: SwitchMaterial? = null
+    private var switchShowSpeed: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
     private var btnResetColors: MaterialButton? = null
 
+    // The new home's color preview: the real home layout, scaled down
+    private var homeColorPreview: FrameLayout? = null
+    private var miniHomeStage: FrameLayout? = null
+    private var miniHomeBackground: ImageView? = null
+    private var miniHomeView: View? = null
+    /** The connection the preview puts on the main button: the last one whose color was picked. */
+    private var previewConnection: Connection? = null
+
     // Button Scale views
-    private var previewContainer: View? = null
     private var sliderButtonScale: com.google.android.material.slider.Slider? = null
     private var txtButtonScaleValue: TextView? = null
     private var btnResetScale: MaterialButton? = null
@@ -121,6 +136,31 @@ class CustomizationFragment : Fragment() {
 
     private val imagePicker = registerForActivityResult(PickImageContract()) { uri ->
         uri?.let { handleImageSelected(it) }
+    }
+
+    /**
+     * The speed readout reads this unit's GPS, so the switch waits for the location permission
+     * instead of turning on and showing a placeholder with no way to know why.
+     */
+    private val locationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        // GPS needs precise location. From Android 12 a request for it alone is ignored, so both
+        // are asked; approximate only leaves the dialog able to ask for precise next time.
+        val granted = result[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
+        settings.showHomeSpeed = granted
+        switchShowSpeed?.isChecked = granted
+        val canAskAgain = !granted && (
+            result[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                shouldShowRequestPermissionRationale(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            )
+        when (SpeedPermissionPolicy.afterRequest(granted, canAskAgain)) {
+            // The switch was already on, so its listener does not run again to redraw the preview.
+            SpeedPermissionPolicy.Outcome.SHOW_SPEED -> updatePreviewScale(settings.homeButtonScalePercent)
+            SpeedPermissionPolicy.Outcome.EXPLAIN ->
+                ToastUtils.showToast(requireContext(), R.string.home_speed_needs_location, Toast.LENGTH_LONG, force = true)
+            SpeedPermissionPolicy.Outcome.OPEN_APP_SETTINGS -> showLocationBlockedNotice()
+        }
     }
 
     private val sliderTouchListener = object : com.google.android.material.slider.Slider.OnSliderTouchListener {
@@ -176,27 +216,28 @@ class CustomizationFragment : Fragment() {
         btnNightPureBlack = view.findViewById(R.id.btn_night_pure_black)
         btnNightNone = view.findViewById(R.id.btn_night_none)
 
-        // Button Color views
-        previewBtnSelfMode = view.findViewById(R.id.preview_btn_self_mode)
-        previewBtnUsb = view.findViewById(R.id.preview_btn_usb)
-        previewBtnWifi = view.findViewById(R.id.preview_btn_wifi)
-        previewBtnSettings = view.findViewById(R.id.preview_btn_settings)
-
+        // Connection color views
         indicatorSelfMode = view.findViewById(R.id.indicator_self_mode)
         indicatorUsb = view.findViewById(R.id.indicator_usb)
         indicatorWifi = view.findViewById(R.id.indicator_wifi)
-        indicatorSettings = view.findViewById(R.id.indicator_settings)
 
         rowColorSelfMode = view.findViewById(R.id.row_color_self_mode)
         rowColorUsb = view.findViewById(R.id.row_color_usb)
         rowColorWifi = view.findViewById(R.id.row_color_wifi)
-        rowColorSettings = view.findViewById(R.id.row_color_settings)
         switchAutoMonochromeNight = view.findViewById(R.id.switch_auto_monochrome_night)
+        switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
+        switchShowClock = view.findViewById(R.id.switch_show_clock)
+        switchShowSpeed = view.findViewById(R.id.switch_show_speed)
+        // A tap anywhere on a switch row flips its switch, not only on the switch itself.
+        toggleSwitchFromRow(view.findViewById(R.id.row_auto_monochrome_night), switchAutoMonochromeNight)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_favorite_apps), switchShowFavoriteApps)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_clock), switchShowClock)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_speed), switchShowSpeed)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
         btnResetColors = view.findViewById(R.id.btn_reset_colors)
+        homeColorPreview = view.findViewById(R.id.home_color_preview)
 
         // Button Scale views
-        previewContainer = view.findViewById(R.id.preview_container)
         sliderButtonScale = view.findViewById(R.id.slider_button_scale)
         txtButtonScaleValue = view.findViewById(R.id.txt_button_scale_value)
         btnResetScale = view.findViewById(R.id.btn_reset_scale)
@@ -234,8 +275,8 @@ class CustomizationFragment : Fragment() {
             showColorPickerDialog(
                 R.string.btn_color_self_mode,
                 settings.customSelfModeButtonColor,
-                R.drawable.gradient_blue,
-                R.drawable.ic_launch_white
+                R.drawable.ic_launch_white,
+                Connection.SELF
             ) { color ->
                 settings.customSelfModeButtonColor = color
             }
@@ -245,8 +286,8 @@ class CustomizationFragment : Fragment() {
             showColorPickerDialog(
                 R.string.btn_color_usb,
                 settings.customUsbButtonColor,
-                R.drawable.gradient_orange,
-                R.drawable.ic_usb_white
+                R.drawable.ic_usb_white,
+                Connection.USB
             ) { color ->
                 settings.customUsbButtonColor = color
             }
@@ -256,21 +297,10 @@ class CustomizationFragment : Fragment() {
             showColorPickerDialog(
                 R.string.btn_color_wifi,
                 settings.customWifiButtonColor,
-                R.drawable.gradient_purple,
-                R.drawable.ic_network_wifi_white
+                R.drawable.ic_network_wifi_white,
+                Connection.WIFI
             ) { color ->
                 settings.customWifiButtonColor = color
-            }
-        }
-
-        rowColorSettings?.setOnClickListener {
-            showColorPickerDialog(
-                R.string.btn_color_settings,
-                settings.customSettingsButtonColor,
-                R.drawable.gradient_darkblue,
-                R.drawable.ic_settings_white
-            ) { color ->
-                settings.customSettingsButtonColor = color
             }
         }
 
@@ -322,6 +352,33 @@ class CustomizationFragment : Fragment() {
             }
         }
 
+        switchShowFavoriteApps?.isChecked = settings.showHomeFavoriteApps
+        switchShowFavoriteApps?.setOnCheckedChangeListener { _, isChecked ->
+            settings.showHomeFavoriteApps = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
+        switchShowClock?.isChecked = settings.showHomeClock
+        switchShowClock?.setOnCheckedChangeListener { _, isChecked ->
+            settings.showHomeClock = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
+        switchShowSpeed?.isChecked = settings.showHomeSpeed
+        switchShowSpeed?.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && !hasLocationPermission()) {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+                return@setOnCheckedChangeListener
+            }
+            settings.showHomeSpeed = isChecked
+            updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
         switchAutoMonochromeNight?.setOnCheckedChangeListener { _, isChecked ->
             settings.autoMonochromeButtonsAtNight = isChecked
             settings.monochromeIcons = isChecked
@@ -333,7 +390,6 @@ class CustomizationFragment : Fragment() {
             settings.customSelfModeButtonColor = grayColor
             settings.customUsbButtonColor = grayColor
             settings.customWifiButtonColor = grayColor
-            settings.customSettingsButtonColor = grayColor
             refreshUI()
             ToastUtils.showToast(requireContext(), R.string.btn_make_all_monochrome, Toast.LENGTH_SHORT, force = true)
         }
@@ -363,6 +419,11 @@ class CustomizationFragment : Fragment() {
         refreshUI()
     }
 
+    private fun toggleSwitchFromRow(row: View?, switch: SwitchMaterial?) {
+        if (switch == null) return
+        row?.setOnClickListener { switch.toggle() }
+    }
+
     private fun showSamsungStyleOverlay() {
         overlayHomePreview?.removeCallbacks(hideOverlayRunnable)
         customizationMainContent?.animate()?.alpha(0f)?.setDuration(200)?.start()
@@ -376,14 +437,41 @@ class CustomizationFragment : Fragment() {
         overlayHomePreview?.postDelayed(hideOverlayRunnable, 600)
     }
 
+    /**
+     * The system no longer shows the location dialog, so the switch would just bounce back off.
+     * Say so and offer the app's system settings, where the permission can still be allowed.
+     */
+    private fun showLocationBlockedNotice() {
+        val root = view ?: return
+        AppLog.i("Location permission blocked for the home speed, offering the app settings")
+        Snackbar.make(root, R.string.home_speed_location_blocked, LOCATION_NOTICE_DURATION_MS)
+            .setAction(R.string.open_settings) { openAppSystemSettings() }
+            .show()
+    }
+
+    private fun openAppSystemSettings() {
+        val ctx = context ?: return
+        try {
+            startActivity(
+                Intent(
+                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:${ctx.packageName}")
+                )
+            )
+        } catch (e: Exception) {
+            AppLog.w("Could not open the app details settings: ${e.message}")
+            ToastUtils.showToast(ctx, R.string.cannot_open_settings, Toast.LENGTH_SHORT, force = true)
+        }
+    }
+
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            requireContext(), android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
     private fun updatePreviewScale(scalePercent: Int) {
         val ctx = context ?: return
         val validScale = if (scalePercent in 60..120) scalePercent else 100
-        val scaleFactor = validScale / 100.0f
-
-        // Sync inline card preview
-        previewContainer?.scaleX = scaleFactor
-        previewContainer?.scaleY = scaleFactor
 
         // Sync text labels & sliders safely
         txtButtonScaleValue?.text = "$validScale%"
@@ -412,7 +500,6 @@ class CustomizationFragment : Fragment() {
         val bgCustom = homeView.findViewById<ImageView>(R.id.bg_custom_image_view)
         val path = settings.homeBackgroundImagePath
         val hasCustomImage = path.isNotEmpty() && File(path).exists()
-        val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
         if (hasCustomImage && bgCustom != null) {
             bgDefault?.visibility = View.GONE
@@ -433,16 +520,142 @@ class CustomizationFragment : Fragment() {
             }
         }
 
-        // 2. Sync Button Colors & Monochrome Theme
-        HomeUiHelper.applyButtonStyles(ctx, homeView, settings, isNightActive)
+        // 2. Paint the home as it looks when idle
+        paintNewHome(ctx, homeView, validScale, null)
+        renderMiniHome(ctx)
+    }
 
-        // 3. Sync Button Visibility
-        HomeUiHelper.applyButtonVisibility(homeView, settings)
+    /**
+     * Paints [homeView] as the new home looks at rest. [primary] puts that connection on the main
+     * button, as the home does for the last one used; null leaves the home's own choice.
+     */
+    private fun paintNewHome(ctx: Context, homeView: View, scalePercent: Int, primary: Connection?) {
+        val decision = HomePrimaryPolicy.decide(
+            HomePrimaryPolicy.Input(
+                chosen = HomeUiHelper.chosenConnections(settings),
+                lastConnection = primary ?: HomeUiHelper.lastConnection(settings),
+                usbPhoneDetected = false,
+                sessionActive = false,
+                reconnectTarget = null,
+                wifiScanning = false
+            )
+        )
+        val palette = homePalette(ctx)
+        HomeUiHelper.applyTheme(ctx, homeView, palette)
+        HomeUiHelper.applyBar(ctx, homeView, settings, decision.barConnections, palette)
+        HomeUiHelper.applyPrimaryCard(ctx, homeView, settings, decision, null, 0, palette)
+        HomeUiHelper.applyFavoritesVisibility(homeView, settings.isCarLauncherActive, settings.showHomeFavoriteApps)
+        HomeUiHelper.applyInfoBlock(
+            homeView,
+            settings,
+            palette,
+            clock = android.text.format.DateFormat.getTimeFormat(ctx).format(java.util.Date()),
+            date = android.text.format.DateFormat.getMediumDateFormat(ctx).format(java.util.Date()),
+            // The preview has no GPS reading, which is exactly what the readout shows without one.
+            speed = HomeUiHelper.speedText(null),
+            countdownVisible = false
+        )
+        HomeUiHelper.applyDriverSide(homeView, settings.rightHandDrive)
+        HomeUiHelper.applyButtonScale(homeView, scalePercent)
+    }
 
-        // 4. Scale Home Buttons
-        val density = resources.displayMetrics.density
-        val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-        HomeUiHelper.applyButtonScale(homeView, validScale, isPortrait, density)
+    /**
+     * The color section's preview on the new home: the home layout at this screen's size, scaled
+     * down to fit the card, so the colors land where the home really puts them.
+     */
+    private fun renderMiniHome(ctx: Context) {
+        val frame = homeColorPreview ?: return
+        val homeWidth = resources.displayMetrics.widthPixels
+        val homeHeight = resources.displayMetrics.heightPixels
+        if (miniHomeStage == null) {
+            val stage = FrameLayout(ctx).apply {
+                pivotX = 0f
+                pivotY = 0f
+                // A picture of the home, not a second one: D-pad focus must not wander into it.
+                descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+                // Nor should TalkBack read its buttons out as if they could be pressed here.
+                importantForAccessibility = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                } else {
+                    View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }
+            }
+            val background = ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+            stage.addView(background, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+            val home = layoutInflater.inflate(R.layout.fragment_home, stage, false)
+            stage.addView(home)
+            frame.addView(stage, FrameLayout.LayoutParams(homeWidth, homeHeight))
+            // Takes the touches, so the tiles in the picture do not press.
+            frame.addView(View(ctx).apply {
+                isClickable = true
+                // Android 8 makes a clickable view focusable on its own; the D-pad must skip this one.
+                isFocusable = false
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            miniHomeStage = stage
+            miniHomeBackground = background
+            miniHomeView = home
+        }
+        val stage = miniHomeStage ?: return
+        val home = miniHomeView ?: return
+        miniHomeBackground?.let { paintHomeBackground(ctx, it) }
+        paintNewHome(ctx, home, settings.homeButtonScalePercent, previewConnection)
+        home.doOnLayout { HomeUiHelper.fitDriverBar(it, settings.homeButtonScalePercent) }
+        frame.doOnLayout { fitMiniHome(it, stage, homeWidth, homeHeight) }
+    }
+
+    private fun fitMiniHome(frame: View, stage: View, homeWidth: Int, homeHeight: Int) {
+        val roomWidth = frame.width - frame.paddingLeft - frame.paddingRight
+        if (roomWidth <= 0 || homeWidth <= 0 || homeHeight <= 0) return
+        val maxHeight = resources.getDimension(R.dimen.customization_home_preview_max_height)
+        val scale = minOf(roomWidth.toFloat() / homeWidth, maxHeight / homeHeight)
+        stage.scaleX = scale
+        stage.scaleY = scale
+        stage.translationX = (roomWidth - homeWidth * scale) / 2f
+        val height = (homeHeight * scale).toInt() + frame.paddingTop + frame.paddingBottom
+        if (frame.layoutParams.height == height) return
+        // Posted: this runs inside a layout pass, and Android 4.1 drops a layout request made there.
+        frame.post {
+            val params = frame.layoutParams
+            params.height = height
+            frame.layoutParams = params
+        }
+    }
+
+    /**
+     * The home's own background behind the preview, by the rules BaseActivity.applyWindowBackground
+     * uses for the real one: pure black, the custom image, or the default, dimmed at night if asked.
+     */
+    private fun paintHomeBackground(ctx: Context, target: ImageView) {
+        val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val nightMode = settings.homeBackgroundNightMode
+        val path = settings.homeBackgroundImagePath
+        val hasImage = path.isNotEmpty() && File(path).exists() && File(path).length() > 0
+        val pureBlack = if (hasImage) {
+            isNightActive && nightMode == Settings.BackgroundNightMode.PURE_BLACK
+        } else {
+            settings.appTheme == Settings.AppTheme.EXTREME_DARK ||
+                (isNightActive && (settings.useExtremeDarkMode || nightMode == Settings.BackgroundNightMode.PURE_BLACK))
+        }
+        Glide.with(this).clear(target)
+        target.colorFilter = if (!pureBlack && isNightActive && nightMode == Settings.BackgroundNightMode.DIM) {
+            PorterDuffColorFilter(Color.argb(135, 0, 0, 0), PorterDuff.Mode.SRC_ATOP)
+        } else {
+            null
+        }
+        when {
+            pureBlack -> target.setImageDrawable(ContextCompat.getColor(ctx, R.color.extreme_dark_background).toDrawable())
+            hasImage -> Glide.with(this)
+                .load(File(path))
+                .signature(ObjectKey(File(path).lastModified()))
+                .centerCrop()
+                .into(target)
+            else -> target.setImageDrawable(
+                ContextCompat.getDrawable(ctx, if (settings.useGradientBackground) R.drawable.bg_gradient else R.drawable.bg)
+            )
+        }
     }
 
     private fun handleImageSelected(uri: Uri) {
@@ -517,7 +730,6 @@ class CustomizationFragment : Fragment() {
         settings.customSelfModeButtonColor = 0
         settings.customUsbButtonColor = 0
         settings.customWifiButtonColor = 0
-        settings.customSettingsButtonColor = 0
         refreshUI()
     }
 
@@ -589,39 +801,14 @@ class CustomizationFragment : Fragment() {
         val showsUsb = settings.showsUsb()
         val showsWifi = settings.showsWifi()
 
-        // Update button color previews & indicators (previews stay visible but styled as disabled when unchecked)
-        updateButtonPreview(
-            previewBtnSelfMode,
-            indicatorSelfMode,
-            settings.customSelfModeButtonColor,
-            R.drawable.gradient_blue,
-            showsSelf,
-            ctx
-        )
-        updateButtonPreview(
-            previewBtnUsb,
-            indicatorUsb,
-            settings.customUsbButtonColor,
-            R.drawable.gradient_orange,
-            showsUsb,
-            ctx
-        )
-        updateButtonPreview(
-            previewBtnWifi,
-            indicatorWifi,
-            settings.customWifiButtonColor,
-            R.drawable.gradient_purple,
-            showsWifi,
-            ctx
-        )
-        updateButtonPreview(
-            previewBtnSettings,
-            indicatorSettings,
-            settings.customSettingsButtonColor,
-            R.drawable.gradient_darkblue,
-            true,
-            ctx
-        )
+        // The colors are accents for the connections only: the main button, and a bar tile while
+        // it is connecting or connected. The Settings tile stays neutral.
+        renderMiniHome(ctx)
+
+        // The row's dot shows the color as picked, even when the night turns the buttons gray.
+        indicatorSelfMode?.background = colorSample(ctx, settings.customSelfModeButtonColor, Connection.SELF, 12f)
+        indicatorUsb?.background = colorSample(ctx, settings.customUsbButtonColor, Connection.USB, 12f)
+        indicatorWifi?.background = colorSample(ctx, settings.customWifiButtonColor, Connection.WIFI, 12f)
 
         // Hide color customization rows for unchecked connection modes
         rowColorSelfMode?.visibility = if (showsSelf) View.VISIBLE else View.GONE
@@ -630,55 +817,31 @@ class CustomizationFragment : Fragment() {
 
         val hasCustomColors = settings.customSelfModeButtonColor != 0 ||
                 settings.customUsbButtonColor != 0 ||
-                settings.customWifiButtonColor != 0 ||
-                settings.customSettingsButtonColor != 0
+                settings.customWifiButtonColor != 0
         btnResetColors?.isEnabled = hasCustomColors
     }
 
-    private fun updateButtonPreview(
-        previewButton: MaterialButton?,
-        indicatorView: View?,
-        customColor: Int,
-        defaultDrawableRes: Int,
-        isEnabled: Boolean,
-        ctx: Context
-    ) {
-        if (previewButton != null) {
-            previewButton.visibility = View.VISIBLE
-            previewButton.isEnabled = isEnabled
-            if (!isEnabled) {
-                val disabledBackground = ContextCompat.getDrawable(ctx, R.drawable.gradient_monochrome)
-                val disabledIconTint = ContextCompat.getColorStateList(ctx, R.color.disabled_icon_tint)
-                previewButton.background = disabledBackground?.constantState?.newDrawable()?.mutate()
-                previewButton.iconTint = disabledIconTint
-            } else {
-                val whiteTint = ColorStateList.valueOf(0xFFFFFFFF.toInt())
-                if (customColor != 0) {
-                    val customDrawable = ColorUtils.createGradientDrawable(customColor, 32f, ctx)
-                    previewButton.background = customDrawable
-                } else {
-                    val defaultDrawable = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-                    previewButton.background = defaultDrawable
-                }
-                previewButton.iconTint = whiteTint
-            }
+    /** The new home's look right now: day, dark or extreme dark, as the home screen would pick it. */
+    private fun homePalette(ctx: Context): HomeUiHelper.Palette {
+        val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        return HomeUiHelper.palette(ctx, HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive))
+    }
+
+    /** A sample of [color] as the home draws it for [connection]. 0 is the home's own color. */
+    private fun colorSample(ctx: Context, color: Int, connection: Connection, radiusDp: Float): Drawable =
+        GradientDrawable().apply {
+            setColor(sampleColor(ctx, color, connection))
+            cornerRadius = radiusDp * ctx.resources.displayMetrics.density
         }
 
-        if (indicatorView != null) {
-            if (customColor != 0) {
-                val indicatorDrawable = ColorUtils.createGradientDrawable(customColor, 12f, ctx)
-                indicatorView.background = indicatorDrawable
-            } else {
-                indicatorView.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-            }
-        }
-    }
+    private fun sampleColor(ctx: Context, color: Int, connection: Connection): Int =
+        if (color != 0) color else HomeUiHelper.defaultConnectionColor(connection, homePalette(ctx))
 
     private fun showColorPickerDialog(
         titleRes: Int,
         currentColor: Int,
-        defaultDrawableRes: Int,
         iconRes: Int,
+        connection: Connection,
         onSave: (Int) -> Unit
     ) {
         val ctx = context ?: return
@@ -696,11 +859,8 @@ class CustomizationFragment : Fragment() {
 
         fun updateDialogPreview(color: Int) {
             selectedColor = color
-            if (color != 0) {
-                previewButton.background = ColorUtils.createGradientDrawable(color, 36f, ctx)
-            } else {
-                previewButton.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-            }
+            previewButton.background = colorSample(ctx, color, connection, 20f)
+            previewButton.iconTint = ColorStateList.valueOf(HomeUiHelper.readableOn(sampleColor(ctx, color, connection)))
         }
 
         updateDialogPreview(currentColor)
@@ -755,11 +915,7 @@ class CustomizationFragment : Fragment() {
                 }
                 swatch.layoutParams = lp
 
-                if (colorInt == 0) {
-                    swatch.background = ContextCompat.getDrawable(ctx, defaultDrawableRes)
-                } else {
-                    swatch.background = ColorUtils.createGradientDrawable(colorInt, 18f, ctx)
-                }
+                swatch.background = colorSample(ctx, colorInt, connection, 18f)
 
                 swatch.setOnClickListener {
                     updateDialogPreview(colorInt)
@@ -796,10 +952,13 @@ class CustomizationFragment : Fragment() {
             .setView(dialogView)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 onSave(selectedColor)
+                // The preview shows the connection just painted on the main button.
+                connection?.let { previewConnection = it }
                 refreshUI()
             }
             .setNeutralButton(R.string.color_preset_default) { _, _ ->
                 onSave(0)
+                connection?.let { previewConnection = it }
                 refreshUI()
             }
             .setNegativeButton(R.string.cancel, null)
@@ -916,5 +1075,12 @@ class CustomizationFragment : Fragment() {
         bgCustomImageView?.let {
             try { Glide.with(this).clear(it) } catch (_: Exception) {}
         }
+        miniHomeBackground?.let {
+            try { Glide.with(this).clear(it) } catch (_: Exception) {}
+        }
+        // The fragment outlives its views: a new view needs a new preview inside it.
+        miniHomeStage = null
+        miniHomeBackground = null
+        miniHomeView = null
     }
 }
