@@ -1314,4 +1314,6 @@
     <string name="debug_force_memory_profile">मेमोरी प्रोफ़ाइल बाध्य करें</string>
 
     <string name="audio_settings_reconnect">ऑडियो सेटिंग्स सेव हो गईं। इन्हें लागू करने के लिए Android Auto को दोबारा कनेक्ट करें।</string>
+    <string name="native_aa_candidate_android_radio_description">हेड यूनिट का Bluetooth मॉड्यूल अपने आप चुनने के बजाय Android Bluetooth इस्तेमाल करें। अपने आप चुनने के लिए इसे बंद रखें। अगर मॉड्यूल से कनेक्शन का कोई विकल्प चालू है, तो पहले उसे बंद करें।</string>
+    <string name="external_bt_candidate_transport_description">अपने आप चुनने के बजाय हेड यूनिट के Bluetooth मॉड्यूल से कनेक्शन अनिवार्य करें। इसके लिए संगत मॉड्यूल सेवा ज़रूरी है। सेवा जवाब न दे तो Android Bluetooth इस्तेमाल करने देने के लिए इसे बंद रखें; चालू करने पर यह विकल्प उपलब्ध नहीं होगा।</string>
 </resources>

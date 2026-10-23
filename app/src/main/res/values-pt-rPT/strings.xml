@@ -1320,4 +1320,6 @@
     <string name="debug_video_fault_budget">Limite de falhas</string>
     <string name="debug_force_memory_profile">Forçar perfil de memória</string>
     <string name="audio_settings_reconnect">Definições de áudio guardadas. Volte a ligar o Android Auto para as aplicar.</string>
+    <string name="native_aa_candidate_android_radio_description">Usar o Bluetooth do Android em vez de selecionar automaticamente o módulo Bluetooth da unidade. Deixe desativado para seleção automática. Se alguma opção de ligação pelo módulo estiver ativada, desative-a primeiro.</string>
+    <string name="external_bt_candidate_transport_description">Forçar a ligação pelo módulo Bluetooth da unidade em vez da seleção automática. Requer um serviço de módulo compatível. Deixe desativado para permitir o Bluetooth do Android quando o serviço não responder; ativar impede esta alternativa.</string>
 </resources>

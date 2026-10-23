@@ -1270,4 +1270,6 @@
     <string name="pref_default_launcher_status_active">Attiva (tocca per gestire)</string>
     <string name="pref_default_launcher_status_inactive">Non impostata (tocca per impostarla)</string>
     <string name="audio_settings_reconnect">Impostazioni audio salvate. Riconnetti Android Auto per applicarle.</string>
+    <string name="native_aa_candidate_android_radio_description">Usa il Bluetooth di Android invece di selezionare automaticamente il modulo Bluetooth dell’autoradio. Lascia disattivato per la selezione automatica. Se è attiva un’opzione di connessione tramite modulo, disattivala prima.</string>
+    <string name="external_bt_candidate_transport_description">Forza la connessione tramite il modulo Bluetooth dell’autoradio invece della selezione automatica. Richiede un servizio del modulo compatibile. Lascia disattivato per consentire il Bluetooth di Android se il servizio non risponde; attivarlo impedisce questa alternativa.</string>
 </resources>

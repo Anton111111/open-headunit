@@ -551,6 +551,7 @@ class AutoStartFragment : Fragment() {
         val adapter = BluetoothHelper.getBluetoothAdapter(requireContext())
 
         if (adapter == null || !adapter.isEnabled) {
+            if (adapter == null && BluetoothDevicePicker.showManufacturerDevices(requireContext())) return
             // This unit's Bluetooth may genuinely have no android.bluetooth adapter to enable - the
             // phone pairs to the external module instead, and none of these pickers' android.bluetooth
             // device lists or MAC-targeted triggers apply there. Asking the user to turn on a radio

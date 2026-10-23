@@ -1268,4 +1268,6 @@
     <string name="pref_default_launcher_status_active">Đang hoạt động (Chạm để quản lý)</string>
     <string name="pref_default_launcher_status_inactive">Chưa đặt (Chạm để đặt làm mặc định)</string>
     <string name="audio_settings_reconnect">Đã lưu cài đặt âm thanh. Hãy kết nối lại Android Auto để áp dụng.</string>
+    <string name="native_aa_candidate_android_radio_description">Dùng Bluetooth của Android thay vì tự động chọn mô-đun Bluetooth của đầu màn hình. Để tắt nếu muốn chọn tự động. Nếu tùy chọn kết nối qua mô-đun đang bật, hãy tắt tùy chọn đó trước.</string>
+    <string name="external_bt_candidate_transport_description">Buộc kết nối qua mô-đun Bluetooth của đầu màn hình thay vì chọn tự động. Cần dịch vụ mô-đun tương thích. Để tắt để cho phép dùng Bluetooth của Android khi dịch vụ không phản hồi; bật tùy chọn này sẽ chặn đường kết nối dự phòng đó.</string>
 </resources>

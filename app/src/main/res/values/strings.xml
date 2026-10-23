@@ -1,4 +1,7 @@
 <resources>
+    <string name="bt_manufacturer_devices_title">Devices paired through the head unit</string>
+    <string name="bt_manufacturer_devices_message">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nAndroid does not list them as paired. They cannot be selected for Android Bluetooth triggers or phone wake-up here. This saved list does not tell us whether they are connected or whether an Android Auto connection is available.</string>
+    <string name="bt_manufacturer_devices_android_unavailable">The head unit saved these devices in its own Bluetooth list:\n\n%1$s\n\nThe Android Bluetooth list is currently unavailable. This saved list alone cannot be used for Android Bluetooth triggers or phone wake-up. It does not tell us whether these devices are connected or whether an Android Auto connection is available.</string>
     <string name="app_name">Open Headunit</string>
     <string name="menu">Menu</string>
     <string name="settings">Settings</string>

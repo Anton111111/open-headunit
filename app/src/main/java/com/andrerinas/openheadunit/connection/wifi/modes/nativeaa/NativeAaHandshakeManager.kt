@@ -21,6 +21,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscove
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscoveryPolicy
 import com.andrerinas.openheadunit.utils.BluetoothAddressSeedPolicy
 import com.andrerinas.openheadunit.utils.BluetoothHelper
+import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerDiscovery
 import com.andrerinas.openheadunit.aap.protocol.proto.Wireless
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.blink.BlinkAaCarrier
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.blink.BlinkAutoSerialChannel
@@ -2346,6 +2347,7 @@ class NativeAaHandshakeManager(
                 // a MAC is permanent, so it needs evidence the device is really gone rather than an
                 // adapter that happened to be off. Both are in the policy.
                 val selectedMacs = settings.nativePokeBtMacs
+                val manufacturerPairing = BluetoothPeerDiscovery.manufacturerInventory(context)
                 val chosen = LinkedHashMap<String, BluetoothDevice>()
                 val notPhones = mutableSetOf<String>()
                 val staleMacs = mutableSetOf<String>()
@@ -2358,7 +2360,11 @@ class NativeAaHandshakeManager(
                             if (classifyChosen(device) == DriverCandidatePolicy.Verdict.NOT_A_PHONE) notPhones.add(mac)
                         } catch (e: Exception) {}
                     }
-                    if (BluetoothWakePolicy.shouldForget(reading)) staleMacs.add(mac)
+                    // Android's missing bond is not an unpair event from an external module.
+                    // Keep the user's preference, but do not make it eligible for Android poke.
+                    if (BluetoothWakePolicy.shouldForget(
+                            reading, manufacturerPairing.manufacturerPairing(mac)
+                        )) staleMacs.add(mac)
                 }
                 if (staleMacs.isNotEmpty()) {
                     AppLog.w("NativeAA: Dropping wake poke MAC(s) no longer paired: $staleMacs")
@@ -2399,7 +2405,15 @@ class NativeAaHandshakeManager(
                 }
 
                 if (devicesToPoke.isEmpty()) {
-                    AppLog.w("NativeAA: No paired Bluetooth devices found to poke.")
+                    if (manufacturerPairing.peers.isNotEmpty()) {
+                        AppLog.w(
+                            "NativeAA: No eligible Android wake target; manufacturer pairing history " +
+                                "exists but does not establish an Android RFCOMM route. " +
+                                manufacturerPairing.diagnostic()
+                        )
+                    } else {
+                        AppLog.w("NativeAA: No eligible paired Bluetooth devices found to poke.")
+                    }
                     // The credentials handler already said "waking" before this loop ran.
                     ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
                     return@launch

@@ -1264,4 +1264,6 @@
     <string name="pref_default_launcher_status_active">Activ (atinge pentru gestionare)</string>
     <string name="pref_default_launcher_status_inactive">Nesetat (atinge pentru a seta ca implicit)</string>
     <string name="audio_settings_reconnect">Setările audio au fost salvate. Reconectează Android Auto pentru a le aplica.</string>
+    <string name="native_aa_candidate_android_radio_description">Folosește Bluetooth din Android în loc să selectezi automat modulul Bluetooth al unității. Lasă dezactivat pentru selecție automată. Dacă este activată o opțiune de conectare prin modul, dezactiveaz-o mai întâi.</string>
+    <string name="external_bt_candidate_transport_description">Forțează conectarea prin modulul Bluetooth al unității în locul selecției automate. Necesită un serviciu de modul compatibil. Lasă dezactivat pentru a permite Bluetooth din Android când serviciul nu răspunde; activarea împiedică această alternativă.</string>
 </resources>

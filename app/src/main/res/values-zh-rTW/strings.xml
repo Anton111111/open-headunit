@@ -1264,4 +1264,6 @@
     <string name="pref_default_launcher_status_active">已啟用（輕觸以管理）</string>
     <string name="pref_default_launcher_status_inactive">未設定（輕觸以設定為預設）</string>
     <string name="audio_settings_reconnect">音訊設定已儲存。重新連線 Android Auto 後生效。</string>
+    <string name="native_aa_candidate_android_radio_description">使用 Android 藍牙，而不是自動選擇車機的藍牙模組。保持關閉以使用自動選擇。如果已開啟透過模組連線的選項，請先將其關閉。</string>
+    <string name="external_bt_candidate_transport_description">強制透過車機的藍牙模組連線，而不是自動選擇。需要相容的模組服務。保持關閉可在服務無回應時使用 Android 藍牙；開啟此選項將禁止這個備用連線方式。</string>
 </resources>

@@ -1265,4 +1265,6 @@ Open Headunit предоставляется «как есть» без каки
     <string name="pref_default_launcher_status_active">Активно (нажмите для управления)</string>
     <string name="pref_default_launcher_status_inactive">Не задано (нажмите, чтобы задать)</string>
     <string name="audio_settings_reconnect">Настройки звука сохранены. Чтобы применить их, переподключите Android Auto.</string>
+    <string name="native_aa_candidate_android_radio_description">Использовать Bluetooth Android вместо автоматического выбора Bluetooth-модуля головного устройства. Для автоматического выбора оставьте выключенным. Если включена опция подключения через модуль, сначала выключите её.</string>
+    <string name="external_bt_candidate_transport_description">Принудительно подключаться через Bluetooth-модуль головного устройства вместо автоматического выбора. Нужна совместимая служба модуля. Оставьте выключенным, чтобы использовать Bluetooth Android, если служба не отвечает; включение блокирует этот запасной путь.</string>
 </resources>

@@ -1269,4 +1269,6 @@
     <string name="pref_default_launcher_status_active">Активно (торкніться, щоб керувати)</string>
     <string name="pref_default_launcher_status_inactive">Не вибрано (торкніться, щоб призначити)</string>
     <string name="audio_settings_reconnect">Налаштування звуку збережено. Щоб застосувати їх, повторно підключіть Android Auto.</string>
+    <string name="native_aa_candidate_android_radio_description">Використовувати Bluetooth Android замість автоматичного вибору Bluetooth-модуля головного пристрою. Для автоматичного вибору залиште вимкненим. Якщо ввімкнено опцію з’єднання через модуль, спочатку вимкніть її.</string>
+    <string name="external_bt_candidate_transport_description">Примусово з’єднуватися через Bluetooth-модуль головного пристрою замість автоматичного вибору. Потрібна сумісна служба модуля. Залиште вимкненим, щоб використовувати Bluetooth Android, коли служба не відповідає; увімкнення блокує цей запасний шлях.</string>
 </resources>

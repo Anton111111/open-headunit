@@ -1253,4 +1253,6 @@
     <string name="pref_default_launcher_status_active">აქტიური (შეეხეთ მართვისთვის)</string>
     <string name="pref_default_launcher_status_inactive">არ არის დაყენებული (შეეხეთ ასარჩევად)</string>
     <string name="audio_settings_reconnect">აუდიოს პარამეტრები შენახულია. გასააქტიურებლად Android Auto-ს ხელახლა დაუკავშირდით.</string>
+    <string name="native_aa_candidate_android_radio_description">მოწყობილობის Bluetooth მოდულის ავტომატური არჩევის ნაცვლად გამოიყენეთ Android-ის Bluetooth. ავტომატური არჩევისთვის დატოვეთ გამორთული. თუ მოდულით დაკავშირების რომელიმე ვარიანტი ჩართულია, ჯერ ის გამორთეთ.</string>
+    <string name="external_bt_candidate_transport_description">ავტომატური არჩევის ნაცვლად იძულებით გამოიყენეთ მოწყობილობის Bluetooth მოდულით კავშირი. საჭიროა მოდულის თავსებადი სერვისი. დატოვეთ გამორთული, რათა სერვისის უპასუხოდ დარჩენისას Android-ის Bluetooth გამოიყენოთ; ჩართვა ამ სათადარიგო გზას გამორიცხავს.</string>
 </resources>
