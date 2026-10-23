@@ -253,6 +253,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var lastSurfaceSetMs = 0L
     private val relaunchRecovery = com.andrerinas.openheadunit.decoder.video.SurfaceRecoveryState()
 
+    /** The service revokes the retained WPP lease before publishing Disconnected. */
+    private fun requestProjectionExit() {
+        ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
+            action = AapService.ACTION_DISCONNECT
+        })
+    }
+
     /**
      * A relaunch handed the decoder a fresh surface and no picture has followed it.
      *
@@ -266,13 +273,6 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
      * is ever followed by a picture. [WarmRelaunchKeyframePolicy] decides when to escalate to the
      * release/regain cycle instead, and why each gate is there.
      */
-    /** The service revokes the retained WPP lease before publishing Disconnected. */
-    private fun requestProjectionExit() {
-        ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
-            action = AapService.ACTION_DISCONNECT
-        })
-    }
-
     private fun maybeRecoverWarmRelaunch() {
         if (isProjectionPausedByDevice) return
         if (lastSurfaceSetMs == 0L) return
