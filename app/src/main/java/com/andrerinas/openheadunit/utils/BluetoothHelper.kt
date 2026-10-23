@@ -16,6 +16,8 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.DriverCandidat
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import com.andrerinas.openheadunit.connection.wifi.MacAddressPolicy
+import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerDiscovery
+import com.andrerinas.openheadunit.utils.bluetooth.BluetoothPeerInventory
 
 object BluetoothHelper {
 
@@ -263,7 +265,11 @@ object BluetoothHelper {
      * devices nothing could classify, never the ones ruled out. Those stay reachable by a
      * deliberate tap under "Show all"; nothing automatic reaches for them.
      */
-    class DriverCandidates(val all: List<DriverCandidate>, val presenceReadable: Boolean) {
+    class DriverCandidates(
+        val all: List<DriverCandidate>,
+        val presenceReadable: Boolean,
+        val inventory: BluetoothPeerInventory
+    ) {
         val offeredVerdict: DriverCandidatePolicy.Verdict =
             DriverCandidatePolicy.offeredVerdict(all.map { it.verdict })
         val offered: List<BluetoothDevice> =
@@ -319,8 +325,11 @@ object BluetoothHelper {
      */
     @SuppressLint("MissingPermission")
     fun driverCandidates(context: Context, preferredMac: String, lastConnectedMac: String): DriverCandidates {
-        val adapter = try { getBluetoothAdapter(context) } catch (e: Exception) { null }
-        val bonded = try { adapter?.bondedDevices?.toList() ?: emptyList() } catch (e: Exception) { emptyList() }
+        val discovery = BluetoothPeerDiscovery.read(context)
+        // Manufacturer-only entries remain in the inventory for explanation, not in the Android
+        // wake targets. On HCT's legacy stack ordinary connect() uses goc_spp even for an AA UUID;
+        // manufacturing a BluetoothDevice from a cached MAC does not select the AA carrier.
+        val bonded = discovery.androidDevices
         var presenceReadable = false
         val all = bonded.map { device ->
             val state = deviceConnectionState(device)
@@ -332,7 +341,7 @@ object BluetoothHelper {
             )
             DriverCandidate(device, classification, state == true)
         }
-        val candidates = DriverCandidates(all, presenceReadable)
+        val candidates = DriverCandidates(all, presenceReadable, discovery.inventory)
         val counts = DriverCandidatePolicy.Verdict.entries.joinToString(", ") { verdict ->
             "${all.count { it.verdict == verdict }} ${verdict.name.lowercase().replace('_', ' ')}"
         }
@@ -340,7 +349,8 @@ object BluetoothHelper {
             "${it.device.name} (${it.classification.reason.name.lowercase().replace('_', ' ')})"
         }
         val summary = "BluetoothHelper: driver candidates: $counts" +
-            if (hidden.isEmpty()) "" else " - hidden: $hidden"
+            (if (hidden.isEmpty()) "" else " - hidden: $hidden") +
+            "; discovery: ${discovery.inventory.diagnostic()}"
         if (summary != lastCandidateSummary) {
             lastCandidateSummary = summary
             AppLog.i(summary)

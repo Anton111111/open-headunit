@@ -195,7 +195,12 @@ object BluetoothWakePolicy {
      *
      * Lenient where [mayPoke] is strict: a MAC kept one round too long costs nothing, because
      * [mayPoke] will not poke it.
+     *
+     * A manufacturer pairing cache is independent of Android's bonds. True preserves that
+     * preference; null preserves it when the cache cannot be read. Neither permits an Android poke.
+     * A syntactically invalid address is still removable regardless of provider availability.
      */
-    fun shouldForget(reading: BondReading): Boolean =
-        reading == BondReading.NOT_BONDED || reading == BondReading.MALFORMED
+    fun shouldForget(reading: BondReading, manufacturerPairing: Boolean? = false): Boolean =
+        reading == BondReading.MALFORMED ||
+            (reading == BondReading.NOT_BONDED && manufacturerPairing == false)
 }

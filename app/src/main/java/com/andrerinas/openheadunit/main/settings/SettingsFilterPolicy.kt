@@ -17,6 +17,9 @@ object SettingsFilterPolicy {
     /** Rows that only apply when the app connects over USB. */
     private val USB_ONLY_IDS = setOf("useLibusb")
 
+    /** The head unit specific screen, which only the Advanced tab lists, also while searching. */
+    private const val DEVICE_SPECIFIC_ID = "deviceSpecificSettings"
+
     /**
      * [items] is the complete list built for the screen, headers included. [text] resolves a
      * string resource, so the caller keeps the fragment's `getString` and the rules stay pure.
@@ -85,6 +88,8 @@ object SettingsFilterPolicy {
         if (item is SettingItem.ScopeNotice) return true
 
         if (hiddenByConnection(item, categoryId, showsUsb, showsWifi)) return false
+
+        if (item.stableId == DEVICE_SPECIFIC_ID && !advanced) return false
 
         if (search.isNotEmpty()) {
             return headerMatches || searchableText(item, text).contains(search, ignoreCase = true)

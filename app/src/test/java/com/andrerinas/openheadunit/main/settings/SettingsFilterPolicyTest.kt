@@ -14,7 +14,8 @@ class SettingsFilterPolicyTest {
         INPUT to "Input",
         LIBUSB to "Use libusb",
         SAVE to "Save",
-        NOTICE to "USB settings. WiFi settings are hidden."
+        NOTICE to "USB settings. WiFi settings are hidden.",
+        DEVICE_SPECIFIC to "Head unit specific settings"
     )
 
     private fun text(id: Int): String = titles[id] ?: ""
@@ -221,6 +222,29 @@ class SettingsFilterPolicyTest {
     }
 
     @Test
+    fun `the head unit specific screen only shows in the advanced tab`() {
+        val deviceSpecific = SettingItem.SettingEntry(
+            stableId = "deviceSpecificSettings",
+            nameResId = DEVICE_SPECIFIC,
+            value = "",
+            onClick = {}
+        )
+        fun shown(query: String, advanced: Boolean) = SettingsFilterPolicy.filter(
+            items = listOf(SettingItem.CategoryHeader(stableId = "general", titleResId = GENERAL), deviceSpecific),
+            query = query,
+            advanced = advanced,
+            showsUsb = true,
+            showsWifi = true,
+            basicIds = setOf("deviceSpecificSettings"),
+            text = ::text
+        ).map { it.stableId }
+
+        assertEquals(listOf("general", "deviceSpecificSettings"), shown(query = "", advanced = true))
+        assertEquals(emptyList<String>(), shown(query = "", advanced = false))
+        assertEquals(emptyList<String>(), shown(query = "head unit", advanced = false))
+    }
+
+    @Test
     fun `no note while there are matches or no search`() {
         val withMatch = listOf(notice, SettingItem.CategoryHeader(stableId = "general", titleResId = GENERAL), language)
         assertEquals(withMatch, SettingsFilterPolicy.withNoResultsNote(withMatch, "english", noResults))
@@ -238,5 +262,6 @@ class SettingsFilterPolicyTest {
         const val LIBUSB = 7
         const val SAVE = 8
         const val NOTICE = 9
+        const val DEVICE_SPECIFIC = 10
     }
 }

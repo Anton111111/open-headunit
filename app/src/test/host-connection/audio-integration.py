@@ -18,7 +18,8 @@ cache = Path.home() / ".gradle/caches/modules-2/files-2.1"
 
 
 def jar(group, artifact, version="*"):
-    matches = sorted((cache / group / artifact).glob(version + "/*/*.jar"))
+    matches = sorted(path for path in (cache / group / artifact).glob(version + "/*/*.jar")
+                     if path.name == artifact + "-" + path.parent.parent.name + ".jar")
     if not matches:
         raise SystemExit("Missing cached compiler dependency; run :app:testGithubDebugUnitTest first")
     return matches[0]
@@ -62,6 +63,7 @@ def member_block(declaration, source=service):
 
 
 comm = (repo / "app/src/main/java/com/andrerinas/openheadunit/connection/CommManager.kt").read_text()
+transport = (repo / "app/src/main/java/com/andrerinas/openheadunit/aap/AapTransport.kt").read_text()
 
 lifecycle_fixture = output / "LifecycleFixture.kt"
 lifecycle = (base / "LifecycleFixture.kt").read_text()
@@ -74,6 +76,8 @@ for marker, declaration, source in [
     ("DISCONNECTED_STATE", "class Disconnected(", comm),
     ("REACHED_SSL", "private fun reachedSsl()", comm),
     ("QUIT", "private fun transportedQuited(", comm),
+    ("MANAGER_FOCUS_SUPPRESSION", "fun setProjectionVideoFocusSuppressed(", comm),
+    ("TRANSPORT_FOCUS_SUPPRESSION", "internal fun setProjectionVideoFocusSuppressed(", transport),
     ("OBSERVER", "private fun observeConnectionState()", service),
 ]:
     lifecycle = lifecycle.replace("// PRODUCTION " + marker + "\n",

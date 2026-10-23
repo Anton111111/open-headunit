@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt
 
+import android.os.SystemClock
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalModuleCarrier
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.HandshakeLink
 import com.andrerinas.openheadunit.utils.AppLog
@@ -57,7 +58,7 @@ class ZbtAaCarrier(
             bufferRfcommData = true
         )
     },
-    private val now: () -> Long = { System.currentTimeMillis() }
+    private val now: () -> Long = { SystemClock.elapsedRealtime() }
 ) : ExternalModuleCarrier {
 
     companion object {

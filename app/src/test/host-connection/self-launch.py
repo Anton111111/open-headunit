@@ -72,7 +72,8 @@ cp = os.pathsep.join(jars)
 scan_sources = [SRC / 'connection/wifi/scan/ScanControlPolicy.kt',
                 SRC / 'connection/wifi/modes/nativeaa/NativeStrategy.kt',
                 HERE / 'audio-stubs/WifiLauncherNative.kt',
-                HERE / 'audio-stubs/WifiScanControl.kt']
+                HERE / 'audio-stubs/WifiScanControl.kt',
+                HERE / 'audio-stubs/VideoFocusEvent.kt']
 subprocess.run(['java', '-cp', cp, 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler',
                 '-no-stdlib', '-no-reflect', '-nowarn', '-classpath', cp,
                 '-d', str(OUT / 'regression.jar'), *map(str, sorted(OUT.glob('*.kt')) + scan_sources)],
