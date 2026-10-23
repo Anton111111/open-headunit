@@ -2736,8 +2736,10 @@ class HomeFragment : Fragment() {
 
     /** Manufacturer-paired phones must go to the HCT carrier, never Android RFCOMM. */
     private fun showManufacturerPhoneSelector() {
-        if (activeDialog != null || manufacturerPickerLoading) return
+        if (activeDialog?.isShowing == true || actionDialog?.isShowing == true || manufacturerPickerLoading) return
         val context = requireContext()
+        val owner = viewLifecycleOwner
+        val originView = view
         manufacturerPickerLoading = true
         viewLifecycleOwner.lifecycleScope.launch {
             val peers = try {
@@ -2745,9 +2747,19 @@ class HomeFragment : Fragment() {
             } finally {
                 manufacturerPickerLoading = false
             }
-            if (!isAdded) return@launch
+            // Inventory reads can finish after Settings opened or another dialog appeared.
+            // Do not restart wireless from a result belonging to a paused/replaced home view.
+            if (!isAdded || view !== originView || !owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) ||
+                activeDialog?.isShowing == true || actionDialog?.isShowing == true) return@launch
+            if (App.provide(context).settings.wifiConnectionMode != WifiLauncherMode.NATIVE ||
+                NativeAaHandshakeManager.transportRoute(context) != ExternalBtTransportPolicy.Route.HCT) return@launch
             if (peers.isEmpty()) {
-                // Nothing to pick: a plain notice, which must not hold or cancel the handoff.
+                // An unavailable inventory must not strand a carrier whose OEM binding died.
+                // No MAC means re-arm observation only: HCT requires an explicit paired-phone
+                // selection before it may send a manufacturer reconnect command.
+                ContextCompat.startForegroundService(context,
+                    Intent(context, AapService::class.java).setAction(AapService.ACTION_NATIVE_AA_POKE))
+                // This notice is not a selection prompt and must not hold/cancel fresh handoffs.
                 MaterialAlertDialogBuilder(context, R.style.DarkAlertDialog)
                     .setTitle(R.string.bt_manufacturer_devices_title)
                     .setMessage(R.string.hct_aa_no_paired_phone)
