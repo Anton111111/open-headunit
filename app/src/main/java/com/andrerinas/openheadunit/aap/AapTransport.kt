@@ -1330,6 +1330,12 @@ class AapTransport(
         // Screen/focus events can arrive while the handshake thread owns the connection. Do not
         // enqueue them for later replay or ask the TLS engine to wrap before AuthComplete.
         if (!tlsWriter.isReady) return
+        // Do not send messages on service/media channels before the read loop is active and channels are open.
+        // Channel 0 (Control) handles handshake, discovery and channel open negotiation.
+        if (message.channel != Channel.ID_CTR && aapRead == null) {
+            AppLog.w("AapTransport: dropping message on channel ${message.channel} before read loop is active")
+            return
+        }
         val handler = sendHandler
         if (handler == null) {
             AppLog.i("Cannot send message, handler is null (quitting?)")

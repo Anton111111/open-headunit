@@ -574,8 +574,13 @@ class UsbLauncherManager(val service: AapService) {
             val nonAccessoryDevices = deviceList.filter { !UsbDeviceCompat.isInAccessoryMode(it) }
             val allowList = settings.allowedDevices
             val candidates = nonAccessoryDevices.filter {
+                val isGoogleOrDongle = UsbAttachPolicy.isGoogleOrDongleVendor(
+                    vendorId = it.vendorId,
+                    productName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) it.productName else null,
+                    manufacturerName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) it.manufacturerName else null,
+                )
                 UsbAttachPolicy.shouldAttemptAoaSwitch(
-                    isGoogleVendor = it.vendorId == 0x18D1,
+                    isGoogleVendor = isGoogleOrDongle,
                     autoStartOnUsb = usbAutoStart,
                     allowListConfigured = allowList.isNotEmpty(),
                     deviceAllowed = settings.isConnectingDevice(UsbDeviceCompat(it)),

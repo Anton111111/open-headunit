@@ -1267,7 +1267,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         RenameNotice.maybeShow(this, App.provide(this).settings)
         Aa174Notice.maybeShow(this, App.provide(this).settings)
         applyStickyOrientation()
-        if (isSurfaceSet && commManager.isConnected) {
+        if (isSurfaceSet && commManager.connectionState.value is CommManager.ConnectionState.TransportStarted) {
             commManager.retakeVideoFocusForKeyframe()
         }
         resumedAtMs = SystemClock.elapsedRealtime()
@@ -2083,7 +2083,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 if (surfaceChanged) commManager.send(VideoFocusEvent(gain = true, unsolicited = true))
             }
             else -> {
-                commManager.send(VideoFocusEvent(gain = true, unsolicited = false))
+                // Not in a state where video focus can be sent
             }
         }
 

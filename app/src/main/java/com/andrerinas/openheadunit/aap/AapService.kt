@@ -741,7 +741,7 @@ class AapService : Service() {
                     }
                     FloatingButtonManager.update(this@AapService)
 
-                    if (commManager.isConnected) {
+                    if (commManager.connectionState.value is CommManager.ConnectionState.TransportStarted) {
                         AppLog.i("WakeDetect: Requesting video focus on wake to restore keyframe")
                         commManager.retakeVideoFocusForKeyframe()
                     }
