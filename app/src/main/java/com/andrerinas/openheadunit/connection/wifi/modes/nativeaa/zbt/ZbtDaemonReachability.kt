@@ -10,8 +10,9 @@ import com.andrerinas.openheadunit.utils.AppLog
  * nothing on the daemon's port. Asking is the only way to tell those apart, so this dials,
  * remembers the answer, and hands it to [com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTransportPolicy].
  *
- * The dial blocks for up to about seven seconds, so it must never run on the main thread. Callers on
- * a UI path read [cached] instead, which is a volatile read and does no I/O.
+ * Resolution may wait for another observer (up to ten seconds), retry refusals over the route's
+ * bring-up window, or finish a partially received frame. Never run it on the main thread. UI
+ * callers read [cached] instead, which is a volatile read and does no I/O.
  */
 object ZbtDaemonReachability {
 
@@ -36,6 +37,7 @@ object ZbtDaemonReachability {
     @Volatile private var identityAnswer: IdentityAnswer? = null
 
     private const val SLEEP_SLICE_MS = 250L
+    private const val OBSERVER_WAIT_MS = 10_000L
     // Broad firmware markers also match units without an active ZBT backend. Give booting
     // daemons a short grace period, not the known-module route's 30-second bring-up window.
     private const val CANDIDATE_REFUSAL_WINDOW_MS = 3_000L
@@ -52,7 +54,8 @@ object ZbtDaemonReachability {
     private val nextCarrierId = java.util.concurrent.atomic.AtomicLong()
     private val carriers = mutableSetOf<CarrierClaim>()
     private val liveCarriers = mutableSetOf<CarrierClaim>()
-    private val observers = mutableSetOf<ZbtChannelOpening>()
+    // The value distinguishes a long-running manual diagnostic from route discovery.
+    private val observers = mutableMapOf<ZbtChannelOpening, Boolean>()
 
     /** A per-run claim. Releasing an older run cannot release a replacement's claim. */
     class CarrierClaim internal constructor() : java.io.Closeable {
@@ -79,7 +82,7 @@ object ZbtDaemonReachability {
         val claim = CarrierClaim()
         val toClose = synchronized(clientsLock) {
             carriers.add(claim)
-            observers.toList()
+            observers.keys.toList()
         }
         // Never hold the registry lock across a socket close or while acquiring an opening lock.
         toClose.forEach { it.close() }
@@ -97,10 +100,30 @@ object ZbtDaemonReachability {
      * a write that was already admitted can still finish during cancellation.
      */
     internal fun observerOpening(keepGoing: () -> Boolean): ZbtChannelOpening? =
+        observerOpening(keepGoing, diagnostic = false)
+
+    internal fun observerOpening(
+        keepGoing: () -> Boolean,
+        diagnostic: Boolean,
+    ): ZbtChannelOpening? {
+        val toClose: List<ZbtChannelOpening>
         synchronized(clientsLock) {
-            if (carriers.isNotEmpty()) return@synchronized null
-            ZbtChannelOpening { keepGoing() && !carrierWantsClient() }.also { observers.add(it) }
+            if (carriers.isNotEmpty()) return null
+            if (observers.isEmpty()) {
+                return ZbtChannelOpening { keepGoing() && !carrierWantsClient() }
+                    .also { observers[it] = diagnostic }
+            }
+            // Inspected Joying ZLink 5.4.57 libzbt-main.so accepts one client, sends InitInfo,
+            // and serves that client until its read loop ends before accepting another. Two
+            // "observers" are still two clients: discovery must not queue a socket beside the
+            // settings diagnostic. Route discovery may retire that diagnostic, but it waits
+            // for the old caller's finally to release its slot before opening another socket.
+            toClose = if (diagnostic) emptyList() else observers.filterValues { it }.keys.toList()
         }
+        // Socket shutdown and callbacks must never run under the registry lock.
+        toClose.forEach { it.close() }
+        throw ZbtChannelOpening.ObserverBusy()
+    }
 
     internal fun releaseObserver(opening: ZbtChannelOpening) {
         synchronized(clientsLock) { observers.remove(opening) }
@@ -196,6 +219,16 @@ object ZbtDaemonReachability {
                     })
                     identity == ZbtIdentityProbe.Outcome.IDENTIFIED
                 } else dial?.invoke() ?: dialOnce(keepTrying)
+            } catch (_: ZbtChannelOpening.ObserverBusy) {
+                // Occupancy is not a daemon refusal. Let a retiring diagnostic unwind without
+                // caching a negative answer; both identity and legacy discovery use this gate.
+                if (!keepTrying() || nowMs() - firstRefusalAt >= OBSERVER_WAIT_MS) return false
+                sleep(SLEEP_SLICE_MS)
+                if (!keepTrying()) return false
+                if (carrierLive() || carrierWantsClient()) {
+                    return if (requireIdentity) identityAnswer?.reachable == true else true
+                }
+                continue
             } catch (_: ZbtChannelOpening.Cancelled) {
                 // A carrier preempting observation is not an identity or a negative measurement.
                 return keepTrying() && if (requireIdentity) identityAnswer?.reachable == true
@@ -230,8 +263,9 @@ object ZbtDaemonReachability {
                     "NativeAA: [ZBT candidate] no confirmed ZBT greeting; retaining Android Bluetooth route."
                 )
                 if (retryRefusals && !requireIdentity) AppLog.i(
-                    "NativeAA: [ZBT] could not connect to 127.0.0.1:3152 during this attempt's " +
-                        "${ZbtReachabilityPolicy.REFUSAL_WINDOW_MS / 1000}s retry window; ending this attempt."
+                    "NativeAA: [ZBT] the local daemon check did not establish reachability during this " +
+                        "attempt's ${ZbtReachabilityPolicy.REFUSAL_WINDOW_MS / 1000}s retry window. " +
+                        "This does not determine whether the module can become available later."
                 )
                 return false
             }

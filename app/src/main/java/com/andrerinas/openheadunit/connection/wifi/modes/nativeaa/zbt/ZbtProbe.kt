@@ -21,22 +21,14 @@ import java.net.Socket
  * channel**, in both directions, and it needs no registration: the daemon owns the Android Auto
  * RFCOMM server on the module and `RequestInit` with `enable_type = 2` is the whole setup.
  *
- * So this round drives [ZbtByteChannel] — the same class the transport will use — and answers the
- * one question left, which is *operational* rather than protocol: **will the daemon give those bytes
- * to us?** Three outcomes, and they need different next steps, so the run is built to tell them
- * apart:
+ * The diagnostic reports byte traffic and the daemon's link-state messages separately. A module
+ * can report a link without forwarding its bytes to this socket, and data after our version request
+ * is not necessarily its reply. No verdict below treats either observation as a verified WPP
+ * exchange or evidence that another application owns the daemon.
  *
- * - RFCOMM data arrives → the route works, and the transport is worth building.
- * - The phone links for projection but no data arrives → the daemon serves one owner, and the
- *   question becomes whether being the only client changes that.
- * - Neither → the phone never started Android Auto, which is a trigger problem and not a protocol
- *   one.
- *
- * Round two could not distinguish the last two, because it had nothing to watch that reported a
- * projection link. `PhoneLinkState` is that signal, and this round watches for it.
- *
- * Still almost inert. It opens a loopback socket and reads. The one thing it can do to the module is
- * [askModuleToReconnect], which the caller has to ask for separately.
+ * Opening sends RequestInit with enable_type=2, which can activate the module's Android Auto
+ * handling. Watch-only skips the additional RequestReconn command; it is not a passive identity
+ * check. The diagnostic also sends WPP/version and link-state requests when the link permits.
  *
  * Blocking, and for up to about two minutes. Call it off the main thread and pass [keepGoing].
  */
@@ -78,8 +70,8 @@ object ZbtProbe {
      * looked like it did nothing. It may be called from any thread.
      *
      * [askModuleToReconnect] sends `RequestReconn`, asking the module to bring Bluetooth up for
-     * Android Auto. It is the only thing here that changes state on the module rather than observing
-     * it, so it is off unless the caller asks, and the log says plainly when it goes out.
+     * Android Auto. This additional reconnect is off unless the caller asks, and the log records
+     * when it goes out. Both modes still send the initial RequestInit, which may activate AA.
      *
      * [keepGoing] is polled between frames; return false to end the run early.
      *
@@ -115,13 +107,18 @@ object ZbtProbe {
         var linkedType: Int? = null
         var phoneName: String? = null
         var phoneConnected = false
+        var reportedPhoneStatus: Int? = null
         var phase = "hello"
 
         // Registration is atomic with a new carrier claim. That claim also closes an observer
         // already connecting/reading, rather than waiting for the next three-second read timeout.
         // Every write after init (reconnect, version, link poll) is admitted against it again.
-        val opening = ZbtDaemonReachability.observerOpening(keepProbing)
-            ?: return busyCarrierVerdict()
+        val opening = try {
+            ZbtDaemonReachability.observerOpening(keepProbing, diagnostic = true)
+                ?: return busyCarrierVerdict()
+        } catch (_: ZbtChannelOpening.ObserverBusy) {
+            return "Another Bluetooth module check is running. Try again when it finishes."
+        }
         // A carrier can claim and release the slot while this reader is waking from close.
         // The opening remembers that cancellation after the global claim has disappeared.
         // Keep this outside keepProbing: wasCancelled itself consults that callback.
@@ -146,10 +143,14 @@ object ZbtProbe {
                         ZbtMessages.PHONE_LINK_STATE ->
                             if (fields.int(2) == 1) linkedType = fields.int(3)
                         ZbtMessages.LINK_INFO2 -> {
+                            reportedPhoneStatus = fields.int(3)
                             phoneConnected = fields.int(3) == 1
                             fields.string(8)?.takeIf { it.isNotEmpty() }?.let { phoneName = it }
                         }
-                        ZbtMessages.LINK_INFO -> phoneConnected = fields.int(3) == 1
+                        ZbtMessages.LINK_INFO -> {
+                            reportedPhoneStatus = fields.int(3)
+                            phoneConnected = fields.int(3) == 1
+                        }
                     }
                 },
                 onRfcommData = { bytes ->
@@ -177,7 +178,7 @@ object ZbtProbe {
                 return stopped ?: "Probe stopped."
             }
             AppLog.i("ZbtProbe: ${e.message}")
-            // A failure that is not a connect failure got past the connect, so something is there.
+            // Preserve the opening category for the result without inferring daemon ownership.
             return notConnectedVerdict(
                 (e as? ZbtByteChannel.NotConnected)?.verdict
                     ?: ZbtReachabilityPolicy.classify(e.javaClass.simpleName, answered = false)
@@ -193,22 +194,34 @@ object ZbtProbe {
                 val pump = channel.pumpOnce(helloDeadline, keepProbing)
                 stoppedVerdict()?.let { return it }
                 if (pump == ZbtByteChannel.Pump.ENDED) break
-                // A gap after the burst means the burst is over; there is nothing else coming until
-                // something happens on the module.
+                // After a control burst and one quiet read, switch to the longer watch window.
                 if (pump == ZbtByteChannel.Pump.QUIET && helloFrames > 0) break
-                if (helloFrames > 0) onProgress("Module answered — $helloFrames message(s)…")
+                if (helloFrames > 0) onProgress("Received $helloFrames module control message(s)…")
             }
 
             stoppedVerdict()?.let { return it }
 
             if (helloFrames == 0) {
+                // Control reports and RFCOMM payloads are counted separately. A daemon that
+                // delivers bytes before any status report has answered this socket; preserve
+                // that evidence without advancing this incomplete opening into more commands.
+                if (rfcommFrames > 0) return verdict(
+                    rfcommFrames = rfcommFrames,
+                    rfcommBytes = rfcommBytes,
+                    observedDataAfterVersionRequest = false,
+                    linkedType = linkedType,
+                    controlFrames = controlFrames,
+                    phoneConnected = phoneConnected,
+                    phoneName = phoneName,
+                    askedToReconnect = false,
+                )
                 if (ZbtDaemonReachability.carrierLive()) return busyCarrierVerdict()
                 return if (channel.isFinished) {
-                    "Something is listening on port ${ZbtByteChannel.PORT}, but it closed the " +
-                        "connection without answering."
+                    "The diagnostic connection on port ${ZbtByteChannel.PORT} ended before a " +
+                        "complete message was received: ${channel.closeReason ?: "reason unavailable"}."
                 } else {
-                    "Something is listening on port ${ZbtByteChannel.PORT} but it never answered. " +
-                        "The port is open and our message got no reply."
+                    "The socket on port ${ZbtByteChannel.PORT} opened, but no complete message " +
+                        "was received during the initial observation window."
                 }
             }
             channel.moduleMac?.let { AppLog.i("ZbtProbe: the module reports its Bluetooth address as $it") }
@@ -231,7 +244,7 @@ object ZbtProbe {
             var nextSummary = start + SUMMARY_EVERY_MS
             var nextLinkInfo = start + LINK_INFO_EVERY_MS
             var versionRequestAt = 0L
-            var rfcommBeforeVersionRequest = 0
+            var rfcommBytesBeforeVersionRequest = 0
 
             while (SystemClock.elapsedRealtime() < deadline && keepProbing()) {
                 // Wake at whichever comes first: the end of the watch, the next summary line, or the
@@ -240,35 +253,37 @@ object ZbtProbe {
                 val pump = channel.pumpOnce(wakeAt, keepProbing)
                 stoppedVerdict()?.let { return it }
                 if (pump == ZbtByteChannel.Pump.ENDED) {
-                    AppLog.w("ZbtProbe: the daemon ended the connection during the watch")
+                    AppLog.w("ZbtProbe: diagnostic channel ended during the watch: ${channel.closeReason ?: "reason unavailable"}")
                     break
                 }
                 val now = SystemClock.elapsedRealtime()
 
-                // Only once there is evidence the channel is live. Writing into a channel with no
-                // Android Auto session behind it would be sending bytes at nothing, and a reply is
-                // only meaningful if we know what provoked it.
+                // Retain the activity gate and send at most once. Link reports or raw bytes
+                // permit this diagnostic request, but do not prove a completed WPP exchange.
                 if (versionRequestAt == 0L && (rfcommFrames > 0 || linkedType != null)) {
-                    rfcommBeforeVersionRequest = rfcommFrames
+                    rfcommBytesBeforeVersionRequest = rfcommBytes
                     versionRequestAt = now
                     opening.admitCommand()
                     sendVersionRequest(channel)
-                    onProgress("Android Auto is on the module — asking it to talk to us…")
+                    onProgress("Module link activity observed — sending a version request…")
                 }
 
                 if (now >= nextSummary) {
                     nextSummary = now + SUMMARY_EVERY_MS
                     val seconds = (now - start) / 1000
+                    val phoneStatus = when (val status = reportedPhoneStatus) {
+                        null -> "no phone connection status reported"
+                        0 -> "latest phone status: disconnected"
+                        1 -> "latest phone status: connected"
+                        else -> "latest phone status: $status"
+                    }
                     AppLog.i(
                         "ZbtProbe: ${seconds}s watching — RFCOMM $rfcommFrames message(s)/$rfcommBytes bytes, " +
-                            "control $controlFrames, phone ${if (phoneConnected) "connected" else "not connected"}" +
+                            "control $controlFrames, $phoneStatus" +
                             (phoneName?.let { " ($it)" } ?: "") +
-                            (linkedType?.let { ", projection link type $it" } ?: ", no projection link")
+                            (linkedType?.let { ", observed projection link type $it" } ?: ", no projection link reported")
                     )
-                    onProgress(
-                        if (rfcommFrames > 0) "Android Auto data arriving — $rfcommFrames message(s)…"
-                        else "Watching — ${seconds}s, nothing from Android Auto yet…"
-                    )
+                    onProgress("Observed RFCOMM: $rfcommFrames message(s), $rfcommBytes bytes in ${seconds}s…")
                 }
 
                 if (now >= nextLinkInfo) {
@@ -283,7 +298,7 @@ object ZbtProbe {
             return verdict(
                 rfcommFrames = rfcommFrames,
                 rfcommBytes = rfcommBytes,
-                answeredVersionRequest = versionRequestAt != 0L && rfcommFrames > rfcommBeforeVersionRequest,
+                observedDataAfterVersionRequest = versionRequestAt != 0L && rfcommBytes > rfcommBytesBeforeVersionRequest,
                 linkedType = linkedType,
                 controlFrames = controlFrames,
                 phoneConnected = phoneConnected,
@@ -315,9 +330,8 @@ object ZbtProbe {
      * Send one `WifiVersionRequest` over the RFCOMM channel.
      *
      * Deliberately the bare version rather than `WppMessages.versionRequest`, which carries car info
-     * the probe has no settings to read. A reply here only has to prove the module carries WPP frames
-     * at all, and the framing is the real one, so a pass cannot come from a shape the transport
-     * rejects.
+     * the probe has no settings to read. The outbound frame uses the transport's encoder;
+     * incoming payloads are logged for inspection, not parsed here as verified version replies.
      */
     private fun sendVersionRequest(channel: ZbtByteChannel) {
         val request = Wireless.WifiVersionRequest.newBuilder()
@@ -352,47 +366,37 @@ object ZbtProbe {
         else "(not WPP framing: type $type, declares $declared of ${bytes.size - WppFraming.HEADER_SIZE})"
     }
 
-    /**
-     * What to say when the port would not open.
-     *
-     * A refusal and a port that is held but not accepting are different findings, and reporting
-     * the second as the first told a reporter their working module was absent hardware.
-     */
+    /** Report only this opening attempt: a timeout does not establish daemon ownership. */
     internal fun notConnectedVerdict(verdict: ZbtReachabilityPolicy.Verdict?): String =
-        if (verdict == ZbtReachabilityPolicy.Verdict.LISTENING_SILENT) {
-            "Something is listening on port ${ZbtByteChannel.PORT} but it would not take the " +
-                "connection. On some units the module only answers while no phone is linked to " +
-                "it, so turn the phone's Bluetooth off and test again."
-        } else {
-            "Nothing is listening on port ${ZbtByteChannel.PORT}. " +
-                "This unit has no vendor Bluetooth daemon to talk to."
+        when (verdict) {
+            ZbtReachabilityPolicy.Verdict.NOTHING_LISTENING ->
+                "The connection to port ${ZbtByteChannel.PORT} was refused on this attempt. " +
+                    "This does not show whether a compatible daemon is installed or can start later."
+            else ->
+                "Could not open the Bluetooth module connection on port ${ZbtByteChannel.PORT}. " +
+                    "The diagnostic log has the failure details; this result does not identify " +
+                    "whether another app owns the module."
         }
 
     /**
-     * What to say when this app's own connection already holds the module's one client slot.
-     *
-     * A busy daemon is proof the route works, so this must never be reported as silence.
+     * A carrier claim covers opening and retry backoff as well as an open socket. Yielding to it
+     * avoids a second client, but does not prove that the daemon or phone has answered.
      */
     internal fun busyCarrierVerdict(): String =
-        "This unit is already carrying Android Auto over the module. The module gives it to one " +
-            "program at a time, and that program is this app right now, so the route works. " +
-            "To test it on its own, turn the module transport off first."
+        "Open Headunit is already using or opening the Bluetooth module connection. " +
+            "The diagnostic did not open a second connection. " +
+            "This does not confirm an Android Auto connection to the phone."
 
-    /**
-     * What to say when a real connection claimed the module while this test was running.
-     *
-     * Giving the slot back is the right outcome: holding it kept a connection waiting 90 seconds
-     * on the unit this was measured on.
-     */
+    /** A local carrier took priority; its connection outcome is separate from this diagnostic. */
     internal fun carrierTookOverVerdict(): String =
-        "This unit started carrying Android Auto over the module while the test was running, so " +
-            "the test stopped and gave the module back. The module gives it to one program at a " +
-            "time. To test it on its own, turn the module transport off first."
+        "Open Headunit requested the Bluetooth module connection, so the diagnostic stopped " +
+            "and gave the connection back. This does not confirm an Android Auto connection " +
+            "to the phone."
 
     internal fun verdict(
         rfcommFrames: Int,
         rfcommBytes: Int,
-        answeredVersionRequest: Boolean,
+        observedDataAfterVersionRequest: Boolean,
         linkedType: Int?,
         controlFrames: Int,
         phoneConnected: Boolean,
@@ -401,25 +405,26 @@ object ZbtProbe {
     ): String {
         val phone = phoneName?.let { " ($it)" } ?: ""
         return when {
-            rfcommFrames > 0 && answeredVersionRequest ->
-                "The module carried Android Auto both ways: $rfcommFrames message(s), $rfcommBytes " +
-                    "bytes, and the phone$phone answered us."
+            rfcommFrames > 0 && observedDataAfterVersionRequest ->
+                "Received $rfcommFrames RFCOMM message(s), $rfcommBytes bytes$phone. More data arrived " +
+                    "after the version request, but a matching WPP response was not verified."
 
             rfcommFrames > 0 ->
-                "The module carried $rfcommFrames Android Auto message(s), $rfcommBytes bytes, from " +
-                    "the phone$phone. Nothing came back to our reply."
+                "Received $rfcommFrames RFCOMM message(s), $rfcommBytes bytes$phone. " +
+                    "A matching WPP version response was not verified."
 
             linkedType != null ->
-                "The phone$phone started Android Auto on the module (link type $linkedType) but none " +
-                    "of the data reached us — the module gives it to one program at a time."
+                "The module reported a projection link$phone (link type $linkedType), but no RFCOMM " +
+                    "data reached this diagnostic. This alone does not identify the cause."
 
             phoneConnected ->
-                "The phone$phone is connected to the module, but it never started Android Auto " +
-                    "during the test" + (if (askedToReconnect) ", even after being asked to." else ".")
+                "The module's latest status reports a connected phone$phone, but this diagnostic " +
+                    "observed no projection link or RFCOMM data" +
+                    (if (askedToReconnect) ", even after requesting a reconnect." else ".")
 
             else ->
-                "No phone was connected to the module during the test. " +
-                    "$controlFrames status message(s) and nothing else."
+                "The diagnostic has no current report of a connected phone. " +
+                    "Received $controlFrames status message(s), with no projection link or RFCOMM data observed."
         }
     }
 }

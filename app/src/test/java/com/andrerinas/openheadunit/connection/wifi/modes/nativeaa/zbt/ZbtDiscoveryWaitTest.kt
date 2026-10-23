@@ -106,4 +106,69 @@ class ZbtDiscoveryWaitTest {
         assertEquals(ZbtDiscovery.Measurement.Completion.SETTLED, result)
         assertEquals(false, measurement.snapshot().reachable)
     }
+    @Test fun legacyDiscoveryDoesNotRearmOnObserverOccupancy() = runBlocking {
+        val measurement = ZbtDiscovery.measurement(
+            ZbtDiscoveryPolicy.Decision(ZbtDiscoveryPolicy.Mode.REACHABILITY, "external"))
+        var probes = 0
+        var waits = 0
+        val result = measurement.awaitResolution(
+            keepTrying = { true },
+            pause = { waits++; elapsedMs += it },
+            probe = { if (++probes == 2) ZbtDaemonReachability.record(true) },
+        )
+        assertEquals(ZbtDiscovery.Measurement.Completion.SETTLED, result)
+        assertEquals(2, probes)
+        assertEquals(1, waits)
+    }
+
+    @Test fun legacyCarrierWithUnknownCacheWaitsOnceAndEndsBusy() = runBlocking {
+        for (live in listOf(false, true)) {
+            reset()
+            val owner = claim().also { it.setLive(live) }
+            val measurement = ZbtDiscovery.measurement(
+                ZbtDiscoveryPolicy.Decision(ZbtDiscoveryPolicy.Mode.REACHABILITY, "external"))
+            val started = elapsedMs
+            var waits = 0
+            val result = measurement.awaitResolution(
+                keepTrying = { true }, pause = { waits++; elapsedMs += it },
+                probe = { fail("must not measure beside the retiring carrier") },
+            )
+            assertEquals(ZbtDiscovery.Measurement.Completion.CARRIER_BUSY, result)
+            assertEquals(10_000L, elapsedMs - started)
+            assertEquals(40, waits)
+            assertNull(measurement.cached())
+            assertFalse(measurement.settled)
+            owner.close()
+        }
+    }
+
+    @Test fun legacyCarrierReleaseAllowsMeasurementWithinTheSameArming() = runBlocking {
+        val owner = claim()
+        val measurement = ZbtDiscovery.measurement(
+            ZbtDiscoveryPolicy.Decision(ZbtDiscoveryPolicy.Mode.REACHABILITY, "external"))
+        var probes = 0
+        val result = measurement.awaitResolution(
+            keepTrying = { true }, pause = { elapsedMs += it; owner.close() },
+            probe = { probes++; ZbtDaemonReachability.resolve(dial = { true }) },
+        )
+        assertEquals(ZbtDiscovery.Measurement.Completion.SETTLED, result)
+        assertEquals(1, probes)
+        assertEquals(true, measurement.cached())
+    }
+
+    @Test fun unresolvedLegacyObserverAlsoHasOneOuterDeadline() = runBlocking {
+        val measurement = ZbtDiscovery.measurement(
+            ZbtDiscoveryPolicy.Decision(ZbtDiscoveryPolicy.Mode.REACHABILITY, "external"))
+        val started = elapsedMs
+        var probes = 0
+        val result = measurement.awaitResolution(
+            keepTrying = { true }, pause = { elapsedMs += it },
+            probe = { probes++ },
+        )
+        assertEquals(ZbtDiscovery.Measurement.Completion.CARRIER_BUSY, result)
+        assertEquals(10_000L, elapsedMs - started)
+        assertEquals(40, probes)
+        assertNull(measurement.cached())
+    }
+
 }

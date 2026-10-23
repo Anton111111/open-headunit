@@ -12,6 +12,7 @@ import java.io.IOException
  */
 class ZbtChannelOpening(private val keepOpening: () -> Boolean = { true }) : Closeable {
     class Cancelled : IOException("ZBT channel opening was retired")
+    class ObserverBusy : IOException("Another OHU observer still owns the Bluetooth bridge")
 
     companion object { private val nextId = java.util.concurrent.atomic.AtomicLong() }
     val id: Long = nextId.incrementAndGet()
