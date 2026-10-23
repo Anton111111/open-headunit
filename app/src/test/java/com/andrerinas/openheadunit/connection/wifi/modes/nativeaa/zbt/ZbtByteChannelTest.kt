@@ -125,6 +125,58 @@ class ZbtByteChannelTest {
         assertEquals(2, reads)
     }
 
+    @Test fun timeoutBetweenHeaderAndFirstBodyByteKeepsFrameAndFollowingFrame() {
+        val first = rfcommFrame(1, 2)
+        val source = Source().data(first.copyOfRange(0, ZbtFraming.HEADER_SIZE))
+            .timeout().data(first.copyOfRange(ZbtFraming.HEADER_SIZE, first.size))
+            .data(rfcommFrame(3))
+        val c = channel(source)
+        assertEquals(ZbtByteChannel.Pump.FRAME, c.pumpOnce(Long.MAX_VALUE))
+        assertEquals(ZbtByteChannel.Pump.FRAME, c.pumpOnce(Long.MAX_VALUE))
+        assertEquals(2, rfcomm.size)
+        assertArrayEquals(byteArrayOf(1, 2), rfcomm[0])
+        assertArrayEquals(byteArrayOf(3), rfcomm[1])
+        assertFalse(c.isFinished)
+    }
+
+    @Test fun missingWholeBodyStillExpiresWithUnboundedInputDeadline() {
+        val header = rfcommFrame(1).copyOfRange(0, ZbtFraming.HEADER_SIZE)
+        var reads = 0
+        val source = object : InputStream() {
+            override fun read(): Int = error("bulk read only")
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                check(++reads <= 5) { "missing body outlived its frame budget" }
+                if (reads == 1) { header.copyInto(b, off); return header.size }
+                elapsedMs += 3_000
+                throw SocketTimeoutException()
+            }
+        }
+        val c = ZbtByteChannel(source, sink)
+        assertEquals(-1, c.input.read())
+        assertEquals(5, reads)
+        assertTrue(c.isFinished)
+    }
+
+    @Test fun bodyDoesNotGetFreshBudgetAfterSlowHeader() {
+        val frame = rfcommFrame(1)
+        var reads = 0
+        val source = object : InputStream() {
+            override fun read(): Int = error("bulk read only")
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                when (++reads) {
+                    1 -> { b[off] = frame[0]; return 1 }
+                    2 -> { elapsedMs += 9_000; throw SocketTimeoutException() }
+                    3 -> { frame.copyInto(b, off, 1, ZbtFraming.HEADER_SIZE); return ZbtFraming.HEADER_SIZE - 1 }
+                    4 -> { elapsedMs += 3_000; throw SocketTimeoutException() }
+                    else -> error("body deadline restarted after header")
+                }
+            }
+        }
+        val c = ZbtByteChannel(source, sink)
+        assertEquals(ZbtByteChannel.Pump.ENDED, c.pumpOnce(Long.MAX_VALUE))
+        assertEquals(4, reads)
+    }
+
     private fun channel(source: Source) = ZbtByteChannel(
         source = source,
         sink = sink,

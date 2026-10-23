@@ -198,9 +198,8 @@ object ZbtDaemonReachability {
                     "NativeAA: [ZBT candidate] no confirmed ZBT greeting; retaining Android Bluetooth route."
                 )
                 if (retryRefusals && !requireIdentity) AppLog.i(
-                    "NativeAA: [ZBT] nothing has listened on 127.0.0.1:3152 for " +
-                        "${ZbtReachabilityPolicy.REFUSAL_WINDOW_MS / 1000}s, so the module cannot " +
-                        "carry Android Auto on this unit."
+                    "NativeAA: [ZBT] could not connect to 127.0.0.1:3152 during this attempt's " +
+                        "${ZbtReachabilityPolicy.REFUSAL_WINDOW_MS / 1000}s retry window; ending this attempt."
                 )
                 return false
             }
@@ -257,20 +256,18 @@ object ZbtDaemonReachability {
     private fun report(verdict: ZbtReachabilityPolicy.Verdict, detail: String?): Boolean {
         when (verdict) {
             ZbtReachabilityPolicy.Verdict.ANSWERED -> AppLog.i(
-                "NativeAA: [ZBT] the vendor daemon answered on 127.0.0.1:3152, so this unit can " +
-                    "carry Android Auto over its Bluetooth module."
+                "NativeAA: [ZBT] received a framed message on 127.0.0.1:3152; retaining the module " +
+                    "route. A phone's Android Auto exchange has not been confirmed by this check."
             )
-            // Present and busy is not absent, and this daemon goes quiet while a phone is linked
-            // to the module. Taking the route lets the carrier keep asking; refusing it here told
-            // a reporter whose module works that their hardware cannot do Bluetooth wireless.
+            // No application reply cannot distinguish another client, pending initialization, or
+            // another busy state. Retain the existing route decision without diagnosing the cause.
             ZbtReachabilityPolicy.Verdict.LISTENING_SILENT -> AppLog.w(
-                "NativeAA: [ZBT] the daemon is on 127.0.0.1:3152 but did not answer within " +
-                    "${HELLO_BUDGET_MS / 1000}s, which is what it does while a phone is linked to " +
-                    "the module. Taking the module route anyway and letting the connection retry" +
+                "NativeAA: [ZBT] no usable module reply confirmed during this connection attempt; " +
+                    "client ownership and phone state remain unknown. Retaining the module route" +
                     (detail?.let { " ($it)" } ?: "") + "."
             )
             ZbtReachabilityPolicy.Verdict.NOTHING_LISTENING -> AppLog.i(
-                "NativeAA: [ZBT] nothing is listening on 127.0.0.1:3152" +
+                "NativeAA: [ZBT] connection attempt to 127.0.0.1:3152 classified as refused" +
                     (detail?.let { " ($it)" } ?: "") + "."
             )
         }

@@ -67,9 +67,9 @@ class ZbtByteChannel(
 ) : Closeable {
 
     /**
-     * The daemon's port could not be opened. [verdict] keeps a refusal, which means there is no
-     * daemon here, apart from a port that is held and not accepting, which on some units is only
-     * a phone being linked to the module right now.
+     * The daemon's port could not be opened. [verdict] separates failures classified
+     * as refused from other unconfirmed connection failures for the retry policy.
+     * Neither outcome establishes hardware absence or another application's ownership.
      */
     class NotConnected(
         message: String,
@@ -169,9 +169,9 @@ class ZbtByteChannel(
                 try { socket.close() } catch (ignored: Exception) { /* best effort */ }
                 val verdict = ZbtReachabilityPolicy.classify(e.javaClass.simpleName, answered = false)
                 val what = if (verdict == ZbtReachabilityPolicy.Verdict.NOTHING_LISTENING) {
-                    "no ZBT daemon on $host:$port"
+                    "connection to $host:$port failed on this attempt (classified as refused)"
                 } else {
-                    "the ZBT daemon on $host:$port is there but did not accept a connection"
+                    "could not confirm a connection to the ZBT daemon on $host:$port"
                 }
                 throw NotConnected("$what: ${e.javaClass.simpleName}: ${e.message}", e, verdict)
             }
@@ -181,7 +181,7 @@ class ZbtByteChannel(
                     sink = socket.getOutputStream(),
                     onControlFrame = onControlFrame,
                     onRfcommData = onRfcommData,
-                    onClose = socket,
+                    onClose = socketCloser(socket),
                     bufferRfcommData = bufferRfcommData
                 ).also { it.sendRequestInit(enableType) }
             } catch (e: Exception) {
@@ -189,7 +189,7 @@ class ZbtByteChannel(
                 // not a channel. Close it here rather than handing back one nothing can use, or
                 // leaking it because the failure happened between connect and the first write.
                 try { socket.close() } catch (ignored: Exception) { /* best effort */ }
-                throw IOException("ZBT daemon on $host:$port would not take RequestInit", e)
+                throw IOException("ZBT channel setup failed on $host:$port", e)
             }
         }
     }
@@ -353,7 +353,8 @@ class ZbtByteChannel(
         if (isFinished) return Pump.ENDED
         try {
             val header = ByteArray(ZbtFraming.HEADER_SIZE)
-            when (fill(header, deadlineMs, keepGoing)) {
+            val frame = FrameRead()
+            when (fill(header, deadlineMs, keepGoing, frame)) {
                 Fill.EXPIRED -> return Pump.EXPIRED
                 Fill.QUIET -> return Pump.QUIET
                 Fill.DESYNC -> {
@@ -392,12 +393,12 @@ class ZbtByteChannel(
 
             val body = ByteArray(size)
             if (size > 0) {
-                // The body follows the header as a separate write, so it may arrive in pieces — and a
-                // body we cannot finish reading leaves the stream mid-frame, which is a desync rather
-                // than a quiet spell. The deadline is extended without being allowed to wrap: [input]
-                // passes Long.MAX_VALUE to mean "block", and adding to that would produce a deadline
-                // already in the past and abandon every frame with a body.
-                if (fill(body, plusSaturating(deadlineMs, MID_FRAME_TIMEOUT_MS), keepGoing) != Fill.FILLED) {
+                // The vendor library writes the 16-byte header and payload separately
+                // (libzbt_rfcomm_data_send -> its two-buffer send helper). A timeout exactly
+                // between those writes is still mid-frame, even with zero body bytes received.
+                // Share the header's budget: neither this boundary nor Long.MAX_VALUE from
+                // InputStream.read may reset or remove the bounded wait for the missing tail.
+                if (fill(body, deadlineMs, keepGoing, frame) != Fill.FILLED) {
                     AppLog.w("ZbtByteChannel: [RX] a body of $size bytes never arrived in full")
                     return finish("a frame body of $size bytes never arrived in full")
                 }
@@ -493,6 +494,9 @@ class ZbtByteChannel(
      */
     private enum class Fill { FILLED, QUIET, EXPIRED, DESYNC }
 
+    /** One budget for the whole wire frame, starting with its first received header byte. */
+    private class FrameRead(var deadlineMs: Long? = null)
+
     /**
      * Fill [buf] completely, tolerating read timeouts that land in the middle of it.
      *
@@ -506,17 +510,22 @@ class ZbtByteChannel(
      * [deadlineMs] bounds the wait only while nothing has been taken. Once bytes are in hand the rest
      * of the frame is worth waiting [MID_FRAME_TIMEOUT_MS] for.
      */
-    private fun fill(buf: ByteArray, deadlineMs: Long, keepGoing: () -> Boolean): Fill {
+    private fun fill(
+        buf: ByteArray,
+        deadlineMs: Long,
+        keepGoing: () -> Boolean,
+        frame: FrameRead
+    ): Fill {
         var have = 0
-        var midFrameDeadline = 0L
         while (have < buf.size) {
             if (!keepGoing()) {
-                if (have == 0) return Fill.EXPIRED
+                if (frame.deadlineMs == null) return Fill.EXPIRED
                 AppLog.w("ZbtByteChannel: stopped with $have of ${buf.size} bytes in hand")
                 return Fill.DESYNC
             }
-            if (have == 0 && SystemClock.elapsedRealtime() >= deadlineMs) return Fill.EXPIRED
-            if (have > 0 && SystemClock.elapsedRealtime() >= midFrameDeadline) {
+            val frameDeadline = frame.deadlineMs
+            if (frameDeadline == null && SystemClock.elapsedRealtime() >= deadlineMs) return Fill.EXPIRED
+            if (frameDeadline != null && SystemClock.elapsedRealtime() >= frameDeadline) {
                 AppLog.w("ZbtByteChannel: gave up with $have of ${buf.size} bytes — the peer stopped mid-frame")
                 return Fill.DESYNC
             }
@@ -526,11 +535,13 @@ class ZbtByteChannel(
             try {
                 read = source.read(buf, have, buf.size - have)
             } catch (e: SocketTimeoutException) {
-                if (have == 0) return Fill.QUIET
+                if (frame.deadlineMs == null) return Fill.QUIET
                 continue  // mid-frame: the rest is still coming
             }
             if (read < 0) throw EOFException("stream ended with $have of ${buf.size} bytes read")
-            if (have == 0 && read > 0) midFrameDeadline = plusSaturating(SystemClock.elapsedRealtime(), MID_FRAME_TIMEOUT_MS)
+            if (frame.deadlineMs == null && read > 0) {
+                frame.deadlineMs = plusSaturating(SystemClock.elapsedRealtime(), MID_FRAME_TIMEOUT_MS)
+            }
             have += read
         }
         return Fill.FILLED

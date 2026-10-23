@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -39,7 +40,8 @@ import kotlinx.coroutines.sync.withLock
 internal class HctServiceObserver(
     context: Context,
     private val onAaReport: () -> Unit,
-    private val onInvalidated: () -> Unit
+    private val onInvalidated: () -> Unit,
+    private val interfaceAvailable: (Context) -> Boolean = Companion::available
 ) : Closeable {
     private val context = context.applicationContext
     val admission = HctAdmission()
@@ -50,8 +52,8 @@ internal class HctServiceObserver(
     private val main = Handler(Looper.getMainLooper())
     @Volatile private var binder: IBinder? = null
     @Volatile private var closed = false
-    private var registered = false
-    private var bound = false
+    private var receiverNeedsCleanup = false
+    private var bindingNeedsCleanup = false
     @Volatile private var address: String? = null
     @Volatile private var reportedPeer: String? = null
     @Volatile private var addressAck: CompletableDeferred<Unit>? = null
@@ -189,21 +191,32 @@ internal class HctServiceObserver(
     fun start() {
         check(Looper.myLooper() == Looper.getMainLooper()) { "HCT observer must start on main" }
         synchronized(lifecycle) {
-            check(!closed && !registered && !bound)
-            if (!available(context)) throw IOException("HCT: manufacturer interface is unavailable")
+            // A stop can win after the carrier's main-dispatch check but before this lock.
+            // Report cancellation rather than a manufacturer-interface failure in that race.
+            if (closed) throw CancellationException("HCT observer closed before start")
+            check(!receiverNeedsCleanup && !bindingNeedsCleanup)
+            if (!interfaceAvailable(context)) throw IOException("HCT: manufacturer interface is unavailable")
             // Related HCT builds select different FSC handlers with these properties. Record
             // them for diagnosis only; neither value proves a command ABI or reconnect outcome.
-            AppLog.i("NativeAA: [HCT] module hints: gocType=" +
+            AppLog.i("NativeAA: [HCT] interface: ${interfaceSummary(context)}; module hints: gocType=" +
                 com.andrerinas.openheadunit.utils.SystemProperties.get("bt.goc.type", "unavailable") +
-                ", bluewareSoc=" + com.andrerinas.openheadunit.utils.SystemProperties.get("vendor.blueware.soc.type", "unavailable"))
+                ", bluewareSoc=" + com.andrerinas.openheadunit.utils.SystemProperties.get("vendor.blueware.soc.type", "unavailable") +
+                ", wirelessAa=" + com.andrerinas.openheadunit.utils.SystemProperties.get("rw.support.wireless.androidauto", "unavailable"))
             try {
+                // ReceiverDispatcher is also registered locally before the system call.
+                // A registration exception still requires best-effort unregister below.
+                receiverNeedsCleanup = true
                 ContextCompat.registerReceiver(
                     context, receiver, IntentFilter(REPORT), SENDER_PERMISSION, null,
                     ContextCompat.RECEIVER_EXPORTED
                 )
-                registered = true
-                bound = context.bindService(Intent().setComponent(COMPONENT), connection, 0)
-                if (!bound) throw IOException("HCT: manufacturer Bluetooth service is not running")
+                // ContextImpl registers a ServiceDispatcher before asking the system to bind
+                // (checked in AOSP Android 5, 13 and 16). Even false or SecurityException can
+                // leave that registration behind; Context.bindService documents unbind on false.
+                // Track the attempt, not acceptance, and retain the same ServiceConnection.
+                bindingNeedsCleanup = true
+                val accepted = context.bindService(Intent().setComponent(COMPONENT), connection, 0)
+                if (!accepted) throw IOException("HCT: manufacturer Bluetooth service is not running")
             } catch (error: Exception) {
                 close()
                 throw error
@@ -385,13 +398,15 @@ internal class HctServiceObserver(
         }
         val cleanup = Runnable {
             synchronized(lifecycle) {
-                if (registered) {
+                if (receiverNeedsCleanup) {
+                    receiverNeedsCleanup = false
                     runCatching { context.unregisterReceiver(receiver) }
-                    registered = false
                 }
-                if (bound) {
+                if (bindingNeedsCleanup) {
+                    bindingNeedsCleanup = false
+                    // Some implementations fail before registration. Their unbind can throw;
+                    // cleanup must not mask the original bind failure or be attempted twice.
                     runCatching { context.unbindService(connection) }
-                    bound = false
                 }
             }
         }
@@ -411,10 +426,26 @@ internal class HctServiceObserver(
             @Suppress("DEPRECATION")
             val service = context.packageManager.getServiceInfo(COMPONENT, 0)
             val method = BluetoothSocket::class.java.getMethod("connectRfcom")
-            method.returnType == Void.TYPE && service.enabled && service.exported &&
-                service.applicationInfo.enabled &&
-                service.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0 &&
-                context.packageManager.checkPermission(SENDER_PERMISSION, PACKAGE) == PackageManager.PERMISSION_GRANTED
+            method.returnType == Void.TYPE && canBind(context, service)
         }.getOrDefault(false)
+
+        internal fun canBind(context: Context, service: ServiceInfo): Boolean =
+            service.enabled && service.exported && service.applicationInfo.enabled &&
+                service.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0 &&
+                context.packageManager.checkPermission(SENDER_PERMISSION, PACKAGE) == PackageManager.PERMISSION_GRANTED &&
+                // SERIAL_PORT authenticates the OEM broadcast sender. A service's own bind
+                // permission is a separate requirement on OHU's UID. This preflight cannot
+                // replace handling SecurityException if the service changes before bind.
+                (service.permission.isNullOrEmpty() ||
+                    context.checkPermission(service.permission, android.os.Process.myPid(), android.os.Process.myUid()) == PackageManager.PERMISSION_GRANTED)
+
+        private fun interfaceSummary(context: Context): String = runCatching {
+            @Suppress("DEPRECATION")
+            val service = context.packageManager.getServiceInfo(COMPONENT, 0)
+            @Suppress("DEPRECATION")
+            val version = context.packageManager.getPackageInfo(PACKAGE, 0).versionName
+            "sdk=${Build.VERSION.SDK_INT}, serviceVersion=$version, " +
+                "serviceTargetSdk=${service.applicationInfo.targetSdkVersion}, bindPermission=${service.permission ?: "none"}"
+        }.getOrElse { "sdk=${Build.VERSION.SDK_INT}, serviceMetadata=unavailable" }
     }
 }
