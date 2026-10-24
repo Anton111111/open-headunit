@@ -114,7 +114,7 @@ class CommManager {
 # Keep Save permission and deadline semantics from the same production state as the methods.
 old_state=manager_head[manager_head.index(' class Disconnected('):manager_head.index(' object Connecting:')]
 manager_head=manager_head.replace(old_state, extract(comm, 'class Disconnected(')+'\n')
-for name in ['SettingsRestartRecovery.kt', 'SameEndpointConnectPolicy.kt']:
+for name in ['SettingsRestartRecovery.kt', 'SameEndpointConnectPolicy.kt', 'ConnectionAdmission.kt']:
     source=(base/'connection'/name).read_text().replace('package com.andrerinas.openheadunit.connection', 'package lifecycle')
     (OUT/name).write_text(source)
 (OUT/'AaPresentationSession.kt').write_text((base/'aap/AaPresentationSession.kt').read_text().replace('package com.andrerinas.openheadunit.aap', 'package lifecycle'))

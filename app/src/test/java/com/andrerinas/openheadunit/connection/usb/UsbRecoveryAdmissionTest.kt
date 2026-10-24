@@ -95,6 +95,57 @@ class UsbRecoveryAdmissionTest {
             .apply { isAccessible = true }.set(manager, value)
     }
 
+    @Test fun detachBeforeRetryDispatchCannotAcquireAClaim(): Unit = runBlocking {
+        val f = Fixture()
+        val observation = StaleAccessoryRecoveryPolicy.BusObservation()
+        observation.noteDetach()
+        f.manager.reconnectUsb(f.device, f.owner, f.claim, observation)
+        assertTrue(ConnectionArbiter.holds(f.claim))
+        verifyNoInteractions(f.usb)
+    }
+
+    @Test fun detachDuringTeardownCannotOpenSamePathReplacement(): Unit = runBlocking {
+        val f = Fixture()
+        f.prepareOpen()
+        val observation = StaleAccessoryRecoveryPolicy.BusObservation()
+        val teardown = Job()
+        f.set("_disconnectJob", teardown)
+        val permission = CountDownLatch(1)
+        `when`(f.usb.hasPermission(f.device)).thenAnswer { permission.countDown(); true }
+        val retry = async(Dispatchers.IO) { f.manager.reconnectUsb(f.device, f.owner, f.claim, observation) }
+        try {
+            assertTrue(permission.await(5, TimeUnit.SECONDS))
+            observation.noteDetach()
+        } finally { teardown.complete() }
+        withTimeout(5_000) { retry.await() }
+        assertTrue(f.states.value is CommManager.ConnectionState.Disconnected)
+        verify(f.usb, never()).openDevice(anyOrNull())
+    }
+
+    @Test fun detachAfterOpenCannotPublishConnectedOrAnOldFailure(): Unit = runBlocking {
+        for (throwAfterDetach in listOf(false, true)) {
+            ConnectionArbiter.reset()
+            val f = Fixture()
+            val handle = f.prepareOpen()
+            val observation = StaleAccessoryRecoveryPolicy.BusObservation()
+            val failures = mutableListOf<String>()
+            f.manager.onSessionFailure = { failures.add(it) }
+            doAnswer {
+                observation.noteDetach()
+                if (throwAfterDetach) throw IllegalStateException("detached during persistence")
+                null
+            }.`when`(f.settings).saveLastConnection(any(), any(), any())
+            withContext(Dispatchers.IO) {
+                mockStatic(android.os.SystemClock::class.java).use {
+                    f.manager.reconnectUsb(f.device, f.owner, f.claim, observation)
+                }
+            }
+            assertTrue(f.states.value is CommManager.ConnectionState.Disconnected)
+            assertTrue(failures.isEmpty())
+            verify(handle, atLeastOnce()).close()
+        }
+    }
+
     @Test fun revokedOwnerCannotClaimAfterDispatcherHandoff(): Unit = runBlocking {
         val f = Fixture()
         f.set("usbRecoveryOwner", Any())

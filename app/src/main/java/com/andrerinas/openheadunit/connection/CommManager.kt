@@ -409,18 +409,23 @@ class CommManager(
 
     /** A recovery retry cannot borrow the authority of a later Save, Exit or completed session. */
     internal suspend fun reconnectUsb(device: UsbDevice, recoveryOwner: Any,
-        recoveryClaim: ConnectionArbiter.Claim) = withContext(Dispatchers.IO) {
+        recoveryClaim: ConnectionArbiter.Claim,
+        admission: ConnectionAdmission = ConnectionAdmission.UNRESTRICTED) = withContext(Dispatchers.IO) {
         val job = kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job]
         val claim = synchronized(transportLifecycleLock) {
             job?.ensureActive()
             if (usbRecoveryOwner !== recoveryOwner) return@withContext
             if (_connectionState.value !is ConnectionState.Disconnected &&
                 _connectionState.value !is ConnectionState.Error) return@withContext
-            ConnectionArbiter.claim(ConnectionPriorityPolicy.Tier.USB, ConnectionPriorityPolicy.Owner.USB,
-                "USB recovery of ${UsbDeviceCompat.getUniqueName(device)}", expectedHolder = recoveryClaim)
+            var next: ConnectionArbiter.Claim? = null
+            admission.run {
+                next = ConnectionArbiter.claim(ConnectionPriorityPolicy.Tier.USB, ConnectionPriorityPolicy.Owner.USB,
+                    "USB recovery of ${UsbDeviceCompat.getUniqueName(device)}", expectedHolder = recoveryClaim)
+            }
+            next
         } ?: return@withContext
         attemptUserRequested = false
-        try { connectUsb(device, recoveryOwner = recoveryOwner, recoveryClaim = claim) } finally { releaseClaim(claim) }
+        try { connectUsb(device, recoveryOwner = recoveryOwner, recoveryClaim = claim, recoveryAdmission = admission) } finally { releaseClaim(claim) }
     }
 
     internal fun claimUsb(
@@ -489,7 +494,8 @@ class CommManager(
     }
 
     private suspend fun connectUsb(device: UsbDevice, expectedState: ConnectionState.Disconnected? = null,
-        recoveryOwner: Any? = null, recoveryClaim: ConnectionArbiter.Claim? = null) {
+        recoveryOwner: Any? = null, recoveryClaim: ConnectionArbiter.Claim? = null,
+        recoveryAdmission: ConnectionAdmission = ConnectionAdmission.UNRESTRICTED) {
         if (recoveryOwner != null && !ownsUsbRecheck(recoveryOwner)) return
         if (expectedState != null && !expectedState.acceptsSettingsRestart(_connectionState.value)) return
         // Another caller already started the connection — do nothing.
@@ -514,6 +520,10 @@ class CommManager(
         // UsbDeviceConnection hasn't been close()d yet.
         _disconnectJob?.join()
 
+        // A same-path detach/re-attach can preserve every descriptor. Carry the producer's
+        // detach evidence across dispatcher handoff and teardown, not only the device list.
+        if (recoveryOwner != null && !recoveryAdmission.run {}) return
+
         // Teardown can suspend while USB re-enumerates. Recovery opens the latest matching
         // bus object, and never turns a lost permission into an error for a newer connection.
         val currentDevice = if (recoveryOwner == null) device else {
@@ -524,13 +534,15 @@ class CommManager(
             current
         }
 
-        // Call only under transportLifecycleLock (lifecycle -> arbiter lock order).
+        // Call only under transportLifecycleLock (lifecycle -> detach admission -> arbiter).
         // A same-owner USB claim can be replaced without a preempt callback. Keep its
         // check and each state transfer together; a separate holds() check is not enough.
         fun publishIfOwned(action: () -> Unit): Boolean {
             if (recoveryOwner == null) { action(); return true }
             if (usbRecoveryOwner !== recoveryOwner || recoveryClaim == null) return false
-            return ConnectionArbiter.runIfHeld(recoveryClaim, action)
+            var published = false
+            recoveryAdmission.run { published = ConnectionArbiter.runIfHeld(recoveryClaim, action) }
+            return published
         }
 
         var conn: ProjectionConnection? = null

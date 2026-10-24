@@ -23,6 +23,7 @@ import com.andrerinas.openheadunit.utils.ConnectionIssue
 import com.andrerinas.openheadunit.utils.ConnectionIssues
 import com.andrerinas.openheadunit.utils.ToastUtils
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
@@ -282,6 +283,20 @@ class UsbLauncherManager(val service: AapService) {
 
     internal fun pendingSettingsRestart() = App.provide(service).commManager.pendingUsbSettingsRestart()
 
+    private data class RecoveryObservation(
+        val deviceName: String, val vendorId: Int, val productId: Int,
+        val bus: StaleAccessoryRecoveryPolicy.BusObservation,
+    )
+    private val recoveryObservation = AtomicReference<RecoveryObservation?>(null)
+
+    internal fun noteRecoveryDeviceDetached(device: UsbDevice) {
+        val observation = recoveryObservation.get() ?: return
+        // Another peripheral's detach must not turn this device's unchanged bus into a
+        // re-enumeration. The broadcast identifies the old enumeration, not a new peer.
+        if (device.deviceName == observation.deviceName && device.vendorId == observation.vendorId &&
+            device.productId == observation.productId) observation.bus.noteDetach()
+    }
+
     private var staleSteps = 0
     private var staleLastStepAtMs = 0L
     private var staleGaveUpOn: String? = null
@@ -374,73 +389,85 @@ class UsbLauncherManager(val service: AapService) {
             currentCoroutineContext().ensureActive()
             if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
                 !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
-            ConnectionStageTracker.report(ConnectionStage.USB_SWITCHING)
-            val before = usbManager.deviceList
-            val current = before[device.deviceName] ?: return@launchAttempt
-            if (current.vendorId != device.vendorId || current.productId != device.productId ||
-                !UsbDeviceCompat.isInAccessoryMode(current) || !UsbDeviceCompat.isConnectable(service, current)) return@launchAttempt
-            val issued = if (step == StaleAccessoryRecoveryPolicy.Step.RESWITCH) {
-                usbMode.connectAndSwitch(current, app.settings.useLibusb).also { if (it) noteAccessorySwitchRequested() }
-            } else {
-                usbMode.resetDevice(current)
-            }
-            val startedAt = System.nanoTime() / 1_000_000L
-            AppLog.i("UsbLauncher: stale accessory $name: $step returned $issued; observing the USB bus")
             val busObservation = StaleAccessoryRecoveryPolicy.BusObservation()
-            // A failed request can still be followed by a delayed detach. Keep the same
-            // bounded observation window for both results, rather than reopening stale USB.
-            var observation = StaleAccessoryRecoveryPolicy.Observation.WAITING
-            while (observation == StaleAccessoryRecoveryPolicy.Observation.WAITING) {
-                delay(100)
+            val observationOwner = RecoveryObservation(device.deviceName, device.vendorId, device.productId, busObservation)
+            // Arm before the blocking USB request, not after it returns: firmware can
+            // detach and reattach entirely inside that call or between two list polls.
+            if (!ConnectionArbiter.runIfHeld(recoveryClaim) {
+                recoveryObservation.set(observationOwner)
+            }) return@launchAttempt
+            try {
+                ConnectionStageTracker.report(ConnectionStage.USB_SWITCHING)
+                val before = usbManager.deviceList
+                val current = before[device.deviceName] ?: return@launchAttempt
+                if (current.vendorId != device.vendorId || current.productId != device.productId ||
+                    !UsbDeviceCompat.isInAccessoryMode(current) || !UsbDeviceCompat.isConnectable(service, current)) return@launchAttempt
+                if (busObservation.hasDetached) return@launchAttempt
+                val issued = if (step == StaleAccessoryRecoveryPolicy.Step.RESWITCH) {
+                    usbMode.connectAndSwitch(current, app.settings.useLibusb).also { if (it) noteAccessorySwitchRequested() }
+                } else {
+                    usbMode.resetDevice(current)
+                }
+                val startedAt = System.nanoTime() / 1_000_000L
+                AppLog.i("UsbLauncher: stale accessory $name: $step returned $issued; observing the USB bus")
+                // A failed request can still be followed by a delayed detach. Keep the same
+                // bounded observation window for both results, rather than reopening stale USB.
+                var observation = StaleAccessoryRecoveryPolicy.Observation.WAITING
+                while (observation == StaleAccessoryRecoveryPolicy.Observation.WAITING) {
+                    delay(100)
+                    if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
+                        !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
+                    val list = usbManager.deviceList
+                    val original = list[device.deviceName]
+                    val originalPresent = original != null && original.vendorId == device.vendorId &&
+                        original.productId == device.productId
+                    val reattached = list.any { (key, d) ->
+                        (key !in before || key == device.deviceName) && UsbDeviceCompat.isConnectable(service, d)
+                    }
+                    val elapsed = System.nanoTime() / 1_000_000L - startedAt
+                    observation = busObservation.update(
+                        originalPresent, reattached, elapsed
+                    )
+                }
+                currentCoroutineContext().ensureActive()
                 if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
                     !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
-                val list = usbManager.deviceList
-                val original = list[device.deviceName]
-                val originalPresent = original != null && original.vendorId == device.vendorId &&
-                    original.productId == device.productId
-                val reattached = list.any { (key, d) ->
-                    (key !in before || key == device.deviceName) && UsbDeviceCompat.isConnectable(service, d)
-                }
                 val elapsed = System.nanoTime() / 1_000_000L - startedAt
-                observation = busObservation.update(
-                    originalPresent, reattached, elapsed
-                )
-            }
-            currentCoroutineContext().ensureActive()
-            if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
-                !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
-            val elapsed = System.nanoTime() / 1_000_000L - startedAt
-            when (observation) {
-                StaleAccessoryRecoveryPolicy.Observation.REENUMERATED ->
-                    AppLog.i("UsbLauncher: stale accessory $name: $step observed detach and a connectable bus entry after ${elapsed}ms")
-                StaleAccessoryRecoveryPolicy.Observation.NO_CHANGE ->
-                    AppLog.i("UsbLauncher: stale accessory $name: no re-enumeration within ${elapsed}ms " +
-                        "of $step; trying the handshake once more")
-                else ->
-                    AppLog.i("UsbLauncher: stale accessory $name: the phone left the bus after $step " +
-                        "and did not come back")
-            }
-            when (StaleAccessoryRecoveryPolicy.afterObservation(observation)) {
-                // A new bus entry is not proof that it is the failed accessory. An attach
-                // scan already queued by the listener is replayed by normal slot completion;
-                // recovery itself must not synthesize an unrestricted scan for another USB.
-                StaleAccessoryRecoveryPolicy.FollowUp.RECONNECT_ON_ATTACH -> Unit
-                StaleAccessoryRecoveryPolicy.FollowUp.RETRY_HANDSHAKE -> {
-                    // The last observation and the open are separate operations. Re-read the
-                    // bus and permissions; never reuse the pre-reset UsbDevice. Re-enumerated
-                    // devices go through the normal attach/permission path instead.
-                    val fresh = usbManager.deviceList[device.deviceName]
-                    if (fresh != null && fresh.vendorId == device.vendorId && fresh.productId == device.productId &&
-                        UsbDeviceCompat.isInAccessoryMode(fresh) && UsbDeviceCompat.isConnectable(service, fresh) &&
-                        usbManager.hasPermission(fresh) && !SettingsActivity.isVisible) {
-                        commManager.reconnectUsb(fresh, recoveryOwner, recoveryClaim)
-                    } else {
-                        // Failed target validation is not permission to choose another USB.
-                        // An independently received attach/permission event keeps its own path.
-                        AppLog.i("UsbLauncher: stale accessory $name: current target is unavailable; leaving retry to attach or user action")
-                    }
+                when (observation) {
+                    StaleAccessoryRecoveryPolicy.Observation.REENUMERATED ->
+                        AppLog.i("UsbLauncher: stale accessory $name: $step observed detach and a connectable bus entry after ${elapsed}ms")
+                    StaleAccessoryRecoveryPolicy.Observation.NO_CHANGE ->
+                        AppLog.i("UsbLauncher: stale accessory $name: no re-enumeration within ${elapsed}ms " +
+                            "of $step; trying the handshake once more")
+                    else ->
+                        AppLog.i("UsbLauncher: stale accessory $name: the phone left the bus after $step " +
+                            "and did not come back")
                 }
-                StaleAccessoryRecoveryPolicy.FollowUp.STOP -> Unit
+                when (StaleAccessoryRecoveryPolicy.afterObservation(observation)) {
+                    // A new bus entry is not proof that it is the failed accessory. An attach
+                    // scan already queued by the listener is replayed by normal slot completion;
+                    // recovery itself must not synthesize an unrestricted scan for another USB.
+                    StaleAccessoryRecoveryPolicy.FollowUp.RECONNECT_ON_ATTACH -> Unit
+                    StaleAccessoryRecoveryPolicy.FollowUp.RETRY_HANDSHAKE -> {
+                        // The last observation and the open are separate operations. Re-read the
+                        // bus and permissions; never reuse the pre-reset UsbDevice. Re-enumerated
+                        // devices go through the normal attach/permission path instead.
+                        val fresh = usbManager.deviceList[device.deviceName]
+                        if (!busObservation.hasDetached && fresh != null && fresh.vendorId == device.vendorId && fresh.productId == device.productId &&
+                            UsbDeviceCompat.isInAccessoryMode(fresh) && UsbDeviceCompat.isConnectable(service, fresh) &&
+                            usbManager.hasPermission(fresh) && !SettingsActivity.isVisible) {
+                            commManager.reconnectUsb(fresh, recoveryOwner, recoveryClaim, busObservation)
+                        } else {
+                            // Failed target validation is not permission to choose another USB.
+                            // An independently received attach/permission event keeps its own path.
+                            AppLog.i("UsbLauncher: stale accessory $name: current target is unavailable; leaving retry to attach or user action")
+                        }
+                    }
+                    StaleAccessoryRecoveryPolicy.FollowUp.STOP -> Unit
+                }
+            } finally {
+                // A cancelled step must not remove a newer step's observation window.
+                recoveryObservation.compareAndSet(observationOwner, null)
             }
         }
     }

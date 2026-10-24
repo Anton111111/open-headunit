@@ -61,6 +61,7 @@ class UsbLauncherListener(private val manager: UsbLauncherManager) : UsbReceiver
     }
 
     override fun onUsbDetach(device: UsbDevice) {
+        manager.noteRecoveryDeviceDetached(device)
         val commManager = App.provide(service).commManager
 
         service.userExitedAA = false

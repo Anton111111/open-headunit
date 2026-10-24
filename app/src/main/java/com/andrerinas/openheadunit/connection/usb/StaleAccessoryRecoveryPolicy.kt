@@ -2,11 +2,12 @@ package com.andrerinas.openheadunit.connection.usb
 
 import com.andrerinas.openheadunit.aap.AapTransport.HandshakeFailure
 import com.andrerinas.openheadunit.connection.ConnectionPriorityPolicy
+import com.andrerinas.openheadunit.connection.ConnectionAdmission
 
 /**
- * [FIX] A phone left in accessory mode after a session can fail every later handshake. A re-switch
- * lets it answer again with no re-enumeration, and a USB reset clears the TLS form by re-enumerating
- * it. This decides that bounded ladder: a re-switch, then a USB reset.
+ * Bounds attempts to recover an accessory after a failed handshake: re-switch, then USB reset.
+ * Neither command proves that the peer has discarded its GAL/TLS session. In particular, a
+ * USB-to-Wi-Fi relay can reopen its gadget while retaining the phone-side TCP connection.
  */
 object StaleAccessoryRecoveryPolicy {
     enum class Step { NONE, RESWITCH, USB_RESET, GIVE_UP }
@@ -24,12 +25,25 @@ object StaleAccessoryRecoveryPolicy {
      * bus after either result before opening another connection. Once removal was seen, a
      * reappearance at the same bus address is a new attachment, not an unchanged connection.
      */
-    class BusObservation {
+    class BusObservation : ConnectionAdmission {
         private var sawDetach = false
+        val hasDetached: Boolean get() = synchronized(this) { sawDetach }
+
+        // Main can receive a detach/attach pair while IO is inside a control transfer or
+        // between polls. Keep that evidence even if the next device list looks unchanged.
+        @Synchronized fun noteDetach() { sawDetach = true }
+
+        // Only short state publication runs here. USB I/O and teardown stay outside this
+        // monitor so the detach listener can invalidate an in-progress open immediately.
+        @Synchronized override fun run(action: () -> Unit): Boolean {
+            if (sawDetach) return false
+            action()
+            return true
+        }
 
         fun update(originalPresent: Boolean, candidatePresent: Boolean, elapsedMs: Long): Observation {
-            sawDetach = sawDetach || !originalPresent
-            return observe(sawDetach, candidatePresent, elapsedMs)
+            if (!originalPresent) noteDetach()
+            return observe(hasDetached, candidatePresent, elapsedMs)
         }
     }
 
