@@ -22,8 +22,10 @@ Choose from the five options below according to your Android Auto version and se
 5. **Root workaround (AA 17.4+):** Re-enable `WirelessStartupReceiver` with one root command to restore the previous wireless startup flow, including Wireless Helper, without starting the developer headunit server. See [the command and setup below](#5-root-workaround-for-android-auto-174).
 
 ## Screenshots
-<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/22abbc13-75d5-436f-b0ae-2e92b7648d50" />
-<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/140bbfdb-5b4f-4d49-a419-85aa91b48371" />
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/6ed31626-480e-404f-ba7a-753b14230a02" />
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/ce67584e-fcf6-4308-b11a-116780df47f7" />
+<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/fc2870be-a173-4113-8187-4835bd564842" />
+
 
 ## How to use
 **Check out the [Wiki](https://github.com/andreknieriem/open-headunit/wiki) for detailed documentation, setup guides and troubleshooting!**
