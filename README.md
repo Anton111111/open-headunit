@@ -23,7 +23,6 @@ Choose from the five options below according to your Android Auto version and se
 
 ## Screenshots
 <img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/22abbc13-75d5-436f-b0ae-2e92b7648d50" />
-<img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/f81149b3-a844-4657-87d2-a2867a5eb030" />
 <img width="1280" height="800" alt="image" src="https://github.com/user-attachments/assets/140bbfdb-5b4f-4d49-a419-85aa91b48371" />
 
 ## How to use
@@ -161,15 +160,20 @@ adb shell am start -a android.intent.action.VIEW -d "headunit://connect?ip=192.1
 - Info/Help descriptions to the settings for better understanding
 
 ## Changelog
-### 4.0.0-alpha (unreleased)
+### 4.0.0-alpha
 - New Homescreen, thanks to @andrecuellar
 - AAP: send one version request over TCP, so a slow head unit server is not left deaf
 - AAP: Keep media and navigation display updates off the receive path
 - AAP: Preserve frame boundaries during handshake
+- AAP: send one version request over TCP, so a slow head unit server is not left deaf
 - WiFi Direct: detect a wedged P2P stack and offer a WiFi restart
 - WiFi: Pause automatic searches during wireless sessions with Shizuku
 - Native AA: remember a unit that refuses every banded WiFi Direct group
 - Native AA: connect faster
+- Wizard: test the decoder before recommending settings
+- Fix(usb): Resolve dongle AOA switching
+- Status pill: stop saying Android Auto is starting when nothing is
+- Projection: keep the decoder through a short cover
 
 ### v.3.5.0
 - Native AA: reconnect to a network that is still there, wake the phone over Bluetooth or the external module, bring a lost group or hotspot back after sleep, boot or ACC wake, stop advertising an address that moves, and pick, wake or hold back only for a phone that is on
