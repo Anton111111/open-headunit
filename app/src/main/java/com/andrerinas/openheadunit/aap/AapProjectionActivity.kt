@@ -56,6 +56,7 @@ import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.ToastUtils
 import com.andrerinas.openheadunit.view.OverlayTouchView
 import com.andrerinas.openheadunit.view.PerformanceOverlay
+import com.andrerinas.openheadunit.view.NightProjectionOverlay
 import com.andrerinas.openheadunit.utils.HeadUnitScreenConfig
 import com.andrerinas.openheadunit.utils.SystemUI
 import com.andrerinas.openheadunit.aap.AapService
@@ -133,6 +134,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     // instead of persisting to Settings. This keeps toggles local to the Activity lifecycle.
     private var activityFullscreenOverride: Settings.FullscreenMode? = null
     private var touchOverlayView: OverlayTouchView? = null
+    private var nightOverlay: NightProjectionOverlay? = null
     private val performanceOverlay by lazy {
         PerformanceOverlay(settings) { videoDecoder.lastFrameRenderedMs }
     }
@@ -607,6 +609,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             val mirror = if (settings.hudMirroring) -1.0f else 1.0f
             findViewById<View>(R.id.loading_overlay)?.scaleX = mirror
             performanceOverlay.setMirror(mirror)
+            nightOverlay?.scaleX = mirror
         }
     }
 
@@ -823,6 +826,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             container.addView(bar)
             rendererBanner = bar
             bar.bringToFront()
+            nightOverlay?.takeIf { it.visibility == View.VISIBLE }?.bringToFront()
             // One-shot: offering the escape once is enough. Clearing the flag here (not only on
             // "Yes") stops the banner from re-appearing on every future session if the user drives
             // off without tapping. A genuinely broken renderer still re-offers via the no-frame path.
@@ -935,6 +939,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             container.addView(bar)
             autoStartOfferBanner = bar
             bar.bringToFront()
+            nightOverlay?.takeIf { it.visibility == View.VISIBLE }?.bringToFront()
 
             autoStartOfferTimer?.cancel()
             autoStartOfferTimer = object : CountDownTimer(AutoStartOfferPolicy.OFFER_TIMEOUT_MS, 1000L) {
@@ -1195,6 +1200,17 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             }
 
         container.addView(overlayView)
+        nightOverlay = NightProjectionOverlay(this).also { night ->
+            container.addView(night, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    App.provide(this@AapProjectionActivity).nightOverlayState.content.collect(night::render)
+                }
+            }
+        }
         overlayView.requestFocus()
         setFullscreen() // Call setFullscreen here as well
 
@@ -2048,6 +2064,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private val commManager get() = App.provide(this).commManager
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        nightOverlay?.takeIf { it.visibility == View.VISIBLE }?.let {
+            it.dispatchTouchEvent(ev)
+            return true
+        }
         // Two-finger swipes from the left and right edges use independently configurable actions.
         if (ev.pointerCount == 2) {
             when (ev.actionMasked) {
@@ -2068,6 +2088,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                         }
                         if (action != null) {
                             isPotentialGesture = false
+                            if (action == Settings.GestureAction.NIGHT_OVERLAY) {
+                                // The phone already received this swipe's DOWN events.
+                                val cancel = MotionEvent.obtain(ev)
+                                cancel.action = MotionEvent.ACTION_CANCEL
+                                sendTouchEvent(cancel)
+                                cancel.recycle()
+                            }
                             if (performTouchGesture(action)) return true
                         }
                     }
@@ -2100,7 +2127,11 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             true
         }
         Settings.GestureAction.NIGHT_OVERLAY -> {
-            // TODO: Implement the night overlay gesture action.
+            nightOverlay?.apply {
+                render(App.provide(this@AapProjectionActivity).nightOverlayState.content.value)
+                scaleX = if (settings.hudMirroring) -1f else 1f
+                show()
+            }
             true
         }
     }
@@ -2508,6 +2539,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
+        nightOverlay?.updateTextSizes()
         AppLog.i("[AapProjectionActivity] onConfigurationChanged: orientation=${newConfig.orientation}")
         if (!HeadUnitScreenConfig.isResolutionLocked) {
             HeadUnitScreenConfig.init(this, resources.displayMetrics, settings)
@@ -2580,11 +2612,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         // Baseline for the "no frame drawn while streaming" renderer check (issue #767).
         projectionStartMs = SystemClock.elapsedRealtime()
         performanceOverlay.bringToFront()
+        nightOverlay?.takeIf { it.visibility == View.VISIBLE }?.bringToFront()
     }
 
     private fun attachPerformanceOverlay() {
         performanceOverlay.attachTo(findViewById(R.id.container))
         videoDecoder.onFpsChanged = performanceOverlay.fpsListener
         performanceOverlay.start()
+        nightOverlay?.takeIf { it.visibility == View.VISIBLE }?.bringToFront()
     }
 }

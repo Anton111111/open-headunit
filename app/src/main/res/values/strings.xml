@@ -234,6 +234,13 @@
     <string name="gesture_action_toggle_fullscreen">Toggle full screen</string>
     <string name="gesture_action_night_overlay">Night overlay</string>
     <string name="gestures_reset">Gesture settings reset</string>
+    <string name="night_overlay_dismiss">Tap to return to projection</string>
+    <string name="night_overlay_meters">%1$d m</string>
+    <string name="night_overlay_kilometers">%1$.1f km</string>
+    <string name="night_overlay_navigation">%1$s · %2$s</string>
+    <string name="night_overlay_left">left</string>
+    <string name="night_overlay_right">right</string>
+    <string name="night_overlay_direction">%1$s · %2$s</string>
     <string name="night_mode">Dark Mode (Android Auto)</string>
     <string name="night_mode_threshold">Night Mode Threshold</string>
     <string name="enter_threshold_value">Enter Threshold Value</string>

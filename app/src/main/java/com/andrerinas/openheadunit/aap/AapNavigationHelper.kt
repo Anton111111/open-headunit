@@ -16,7 +16,8 @@ import com.andrerinas.openheadunit.contract.NavigationUpdateIntent
 import com.andrerinas.openheadunit.utils.AppLog
 
 class AapNavigationHelper(
-    private val context: Context
+    private val context: Context,
+    private val onNavigationUpdate: ((NightOverlayState.Navigation?) -> Unit)? = null
 ) {
     data class TimedMessage<T>(
         val payload: T,
@@ -68,6 +69,22 @@ class AapNavigationHelper(
     @Suppress("DEPRECATION") // Single bridge: legacy nextEventType/turnSide → NavigationUpdateIntent
     fun sendFullNavigationBroadcast(snapshot: NavigationSnapshot, navEventType: Int) {
         val prepared = prepareFullNavigationMessage(snapshot, navEventType)
+        onNavigationUpdate?.let { publish ->
+            val direction = when (prepared.turnSide) {
+                LegacySide.LEFT.number -> context.getString(R.string.night_overlay_left)
+                LegacySide.RIGHT.number -> context.getString(R.string.night_overlay_right)
+                else -> null
+            }
+            val maneuver = if (direction == null) prepared.actionText
+                else context.getString(R.string.night_overlay_direction, prepared.actionText, direction)
+            publish(
+                if (prepared.nextEventType != LegacyNextEvent.UNKNOWN.number) {
+                    NightOverlayState.Navigation(maneuver, prepared.distanceMeters?.takeIf { it >= 0 })
+                } else {
+                    null
+                }
+            )
+        }
         val intent = NavigationUpdateIntent(
             distanceMeters = prepared.distanceMeters,
             timeSeconds = prepared.timeSeconds,
@@ -120,7 +137,7 @@ class AapNavigationHelper(
             ?.takeIf { it.hasDistance() && it.distance.hasMeters() }
             ?.distance
             ?.meters
-            ?: turnDistance?.distanceMeters?.takeIf { it >= 0 }
+            ?: turnDistance?.takeIf { it.hasDistanceMeters() }?.distanceMeters?.takeIf { it >= 0 }
         val timeSeconds = stepDistance
             ?.takeIf { it.hasTimeToStepSeconds() }
             ?.timeToStepSeconds
