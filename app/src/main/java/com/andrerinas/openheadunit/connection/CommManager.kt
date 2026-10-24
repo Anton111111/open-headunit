@@ -1425,6 +1425,10 @@ class CommManager(
     /** Regain focus for the current transport during wake/resume; warm relaunch uses its cycle token. */
     fun retakeVideoFocusForKeyframe() {
         if (projectionVideoFocusSuppressed) return
+        if (_connectionState.value !is ConnectionState.TransportStarted) {
+            AppLog.w("CommManager: skipping retakeVideoFocusForKeyframe because transport is not started (${_connectionState.value})")
+            return
+        }
         _transport?.let {
             it.send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
             it.endFocusCycle()
