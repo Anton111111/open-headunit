@@ -95,12 +95,12 @@ object HomeUiHelper {
     )
 
     /**
-     * What [fitDriverBar] shrinks: the connection tiles and the settings tile. Exit is left out, its
-     * width and height stay at the user's scale, because it is the tile that must never be ambiguous
-     * and at the smallest scales its icon and its label no longer fit side by side.
+     * What [fitDriverBar] shrinks: every tile in the bar, Exit included. Exit has its label under
+     * the icon like the others, so it stays readable at the smallest scale too.
      */
     private val fittedTiles = listOf(
-        R.id.usb_button, R.id.wifi_button, R.id.self_mode_button, R.id.settings_button, R.id.home_bar_scroll
+        R.id.usb_button, R.id.wifi_button, R.id.self_mode_button, R.id.settings_button, R.id.exit_button,
+        R.id.home_bar_scroll
     )
 
     fun chosenConnections(settings: Settings): Set<Connection> = settings.connectionModes.map {
@@ -424,12 +424,17 @@ object HomeUiHelper {
         val scroll = rootView.findViewById<View>(R.id.home_bar_scroll) ?: return
         val tiles = rootView.findViewById<ViewGroup>(R.id.home_bar_tiles) ?: return
 
-        val available = scroll.height - tiles.paddingTop - tiles.paddingBottom
         val visible = (0 until tiles.childCount).map { tiles.getChildAt(it) }
             .filter { it.visibility == View.VISIBLE }
         val gapPx = rootView.resources.getDimensionPixelSize(R.dimen.home_gap)
-        val fixedPx = gapPx * (visible.size - 1)
-        val tileScale = BarFitPolicy.tileScale(available, visible.sumOf { baseHeight(it) }, fixedPx, scalePercent)
+        // Exit is pinned under the scroll and shrinks with the tiles, so the room it takes now
+        // (and the gap above it) counts as room the tiles and Exit share.
+        val exit = rootView.findViewById<View>(R.id.exit_button)?.takeIf { it.visibility == View.VISIBLE }
+        val available = scroll.height - tiles.paddingTop - tiles.paddingBottom +
+            (exit?.let { it.height + gapPx } ?: 0)
+        val fixedPx = gapPx * (visible.size - 1) + (if (exit != null) gapPx else 0)
+        val basePx = visible.sumOf { baseHeight(it) } + (exit?.let { baseHeight(it) } ?: 0)
+        val tileScale = BarFitPolicy.tileScale(available, basePx, fixedPx, scalePercent)
 
         // Applying the same size again would request another layout on every pass.
         if (rootView.getTag(R.id.home_bar_fit) == tileScale) return
@@ -438,7 +443,7 @@ object HomeUiHelper {
             scale(view, tileScale)
             (view as? ViewGroup)?.let { scaleTileContent(it, tileScale) }
         }
-        widenForWholeWords(rootView, visible, scalePercent)
+        widenForWholeWords(rootView, visible + listOfNotNull(exit))
     }
 
     /**
@@ -448,7 +453,7 @@ object HomeUiHelper {
      * name and the two states a connection tile can say instead, so the bar does not change width
      * when a connection starts.
      */
-    private fun widenForWholeWords(rootView: View, visible: List<View>, scalePercent: Int) {
+    private fun widenForWholeWords(rootView: View, visible: List<View>) {
         val scroll = rootView.findViewById<View>(R.id.home_bar_scroll) ?: return
         val tilePx = scroll.layoutParams?.width ?: return
         if (tilePx <= 0) return
@@ -460,17 +465,13 @@ object HomeUiHelper {
                 (0 until group.childCount).map { group.getChildAt(it) }.filterIsInstance<WordFitTextView>().firstOrNull()
             } ?: return@maxOfOrNull tilePx
             val name = label.getTag(R.id.home_tile_name) as? CharSequence ?: label.text
-            val texts = if (tile.id == R.id.settings_button) listOf(name) else listOf(name) + states
+            val connection = tile.id != R.id.settings_button && tile.id != R.id.exit_button
+            val texts = if (connection) listOf(name) + states else listOf(name)
             label.tileWidthForWholeWords(texts, tilePx, maxPx)
         } ?: tilePx
         if (width <= tilePx) return
         AppLog.i("HomeUiHelper: widening the bar's tiles from ${tilePx}px to ${width}px so their labels keep whole words")
         fittedTiles.mapNotNull { rootView.findViewById<View>(it) }.forEach { setWidth(it, width) }
-        // Exit sits under them, at the user's scale; it widens too so the bar keeps one width.
-        rootView.findViewById<View>(R.id.exit_button)?.let { exit ->
-            val userScale = (if (scalePercent in 60..120) scalePercent else 100) / 100f
-            setWidth(exit, maxOf((baseSize(exit)[0] * userScale).toInt(), width))
-        }
     }
 
     private fun setWidth(view: View, width: Int) {
