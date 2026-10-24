@@ -223,7 +223,7 @@ class VideoDecoder(
     private var sps: ByteArray? = null
     private var pps: ByteArray? = null
     @Volatile private var codecConfigured = false
-    private var currentCodecType = CodecType.H264
+    @Volatile private var currentCodecType = CodecType.H264
     private var currentCodecName: String? = null
 
     // Once a codec type has been used to successfully start a decoder this session, it is
@@ -257,7 +257,7 @@ class VideoDecoder(
     private var backpressureWindows = 0
     private var reportedBackpressure = false
     private var restartsSinceLastFrame = 0
-    private var codecFallbackUsed = false
+    @Volatile private var codecFallbackUsed = false
     private var decoderPermanentlyFailed = false
     // True once any frame of this session has rendered. Session-scoped where lastFrameRenderedMs
     // is start-scoped: every stop() zeroes that timestamp, so after a surface swap a stream that
@@ -396,6 +396,16 @@ class VideoDecoder(
     // it does, so reading that to ask "did this session ever show video" answers no for a session
     // that showed plenty. See CommManager.noteSessionEnded.
     @Volatile var framesRenderedThisSession: Long = 0L
+
+    /** What one finished session did, for the home screen's repeated-problem suggestion. */
+    data class SessionHealth(
+        val framesFed: Long,
+        val framesDropped: Long,
+        val framesSkipped: Long,
+        val framesRendered: Long,
+        val codecFallbackUsed: Boolean,
+        val finalCodec: CodecType,
+    )
 
     // elapsedRealtime() of the last encoded video bytes received from the phone (input side),
     // as opposed to lastFrameRenderedMs (output side). Lets the projection watchdog tell a
@@ -783,6 +793,26 @@ class VideoDecoder(
     /** Changes only when lifecycle teardown loses references while a Surface can survive. */
     @Volatile internal var surfaceStopGeneration = 0L
         private set
+
+    /** What this session fed, dropped, skipped and rendered, plus whether it had to fall back. */
+    fun sessionHealth(): SessionHealth = SessionHealth(
+        framesFed = framesFed,
+        framesDropped = framesDropped,
+        framesSkipped = framesSkippedAtRender,
+        framesRendered = framesRenderedThisSession,
+        codecFallbackUsed = codecFallbackUsed,
+        finalCodec = currentCodecType,
+    )
+
+    /** Clears the session-scoped health counters before a new projection starts feeding frames. */
+    fun beginSession() {
+        framesRenderedThisSession = 0L
+        framesFed = 0L
+        framesDropped = 0L
+        framesSkippedAtRender = 0L
+        codecFallbackUsed = false
+        restartsSinceLastFrame = 0
+    }
 
     /** Stops the decoder, terminates the output thread, and releases hardware resources. */
     fun stop(reason: String = "unknown") {

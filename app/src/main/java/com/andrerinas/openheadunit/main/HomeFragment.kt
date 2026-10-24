@@ -15,6 +15,7 @@ import android.content.res.ColorStateList
 import android.widget.*
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.view.Gravity
 import android.view.LayoutInflater
 import androidx.lifecycle.repeatOnLifecycle
@@ -61,7 +62,10 @@ import kotlinx.coroutines.launch
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.ColorUtils
 import com.andrerinas.openheadunit.utils.HomeUiHelper
+import com.andrerinas.openheadunit.utils.ProjectionHealthPolicy
+import com.andrerinas.openheadunit.utils.ProjectionHealthStore
 import com.andrerinas.openheadunit.utils.ToastUtils
+import com.google.android.material.button.MaterialButton
 import com.andrerinas.openheadunit.utils.VpnControl
 import com.andrerinas.openheadunit.connection.self.SelfLaunchPath
 import com.andrerinas.openheadunit.connection.self.SelfLaunchRoutePolicy
@@ -134,6 +138,9 @@ class HomeFragment : Fragment() {
     private var actionDialog: android.app.Dialog? = null
     private var manufacturerPickerLoading = false
     private var driverCountdownTimer: CountDownTimer? = null
+    private var healthCard: View? = null
+    private var healthMessage: TextView? = null
+    private var pendingHealthAction: ProjectionHealthPolicy.Action? = null
     private var homeInfoTicker: Job? = null
     private var gpsListener: LocationListener? = null
     private var gpsSpeedKmh: Int? = null
@@ -254,6 +261,19 @@ class HomeFragment : Fragment() {
             }
             notices.addOnLayoutChangeListener(listener)
             noticesLayoutListener = listener
+        }
+
+        // In MainActivity's notices, under the connection issue banner, so both home layouts
+        // show it the same way and it never covers the pill.
+        activity?.let { act ->
+            healthCard = act.findViewById(R.id.projection_health_card)
+            healthMessage = act.findViewById(R.id.projection_health_message)
+            act.findViewById<MaterialButton>(R.id.projection_health_apply)?.setOnClickListener {
+                applyProjectionHealthSuggestion()
+            }
+            act.findViewById<MaterialButton>(R.id.projection_health_later)?.setOnClickListener {
+                dismissProjectionHealthSuggestion()
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -2070,6 +2090,7 @@ class HomeFragment : Fragment() {
                 Aa174Notice.maybeShow(act, App.provide(requireContext()).settings)
             }
         }
+        refreshProjectionHealthSuggestion()
         // After the notices above and any auto-connect have had their moment.
         root.removeCallbacks(pagesHintCheck)
         root.postDelayed(pagesHintCheck, PAGES_HINT_DELAY_MS)
@@ -2325,6 +2346,7 @@ class HomeFragment : Fragment() {
         // built in onResume.
         HomeWidgets.startListening(requireContext())
         reportBringUpOwner(started = true)
+        activity?.window?.decorView?.viewTreeObserver?.addOnGlobalLayoutListener(issueBannerWatcher)
     }
 
     override fun onDestroyView() {
@@ -2341,6 +2363,12 @@ class HomeFragment : Fragment() {
         mainViewModel.homeShowsBringUp.value = false
         // Started again by the next render, once the home is back on screen.
         view?.let { HomeUiHelper.stopShines(it) }
+        activity?.window?.decorView?.viewTreeObserver?.let {
+            if (it.isAlive) it.removeOnGlobalLayoutListener(issueBannerWatcher)
+        }
+        lastIssueBannerUp = null
+        // The card sits in MainActivity's notices, so it would stay up over the next screen.
+        healthCard?.visibility = View.GONE
     }
 
     override fun onPause() {
@@ -2364,6 +2392,100 @@ class HomeFragment : Fragment() {
         HomeUiHelper.applyTheme(root.context, root, homePalette(root.context))
         // The bar can only be fitted once it has a height to fit into.
         root.doOnLayout { HomeUiHelper.fitDriverBar(it, homeSettings.homeButtonScalePercent) }
+    }
+
+    private fun refreshProjectionHealthSuggestion() {
+        val card = healthCard ?: return
+        // The connection issue banner sits in the same place and says what stops the next
+        // connection, which matters more than a setting for the next projection.
+        val issueBannerUp = activity?.findViewById<View>(R.id.connection_issue_banner)
+            ?.visibility == View.VISIBLE
+        if (commManager.isConnected || issueBannerUp) {
+            pendingHealthAction = null
+            card.visibility = View.GONE
+            return
+        }
+        val appSettings = App.provide(requireContext()).settings
+        val action = ProjectionHealthPolicy.evaluate(
+            ProjectionHealthStore(requireContext()).state(appSettings)
+        )
+        if (action == null) {
+            pendingHealthAction = null
+            card.visibility = View.GONE
+            return
+        }
+        pendingHealthAction = action
+        healthMessage?.text = getString(healthMessageRes(action))
+        card.visibility = View.VISIBLE
+    }
+
+    /**
+     * Follows the connection issue banner: it comes and goes on its own, and this one has to step
+     * aside while it is up and come back once it is gone. A layout pass is the one signal both have.
+     */
+    private val issueBannerWatcher = ViewTreeObserver.OnGlobalLayoutListener {
+        val up = activity?.findViewById<View>(R.id.connection_issue_banner)?.visibility == View.VISIBLE
+        if (up != lastIssueBannerUp) {
+            lastIssueBannerUp = up
+            refreshProjectionHealthSuggestion()
+        }
+    }
+    private var lastIssueBannerUp: Boolean? = null
+
+    private fun applyProjectionHealthSuggestion() {
+        val action = pendingHealthAction ?: return
+        val appSettings = App.provide(requireContext()).settings
+        when (action) {
+            ProjectionHealthPolicy.Action.CODEC_H264 -> {
+                appSettings.videoCodec = "H.264"
+                // Android Auto forces H.265 above Full HD, so H.264 only takes effect if the
+                // resolution comes down with it.
+                val stored = Settings.Resolution.fromId(appSettings.resolutionId)
+                when {
+                    stored == null || stored == Settings.Resolution.AUTO -> {
+                        val panel = ProjectionHealthStore(requireContext())
+                            .state(appSettings)
+                            .panelCeiling
+                        if (panel.width > Settings.Resolution._1920x1080.width) {
+                            appSettings.resolutionId = Settings.Resolution._1920x1080.id
+                        }
+                    }
+                    stored.width > Settings.Resolution._1920x1080.width ->
+                        appSettings.resolutionId = Settings.Resolution._1920x1080.id
+                }
+            }
+            ProjectionHealthPolicy.Action.RENDERER_SURFACE -> {
+                appSettings.viewMode = Settings.ViewMode.SURFACE
+                appSettings.pendingRendererConfirm = true
+            }
+            ProjectionHealthPolicy.Action.FPS_30 -> appSettings.fpsLimit = 30
+            ProjectionHealthPolicy.Action.RESOLUTION_720 ->
+                appSettings.resolutionId = Settings.Resolution._1280x720.id
+        }
+        appSettings.commit()
+        ProjectionHealthStore(requireContext()).dismiss(action)
+        pendingHealthAction = null
+        healthCard?.visibility = View.GONE
+        ToastUtils.showToast(
+            requireContext(),
+            R.string.projection_health_applied,
+            force = true,
+        )
+    }
+
+    private fun dismissProjectionHealthSuggestion() {
+        val action = pendingHealthAction ?: return
+        ProjectionHealthStore(requireContext()).dismiss(action)
+        pendingHealthAction = null
+        healthCard?.visibility = View.GONE
+    }
+
+    /** What went wrong and what the button changes, in the words Settings uses for it. */
+    private fun healthMessageRes(action: ProjectionHealthPolicy.Action): Int = when (action) {
+        ProjectionHealthPolicy.Action.CODEC_H264 -> R.string.projection_health_suggest_h264
+        ProjectionHealthPolicy.Action.RENDERER_SURFACE -> R.string.projection_health_suggest_surface
+        ProjectionHealthPolicy.Action.FPS_30 -> R.string.projection_health_suggest_fps30
+        ProjectionHealthPolicy.Action.RESOLUTION_720 -> R.string.projection_health_suggest_720p
     }
 
     /** The offered phones an automatic pick may name, from the same wake list the poke loop reads. */

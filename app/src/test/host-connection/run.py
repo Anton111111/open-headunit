@@ -57,6 +57,8 @@ class CommManager {
  private var connectionAttempt:Any?=null
  private var usbRecoveryOwner:Any=Any()
  fun recoveryOwner()=usbRecoveryOwner
+ // Projection health storage is not part of the lifecycle under test.
+ private fun recordProjectionHealth(){}
  private var settingsUsbRestartInFlight:ConnectionState.Disconnected?=null
  private var usbSaveOwner:ConnectionState.Disconnected?=null
  private var physicalConnectionReached=true
@@ -229,8 +231,9 @@ class AapAudio(decoder:AudioDecoder,private val settings:Settings){
  fun postProtocolFocusChange(stream:Int,request:Int,callback:AudioManager.OnAudioFocusChangeListener){}
 }
 class AudioConfig{val enabled=true;val staticFocus=false;val focusMode=0}
-class VideoDecoder{var framesRenderedThisSession=0L;var onDecoderError:((String)->Unit)?=null;var onKeyframeStarved:(()->Unit)?=null;var onFrameDropped:(()->Unit)?=null;var onKeyframeObserved:(()->Unit)?=null;fun stop(s:String){}}
+class VideoDecoder{var framesRenderedThisSession=0L;fun beginSession(){framesRenderedThisSession=0L};var onDecoderError:((String)->Unit)?=null;var onKeyframeStarved:(()->Unit)?=null;var onFrameDropped:(()->Unit)?=null;var onKeyframeObserved:(()->Unit)?=null;fun stop(s:String){}}
 class AapVideo{fun release(){}}
+object ProjectionHealthRecorder{fun reset(){}}
 open class AapRead{@Volatile protected var isStopped=false;fun stop(){isStopped=true;retirePresentation()};var onRetirePresentation:(()->Unit)?=null;fun retirePresentation(){onRetirePresentation?.invoke()};companion object{var creations=0};object Factory{
  fun create(connection:ProjectionConnection,transport:AapTransport,mic:Any,audio:AapAudio,video:AapVideo,
  settings:Settings,context:Context,metadata:((Any,Any)->Unit)?,playback:((Any,Any)->Unit)?,closed:((Any)->Unit)?,session:AaPresentationSession):AapRead{creations++;return AapRead()}
