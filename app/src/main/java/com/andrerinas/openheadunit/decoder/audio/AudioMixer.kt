@@ -204,7 +204,7 @@ class AudioMixer(
     /** Render-clock DSP, independent of Android scheduling and device I/O. Output storage is reused. */
     internal fun renderCycle(nowMs: Long, outputBurstFrames: Int, cycleChannels: Array<Channel> = channelSnapshot): ShortArray {
         mixBuffer.fill(0)
-        mediaBuffer.fill(0)
+        if (duckMediaForSpeech) mediaBuffer.fill(0)
         var activeChannels = 0
         var speechActive = false
         var boosted = false
@@ -215,15 +215,43 @@ class AudioMixer(
             if (active && gain > 0f) activeChannels++
             speechActive = speechActive || (active && !state.isMediaSink && gain > 0f)
             boosted = boosted || (active && gain > 1f)
+            // Render even inactive/muted banks so Stop tails, PLC and reserve accounting
+            // keep advancing. Only their zero contribution to the sum can be skipped.
+            if (!active || gain == 0f) continue
             val destination = if (duckMediaForSpeech && state.isMediaSink) mediaBuffer else mixBuffer
-            for (i in destination.indices) destination[i] += (channelBuffer[i] * gain).toInt()
+            if (gain == 1f) {
+                // PCM16 integers are represented exactly by Float, so unity multiplication
+                // and conversion can be replaced with integer addition without rounding.
+                for (i in destination.indices) destination[i] += channelBuffer[i].toInt()
+            } else {
+                for (i in destination.indices) destination[i] += (channelBuffer[i] * gain).toInt()
+            }
         }
         ducking.setSpeechActive(duckMediaForSpeech && speechActive)
         limiter.setEnabled(activeChannels > 1 || boosted)
+        if (limiter.isSettledDry && (!duckMediaForSpeech || ducking.isSettledUnity)) {
+            if (duckMediaForSpeech) {
+                for (i in mixBuffer.indices) {
+                    // Preserve the unity Float round trip: large media sums need not be
+                    // exactly representable, even though individual PCM16 samples are.
+                    val sample = mixBuffer[i] + mediaBuffer[i].toFloat().toInt()
+                    outputBuffer[i] = sample.coerceIn(-32768, 32767).toShort()
+                }
+            } else {
+                for (i in mixBuffer.indices)
+                    outputBuffer[i] = mixBuffer[i].coerceIn(-32768, 32767).toShort()
+            }
+            return outputBuffer
+        }
         var mediaGain = 1f
         for (i in mixBuffer.indices) {
-            if (i % OUTPUT_CHANNELS == 0) { mediaGain = ducking.nextGain(); limiter.advance() }
-            mixBuffer[i] += (mediaBuffer[i] * mediaGain).toInt()
+            if (i % OUTPUT_CHANNELS == 0) {
+                if (duckMediaForSpeech) mediaGain = ducking.nextGain()
+                // Keep advancing the limiter through its release after another channel
+                // ends. A currently solitary contributor does not imply a dry envelope yet.
+                limiter.advance()
+            }
+            if (duckMediaForSpeech) mixBuffer[i] += (mediaBuffer[i] * mediaGain).toInt()
             // Moving a normal media sink through this renderer must not compress its music.
             outputBuffer[i] = limiter.process(mixBuffer[i])
         }
