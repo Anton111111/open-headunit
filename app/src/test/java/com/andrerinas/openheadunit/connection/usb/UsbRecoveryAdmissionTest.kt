@@ -95,6 +95,33 @@ class UsbRecoveryAdmissionTest {
             .apply { isAccessible = true }.set(manager, value)
     }
 
+
+    @Test fun companionDetachDeliveredToAnOldObserverRejectsCurrentPublication(): Unit = runBlocking {
+        val f = Fixture()
+        val handle = f.prepareOpen()
+        val original = UsbRecoveryDevice("usb-1", 0x18d1, 0x2d00, "Maker", "Box", "target")
+        val companion = original.copy(path = "usb-2", serial = "other")
+        val target = UsbRecoveryTarget(original, listOf(original, companion))
+        val episode = StaleAccessoryRecoveryPolicy.BusObservation()
+        val candidate = StaleAccessoryRecoveryPolicy.BusObservation()
+        doAnswer {
+            // The callback captured the episode observer before the candidate replaced it.
+            // Resume it after open, but before Connected publication.
+            target.noteDetach(companion.path, companion.vendor, companion.product)
+            episode.noteDetach()
+            null
+        }.`when`(f.settings).saveLastConnection(eq(Settings.CONNECTION_TYPE_USB), anyOrNull(), anyOrNull())
+        withContext(Dispatchers.IO) {
+            mockStatic(android.os.SystemClock::class.java).use {
+                f.manager.reconnectUsb(f.device, f.owner, f.claim, target.guard(candidate))
+            }
+        }
+        verify(f.settings).saveLastConnection(any(), any(), any())
+        assertFalse(candidate.hasDetached)
+        assertTrue(f.states.value is CommManager.ConnectionState.Disconnected)
+        verify(handle).close()
+    }
+
     @Test fun detachBeforeRetryDispatchCannotAcquireAClaim(): Unit = runBlocking {
         val f = Fixture()
         val observation = StaleAccessoryRecoveryPolicy.BusObservation()
@@ -144,6 +171,30 @@ class UsbRecoveryAdmissionTest {
             assertTrue(failures.isEmpty())
             verify(handle, atLeastOnce()).close()
         }
+    }
+
+    @Test fun targetDisappearingDuringOpenClosesItsHandleWithoutPublishingSuccess(): Unit = runBlocking {
+        val f = Fixture()
+        val handle = f.prepareOpen()
+        val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+        var reads = 0
+        val admission = object : com.andrerinas.openheadunit.connection.UsbRecoveryAdmission {
+            override fun resolve(manager: UsbManager): UsbDevice? {
+                if (++reads == 1) return f.device
+                bus.noteDetach()
+                return null
+            }
+            override fun run(action: () -> Unit) = bus.run(action)
+        }
+        withContext(Dispatchers.IO) {
+            mockStatic(android.os.SystemClock::class.java).use {
+                f.manager.reconnectUsb(f.device, f.owner, f.claim, admission)
+            }
+        }
+        assertEquals(2, reads)
+        assertTrue(f.states.value is CommManager.ConnectionState.Disconnected)
+        verify(handle, atLeastOnce()).close()
+        verify(f.settings, never()).saveLastConnection(any(), any(), any())
     }
 
     @Test fun revokedOwnerCannotClaimAfterDispatcherHandoff(): Unit = runBlocking {

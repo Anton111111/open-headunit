@@ -91,6 +91,10 @@ class UsbLauncherListener(private val manager: UsbLauncherManager) : UsbReceiver
         }
     }
 
+    override fun onUsbRecoveryPermission(token: String, granted: Boolean, device: UsbDevice) {
+        manager.onRecoveryPermission(token, granted, device)
+    }
+
     override fun onUsbPermission(granted: Boolean, connect: Boolean, device: UsbDevice) {
         if (!UsbDeviceCompat.isConnectable(service, device)) {
             AppLog.i("Ignoring USB permission callback (VID: ${device.vendorId}): ${UsbDeviceCompat.matchReason(device)}")

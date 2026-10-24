@@ -41,6 +41,7 @@ import com.andrerinas.openheadunit.connection.projection.ProjectionConnection
 import com.andrerinas.openheadunit.connection.projection.LibusbProjectionConnection
 import com.andrerinas.openheadunit.connection.projection.SocketProjectionConnection
 import com.andrerinas.openheadunit.connection.projection.StandardUsbProjectionConnection
+import com.andrerinas.openheadunit.connection.usb.UsbRecoveryDevice
 import com.andrerinas.openheadunit.connection.usb.UsbDeviceCompat
 import com.andrerinas.openheadunit.connection.wifi.modes.helper.NearbySocket
 
@@ -275,7 +276,7 @@ class CommManager(
 
     /** Carries the attempted enumeration and its recovery interval across delivery to Main. */
     data class UsbHandshakeOutcome(val failure: AapTransport.HandshakeFailure,
-        val device: UsbDevice, val recoveryOwner: Any)
+        val device: UsbDevice, val recoveryOwner: Any, val identity: UsbRecoveryDevice? = null)
 
     /**
      * Called after a USB handshake ends, [AapTransport.HandshakeFailure.NONE] on success, and after
@@ -527,14 +528,15 @@ class CommManager(
         // Teardown can suspend while USB re-enumerates. Recovery opens the latest matching
         // bus object, and never turns a lost permission into an error for a newer connection.
         val currentDevice = if (recoveryOwner == null) device else {
-            val current = usbManager.deviceList[device.deviceName] ?: return
+            val current = if (recoveryAdmission is UsbRecoveryAdmission) recoveryAdmission.resolve(usbManager) ?: return
+                else usbManager.deviceList[device.deviceName] ?: return
             if (current.vendorId != device.vendorId || current.productId != device.productId ||
                 !UsbDeviceCompat.isInAccessoryMode(current) || !UsbDeviceCompat.isConnectable(context, current) ||
                 !usbManager.hasPermission(current)) return
             current
         }
 
-        // Call only under transportLifecycleLock (lifecycle -> detach admission -> arbiter).
+        // Call only under transportLifecycleLock (lifecycle -> recovery identity/detach admission -> arbiter).
         // A same-owner USB claim can be replaced without a preempt callback. Keep its
         // check and each state transfer together; a separate holds() check is not enough.
         fun publishIfOwned(action: () -> Unit): Boolean {
@@ -587,6 +589,8 @@ class CommManager(
             if (!registered) return
 
             val opened = candidate.connect()
+            // A targeted fallback may wait inside openDevice while the bus changes again.
+            val targetStillCurrent = recoveryAdmission !is UsbRecoveryAdmission || recoveryAdmission.resolve(usbManager) != null
             synchronized(transportLifecycleLock) {
                 if (connectionAttempt !== attempt || disconnectRequested || _connection !== candidate) {
                     // The cancelled candidate is closed below, outside the lifecycle monitor.
@@ -594,7 +598,7 @@ class CommManager(
                 }
                 // Settings persistence can run callbacks and must not hold the arbiter monitor.
                 // Recheck ownership atomically with publication after it returns.
-                if (opened && expectedState?.isSettingsRestartCancelled != true) {
+                if (opened && targetStillCurrent && expectedState?.isSettingsRestartCancelled != true) {
                     settings.saveLastConnection(type = Settings.CONNECTION_TYPE_USB, usbDevice = UsbDeviceCompat.getUniqueName(currentDevice))
                     if (publishIfOwned {
                         physicalConnectionReached = true
@@ -986,6 +990,9 @@ class CommManager(
 
         val attemptedConnection = _connection
         var recoveryOwner = usbRecheckOwner()
+        // Preserve known identity before handshake failure/cleanup can revoke USB permission.
+        // A delayed callback must not replace it with another enumeration at the same address.
+        val usbIdentity = (attemptedConnection as? AbstractUsbProjectionConnection)?.accessoryDevice?.let(UsbRecoveryDevice::capture)
         try {
             if (_connectionState.value is ConnectionState.Connected) {
                 val conn = attemptedConnection ?: return@withContext
@@ -1031,7 +1038,7 @@ class CommManager(
                         _connectionState.value = ConnectionState.HandshakeComplete
                     }
                     if (live && usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
-                        AapTransport.HandshakeFailure.NONE, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
+                        AapTransport.HandshakeFailure.NONE, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner, usbIdentity))
                 } else {
                     val failure = transport.lastHandshakeFailure
                     val live = withLiveTransport(transport, ConnectionState.StartingTransport) {
@@ -1049,7 +1056,7 @@ class CommManager(
                     }
                     // Outside the lock: the USB side starts recovery, which can connect again.
                     if (live && usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
-                        failure, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
+                        failure, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner, usbIdentity))
                 }
             }
         } catch (e: Exception) {
@@ -1065,7 +1072,7 @@ class CommManager(
                 disconnect(sendByeBye = false, isUserExit = false)
             }
             if (usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
-                AapTransport.HandshakeFailure.OTHER, (attemptedConnection as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
+                AapTransport.HandshakeFailure.OTHER, (attemptedConnection as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner, usbIdentity))
         }
     }
 

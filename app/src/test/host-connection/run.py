@@ -81,7 +81,7 @@ class CommManager {
  private var onAudioFocusStateChanged:((Boolean)->Unit)?=null
  private var onUpdateUiConfigReplyReceived:(()->Unit)?=null
  private var onSessionFailure:((String)->Unit)?={failures.add(it)}
- data class UsbHandshakeOutcome(val failure:AapTransport.HandshakeFailure,val device:UsbDevice,val recoveryOwner:Any)
+ data class UsbHandshakeOutcome(val failure:AapTransport.HandshakeFailure,val device:UsbDevice,val recoveryOwner:Any,val identity:UsbRecoveryDevice?=null)
  private var onUsbHandshakeEnded:((UsbHandshakeOutcome)->Unit)?=null
  val failures=mutableListOf<String>()
  private var sessionReachedHandshake=false
@@ -114,9 +114,10 @@ class CommManager {
 # Keep Save permission and deadline semantics from the same production state as the methods.
 old_state=manager_head[manager_head.index(' class Disconnected('):manager_head.index(' object Connecting:')]
 manager_head=manager_head.replace(old_state, extract(comm, 'class Disconnected(')+'\n')
-for name in ['SettingsRestartRecovery.kt', 'SameEndpointConnectPolicy.kt', 'ConnectionAdmission.kt']:
+for name in ['SettingsRestartRecovery.kt', 'SameEndpointConnectPolicy.kt', 'ConnectionAdmission.kt', 'UsbRecoveryAdmission.kt']:
     source=(base/'connection'/name).read_text().replace('package com.andrerinas.openheadunit.connection', 'package lifecycle')
     (OUT/name).write_text(source)
+(OUT/'UsbRecoveryDevice.kt').write_text((base/'connection/usb/UsbRecoveryDevice.kt').read_text().replace('package com.andrerinas.openheadunit.connection.usb', 'package lifecycle'))
 (OUT/'AaPresentationSession.kt').write_text((base/'aap/AaPresentationSession.kt').read_text().replace('package com.andrerinas.openheadunit.aap', 'package lifecycle'))
 (OUT/'FinalMessageDelivery.kt').write_text((base/'aap/FinalMessageDelivery.kt').read_text().replace('package com.andrerinas.openheadunit.aap', 'package lifecycle'))
 # These endpoint predicates must be the real ones when testing the terminal route snapshot.
@@ -840,7 +841,7 @@ for name in ['ProjectionConnection.kt','AbstractUsbProjectionConnection.kt','Sta
  shutil.copy2(p,OUT/name);meta[str(p.relative_to(ROOT))]=hashlib.sha256(p.read_bytes()).hexdigest()
 (OUT/'Usb.kt').write_text('''package android.hardware.usb
 import java.util.concurrent.atomic.AtomicInteger
-class UsbDevice{val deviceName="fixture";val vendorId=0x18d1;val productId=0x2d00;val interfaceCount=1;fun getInterface(i:Int)=UsbInterface()}
+class UsbDevice{val manufacturerName:String?="fixture";val productName:String?="fixture";val serialNumber:String?="fixture";val deviceName="fixture";val vendorId=0x18d1;val productId=0x2d00;val interfaceCount=1;fun getInterface(i:Int)=UsbInterface()}
 class UsbInterface
 class UsbEndpoint{val maxPacketSize=64}
 class UsbManager{val deviceList=hashMapOf<String,UsbDevice>();var openHook:((UsbDevice)->UsbDeviceConnection?)?=null;var permitted=true;fun hasPermission(d:UsbDevice)=permitted;fun openDevice(d:UsbDevice)=openHook?.invoke(d)?:UsbDeviceConnection()}

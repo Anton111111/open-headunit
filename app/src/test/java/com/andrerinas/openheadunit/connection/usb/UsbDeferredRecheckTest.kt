@@ -438,6 +438,263 @@ class UsbDeferredRecheckTest {
         }
     }
 
+    private fun identifyRecovery(f: Fixture, serial: (android.hardware.usb.UsbDevice) -> String? = { "target" }) {
+        doAnswer { call ->
+            val d = call.getArgument<android.hardware.usb.UsbDevice>(0)
+            UsbRecoveryDevice(d.deviceName, d.vendorId, d.productId, "Maker", "Box", serial(d))
+        }.`when`(f.launcher).describeRecoveryDevice(anyValue())
+        val clock = java.util.concurrent.atomic.AtomicLong(0)
+        doAnswer { clock.addAndGet(1000) }.`when`(f.launcher).recoveryNowMs()
+    }
+
+    @Test fun missingAttachNotificationStillReconnectsTheMatchingNewAddress() = fixture { f ->
+        val bus = RecoveryBus(f)
+        identifyRecovery(f)
+        stubRetry(f, bus)
+        runBlocking { doAnswer { Unit }.`when`(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            runBlocking { verify(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+            verify(f.launcher, never()).checkAlreadyConnected(anyBoolean(), anyBoolean(), any(), anyBoolean())
+        }
+    }
+
+    @Test fun targetedFallbackDoesNotChooseADifferentSerial() = fixture { f ->
+        val bus = RecoveryBus(f)
+        identifyRecovery(f) { if (it === bus.stale) "target" else "other" }
+        stubRetry(f, bus)
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+    @Test fun permissionBelongsToTargetedRecoveryAndSerialIsCheckedAfterGrant() = fixture { f ->
+        val bus = RecoveryBus(f)
+        val granted = java.util.concurrent.atomic.AtomicBoolean(false)
+        `when`(f.usb.hasPermission(bus.fresh)).thenAnswer { granted.get() }
+        identifyRecovery(f) { if (it === bus.fresh && !granted.get()) null else "target" }
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            granted.set(true)
+            UsbLauncherListener(f.launcher).onUsbRecoveryPermission(token, true, bus.fresh)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        runBlocking { doAnswer { Unit }.`when`(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(f.usb).requestPermission(bus.fresh, intent)
+            verify(intent).cancel()
+            runBlocking { verify(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+            clearInvocations(f.comm)
+            UsbLauncherListener(f.launcher).onUsbRecoveryPermission(token, true, bus.fresh)
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+    @Test fun exitWhileRecoveryPermissionIsPendingPreventsLateGrantFromConnecting() = fixture { f ->
+        val bus = RecoveryBus(f)
+        `when`(f.usb.hasPermission(bus.fresh)).thenReturn(false)
+        identifyRecovery(f)
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            f.launcher.stopForUser()
+            UsbLauncherListener(f.launcher).onUsbRecoveryPermission(token, true, bus.fresh)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(intent).cancel()
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+
+    @Test fun permissionRevealingAnotherSerialDoesNotConnect() = fixture { f ->
+        val bus = RecoveryBus(f)
+        val granted = java.util.concurrent.atomic.AtomicBoolean(false)
+        `when`(f.usb.hasPermission(bus.fresh)).thenAnswer { granted.get() }
+        identifyRecovery(f) { if (it === bus.stale) "target" else if (granted.get()) "other" else null }
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            granted.set(true)
+            f.launcher.onRecoveryPermission(token, true, bus.fresh)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(f.usb).requestPermission(bus.fresh, intent)
+            verify(intent).cancel()
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+
+    @Test fun detachDuringPermissionRequiresANewRequestBeforeTheNextEnumerationConnects() = fixture { f ->
+        val bus = RecoveryBus(f)
+        val granted = java.util.concurrent.atomic.AtomicBoolean(false)
+        `when`(f.usb.hasPermission(bus.fresh)).thenAnswer { granted.get() }
+        identifyRecovery(f)
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        val tokens = mutableListOf<String>()
+        doAnswer { tokens.add(it.getArgument(0)); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            if (tokens.size == 1) {
+                f.launcher.noteRecoveryDeviceDetached(bus.fresh)
+                f.launcher.onRecoveryPermission(tokens[0], true, bus.fresh)
+            } else {
+                // The old response must not satisfy the new request. Only a fresh grant
+                // for this enumeration can complete the new candidate's permission wait.
+                f.launcher.onRecoveryPermission(tokens[0], true, bus.fresh)
+                granted.set(true)
+                f.launcher.onRecoveryPermission(tokens[1], true, bus.fresh)
+            }
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        runBlocking { doAnswer { Unit }.`when`(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            assertEquals(2, tokens.size)
+            assertNotEquals(tokens[0], tokens[1])
+            verify(intent, times(2)).cancel()
+            runBlocking { verify(f.comm).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+
+    @Test fun denialFollowedByDetachDoesNotRequestPermissionAgain() = fixture { f ->
+        val bus = RecoveryBus(f)
+        `when`(f.usb.hasPermission(bus.fresh)).thenReturn(false)
+        identifyRecovery(f)
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            f.launcher.onRecoveryPermission(token, false, bus.fresh)
+            f.launcher.noteRecoveryDeviceDetached(bus.fresh)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(f.usb).requestPermission(bus.fresh, intent)
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+
+    @Test fun companionDetachBetweenCandidateAttemptsRemainsObserved() = fixture { f ->
+        val bus = RecoveryBus(f)
+        val companion = mock(android.hardware.usb.UsbDevice::class.java)
+        `when`(companion.deviceName).thenReturn("/dev/bus/usb/001/004")
+        `when`(companion.vendorId).thenReturn(0x18d1)
+        `when`(companion.productId).thenReturn(0x2d00)
+        `when`(f.usb.hasPermission(companion)).thenReturn(true)
+        bus.devices = mapOf(bus.stale.deviceName to bus.stale, companion.deviceName to companion)
+        identifyRecovery(f) { if (it === companion) "other" else "target" }
+        stubRetry(f, bus)
+        val granted = java.util.concurrent.atomic.AtomicBoolean(false)
+        `when`(f.usb.hasPermission(bus.fresh)).thenAnswer { granted.get() }
+        val betweenCandidates = java.util.concurrent.atomic.AtomicBoolean(false)
+        val clock = java.util.concurrent.atomic.AtomicLong(0)
+        doAnswer {
+            if (betweenCandidates.getAndSet(false)) f.launcher.noteRecoveryDeviceDetached(companion)
+            clock.addAndGet(500)
+        }.`when`(f.launcher).recoveryNowMs()
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        var requests = 0
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer { betweenCandidates.set(true); null }.`when`(intent).cancel()
+        doAnswer {
+            requests++
+            if (requests == 1) f.launcher.noteRecoveryDeviceDetached(bus.fresh)
+            else {
+                granted.set(true)
+                f.launcher.onRecoveryPermission(token, true, bus.fresh)
+            }
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        switching(bus, issued = true, duringRequest = {
+            bus.devices = mapOf(bus.fresh.deviceName to bus.fresh, companion.deviceName to companion)
+        }).use {
+            settled(f, endHandshake(f, bus))
+            assertEquals(1, requests)
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+        }
+    }
+
+
+    @Test fun samePathSerialBecomingUnreadableAfterGrantReturnsToPermission() = fixture { f ->
+        val bus = RecoveryBus(f)
+        val next = mock(android.hardware.usb.UsbDevice::class.java)
+        val path = bus.fresh.deviceName
+        `when`(next.deviceName).thenReturn(path)
+        `when`(next.vendorId).thenReturn(0x18d1)
+        `when`(next.productId).thenReturn(0x2d00)
+        val granted = java.util.concurrent.atomic.AtomicBoolean(false)
+        identifyRecovery(f) { if (it === next && !granted.get()) null else "target" }
+        stubRetry(f, bus)
+        var permissionReads = 0
+        `when`(f.usb.hasPermission(bus.fresh)).thenAnswer {
+            permissionReads++
+            if (permissionReads == 3) {
+                // The permission fast path succeeds for the old object, then the next
+                // snapshot sees a new enumeration whose serial needs permission again.
+                f.launcher.noteRecoveryDeviceDetached(bus.fresh)
+                bus.devices = mapOf(path to next)
+            }
+            true
+        }
+        `when`(f.usb.hasPermission(next)).thenAnswer { granted.get() }
+        val intent = mock(android.app.PendingIntent::class.java)
+        var token = ""
+        doAnswer { token = it.getArgument(0); intent }.`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            granted.set(true)
+            f.launcher.onRecoveryPermission(token, true, next)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(next), eqValue(intent))
+        runBlocking { doAnswer { Unit }.`when`(f.comm).reconnectUsb(eqValue(next), anyValue(), anyValue(), anyValue()) }
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(f.usb).requestPermission(next, intent)
+            runBlocking {
+                verify(f.comm).reconnectUsb(eqValue(next), anyValue(), anyValue(), anyValue())
+                verify(f.comm, never()).reconnectUsb(eqValue(bus.fresh), anyValue(), anyValue(), anyValue())
+            }
+        }
+    }
+
+    @Test fun unknownPermissionTokenTimesOutWithoutLaunchingAnotherScan() = fixture { f ->
+        val bus = RecoveryBus(f)
+        `when`(f.usb.hasPermission(bus.fresh)).thenReturn(false)
+        identifyRecovery(f)
+        stubRetry(f, bus)
+        val intent = mock(android.app.PendingIntent::class.java)
+        doReturn(intent).`when`(f.launcher).recoveryPermissionIntent(anyString())
+        doAnswer {
+            f.launcher.onRecoveryPermission("old-request", true, bus.fresh)
+            null
+        }.`when`(f.usb).requestPermission(eqValue(bus.fresh), eqValue(intent))
+        switching(bus, issued = true, reenumerates = true).use {
+            settled(f, endHandshake(f, bus))
+            verify(intent).cancel()
+            runBlocking { verify(f.comm, never()).reconnectUsb(anyValue(), anyValue(), anyValue(), anyValue()) }
+            verify(f.launcher, never()).checkAlreadyConnected(anyBoolean(), anyBoolean(), any(), anyBoolean())
+        }
+    }
+
     @Test fun aRecoveryStepFreesTheSlotWhenItEnds() = fixture { f ->
         val bus = RecoveryBus(f)
         stubRetry(f, bus)
@@ -651,6 +908,38 @@ class UsbDeferredRecheckTest {
             bus.devices = mapOf(bus.stale.deviceName to bus.stale)
             f.field("usbRecoveryOwner", Any()) // Exit/Save before Main handles the callback.
             f.launcher.onUsbHandshakeEnded(outcome)
+            assertEquals(0, commands.constructed().size)
+        }
+    }
+
+
+    @Test fun delayedFailureDoesNotResetSameAddressWithConflictingIdentity() = fixture { f ->
+        val bus = RecoveryBus(f)
+        identifyRecovery(f) { if (it === bus.stale) "target" else "other" }
+        val reusedPath = bus.stale.deviceName
+        `when`(bus.fresh.deviceName).thenReturn(reusedPath)
+        bus.reenumerate()
+        mockConstruction(UsbAccessoryMode::class.java).use { commands ->
+            f.launcher.onUsbHandshakeEnded(CommManager.UsbHandshakeOutcome(
+                com.andrerinas.openheadunit.aap.AapTransport.HandshakeFailure.SSL,
+                bus.stale, f.comm.usbRecheckOwner()))
+            assertEquals(0, commands.constructed().size)
+        }
+    }
+
+
+    @Test fun capturedHandshakeIdentitySurvivesLostSerialAccessBeforeCallback() = fixture { f ->
+        val bus = RecoveryBus(f)
+        identifyRecovery(f) { if (it === bus.stale) null else "other" }
+        val original = UsbRecoveryDevice(bus.stale.deviceName, bus.stale.vendorId,
+            bus.stale.productId, "Maker", "Box", "target")
+        val reusedPath = bus.stale.deviceName
+        `when`(bus.fresh.deviceName).thenReturn(reusedPath)
+        bus.reenumerate()
+        mockConstruction(UsbAccessoryMode::class.java).use { commands ->
+            f.launcher.onUsbHandshakeEnded(CommManager.UsbHandshakeOutcome(
+                com.andrerinas.openheadunit.aap.AapTransport.HandshakeFailure.SSL,
+                bus.stale, f.comm.usbRecheckOwner(), original))
             assertEquals(0, commands.constructed().size)
         }
     }
