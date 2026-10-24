@@ -43,7 +43,14 @@ class NightOverlayNavigationTest {
         )
         mockConstruction(NavigationUpdateIntent::class.java).use {
             helper.sendFullNavigationBroadcast(snapshot, 4)
-            assertEquals(NightOverlayState.Navigation("Turn left", 350), received.last())
+            assertEquals(
+                NightOverlayState.Navigation(
+                    maneuver = "Turn left",
+                    distanceMeters = 350,
+                    icon = NightOverlayState.NavigationIcon.TURN_LEFT
+                ),
+                received.last()
+            )
             helper.sendFullNavigationBroadcast(AapNavigationHelper.NavigationSnapshot(), 2)
             assertNull(received.last())
         }
@@ -65,7 +72,14 @@ class NightOverlayNavigationTest {
         )
         mockConstruction(NavigationUpdateIntent::class.java).use {
             helper.sendFullNavigationBroadcast(snapshot, 0)
-            assertEquals(NightOverlayState.Navigation("Turn left", null), received.last())
+            assertEquals(
+                NightOverlayState.Navigation(
+                    maneuver = "Turn left",
+                    distanceMeters = null,
+                    icon = NightOverlayState.NavigationIcon.TURN_LEFT
+                ),
+                received.last()
+            )
         }
     }
 }
