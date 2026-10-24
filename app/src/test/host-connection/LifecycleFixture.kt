@@ -45,6 +45,8 @@ private class AapTransport(
     var onUpdateUiConfigReplyReceived: (() -> Unit)? = null
     var wasUserExit = false
     @Volatile private var projectionVideoFocusSuppressed = false
+    private val lifecycleLock = Any()
+    private var pendingVideoFocus: Any? = null
     val isProjectionVideoFocusSuppressed get() = projectionVideoFocusSuppressed
     // PRODUCTION TRANSPORT_FOCUS_SUPPRESSION
     init { constructionHook?.invoke() }

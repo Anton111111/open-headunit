@@ -135,6 +135,7 @@ class AapTransport(
 ){
  private val lifecycleLock=Any()
  private val presentationSession=AaPresentationSession()
+ private var pendingVideoFocus:AapMessage?=null
  @Volatile private var closing=false
  @Volatile private var projectionVideoFocusSuppressed=false
  fun isProjectionVideoFocusSuppressed()=projectionVideoFocusSuppressed
