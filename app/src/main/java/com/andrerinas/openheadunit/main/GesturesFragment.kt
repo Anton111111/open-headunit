@@ -50,6 +50,8 @@ class GesturesFragment : Fragment() {
         resetItem.actionView?.findViewById<MaterialButton>(R.id.reset_button_widget)?.setOnClickListener {
             settings.leftTwoFingerGesture = Settings.GestureAction.EXIT_DIALOG
             settings.rightTwoFingerGesture = Settings.GestureAction.TOGGLE_FULLSCREEN
+            settings.downTwoFingerGesture = Settings.GestureAction.DISABLED
+            settings.longPressTwoFingerGesture = Settings.GestureAction.DISABLED
             updateItems()
             ToastUtils.showToast(requireContext(), getString(R.string.gestures_reset), Toast.LENGTH_SHORT, force = true)
         }
@@ -67,6 +69,16 @@ class GesturesFragment : Fragment() {
                     id = "right",
                     titleResId = R.string.gesture_two_finger_right,
                     action = settings.rightTwoFingerGesture
+                ),
+                gestureSetting(
+                    id = "down",
+                    titleResId = R.string.gesture_two_finger_down,
+                    action = settings.downTwoFingerGesture
+                ),
+                gestureSetting(
+                    id = "longPress",
+                    titleResId = R.string.gesture_two_finger_long_press,
+                    action = settings.longPressTwoFingerGesture
                 )
             )
         )
@@ -93,6 +105,8 @@ class GesturesFragment : Fragment() {
                 when (id) {
                     "left" -> settings.leftTwoFingerGesture = action
                     "right" -> settings.rightTwoFingerGesture = action
+                    "down" -> settings.downTwoFingerGesture = action
+                    "longPress" -> settings.longPressTwoFingerGesture = action
                 }
                 updateItems()
                 dialog.dismiss()

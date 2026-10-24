@@ -21,7 +21,9 @@
     <string name="mic_sample_rate">Частота дискретизации микрофона</string>
     <string name="keymap">Раскладка клавиш</string>
     <string name="gestures">Жесты</string>
-    <string name="gestures_description">Настроить жесты двумя пальцами от краёв экрана.</string>
+    <string name="gestures_description">Настроить свайпы и долгое нажатие двумя пальцами.</string>
+    <string name="gesture_two_finger_down">Свайп двумя пальцами сверху вниз</string>
+    <string name="gesture_two_finger_long_press">Долгое нажатие двумя пальцами</string>
     <string name="gesture_two_finger_left">Жест двумя пальцами слева</string>
     <string name="gesture_two_finger_right">Жест двумя пальцами справа</string>
     <string name="gesture_action_disabled">Отключено</string>

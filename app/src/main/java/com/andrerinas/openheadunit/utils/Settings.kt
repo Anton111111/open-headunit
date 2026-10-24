@@ -540,6 +540,16 @@ class Settings(private val context: Context) {
             ?: GestureAction.TOGGLE_FULLSCREEN
         set(value) { prefs.edit().putInt("right-two-finger-gesture", value.value).apply() }
 
+    var downTwoFingerGesture: GestureAction
+        get() = GestureAction.fromInt(prefs.getInt("down-two-finger-gesture", GestureAction.DISABLED.value))
+            ?: GestureAction.DISABLED
+        set(value) { prefs.edit().putInt("down-two-finger-gesture", value.value).apply() }
+
+    var longPressTwoFingerGesture: GestureAction
+        get() = GestureAction.fromInt(prefs.getInt("long-press-two-finger-gesture", GestureAction.DISABLED.value))
+            ?: GestureAction.DISABLED
+        set(value) { prefs.edit().putInt("long-press-two-finger-gesture", value.value).apply() }
+
     @Deprecated("Use fullscreenMode instead")
     var startInFullscreenMode: Boolean
         get() = fullscreenMode != FullscreenMode.NONE

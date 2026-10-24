@@ -226,7 +226,9 @@
     <string name="mic_sample_rate">Mic capture rate</string>
     <string name="keymap">Keymap</string>
     <string name="gestures">Gestures</string>
-    <string name="gestures_description">Configure two-finger edge gestures.</string>
+    <string name="gestures_description">Configure two-finger swipes and long press.</string>
+    <string name="gesture_two_finger_down">Two-finger swipe down</string>
+    <string name="gesture_two_finger_long_press">Two-finger long press</string>
     <string name="gesture_two_finger_left">Two-finger gesture from the left</string>
     <string name="gesture_two_finger_right">Two-finger gesture from the right</string>
     <string name="gesture_action_disabled">Disabled</string>
