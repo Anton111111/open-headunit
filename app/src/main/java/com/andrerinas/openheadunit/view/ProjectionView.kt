@@ -1,7 +1,13 @@
 package com.andrerinas.openheadunit.view
 
+import android.annotation.TargetApi
 import android.content.Context
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
+import android.view.PixelCopy
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import com.andrerinas.openheadunit.App
@@ -10,6 +16,8 @@ import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.utils.AppLog
 import com.andrerinas.openheadunit.utils.HeadUnitScreenConfig
 import com.andrerinas.openheadunit.utils.Settings
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 class ProjectionView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -20,6 +28,14 @@ class ProjectionView @JvmOverloads constructor(
     private var videoWidth = 0
     private var videoHeight = 0
 
+    /**
+     * False when the caller owns the decoder and the layout. The onboarding video test uses this
+     * view as a plain surface for its own decoder, so it must not touch the app's singleton or
+     * the projection scaler.
+     */
+    var ownsDecoder: Boolean = true
+    var appliesProjectionScale: Boolean = true
+
     init {
         videoDecoder = App.provide(context).videoDecoder
         holder.addCallback(this)
@@ -29,12 +45,16 @@ class ProjectionView @JvmOverloads constructor(
         super.onDetachedFromWindow()
         // The decoder is a singleton and this view may be a discarded instance detaching after a
         // replacement already claimed it, so only stop the decoder if this surface still owns it.
-        videoDecoder?.detachSurfaceIfCurrent(holder.surface, DecoderStopPolicy.REASON_DETACHED_FROM_WINDOW)
+        if (ownsDecoder) {
+            videoDecoder?.detachSurfaceIfCurrent(holder.surface, DecoderStopPolicy.REASON_DETACHED_FROM_WINDOW)
+        }
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -45,12 +65,16 @@ class ProjectionView @JvmOverloads constructor(
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         AppLog.i("holder $holder, format: $format, width: $width, height: $height")
         callbacks.forEach { it.onSurfaceChanged(holder.surface, width, height) }
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        }
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         AppLog.i("holder $holder")
-        videoDecoder?.detachSurfaceIfCurrent(holder.surface, DecoderStopPolicy.REASON_SURFACE_DESTROYED)
+        if (ownsDecoder) {
+            videoDecoder?.detachSurfaceIfCurrent(holder.surface, DecoderStopPolicy.REASON_SURFACE_DESTROYED)
+        }
         callbacks.forEach { it.onSurfaceDestroyed(holder.surface) }
     }
 
@@ -72,7 +96,7 @@ class ProjectionView @JvmOverloads constructor(
         videoWidth = width
         videoHeight = height
 
-        if (HeadUnitScreenConfig.forcedScale) {
+        if (appliesProjectionScale && HeadUnitScreenConfig.forcedScale) {
             val settings = App.provide(context).settings
             if (settings.videoFitMode == Settings.VideoFitMode.FILL) {
                 AppLog.i("FORCED SCALE: Setting fixed size to ${width}x$height")
@@ -87,7 +111,14 @@ class ProjectionView @JvmOverloads constructor(
             holder.setSizeFromLayout()
         }
 
-        ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        if (appliesProjectionScale) {
+            ProjectionViewScaler.updateScale(this, videoWidth, videoHeight)
+        } else {
+            scaleX = 1f
+            scaleY = 1f
+            translationX = 0f
+            translationY = 0f
+        }
     }
 
     override fun setVideoScale(scaleX: Float, scaleY: Float) {
@@ -105,4 +136,37 @@ class ProjectionView @JvmOverloads constructor(
     override fun lastFrameDrawnMs(): Long = -1L
 
     override fun longFrameEvents(): Long = 0L
+
+    /**
+     * A copy of the current surface, or null when this Android version cannot copy a SurfaceView.
+     *
+     * PixelCopy arrived in Android 7.0; below that a plain SurfaceView cannot be read back at all,
+     * which is why the video test reports the picture as unverified on those units. Call this from
+     * a background thread: the copy completes on the main looper.
+     */
+    fun captureBitmap(): Bitmap? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || width <= 0 || height <= 0) return null
+        if (!holder.surface.isValid) return null
+        return Api24.capture(this, width, height)
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    private object Api24 {
+        fun capture(view: ProjectionView, width: Int, height: Int): Bitmap? {
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val latch = CountDownLatch(1)
+            var success = false
+            PixelCopy.request(
+                view,
+                bitmap,
+                { result ->
+                    success = result == PixelCopy.SUCCESS
+                    latch.countDown()
+                },
+                Handler(Looper.getMainLooper()),
+            )
+            if (!latch.await(1, TimeUnit.SECONDS)) return null
+            return if (success) bitmap else null
+        }
+    }
 }

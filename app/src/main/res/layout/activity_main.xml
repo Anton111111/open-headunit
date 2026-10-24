@@ -72,7 +72,9 @@
             android:visibility="gone"
             tools:visibility="visible">
 
+            <!-- Hidden while the stack only waits for the phone: nothing is on its way then. -->
             <ProgressBar
+                android:id="@+id/auto_connect_pill_spinner"
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:indeterminate="true"
@@ -181,6 +183,69 @@
                 app:tint="?android:attr/textColorSecondary"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/connection_issue_banner_dismiss" />
+
+        </LinearLayout>
+
+        <!-- A setting the last projections point to, offered once they agree (ProjectionHealthPolicy).
+             Under the connection issue banner, which comes first: HomeFragment holds this one back
+             while that banner is up, and hides it whenever the home is not on screen. -->
+        <LinearLayout
+            android:id="@+id/projection_health_card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginRight="16dp"
+            android:background="@drawable/bg_info_banner"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingLeft="16dp"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingRight="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginRight="12dp"
+                android:layout_marginEnd="12dp"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_settings_white"
+                app:tint="?android:attr/textColorSecondary" />
+
+            <TextView
+                android:id="@+id/projection_health_message"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:lineSpacingExtra="2dp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="14sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/projection_health_later"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginStart="8dp"
+                android:text="@string/projection_health_later" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/projection_health_apply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_marginStart="4dp"
+                android:text="@string/projection_health_apply" />
 
         </LinearLayout>
 

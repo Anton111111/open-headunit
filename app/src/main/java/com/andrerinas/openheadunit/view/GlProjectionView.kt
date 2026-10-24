@@ -1,6 +1,7 @@
 package com.andrerinas.openheadunit.view
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
@@ -25,6 +26,9 @@ class GlProjectionView(context: Context) : GLSurfaceView(context), IProjectionVi
 
     private val renderer: VideoRenderer
     private val callbacks = mutableListOf<IProjectionView.Callbacks>()
+
+    @Volatile
+    private var drawnFramesValue: Long = 0L
 
     init {
         setEGLContextClientVersion(2)
@@ -54,6 +58,49 @@ class GlProjectionView(context: Context) : GLSurfaceView(context), IProjectionVi
     override fun lastFrameDrawnMs(): Long = renderer.lastFrameDrawnMs
 
     override fun longFrameEvents(): Long = renderer.longFrameEvents
+
+    override fun drawnFrames(): Long = drawnFramesValue
+
+    /**
+     * A copy of the current framebuffer, or null when the surface is not ready.
+     *
+     * The read has to run on the GL thread, so it is queued and the caller waits for it. The
+     * onboarding video test uses it to read the frame marker; it is not on any projection path.
+     */
+    fun captureBitmap(): Bitmap? {
+        val w = width
+        val h = height
+        if (w <= 0 || h <= 0 || renderer.getSurface()?.isValid != true) return null
+        val latch = CountDownLatch(1)
+        var bitmap: Bitmap? = null
+        queueEvent {
+            try {
+                val buffer = ByteBuffer.allocateDirect(w * h * 4).order(ByteOrder.nativeOrder())
+                GLES20.glReadPixels(0, 0, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer)
+                buffer.rewind()
+                val pixels = IntArray(w * h)
+                val row = ByteArray(w * 4)
+                for (y in 0 until h) {
+                    buffer.get(row)
+                    val dest = (h - 1 - y) * w
+                    for (x in 0 until w) {
+                        val i = x * 4
+                        val r = row[i].toInt() and 0xFF
+                        val g = row[i + 1].toInt() and 0xFF
+                        val b = row[i + 2].toInt() and 0xFF
+                        val a = row[i + 3].toInt() and 0xFF
+                        pixels[dest + x] = (a shl 24) or (r shl 16) or (g shl 8) or b
+                    }
+                }
+                bitmap = Bitmap.createBitmap(pixels, w, h, Bitmap.Config.ARGB_8888)
+            } finally {
+                latch.countDown()
+            }
+        }
+        requestRender()
+        if (!latch.await(1, TimeUnit.SECONDS)) return null
+        return bitmap
+    }
 
     override fun setVideoSize(width: Int, height: Int) {
         AppLog.i("GlProjectionView setVideoSize: ${width}x$height")
@@ -242,6 +289,7 @@ class GlProjectionView(context: Context) : GLSurfaceView(context), IProjectionVi
             }
             prevDrawMs = now
             lastFrameDrawnMs = now
+            drawnFramesValue++
 
             drawnSinceLog++
             if (lastDrawLogMs == 0L) {

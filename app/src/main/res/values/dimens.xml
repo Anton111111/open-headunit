@@ -20,7 +20,6 @@
     <dimen name="home_tile_size">44dp</dimen>
     <dimen name="home_tile_icon">16dp</dimen>
     <dimen name="home_tile_label">8sp</dimen>
-    <dimen name="home_exit_height">32dp</dimen>
     <dimen name="home_card_padding_h">8dp</dimen>
     <dimen name="home_card_padding_v">4dp</dimen>
     <dimen name="home_card_icon_tile">32dp</dimen>

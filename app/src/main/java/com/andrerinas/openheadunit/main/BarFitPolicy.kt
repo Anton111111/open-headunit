@@ -2,8 +2,9 @@ package com.andrerinas.openheadunit.main
 
 /**
  * How much the home driver bar's tiles shrink when the screen cannot hold them at the user's
- * scale. The Exit tile is pinned below the tiles, so without this it is the one that gets clipped
- * on short screens. Pure, so the arithmetic is a unit test rather than a head unit.
+ * scale. The Exit tile is pinned below the others and shrinks with them, so without this it is the
+ * one that gets clipped on short screens. Pure, so the arithmetic is a unit test rather than a
+ * head unit.
  */
 object BarFitPolicy {
 

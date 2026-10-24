@@ -1714,6 +1714,8 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
      * component's output.
      */
     private fun reportGroupRefusal(reasonStr: String) {
+        // Before the throttle: every refusal ends the step, even one whose report is skipped.
+        ConnectionStageTracker.networkAbandoned()
         val now = SystemClock.elapsedRealtime()
         if (lastGroupRefusalReportAtMs != 0L &&
             now - lastGroupRefusalReportAtMs < GROUP_REFUSAL_REPORT_INTERVAL_MS
@@ -2162,6 +2164,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                     ConnectionIssues.raise(context, ConnectionIssue.WIFI_RADIO_OFF)
                 }
                 isGroupCreatingOrCreated = false
+                ConnectionStageTracker.networkAbandoned()
                 releaseNativeCreateWindow("WiFi is off and only the user can turn it on")
                 return
             }
@@ -2175,6 +2178,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                     ConnectionIssues.raise(context, ConnectionIssue.WIFI_RADIO_OFF)
                 }
                 isGroupCreatingOrCreated = false
+                ConnectionStageTracker.networkAbandoned()
                 releaseNativeCreateWindow("WiFi is off and would not come on")
                 return
             }
@@ -2641,6 +2645,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                         "to Auto if this unit cannot host one."
                 )
                 isGroupCreatingOrCreated = false
+                ConnectionStageTracker.networkAbandoned()
                 releaseNativeCreateWindow("the band is 5 GHz only and no group could be made")
             }
         }

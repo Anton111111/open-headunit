@@ -103,4 +103,11 @@ class AutoConnectAttemptPolicyTest {
             AutoConnectAttemptPolicy.resetsStageOnFailure(ConnectionUiMode.PILL_THEN_OVERLAY)
         )
     }
+
+    @Test
+    fun `the single USB auto-connect shows its loading screen only with one device to connect to`() {
+        assertFalse(AutoConnectAttemptPolicy.singleUsbShowsOverlay(0))
+        assertTrue(AutoConnectAttemptPolicy.singleUsbShowsOverlay(1))
+        assertFalse(AutoConnectAttemptPolicy.singleUsbShowsOverlay(2))
+    }
 }

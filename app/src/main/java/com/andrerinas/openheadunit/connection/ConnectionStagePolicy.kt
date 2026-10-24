@@ -18,4 +18,16 @@ object ConnectionStagePolicy {
      * stage that asked: anything higher means the phone did answer while the step was running.
      */
     fun shouldRetreat(current: ConnectionStage?, from: ConnectionStage): Boolean = current == from
+
+    /**
+     * Where the display goes when the unit gives up on its own network (#1147). After a refused
+     * group the pill used to keep "Creating the WiFi network" under "Android Auto is starting…"
+     * for as long as the app stayed open. It falls back to waiting for the phone, and the
+     * connection banner says what went wrong. A new try reports its step again. A later step
+     * means the phone got further, so it stays.
+     */
+    fun afterNetworkAbandoned(current: ConnectionStage?): ConnectionStage? = when (current) {
+        ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK -> ConnectionStage.ARMED
+        else -> current
+    }
 }

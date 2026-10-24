@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.connection
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -104,6 +105,22 @@ class ConnectionStagePolicyTest {
     fun `every stage carries a label`() {
         for (stage in ConnectionStage.values()) {
             assertTrue(stage.name, stage.label != 0)
+        }
+    }
+
+    @Test
+    fun `a network the unit gave up on falls back to waiting for the phone`() {
+        for (stage in listOf(ConnectionStage.PREPARING_NETWORK, ConnectionStage.CREATING_NETWORK)) {
+            assertEquals(stage.name, ConnectionStage.ARMED, ConnectionStagePolicy.afterNetworkAbandoned(stage))
+        }
+    }
+
+    @Test
+    fun `giving up on the network leaves any other step alone`() {
+        assertEquals(null, ConnectionStagePolicy.afterNetworkAbandoned(null))
+        for (stage in ConnectionStage.values()) {
+            if (stage == ConnectionStage.PREPARING_NETWORK || stage == ConnectionStage.CREATING_NETWORK) continue
+            assertEquals(stage.name, stage, ConnectionStagePolicy.afterNetworkAbandoned(stage))
         }
     }
 }

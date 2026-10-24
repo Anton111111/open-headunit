@@ -99,17 +99,17 @@
 
         </ScrollView>
 
+        <!-- The same tile as Settings, label under the icon: beside it, a longer word ("Выход" in
+             a wide font) did not fit and ended in "...". HomeUiHelper.fitDriverBar shrinks it with
+             the others on a short screen. -->
         <LinearLayout
             android:id="@+id/exit_button"
-            style="@style/HomeTile"
-            android:layout_height="@dimen/home_exit_height"
-            android:orientation="horizontal">
+            style="@style/HomeTile">
             <ImageView
                 style="@style/HomeTileIcon"
                 app:srcCompat="@drawable/ic_power_white" />
-            <TextView
-                style="@style/HomeTileLabel"
-                android:layout_marginTop="0dp"
+            <com.andrerinas.openheadunit.view.WordFitTextView
+                style="@style/HomeTileLabel.Wrap"
                 android:text="@string/exit" />
         </LinearLayout>
 

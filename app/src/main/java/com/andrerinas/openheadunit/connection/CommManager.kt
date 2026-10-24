@@ -18,6 +18,10 @@ import com.andrerinas.openheadunit.main.BackgroundNotification
 import com.andrerinas.openheadunit.ssl.SingleKeyKeyManager
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.HeadUnitScreenConfig
+import com.andrerinas.openheadunit.utils.ProjectionHealthPolicy
+import com.andrerinas.openheadunit.utils.ProjectionHealthRecorder
+import com.andrerinas.openheadunit.utils.ProjectionHealthStore
+import com.andrerinas.openheadunit.utils.ProjectionSessionSummary
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import com.andrerinas.openheadunit.decoder.audio.AudioDecoder
@@ -951,7 +955,8 @@ class CommManager(
                         usbRecoveryOwner = Any()
                         usbSaveOwner = null
                         sessionReachedHandshake = true
-                        videoDecoder.framesRenderedThisSession = 0L
+                        videoDecoder.beginSession()
+                        ProjectionHealthRecorder.reset()
                         silentPeerFailures = 0
                         // The peer answered, which is what the deaf-server record claims it cannot.
                         ConnectionIssues.clear(context, ConnectionIssue.HEADUNIT_SERVER_NOT_ANSWERING)
@@ -1426,6 +1431,10 @@ class CommManager(
     /** Regain focus for the current transport during wake/resume; warm relaunch uses its cycle token. */
     fun retakeVideoFocusForKeyframe() {
         if (projectionVideoFocusSuppressed) return
+        if (_connectionState.value !is ConnectionState.TransportStarted) {
+            AppLog.w("CommManager: skipping retakeVideoFocusForKeyframe because transport is not started (${_connectionState.value})")
+            return
+        }
         _transport?.let {
             it.send(com.andrerinas.openheadunit.aap.protocol.messages.VideoFocusEvent(gain = true, unsolicited = true))
             it.endFocusCycle()
@@ -1588,6 +1597,7 @@ class CommManager(
         // Self-guarding against the re-entrant second call described above: the flag is consumed
         // here, so the second pass sees a session that never reached the handshake and counts
         // nothing.
+        recordProjectionHealth()
         noteSessionEnded(renderedAnyFrame = videoDecoder.framesRenderedThisSession > 0L, deliberateEnd = reason != DisconnectReason.CONNECTION_ENDED)
         // The close is in its own phase because it is the one that must happen: a throw from the
         // ByeBye send or either decoder stop used to skip it, leaving the phone's head unit server
@@ -1657,6 +1667,38 @@ class CommManager(
             )
             ConnectionIssues.raise(context, ConnectionIssue.VIDEO_LINK_TOO_SLOW)
         }
+    }
+
+    /**
+     * Stores one projection's local faults for the home screen's repeated-problem suggestion.
+     *
+     * Called before [videoDecoder.stop], which is where the frame counters are cleared. A session
+     * that reached the handshake but carried too little video is skipped: that is a link or a
+     * short drive, not something a codec or resolution change would fix.
+     */
+    private fun recordProjectionHealth() {
+        if (!sessionReachedHandshake) return
+        val decoder = videoDecoder.sessionHealth()
+        if (decoder.framesFed < ProjectionHealthPolicy.MIN_FED_FRAMES) return
+        if (decoder.framesRendered == 0L) return
+        val renderer = ProjectionHealthRecorder.snapshot()
+        ProjectionHealthStore(context).append(
+            ProjectionSessionSummary(
+                endedAtMs = System.currentTimeMillis(),
+                codec = decoder.finalCodec.settingsValue,
+                viewMode = settings.viewMode,
+                resolutionId = settings.resolutionId,
+                fpsLimit = settings.fpsLimit,
+                codecFallback = decoder.codecFallbackUsed,
+                rendererRecoveries = renderer.recoveries,
+                forcedSurface = renderer.forcedSurface,
+                framesFed = decoder.framesFed,
+                framesDropped = decoder.framesDropped,
+                framesSkipped = decoder.framesSkipped,
+                framesRendered = decoder.framesRendered,
+            )
+        )
+        ProjectionHealthRecorder.reset()
     }
 
     /**

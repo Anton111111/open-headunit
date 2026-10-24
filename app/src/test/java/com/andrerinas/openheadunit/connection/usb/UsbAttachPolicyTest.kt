@@ -91,4 +91,18 @@ class UsbAttachPolicyTest {
             }
         }
     }
+
+    @Test
+    fun `isGoogleOrDongleVendor recognizes google and common dongle vendors and names`() {
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x18D1)) // Google / AAWireless
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x2717)) // Xiaomi / Carlinkit / smartBox
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x1F3A)) // Allwinner AA dongles
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x1234, productName = "Android smartBox"))
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x5678, manufacturerName = "Carlinkit"))
+        assertTrue(UsbAttachPolicy.isGoogleOrDongleVendor(0x9ABC, productName = "AutoKit-Wireless"))
+
+        // Standard phone vendors without dongle strings must not be classified as dongles
+        assertFalse(UsbAttachPolicy.isGoogleOrDongleVendor(0x04E8, productName = "Galaxy S22"))
+        assertFalse(UsbAttachPolicy.isGoogleOrDongleVendor(0x2718, productName = "Generic Device"))
+    }
 }

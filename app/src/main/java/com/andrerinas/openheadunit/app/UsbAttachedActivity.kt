@@ -162,18 +162,22 @@ class UsbAttachedActivity : Activity() {
             }
         }
 
-        // Google VID (0x18D1) devices are almost certainly Android Auto phones or AA dongles
-        // (e.g. AAWireless). Always attempt the AOA switch for these — skipping them would
-        // break dongle users who haven't explicitly configured allowlists.
+        // Google VID (0x18D1) devices or known AA dongles (e.g. AAWireless, smartBox, Carlinkit)
+        // are almost certainly Android Auto devices. Always attempt the AOA switch for these — skipping
+        // them would break dongle users who haven't explicitly configured allowlists.
         //
         // [BUG_FIX] Every other make used to be refused here, because the vendor id was the only
         // escape from the allow list. The device has already passed isAndroidDevice() above, so
         // an unconfigured allow list is no reason to drop the attach — it means the user never
         // set one, not that nothing is permitted. UsbAttachPolicy carries the reasoning.
-        val isGoogleDevice = device.vendorId == 0x18D1
+        val isGoogleOrDongle = UsbAttachPolicy.isGoogleOrDongleVendor(
+            vendorId = device.vendorId,
+            productName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) device.productName else null,
+            manufacturerName = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) device.manufacturerName else null,
+        )
         val allowList = settings?.allowedDevices ?: emptySet()
         val mayAttempt = settings == null || UsbAttachPolicy.shouldAttemptAoaSwitch(
-            isGoogleVendor = isGoogleDevice,
+            isGoogleVendor = isGoogleOrDongle,
             autoStartOnUsb = autoStartOnUsb,
             allowListConfigured = allowList.isNotEmpty(),
             deviceAllowed = settings.isConnectingDevice(deviceCompat),
