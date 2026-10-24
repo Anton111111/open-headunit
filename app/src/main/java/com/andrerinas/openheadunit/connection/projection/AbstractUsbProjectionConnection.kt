@@ -15,6 +15,9 @@ abstract class AbstractUsbProjectionConnection(
     /** Actual bulk OUT endpoint capacity; zero means no endpoint is available. */
     abstract val outMaxPacketSize: Int
 
+    /** The enumeration used by this attempt, even after disconnect has cleared the handle. */
+    internal val accessoryDevice: UsbDevice get() = device
+
     fun isDeviceRunning(device: UsbDevice): Boolean {
         synchronized(stateLock) {
             if (!isConnected)

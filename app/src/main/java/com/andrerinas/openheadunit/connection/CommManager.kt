@@ -273,11 +273,15 @@ class CommManager(
     // Written with the connection token under transportLifecycleLock.
     private var outgoingEndpoint: Pair<String, Int>? = null
 
+    /** Carries the attempted enumeration and its recovery interval across delivery to Main. */
+    data class UsbHandshakeOutcome(val failure: AapTransport.HandshakeFailure,
+        val device: UsbDevice, val recoveryOwner: Any)
+
     /**
      * Called after a USB handshake ends, [AapTransport.HandshakeFailure.NONE] on success, and after
      * `disconnect()` on failure. The `Error` state never reaches a collector.
      */
-    var onUsbHandshakeEnded: ((AapTransport.HandshakeFailure) -> Unit)? = null
+    var onUsbHandshakeEnded: ((UsbHandshakeOutcome) -> Unit)? = null
     @Volatile private var _connection: ProjectionConnection? = null
 
     /**
@@ -403,6 +407,22 @@ class CommManager(
         try { connectUsb(device, expectedState) } finally { releaseClaim(claim) }
     }
 
+    /** A recovery retry cannot borrow the authority of a later Save, Exit or completed session. */
+    internal suspend fun reconnectUsb(device: UsbDevice, recoveryOwner: Any,
+        recoveryClaim: ConnectionArbiter.Claim) = withContext(Dispatchers.IO) {
+        val job = kotlinx.coroutines.currentCoroutineContext()[kotlinx.coroutines.Job]
+        val claim = synchronized(transportLifecycleLock) {
+            job?.ensureActive()
+            if (usbRecoveryOwner !== recoveryOwner) return@withContext
+            if (_connectionState.value !is ConnectionState.Disconnected &&
+                _connectionState.value !is ConnectionState.Error) return@withContext
+            ConnectionArbiter.claim(ConnectionPriorityPolicy.Tier.USB, ConnectionPriorityPolicy.Owner.USB,
+                "USB recovery of ${UsbDeviceCompat.getUniqueName(device)}", expectedHolder = recoveryClaim)
+        } ?: return@withContext
+        attemptUserRequested = false
+        try { connectUsb(device, recoveryOwner = recoveryOwner, recoveryClaim = claim) } finally { releaseClaim(claim) }
+    }
+
     internal fun claimUsb(
         tier: ConnectionPriorityPolicy.Tier,
         description: String,
@@ -468,7 +488,9 @@ class CommManager(
         }
     }
 
-    private suspend fun connectUsb(device: UsbDevice, expectedState: ConnectionState.Disconnected? = null) {
+    private suspend fun connectUsb(device: UsbDevice, expectedState: ConnectionState.Disconnected? = null,
+        recoveryOwner: Any? = null, recoveryClaim: ConnectionArbiter.Claim? = null) {
+        if (recoveryOwner != null && !ownsUsbRecheck(recoveryOwner)) return
         if (expectedState != null && !expectedState.acceptsSettingsRestart(_connectionState.value)) return
         // Another caller already started the connection — do nothing.
         if (_connectionState.value is ConnectionState.Connecting)
@@ -481,7 +503,7 @@ class CommManager(
         if (usbManager == null || !usbManager.hasPermission(device)) {
             // USB re-enumeration revokes the old UsbDevice's permission. Keep Save's
             // terminal token so a fresh attach/permission reply can continue this recovery.
-            if (expectedState != null) return
+            if (expectedState != null || recoveryOwner != null) return
             onSessionFailure?.invoke("connect_failed")
             _connectionState.emit(ConnectionState.Error("USB permission not granted for device"))
             return
@@ -492,34 +514,63 @@ class CommManager(
         // UsbDeviceConnection hasn't been close()d yet.
         _disconnectJob?.join()
 
+        // Teardown can suspend while USB re-enumerates. Recovery opens the latest matching
+        // bus object, and never turns a lost permission into an error for a newer connection.
+        val currentDevice = if (recoveryOwner == null) device else {
+            val current = usbManager.deviceList[device.deviceName] ?: return
+            if (current.vendorId != device.vendorId || current.productId != device.productId ||
+                !UsbDeviceCompat.isInAccessoryMode(current) || !UsbDeviceCompat.isConnectable(context, current) ||
+                !usbManager.hasPermission(current)) return
+            current
+        }
+
+        // Call only under transportLifecycleLock (lifecycle -> arbiter lock order).
+        // A same-owner USB claim can be replaced without a preempt callback. Keep its
+        // check and each state transfer together; a separate holds() check is not enough.
+        fun publishIfOwned(action: () -> Unit): Boolean {
+            if (recoveryOwner == null) { action(); return true }
+            if (usbRecoveryOwner !== recoveryOwner || recoveryClaim == null) return false
+            return ConnectionArbiter.runIfHeld(recoveryClaim, action)
+        }
+
         var conn: ProjectionConnection? = null
         val (attempt, previous) = synchronized(transportLifecycleLock) {
             // Retirement can suspend after admission. Recheck the same Save permission at
             // publication, before opening hardware or replacing another connection's state.
             if (expectedState != null && !expectedState.acceptsSettingsRestart(_connectionState.value)) return
-            settingsUsbRestartInFlight = expectedState
-            usbSaveOwner = expectedState
-            outgoingEndpoint = null
+            if (recoveryOwner != null && _connectionState.value !is ConnectionState.Disconnected &&
+                _connectionState.value !is ConnectionState.Error) return
             val token = Any()
-            connectionAttempt = token
-            physicalConnectionReached = false
-            disconnectRequested = false
-            _connectionState.value = ConnectionState.Connecting
-            val previous = _connection
-            _connection = null
+            var previous: ProjectionConnection? = null
+            if (!publishIfOwned {
+                settingsUsbRestartInFlight = expectedState
+                usbSaveOwner = expectedState
+                outgoingEndpoint = null
+                connectionAttempt = token
+                physicalConnectionReached = false
+                disconnectRequested = false
+                _connectionState.value = ConnectionState.Connecting
+                previous = _connection
+                _connection = null
+            }) return
             token to previous
         }
         try {
             previous?.disconnect()
             conn = if (settings.useLibusb) {
-                LibusbProjectionConnection(usbManager, device)
+                LibusbProjectionConnection(usbManager, currentDevice)
             } else {
-                StandardUsbProjectionConnection(usbManager, device)
+                StandardUsbProjectionConnection(usbManager, currentDevice)
             }
             val candidate = conn
             val registered = synchronized(transportLifecycleLock) {
                 if (connectionAttempt !== attempt || disconnectRequested) false
-                else { _connection = candidate; true }
+                else {
+                    val accepted = publishIfOwned { _connection = candidate }
+                    // Cleanup may invoke callbacks; it must stay outside the arbiter monitor.
+                    if (!accepted) disconnect(sendByeBye = false, isUserExit = false, honorKillOnDisconnect = false)
+                    accepted
+                }
             }
             if (!registered) return
 
@@ -529,21 +580,24 @@ class CommManager(
                     // The cancelled candidate is closed below, outside the lifecycle monitor.
                     return@synchronized
                 }
-                // openDevice may finish after its coroutine was cancelled. The Save token
-                // is revoked under this same lock; a late success must close, not publish.
+                // Settings persistence can run callbacks and must not hold the arbiter monitor.
+                // Recheck ownership atomically with publication after it returns.
                 if (opened && expectedState?.isSettingsRestartCancelled != true) {
-                    physicalConnectionReached = true
-                    settings.saveLastConnection(type = Settings.CONNECTION_TYPE_USB, usbDevice = UsbDeviceCompat.getUniqueName(device))
-                    _connectionState.value = ConnectionState.Connected
-                } else {
-                    disconnect(sendByeBye = false, isUserExit = false, honorKillOnDisconnect = false, settingsRetryOwner = expectedState)
+                    settings.saveLastConnection(type = Settings.CONNECTION_TYPE_USB, usbDevice = UsbDeviceCompat.getUniqueName(currentDevice))
+                    if (publishIfOwned {
+                        physicalConnectionReached = true
+                        _connectionState.value = ConnectionState.Connected
+                    }) return@synchronized
                 }
+                disconnect(sendByeBye = false, isUserExit = false, honorKillOnDisconnect = false, settingsRetryOwner = expectedState)
             }
         } catch (e: Exception) {
             synchronized(transportLifecycleLock) {
                 if (connectionAttempt !== attempt || disconnectRequested) return
-                onSessionFailure?.invoke("connect_failed")
-                _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
+                val published = publishIfOwned {
+                    _connectionState.value = ConnectionState.Error("Connection failed: ${e.message}")
+                }
+                if (published) onSessionFailure?.invoke("connect_failed")
                 // A thrown open failure has the same retry policy as connect() returning false.
                 // No user chose Exit, and an unopened session must not close the service either.
                 disconnect(sendByeBye = false, isUserExit = false, honorKillOnDisconnect = false, settingsRetryOwner = expectedState)
@@ -919,6 +973,7 @@ class CommManager(
         if (_connectionState.value !is ConnectionState.Connected) return@withContext
 
         val attemptedConnection = _connection
+        var recoveryOwner = usbRecheckOwner()
         try {
             if (_connectionState.value is ConnectionState.Connected) {
                 val conn = attemptedConnection ?: return@withContext
@@ -952,6 +1007,7 @@ class CommManager(
                         // A session that got this far had a working link to carry video on. See
                         // VideoStarvationPolicy for what it means when one ends without carrying any.
                         usbRecoveryOwner = Any()
+                        recoveryOwner = usbRecoveryOwner
                         usbSaveOwner = null
                         sessionReachedHandshake = true
                         videoDecoder.beginSession()
@@ -962,7 +1018,8 @@ class CommManager(
                         settleSessionClaim(formed = true)
                         _connectionState.value = ConnectionState.HandshakeComplete
                     }
-                    if (live && usb) onUsbHandshakeEnded?.invoke(AapTransport.HandshakeFailure.NONE)
+                    if (live && usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
+                        AapTransport.HandshakeFailure.NONE, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
                 } else {
                     val failure = transport.lastHandshakeFailure
                     val live = withLiveTransport(transport, ConnectionState.StartingTransport) {
@@ -979,7 +1036,8 @@ class CommManager(
                         disconnect(sendByeBye = false, isUserExit = false)
                     }
                     // Outside the lock: the USB side starts recovery, which can connect again.
-                    if (live && usb) onUsbHandshakeEnded?.invoke(failure)
+                    if (live && usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
+                        failure, (conn as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
                 }
             }
         } catch (e: Exception) {
@@ -994,7 +1052,8 @@ class CommManager(
                 settleSessionClaim(formed = false)
                 disconnect(sendByeBye = false, isUserExit = false)
             }
-            if (usb) onUsbHandshakeEnded?.invoke(AapTransport.HandshakeFailure.OTHER)
+            if (usb) onUsbHandshakeEnded?.invoke(UsbHandshakeOutcome(
+                AapTransport.HandshakeFailure.OTHER, (attemptedConnection as AbstractUsbProjectionConnection).accessoryDevice, recoveryOwner))
         }
     }
 

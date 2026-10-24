@@ -20,6 +20,20 @@ object StaleAccessoryRecoveryPolicy {
     const val MAX_STEPS = 2
 
     /**
+     * A failed control transfer/reset does not prove that the device ignored it. Observe the
+     * bus after either result before opening another connection. Once removal was seen, a
+     * reappearance at the same bus address is a new attachment, not an unchanged connection.
+     */
+    class BusObservation {
+        private var sawDetach = false
+
+        fun update(originalPresent: Boolean, candidatePresent: Boolean, elapsedMs: Long): Observation {
+            sawDetach = sawDetach || !originalPresent
+            return observe(sawDetach, candidatePresent, elapsedMs)
+        }
+    }
+
+    /**
      * Steps that still count. A half-done ladder older than the USB budget starts over, but a
      * finished one holds until the device it gave up on leaves the bus, so a stale phone is reset once.
      */

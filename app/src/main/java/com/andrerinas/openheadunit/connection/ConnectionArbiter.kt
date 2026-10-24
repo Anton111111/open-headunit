@@ -46,13 +46,16 @@ object ConnectionArbiter {
     private var usbEpisodeSpent = false
 
     /** Takes the arbiter for an attempt. Null means a higher attempt holds it: do not start. */
-    fun claim(tier: Tier, owner: Owner, what: String): Claim? {
+    fun claim(tier: Tier, owner: Owner, what: String, expectedHolder: Claim? = null): Claim? {
         val now = clock()
         val loser: Claim?
         val claim: Claim
         val spent: Boolean
         var episodeToWatch = -1L
         synchronized(this) {
+            // Recovery transfers an existing attempt to a physical open. Checking and
+            // replacing the holder together prevents an old job from stealing a newer claim.
+            if (expectedHolder != null && holder !== expectedHolder) return null
             val held = holder
             val verdict = ConnectionPriorityPolicy.decide(
                 tier, owner, held?.tier, held?.owner, held?.let { now - it.sinceMs } ?: 0L

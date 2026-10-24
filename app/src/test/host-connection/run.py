@@ -59,6 +59,8 @@ class CommManager {
  fun recoveryOwner()=usbRecoveryOwner
  // Projection health storage is not part of the lifecycle under test.
  private fun recordProjectionHealth(){}
+ fun usbRecheckOwner()=usbRecoveryOwner
+ fun ownsUsbRecheck(owner:Any)=usbRecoveryOwner===owner
  private var settingsUsbRestartInFlight:ConnectionState.Disconnected?=null
  private var usbSaveOwner:ConnectionState.Disconnected?=null
  private var physicalConnectionReached=true
@@ -79,7 +81,8 @@ class CommManager {
  private var onAudioFocusStateChanged:((Boolean)->Unit)?=null
  private var onUpdateUiConfigReplyReceived:(()->Unit)?=null
  private var onSessionFailure:((String)->Unit)?={failures.add(it)}
- private var onUsbHandshakeEnded:((AapTransport.HandshakeFailure)->Unit)?=null
+ data class UsbHandshakeOutcome(val failure:AapTransport.HandshakeFailure,val device:UsbDevice,val recoveryOwner:Any)
+ private var onUsbHandshakeEnded:((UsbHandshakeOutcome)->Unit)?=null
  val failures=mutableListOf<String>()
  private var sessionReachedHandshake=false
  private var silentPeerFailures=0
@@ -612,11 +615,14 @@ fun destroyDuringCandidateConstruction()=runBlocking {
 }
 '''
 extra += r'''
-object UsbDeviceCompat{fun getUniqueName(d:UsbDevice)="usb-fixture";fun usbManager(c:Context)=c.getSystemService(Context.USB_SERVICE) as UsbManager}
+object UsbDeviceCompat{fun isInAccessoryMode(d:UsbDevice)=true;fun isConnectable(c:Context,d:UsbDevice)=true;fun getUniqueName(d:UsbDevice)="usb-fixture";fun usbManager(c:Context)=c.getSystemService(Context.USB_SERVICE) as UsbManager}
+// Recovery claim admission is covered by UsbRecoveryAdmissionTest; these fixtures use ordinary connects.
+object ConnectionArbiter{class Claim;fun runIfHeld(claim:Claim, action:()->Unit):Boolean{action();return true}}
 object UsbBridge{ @Volatile var afterConnect:(()->Unit)?=null;var forcedOpen:(()->Boolean)?=null }
 // The production USB check has to match the fixture's USB double.
 typealias AbstractUsbProjectionConnection=StandardUsbProjectionConnection
-open class StandardUsbProjectionConnection(m:UsbManager,d:UsbDevice):ProjectionConnection(){
+open class StandardUsbProjectionConnection(m:UsbManager,private val d:UsbDevice):ProjectionConnection(){
+ val accessoryDevice get()=d
  private val actual=com.andrerinas.openheadunit.connection.projection.StandardUsbProjectionConnection(m,d)
  override fun connect():Boolean {UsbBridge.forcedOpen?.let{return it()};val r=runBlocking{actual.connect()};UsbBridge.afterConnect?.invoke();return r}
  override fun disconnect(){super.disconnect();actual.disconnect()}
@@ -834,10 +840,10 @@ for name in ['ProjectionConnection.kt','AbstractUsbProjectionConnection.kt','Sta
  shutil.copy2(p,OUT/name);meta[str(p.relative_to(ROOT))]=hashlib.sha256(p.read_bytes()).hexdigest()
 (OUT/'Usb.kt').write_text('''package android.hardware.usb
 import java.util.concurrent.atomic.AtomicInteger
-class UsbDevice{val interfaceCount=1;fun getInterface(i:Int)=UsbInterface()}
+class UsbDevice{val deviceName="fixture";val vendorId=0x18d1;val productId=0x2d00;val interfaceCount=1;fun getInterface(i:Int)=UsbInterface()}
 class UsbInterface
 class UsbEndpoint{val maxPacketSize=64}
-class UsbManager{var openHook:((UsbDevice)->UsbDeviceConnection?)?=null;var permitted=true;fun hasPermission(d:UsbDevice)=permitted;fun openDevice(d:UsbDevice)=openHook?.invoke(d)?:UsbDeviceConnection()}
+class UsbManager{val deviceList=hashMapOf<String,UsbDevice>();var openHook:((UsbDevice)->UsbDeviceConnection?)?=null;var permitted=true;fun hasPermission(d:UsbDevice)=permitted;fun openDevice(d:UsbDevice)=openHook?.invoke(d)?:UsbDeviceConnection()}
 class UsbDeviceConnection{
  val closes=AtomicInteger();val releases=AtomicInteger()
  fun close(){closes.incrementAndGet()}
