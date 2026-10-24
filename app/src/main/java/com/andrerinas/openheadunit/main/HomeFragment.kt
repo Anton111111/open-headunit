@@ -1712,9 +1712,10 @@ class HomeFragment : Fragment() {
     }
 
     /**
-     * @return `true` if a single-USB connection attempt was dispatched,
-     *   `false` if guards (setting disabled, disclaimer pending, already
-     *   connected) blocked it. Same intent as [attemptAutoConnect].
+     * @return `true` if a single-USB connection attempt was dispatched to the one device that is
+     *   plugged in, `false` if guards (setting disabled, disclaimer pending, already connected)
+     *   blocked it or there is not exactly one device to connect to. Same intent as
+     *   [attemptAutoConnect].
      */
     private fun attemptSingleUsbAutoConnect(): Boolean {
         val ctx = context ?: return false
@@ -1728,7 +1729,16 @@ class HomeFragment : Fragment() {
             Intent(ctx, AapService::class.java).apply {
                 action = AapService.ACTION_CHECK_USB
             })
-        return true
+        // The check is cheap and the service decides, but the full-screen loading overlay is a
+        // promise that a phone is there. With nothing plugged in it sat black over the home for
+        // its whole 30 s on every launch (#1147).
+        val usbManager = UsbDeviceCompat.usbManager(ctx)
+        val connectable = usbManager?.deviceList?.values?.count { UsbDeviceCompat.isConnectable(ctx, it) } ?: 0
+        val showsOverlay = AutoConnectAttemptPolicy.singleUsbShowsOverlay(connectable)
+        if (!showsOverlay) {
+            AppLog.i("HomeFragment: single-USB auto-connect found $connectable connectable devices, so no loading screen")
+        }
+        return showsOverlay
     }
 
     private fun setupListeners() {

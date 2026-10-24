@@ -59,4 +59,10 @@ object AutoConnectAttemptPolicy {
      * would claim a bring-up had restarted when nothing had.
      */
     fun resetsStageOnFailure(mode: ConnectionUiMode): Boolean = mode == ConnectionUiMode.OVERLAY
+
+    /**
+     * Whether the single-USB auto-connect may show its loading overlay. Only with exactly one device
+     * to connect to: none means nothing is coming, and several means the user has to pick one.
+     */
+    fun singleUsbShowsOverlay(connectableDevices: Int): Boolean = connectableDevices == 1
 }

@@ -3,18 +3,40 @@ package com.andrerinas.openheadunit.main
 import com.andrerinas.openheadunit.connection.ConnectionStage
 
 /**
- * Whether the status pill shows the bring-up step, and if not, why.
+ * What the home screen's status pill shows, and how it says it.
  *
- * The tracker keeps its last step (STARTING_PROJECTION) for the whole session, because only the end
- * of the session clears it. As the unit's launcher the home is on screen during a session (Home key,
- * move to background), and there the card already says the phone is connected: a pill still
- * claiming Android Auto is starting would contradict it, and its X would tear the wireless side down
- * under a running session.
+ * The pill used to read "Android Auto is starting…" with a spinner in two cases where nothing was
+ * starting (#1147): during a session, because the tracker keeps the last step until the session
+ * ends, and while the stack only listens for the phone, which can last as long as the unit is on.
+ * Pure, so both cases are unit tests rather than a head unit.
  */
 object StatusPillPolicy {
 
+    /** How the pill's first line reads. */
+    enum class Title {
+        /** "Android Auto is starting…" with the spinner: a connection is on its way. */
+        STARTING,
+        /** The text the auto-connect attempt asked for, such as the phone it is waking. */
+        CUSTOM,
+        /** The step itself, without the spinner: the stack is only waiting for the phone. */
+        STEP,
+    }
+
     /** Why a step the tracker holds is kept off screen. The order is the log's precedence. */
     enum class Withheld { SESSION_LIVE, PHONE_LEFT, HOME_TELLS_IT, OVERLAY }
+
+    /**
+     * Steps where the stack listens and nothing is on its way. Attaching any USB device reports
+     * one too, a flash drive included, so it is no promise of a phone either.
+     */
+    private val waitingStages = setOf(
+        ConnectionStage.ARMED,
+        ConnectionStage.WAITING_FOR_PHONE,
+        ConnectionStage.SEARCHING,
+        ConnectionStage.USB_ATTACHED,
+    )
+
+    fun isWaiting(stage: ConnectionStage): Boolean = stage in waitingStages
 
     /**
      * @param sessionLive the handshake is done (HandshakeComplete or TransportStarted), the same
@@ -41,4 +63,14 @@ object StatusPillPolicy {
     /** The step the pill shows, or null for no pill. */
     fun shown(stage: ConnectionStage?, withheld: Withheld?): ConnectionStage? =
         if (withheld == null) stage else null
+
+    /**
+     * An auto-connect attempt in flight is a connection on its way even while the phone is being
+     * waited for, so only a stack that waits on its own reads as the step.
+     */
+    fun title(stage: ConnectionStage, attemptInProgress: Boolean, hasCustomText: Boolean): Title = when {
+        hasCustomText -> Title.CUSTOM
+        !attemptInProgress && isWaiting(stage) -> Title.STEP
+        else -> Title.STARTING
+    }
 }
