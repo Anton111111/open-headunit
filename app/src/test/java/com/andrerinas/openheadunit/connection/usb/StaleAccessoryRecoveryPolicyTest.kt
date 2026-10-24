@@ -144,4 +144,31 @@ class StaleAccessoryRecoveryPolicyTest {
         assertEquals(FollowUp.STOP, StaleAccessoryRecoveryPolicy.afterObservation(Observation.LEFT_THE_BUS))
         assertEquals(FollowUp.STOP, StaleAccessoryRecoveryPolicy.afterObservation(Observation.WAITING))
     }
+
+    @Test fun `a late detach after an unsuccessful command must not become an immediate retry`() {
+        val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+        assertEquals(Observation.WAITING, bus.update(true, true, 0))
+        assertEquals(Observation.WAITING, bus.update(true, true, 100))
+        assertEquals(Observation.WAITING, bus.update(false, false, 200))
+        assertEquals(Observation.REENUMERATED, bus.update(false, true, 300))
+    }
+
+    @Test fun `bus address reuse after removal goes through attachment rather than stale handshake`() {
+        val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+        assertEquals(Observation.WAITING, bus.update(false, false, 100))
+        assertEquals(Observation.REENUMERATED, bus.update(true, true, 200))
+    }
+
+    @Test fun `another attachment without original removal does not bypass the observation window`() {
+        val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+        assertEquals(Observation.WAITING, bus.update(true, true, 4_999))
+        assertEquals(Observation.NO_CHANGE, bus.update(true, true, 5_000))
+    }
+
+    @Test fun `recovery still stops within its bounded budget when the device stays absent`() {
+        val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+        assertEquals(Observation.WAITING, bus.update(false, false, 100))
+        assertEquals(Observation.WAITING, bus.update(false, false, 14_999))
+        assertEquals(Observation.LEFT_THE_BUS, bus.update(false, false, 15_000))
+    }
 }

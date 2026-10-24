@@ -86,7 +86,9 @@ class InternalFailureRecoveryTest {
                 mockConstruction(driver) { connection, _ ->
                     runBlocking { `when`(connection.connect()).thenAnswer { throw IOException("USB open failed") } }
                 }.use {
-                    invoke(f.manager, "connectUsb", arrayOf(UsbDevice::class.java, ConnectionState.Disconnected::class.java), device, null)
+                    invoke(f.manager, "connectUsb", arrayOf(UsbDevice::class.java, ConnectionState.Disconnected::class.java,
+                        Any::class.java, ConnectionArbiter.Claim::class.java, ConnectionAdmission::class.java),
+                        device, null, null, null, ConnectionAdmission.UNRESTRICTED)
                     f.assertRecoverable()
                 }
             }

@@ -122,10 +122,10 @@ internal class AapControlMedia(
         }.build()
         AppLog.i("Config response: %s (maxUnacked=%d)", configResponse, maxUnacked)
         val msg = AapMessage(channel, Media.MsgType.MEDIA_MESSAGE_CONFIG_VALUE, configResponse)
-        aapTransport.send(msg)
-
         if (channel == Channel.ID_VID) {
-            aapTransport.gainVideoFocus()
+            if (aapTransport.sendVideoSetupResponse(msg)) aapTransport.gainVideoFocus()
+        } else {
+            aapTransport.send(msg)
         }
 
         // Pushing AudioFocusNotification

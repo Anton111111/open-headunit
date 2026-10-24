@@ -425,21 +425,15 @@ class OnboardingActivity : BaseActivity() {
         findViewById<SwitchMaterial>(R.id.onb_launcher_switch).apply {
             isChecked = settings.enableCarLauncher || launcherRequestPending
             setOnCheckedChangeListener { _, checked ->
-                // The alias has to be enabled for the system to offer this app as home, but the
-                // setting is only written once the role is held: a declined or lost request must
-                // not leave the app claiming launcher mode while it is not the home app.
+                settings.enableCarLauncher = checked
                 CarLauncherManager.setLauncherEnabled(this@OnboardingActivity, checked)
                 if (checked) {
-                    if (CarLauncherManager.isDefaultLauncher(this@OnboardingActivity)) {
-                        settings.enableCarLauncher = true
-                    } else {
-                        // Flipping the switch is the request, so ask for the home role right away.
+                    if (!CarLauncherManager.isDefaultLauncher(this@OnboardingActivity)) {
                         launcherRequestPending = true
                         CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
                     }
                 } else {
                     launcherRequestPending = false
-                    settings.enableCarLauncher = false
                 }
                 updateLauncherStep()
             }
@@ -684,16 +678,13 @@ class OnboardingActivity : BaseActivity() {
         val held = CarLauncherManager.isDefaultLauncher(this)
         when (OnboardingLauncherPolicy.resolve(launcherRequestPending, held)) {
             OnboardingLauncherPolicy.Outcome.NONE -> return
-            OnboardingLauncherPolicy.Outcome.COMMIT -> {
+            OnboardingLauncherPolicy.Outcome.CONFIRMED -> {
                 launcherRequestPending = false
-                settings.enableCarLauncher = true
-                AppLog.i("OnboardingActivity: home role granted, car launcher mode stored")
+                AppLog.i("OnboardingActivity: home role granted, OpenHU is default home app")
             }
-            OnboardingLauncherPolicy.Outcome.REVERT -> {
+            OnboardingLauncherPolicy.Outcome.UNCONFIRMED -> {
                 launcherRequestPending = false
-                AppLog.i("OnboardingActivity: home role not held after the request, turning the launcher switch back off")
-                // The switch listener drops the alias and stores launcher mode off.
-                findViewById<SwitchMaterial>(R.id.onb_launcher_switch).isChecked = false
+                AppLog.i("OnboardingActivity: home role not held yet, car launcher mode remains enabled")
             }
         }
         updateLauncherStep()

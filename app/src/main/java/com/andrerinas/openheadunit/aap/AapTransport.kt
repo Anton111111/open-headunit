@@ -112,9 +112,16 @@ class AapTransport(
     private val lifecycleLock = Any()
     @Volatile private var closing = false
     @Volatile private var projectionVideoFocusSuppressed = false
+    // Guarded by lifecycleLock. Starting the reader does not open the video service: the
+    // initial focus follows Config so UI startup cannot overtake video service negotiation.
+    private var videoSetupQueued = false
+    private var pendingVideoFocus: AapMessage? = null
 
-    internal fun setProjectionVideoFocusSuppressed(suppressed: Boolean) {
+    internal fun setProjectionVideoFocusSuppressed(suppressed: Boolean) = synchronized(lifecycleLock) {
         projectionVideoFocusSuppressed = suppressed
+        // A device overlay can arrive between an early gain and Setup. Do not replay that
+        // gain when the phone finally opens video; the caller sends the current loss state.
+        if (suppressed) pendingVideoFocus = null
     }
 
     private var handshakeStarted = false
@@ -452,7 +459,11 @@ class AapTransport(
     private val focusCycleLever = FocusCycleLever()
 
     /** Takes the lever for one cycle. False when the other escalation already holds it. */
-    internal fun beginFocusCycle(): Boolean = focusCycleLever.tryClaim()
+    internal fun beginFocusCycle(): Boolean = synchronized(lifecycleLock) {
+        // A release/regain cycle needs a running video service. Before Setup, coalescing its
+        // release would leave ignoreNextStopRequest armed without ever sending that release.
+        videoSetupQueued && !closing && presentationSession.isActive && focusCycleLever.tryClaim()
+    }
 
     /**
      * Sends the first half of a keyframe cycle.
@@ -820,6 +831,7 @@ class AapTransport(
         val (cb, awaitHandshake, cleanEnd) = synchronized(lifecycleLock) {
             if (closing) return
             closing = true
+            pendingVideoFocus = null
             presentationSession.retire()
             retiringWorkers = listOfNotNull(pollThread, sendThread, videoThread)
             aapRead?.stop()
@@ -1037,6 +1049,7 @@ class AapTransport(
 
     /** Display updates stop immediately; the protocol reader may still finish a graceful ByeBye. */
     internal fun retirePresentation() = synchronized(lifecycleLock) {
+        pendingVideoFocus = null
         presentationSession.retire()
         aapRead?.retirePresentation()
     }
@@ -1343,21 +1356,61 @@ class AapTransport(
         // Screen/focus events can arrive while the handshake thread owns the connection. Do not
         // enqueue them for later replay or ask the TLS engine to wrap before AuthComplete.
         if (!tlsWriter.isReady) return
-        // Do not send messages on service/media channels before the read loop is active and channels are open.
+        // Reader startup only permits negotiation; it does not prove a service is ready.
         // Channel 0 (Control) handles handshake, discovery and channel open negotiation.
         if (message.channel != Channel.ID_CTR && aapRead == null) {
             AppLog.w("AapTransport: dropping message on channel ${message.channel} before read loop is active")
             return
         }
+        if (message.channel == Channel.ID_VID && message.type == Media.MsgType.MEDIA_MESSAGE_VIDEO_FOCUS_NOTIFICATION_VALUE) {
+            synchronized(lifecycleLock) {
+                if (closing || !presentationSession.isActive) return
+                if (projectionVideoFocusSuppressed && isVideoFocusGain(message)) return
+                if (!videoSetupQueued) {
+                    // Keep only the latest state, including loss. Replaying a list of early
+                    // gain/loss events could needlessly stop the stream as it first starts.
+                    pendingVideoFocus = AapMessage(message.channel, message.flags, message.type,
+                        message.dataOffset, message.size, message.data.copyOf(message.size))
+                } else {
+                    enqueueMessage(message)
+                }
+            }
+            return
+        }
+        enqueueMessage(message)
+    }
+
+    /**
+     * Queue Config and the latest early focus in one ordering boundary. Waiting for MediaStart
+     * or a decoded frame would be circular: the phone can wait for focus before sending video.
+     * This gate is for initial Setup only; a normal media Stop must not close it again.
+     */
+    internal fun sendVideoSetupResponse(message: AapMessage): Boolean = synchronized(lifecycleLock) {
+        if (closing || !presentationSession.isActive || !tlsWriter.isReady || aapRead == null) return false
+        if (!enqueueMessage(message)) return false
+        videoSetupQueued = true
+        val pending = pendingVideoFocus
+        pendingVideoFocus = null
+        if (pending != null && (!projectionVideoFocusSuppressed || !isVideoFocusGain(pending))) {
+            enqueueMessage(pending)
+        }
+        true
+    }
+
+    private fun isVideoFocusGain(message: AapMessage): Boolean =
+        message.parse(Media.VideoFocusNotification.newBuilder()).mode == Media.VideoFocusMode.VIDEO_FOCUS_PROJECTED
+
+    private fun enqueueMessage(message: AapMessage): Boolean {
         val handler = sendHandler
         if (handler == null) {
             AppLog.i("Cannot send message, handler is null (quitting?)")
+            return false
         } else {
             if (AppLog.LOG_VERBOSE) {
                 AppLog.v(message.toString())
             }
             val msg = handler.obtainMessage(MSG_SEND, 0, message.size, message.data)
-            handler.sendMessage(msg)
+            return handler.sendMessage(msg)
         }
     }
 

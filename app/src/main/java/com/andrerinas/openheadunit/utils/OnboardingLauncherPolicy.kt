@@ -10,10 +10,10 @@ object OnboardingLauncherPolicy {
     enum class Outcome {
         /** No request in flight: leave everything as it is. */
         NONE,
-        /** The system granted the home role: store launcher mode. */
-        COMMIT,
-        /** The role is not held: turn the switch back off and drop the launcher alias. */
-        REVERT
+        /** The system granted the home role: home status confirmed. */
+        CONFIRMED,
+        /** The role is not yet held: launcher mode remains enabled and prompt button is offered. */
+        UNCONFIRMED
     }
 
     /**
@@ -22,8 +22,8 @@ object OnboardingLauncherPolicy {
      */
     fun resolve(requestPending: Boolean, roleHeld: Boolean): Outcome = when {
         !requestPending -> Outcome.NONE
-        roleHeld -> Outcome.COMMIT
-        else -> Outcome.REVERT
+        roleHeld -> Outcome.CONFIRMED
+        else -> Outcome.UNCONFIRMED
     }
 
     /**

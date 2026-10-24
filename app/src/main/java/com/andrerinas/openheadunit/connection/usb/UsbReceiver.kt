@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.net.Uri
 
 
 import com.andrerinas.openheadunit.utils.AppLog
@@ -24,6 +25,7 @@ class UsbReceiver(private val mListener: Listener)          // USB Broadcast Rec
         fun onUsbAttach(device: UsbDevice)
         fun onUsbAccessoryDetach()
         fun onUsbPermission(granted: Boolean, connect: Boolean, device: UsbDevice)
+        fun onUsbRecoveryPermission(token: String, granted: Boolean, device: UsbDevice) {}
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -52,7 +54,11 @@ class UsbReceiver(private val mListener: Listener)          // USB Broadcast Rec
                 // If Our App specific Intent for permission request...
                 val permissionGranted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                 val connect = intent.getBooleanExtra(EXTRA_CONNECT, false)
-                mListener.onUsbPermission(permissionGranted, connect, device)
+                val recovery = intent.data?.takeIf { it.scheme == RECOVERY_PERMISSION_SCHEME }
+                if (recovery != null) {
+                    // A late recovery reply must never become an ordinary connect request.
+                    mListener.onUsbRecoveryPermission(recovery.schemeSpecificPart, permissionGranted, device)
+                } else mListener.onUsbPermission(permissionGranted, connect, device)
             }
         }
     }
@@ -71,6 +77,19 @@ class UsbReceiver(private val mListener: Listener)          // USB Broadcast Rec
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
                 else PendingIntent.FLAG_UPDATE_CURRENT
             )
+        }
+
+        private const val RECOVERY_PERMISSION_SCHEME = "ohu-usb-recovery"
+
+        fun createRecoveryPermissionPendingIntent(context: Context, token: String): PendingIntent =
+            PendingIntent.getBroadcast(context, 0,
+                Intent(ACTION_USB_DEVICE_PERMISSION).setPackage(context.packageName)
+                    .setData(Uri.fromParts(RECOVERY_PERMISSION_SCHEME, token, null)),
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE
+                else 0)
+
+        fun createRecoveryPermissionFilter() = IntentFilter(ACTION_USB_DEVICE_PERMISSION).apply {
+            addDataScheme(RECOVERY_PERMISSION_SCHEME)
         }
 
         fun createFilter(): IntentFilter {
