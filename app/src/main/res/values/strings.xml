@@ -243,6 +243,16 @@
     <string name="night_overlay_left">left</string>
     <string name="night_overlay_right">right</string>
     <string name="night_overlay_direction">%1$s · %2$s</string>
+    <string name="night_overlay_exit_number">Exit %1$d</string>
+    <string name="night_overlay_exit_angle">%1$d°</string>
+    <string name="night_overlay_eta_summary">ETA %1$s · %2$s · %3$s</string>
+    <string name="night_overlay_duration_minutes">%1$d min</string>
+    <string name="night_overlay_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="night_overlay_current_road">Now: %1$s</string>
+    <string name="night_overlay_route">Route: %1$s</string>
+    <string name="night_overlay_lanes">Lanes: %1$s</string>
+    <string name="night_overlay_traffic_delay">Traffic delay: +%1$s</string>
+    <string name="night_overlay_speed_value">%1$d km/h</string>
     <string name="night_mode">Dark Mode (Android Auto)</string>
     <string name="night_mode_threshold">Night Mode Threshold</string>
     <string name="enter_threshold_value">Enter Threshold Value</string>

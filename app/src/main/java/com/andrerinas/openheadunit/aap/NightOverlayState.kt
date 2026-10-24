@@ -6,7 +6,42 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** Small, session-owned display state; independent of media notification preferences. */
 class NightOverlayState {
-    data class Navigation(val maneuver: String, val distanceMeters: Int?)
+    enum class NavigationIcon {
+        DEPART,
+        STRAIGHT,
+        TURN_SLIGHT_LEFT,
+        TURN_LEFT,
+        TURN_SHARP_LEFT,
+        U_TURN_LEFT,
+        RAMP_LEFT,
+        FORK_LEFT,
+        MERGE,
+        ROUNDABOUT,
+        TURN_SLIGHT_RIGHT,
+        TURN_RIGHT,
+        TURN_SHARP_RIGHT,
+        U_TURN_RIGHT,
+        RAMP_RIGHT,
+        FORK_RIGHT,
+        FERRY_BOAT,
+        FERRY_TRAIN,
+        DESTINATION
+    }
+
+    data class Navigation(
+        val maneuver: String,
+        val distanceMeters: Int?,
+        val road: String? = null,
+        val details: String? = null,
+        val icon: NavigationIcon? = null,
+        val etaSummary: String? = null,
+        val currentRoad: String? = null,
+        val routeNumber: String? = null,
+        val laneGuidance: String? = null,
+        val speedLimitKmh: Int? = null,
+        val speedKmh: Int? = null,
+        val trafficDelaySeconds: Int? = null
+    )
     data class Content(
         val navigation: Navigation? = null,
         val title: String = "",
