@@ -1,6 +1,6 @@
 # Audio owner regression checks
 
-From the repository root, after the Gradle unit tests have populated the Kotlin 1.9.22 cache:
+From the repository root, after the Gradle unit tests have populated the project's Kotlin compiler cache:
 
 ```sh
 python3 app/src/test/host-audio/run.py

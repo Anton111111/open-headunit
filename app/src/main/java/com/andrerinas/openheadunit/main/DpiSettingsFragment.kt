@@ -161,8 +161,6 @@ class DpiSettingsFragment : Fragment() {
         settings.dpiPixelDensity = value
         if (pendingOverride != initialOverride) settings.dpiFloorOverride = pendingOverride
         settings.commit()
-        // Keep SettingsFragment's pending value in sync so it does not overwrite this on save.
-        findNavController().previousBackStackEntry?.savedStateHandle?.set(KEY_DPI_RESULT, value)
         initialValue = value
         initialOverride = pendingOverride
         updateSaveButtonState()
@@ -268,7 +266,6 @@ class DpiSettingsFragment : Fragment() {
     }
 
     companion object {
-        const val KEY_DPI_RESULT = "dpi_result"
         private const val SAVE_ITEM_ID = 1001
     }
 }

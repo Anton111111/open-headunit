@@ -110,6 +110,12 @@ class AapTransport(
     // Only short resource publication runs under this lock; socket/TLS I/O and joins do not.
     private val lifecycleLock = Any()
     @Volatile private var closing = false
+    @Volatile private var projectionVideoFocusSuppressed = false
+
+    internal fun setProjectionVideoFocusSuppressed(suppressed: Boolean) {
+        projectionVideoFocusSuppressed = suppressed
+    }
+
     private var handshakeStarted = false
     private val handshakeFinished = java.util.concurrent.CountDownLatch(1)
     private val terminated = java.util.concurrent.CountDownLatch(1)
@@ -464,8 +470,12 @@ class AapTransport(
 
     /** Second half of an escalated focus cycle - see [WarmRelaunchKeyframePolicy.FOCUS_CYCLE_GAP_MS]. */
     private val focusCycleGainRunnable = Runnable {
-        AppLog.w("AapTransport: retaking video focus to complete the keyframe cycle")
-        send(VideoFocusEvent(gain = true, unsolicited = true))
+        if (projectionVideoFocusSuppressed) {
+            AppLog.i("AapTransport: skipping keyframe-cycle focus regain while projection focus is suppressed")
+        } else {
+            AppLog.w("AapTransport: retaking video focus to complete the keyframe cycle")
+            send(VideoFocusEvent(gain = true, unsolicited = true))
+        }
         endFocusCycle()
     }
 
@@ -506,6 +516,7 @@ class AapTransport(
      */
     @Synchronized
     private fun triggerFocusCycleRecovery(escalatable: Boolean, wireCorruption: Boolean) {
+        if (projectionVideoFocusSuppressed) return
         AppLog.w("AapTransport: Requesting recovery keyframe (unsolicited focus gain).")
         send(VideoFocusEvent(gain = true, unsolicited = true))
 

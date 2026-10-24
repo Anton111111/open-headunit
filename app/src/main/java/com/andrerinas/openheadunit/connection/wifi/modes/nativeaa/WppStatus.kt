@@ -5,10 +5,11 @@ package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
  *
  * Recovered from a serialized protobuf descriptor carrying Google's own
  * `androidauto.bluetooth.proto` naming, so these are the schema's names and not a reconstruction.
- * Only `== 0` is branched on; the point is that a log says WIFI_INCORRECT_CREDENTIALS, not -3.
+ * Interpretation depends on the message: the HCT version opening accepts
+ * 0(SUCCESS) and -8(NO_SUPPORTED_WIFI_CHANNELS), while Wi-Fi join failures stay failures.
  *
  * Deliberately a lookup rather than a proto enum. Every status field in `wireless.proto` is a plain
- * int32 because a sint32 declaration once rendered a real -8 as 2147483644, and a value the enum
+ * int32 because a sint32 declaration once rendered -8(NO_SUPPORTED_WIFI_CHANNELS) as 2147483644, and a value the enum
  * does not know would land in unknown fields where the log could not see it at all.
  */
 object WppStatus {
