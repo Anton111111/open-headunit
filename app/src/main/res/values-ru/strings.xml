@@ -20,6 +20,15 @@
     <string name="dpi">Плотность пикселей (DPI)</string>
     <string name="mic_sample_rate">Частота дискретизации микрофона</string>
     <string name="keymap">Раскладка клавиш</string>
+    <string name="gestures">Жесты</string>
+    <string name="gestures_description">Настроить жесты двумя пальцами от краёв экрана.</string>
+    <string name="gesture_two_finger_left">Жест двумя пальцами слева</string>
+    <string name="gesture_two_finger_right">Жест двумя пальцами справа</string>
+    <string name="gesture_action_disabled">Отключено</string>
+    <string name="gesture_action_exit_dialog">Диалог выхода</string>
+    <string name="gesture_action_toggle_fullscreen">Переключить полноэкранный режим</string>
+    <string name="gesture_action_night_overlay">Ночной оверлей</string>
+    <string name="gestures_reset">Настройки жестов сброшены</string>
     <string name="night_mode">Тёмный режим (Android Auto)</string>
     <string name="night_mode_threshold">Порог ночного режима</string>
     <string name="enter_threshold_value">Введите пороговое значение</string>

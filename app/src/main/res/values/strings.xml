@@ -225,6 +225,15 @@
     <string name="pixel_aspect_ratio">Pixel aspect ratio</string>
     <string name="mic_sample_rate">Mic capture rate</string>
     <string name="keymap">Keymap</string>
+    <string name="gestures">Gestures</string>
+    <string name="gestures_description">Configure two-finger edge gestures.</string>
+    <string name="gesture_two_finger_left">Two-finger gesture from the left</string>
+    <string name="gesture_two_finger_right">Two-finger gesture from the right</string>
+    <string name="gesture_action_disabled">Disabled</string>
+    <string name="gesture_action_exit_dialog">Exit dialog</string>
+    <string name="gesture_action_toggle_fullscreen">Toggle full screen</string>
+    <string name="gesture_action_night_overlay">Night overlay</string>
+    <string name="gestures_reset">Gesture settings reset</string>
     <string name="night_mode">Dark Mode (Android Auto)</string>
     <string name="night_mode_threshold">Night Mode Threshold</string>
     <string name="enter_threshold_value">Enter Threshold Value</string>

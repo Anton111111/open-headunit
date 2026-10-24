@@ -127,6 +127,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var initialX = 0f
     private var initialY = 0f
     private var isPotentialGesture = false
+    private var isLeftEdgeGesture = false
 
     // Activity-local override for fullscreen mode. If non-null, setFullscreen() will use this
     // instead of persisting to Settings. This keeps toggles local to the Activity lifecycle.
@@ -2047,35 +2048,27 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private val commManager get() = App.provide(this).commManager
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        // 1. 2-finger swipe detection from the left or right edge (to open exit menu or toggle fullscreen)
+        // Two-finger swipes from the left and right edges use independently configurable actions.
         if (ev.pointerCount == 2) {
             when (ev.actionMasked) {
                 MotionEvent.ACTION_POINTER_DOWN -> {
                     initialX = ev.getX(0)
                     initialY = ev.getY(0)
-                    isPotentialGesture = initialX < 100 || initialX > HeadUnitScreenConfig.getUsableWidth() - 100
+                    isLeftEdgeGesture = initialX < 100
+                    isPotentialGesture = isLeftEdgeGesture || initialX > HeadUnitScreenConfig.getUsableWidth() - 100
                 }
                 MotionEvent.ACTION_MOVE -> {
                     if (isPotentialGesture) {
                         val deltaX = ev.getX(0) - initialX
                         val deltaY = abs(ev.getY(0) - initialY)
-                        if (deltaX > 200 && deltaY < 100) {
-                            isPotentialGesture = false
-                            showExitDialog()
-                            return true // Consume
+                        val action = when {
+                            isLeftEdgeGesture && deltaX > 200 && deltaY < 100 -> settings.leftTwoFingerGesture
+                            !isLeftEdgeGesture && deltaX < -200 && deltaY < 100 -> settings.rightTwoFingerGesture
+                            else -> null
                         }
-
-                        if (deltaX < -200 && deltaY < 100) {
+                        if (action != null) {
                             isPotentialGesture = false
-                            val currentEffective = activityFullscreenOverride ?: settings.fullscreenMode
-                            if (currentEffective != Settings.FullscreenMode.NONE) {
-                                activityFullscreenOverride = Settings.FullscreenMode.NONE
-                                setFullscreen()
-                            } else {
-                                activityFullscreenOverride = null
-                                setFullscreen()
-                            }
-                            return true // Consume
+                            if (performTouchGesture(action)) return true
                         }
                     }
                 }
@@ -2088,6 +2081,28 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         }
 
         return super.dispatchTouchEvent(ev)
+    }
+
+    private fun performTouchGesture(action: Settings.GestureAction): Boolean = when (action) {
+        Settings.GestureAction.DISABLED -> false
+        Settings.GestureAction.EXIT_DIALOG -> {
+            showExitDialog()
+            true
+        }
+        Settings.GestureAction.TOGGLE_FULLSCREEN -> {
+            val currentEffective = activityFullscreenOverride ?: settings.fullscreenMode
+            activityFullscreenOverride = if (currentEffective != Settings.FullscreenMode.NONE) {
+                Settings.FullscreenMode.NONE
+            } else {
+                null
+            }
+            setFullscreen()
+            true
+        }
+        Settings.GestureAction.NIGHT_OVERLAY -> {
+            // TODO: Implement the night overlay gesture action.
+            true
+        }
     }
 
     override fun onSurfaceCreated(surface: android.view.Surface) {
