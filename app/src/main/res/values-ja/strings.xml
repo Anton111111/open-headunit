@@ -1445,4 +1445,16 @@
     <string name="audio_settings_reconnect">オーディオ設定を保存しました。適用するにはAndroid Autoを再接続してください。</string>
     <string name="native_aa_candidate_android_radio_description">ヘッドユニットの Bluetooth モジュールを自動選択する代わりに、Android の Bluetooth を使用します。自動選択する場合はオフにしてください。モジュール経由の接続オプションがオンの場合は、先にオフにしてください。</string>
     <string name="external_bt_candidate_transport_description">自動選択の代わりに、ヘッドユニットの Bluetooth モジュール経由の接続を強制します。対応するモジュールサービスが必要です。サービスが応答しないときに Android の Bluetooth を使用できるようにするには、オフにしてください。オンにすると、この代替経路は使えなくなります。</string>
+    <string name="audio_matching_mode">音楽の時間補正</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">既定</string>
+    <string name="audio_matching_wsola_hint">軽量</string>
+    <string name="audio_matching_phase_vocoder_hint">バランス型</string>
+    <string name="audio_matching_phase_vocoder_short_hint">低遅延</string>
+    <string name="audio_matching_phase_gradient_hint">低速再生</string>
+    <string name="audio_matching_description">既定はOHUです。WSOLAは重なり合う波形を整列し、Phase Vocoderは周波数成分の位相を調整します。Shortは短い解析窓を使います。Phase Gradientは位相勾配を積分して位相を再構成します。独立実装の方式で処理遅延が加わります。名称は音質の順位ではありません。\n\nネイティブ方式：PCM音楽に適用。経路案内・音声応答・システム音・AACではOHUを使用します。\n再接続すると適用されます。削除されたエンジンの保存設定はOHUに戻ります。</string>
 </resources>

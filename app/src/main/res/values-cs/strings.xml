@@ -1443,4 +1443,16 @@
     <string name="audio_settings_reconnect">Nastavení zvuku uloženo. Pro jeho použití znovu připojte Android Auto.</string>
     <string name="native_aa_candidate_android_radio_description">Použít Bluetooth Androidu místo automatického výběru modulu Bluetooth jednotky. Pro automatický výběr ponechte vypnuté. Pokud je zapnutá některá možnost připojení přes modul, nejprve ji vypněte.</string>
     <string name="external_bt_candidate_transport_description">Vynutit připojení přes modul Bluetooth jednotky místo automatického výběru. Vyžaduje kompatibilní službu modulu. Ponechte vypnuté, aby se při neodpovídající službě mohlo použít Bluetooth Androidu; zapnutí tuto náhradní cestu zakáže.</string>
+    <string name="audio_matching_mode">Časová korekce hudby</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Výchozí</string>
+    <string name="audio_matching_wsola_hint">Nenáročný</string>
+    <string name="audio_matching_phase_vocoder_hint">Vyvážený</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Nízká latence</string>
+    <string name="audio_matching_phase_gradient_hint">Pomalé přehrávání</string>
+    <string name="audio_matching_description">OHU zůstává výchozí. WSOLA zarovnává překrývající se průběhy; Phase Vocoder upravuje spektrální fáze. Short používá kratší analytické okno. Phase Gradient rekonstruuje fáze integrací fázových gradientů. Tyto nezávislé implementace přidávají zpoždění zpracování; názvy nehodnotí kvalitu zvuku.\n\nNativní metody: hudba PCM. Navigace, hlasové odpovědi, systémové zvuky a AAC používají OHU.\nPro použití se znovu připojte. Nastavení odstraněných enginů se vrátí na OHU.</string>
 </resources>
