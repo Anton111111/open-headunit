@@ -47,6 +47,7 @@ class NightOverlayNavigationTest {
                 NightOverlayState.Navigation(
                     maneuver = "Turn left",
                     distanceMeters = 350,
+                    timeToManeuverSeconds = null,
                     icon = NightOverlayState.NavigationIcon.TURN_LEFT
                 ),
                 received.last()
@@ -76,6 +77,7 @@ class NightOverlayNavigationTest {
                 NightOverlayState.Navigation(
                     maneuver = "Turn left",
                     distanceMeters = null,
+                    timeToManeuverSeconds = 30,
                     icon = NightOverlayState.NavigationIcon.TURN_LEFT
                 ),
                 received.last()

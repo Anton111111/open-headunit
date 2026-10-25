@@ -20,10 +20,10 @@ class NightOverlayStateTest {
         state.begin(session)
         state.metadata(session, metadata(" Song ", " Artist "))
         state.playback(session, playback(MediaPlayback.MediaPlaybackStatus.State.PLAYING))
-        state.navigation(session, NightOverlayState.Navigation("Turn left", 250))
+        state.navigation(session, NightOverlayState.Navigation("Turn left", 250, null))
 
         assertEquals(
-            NightOverlayState.Content(NightOverlayState.Navigation("Turn left", 250), "Song", "Artist", true),
+            NightOverlayState.Content(NightOverlayState.Navigation("Turn left", 250, null), "Song", "Artist", true),
             state.content.value
         )
     }
@@ -48,7 +48,7 @@ class NightOverlayStateTest {
         val session = AaPresentationSession()
         state.begin(session)
         state.metadata(session, metadata("Song"))
-        state.navigation(session, NightOverlayState.Navigation("Turn", null))
+        state.navigation(session, NightOverlayState.Navigation("Turn", null, null))
         state.navigation(session, null)
         assertNull(state.content.value.navigation)
         assertEquals("Song", state.content.value.title)
@@ -69,14 +69,14 @@ class NightOverlayStateTest {
         val old = AaPresentationSession()
         state.begin(old)
         state.metadata(old, metadata("Old"))
-        state.navigation(old, NightOverlayState.Navigation("Old turn", 500))
+        state.navigation(old, NightOverlayState.Navigation("Old turn", 500, null))
         val current = AaPresentationSession()
         state.begin(current)
         assertEquals(NightOverlayState.Content(), state.content.value)
         state.metadata(current, metadata("New"))
 
         state.metadata(old, metadata("Stale"))
-        state.navigation(old, NightOverlayState.Navigation("Stale turn", 100))
+        state.navigation(old, NightOverlayState.Navigation("Stale turn", 100, null))
         state.playback(old, playback(MediaPlayback.MediaPlaybackStatus.State.STOPPED))
         state.close(old)
         assertEquals(NightOverlayState.Content(title = "New"), state.content.value)

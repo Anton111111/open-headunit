@@ -31,16 +31,10 @@ class NightOverlayState {
     data class Navigation(
         val maneuver: String,
         val distanceMeters: Int?,
+        val timeToManeuverSeconds: Int?,
         val road: String? = null,
         val details: String? = null,
         val icon: NavigationIcon? = null,
-        val etaSummary: String? = null,
-        val currentRoad: String? = null,
-        val routeNumber: String? = null,
-        val laneGuidance: String? = null,
-        val speedLimitKmh: Int? = null,
-        val speedKmh: Int? = null,
-        val trafficDelaySeconds: Int? = null
     )
     data class Content(
         val navigation: Navigation? = null,

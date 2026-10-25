@@ -10,11 +10,10 @@ import android.text.format.DateFormat
 import androidx.core.app.NotificationCompat
 import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus
+import com.andrerinas.openheadunit.contract.NavigationUpdateIntent
+import java.util.Date
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.NextTurnDetail.NextEvent as LegacyNextEvent
 import com.andrerinas.openheadunit.aap.protocol.proto.NavigationStatus.NextTurnDetail.Side as LegacySide
-import com.andrerinas.openheadunit.contract.NavigationUpdateIntent
-import com.andrerinas.openheadunit.utils.AppLog
-import java.util.Date
 
 class AapNavigationHelper(
     private val context: Context,
@@ -79,35 +78,27 @@ class AapNavigationHelper(
             }
             val maneuver = if (direction == null) prepared.actionText
                 else context.getString(R.string.night_overlay_direction, prepared.actionText, direction)
-            publish(
-                if (prepared.nextEventType != LegacyNextEvent.UNKNOWN.number) {
-                    NightOverlayState.Navigation(
-                        maneuver = maneuver,
-                        distanceMeters = prepared.distanceMeters?.takeIf { it >= 0 },
-                        road = prepared.road.takeIf { it.isNotBlank() },
-                        details = buildManeuverDetails(prepared.turnNumber, prepared.turnAngle),
-                        etaSummary = buildEtaSummary(
-                            prepared.estimatedArrival,
-                            prepared.totalTimeSeconds,
-                            prepared.totalDistanceMeters
-                        ),
-                        currentRoad = prepared.currentRoad.takeIf { it.isNotBlank() },
-                        routeNumber = extractRouteNumber(prepared.currentRoad, prepared.road),
-                        laneGuidance = prepared.laneGuidance,
-                        speedLimitKmh = null,
-                        speedKmh = null,
-                        trafficDelaySeconds = null,
-                        icon = toOverlayIcon(
-                            maneuverType = prepared.nextManeuver?.let {
-                                NavigationStatus.NavigationManeuver.NavigationType.forNumber(it)
-                            },
-                            nextEventType = prepared.nextEventType,
-                            turnSide = prepared.turnSide
-                        )
+            val overlayNavigation = if (prepared.nextEventType != LegacyNextEvent.UNKNOWN.number) {
+                NightOverlayState.Navigation(
+                    maneuver = maneuver,
+                    distanceMeters = prepared.distanceMeters?.takeIf { it >= 0 },
+                    timeToManeuverSeconds = prepared.timeSeconds?.takeIf { it >= 0 },
+                    road = prepared.road.takeIf { it.isNotBlank() },
+                    details = buildManeuverDetails(prepared.turnNumber, prepared.turnAngle),
+                    icon = toOverlayIcon(
+                        maneuverType = prepared.nextManeuver?.let {
+                            NavigationStatus.NavigationManeuver.NavigationType.forNumber(it)
+                        },
+                        nextEventType = prepared.nextEventType,
+                        turnSide = prepared.turnSide
                     )
-                } else {
-                    null
-                }
+                )
+            } else {
+                null
+            }
+
+            publish(
+                overlayNavigation
             )
         }
         val intent = NavigationUpdateIntent(
@@ -219,30 +210,6 @@ class AapNavigationHelper(
             ?.estimatedTimeAtArrival
             ?.takeIf { it.isNotBlank() }
         val laneGuidance = state?.stepsList?.firstOrNull()?.let(::buildLaneGuidance)
-
-        AppLog.d(
-            "Nav: emit debounced eventType=$navEventType " +
-                "statusAt=${snapshot.clusterStatus?.updatedAtElapsedRealtimeMs} " +
-                "turnAt=${snapshot.nextTurnDetail?.updatedAtElapsedRealtimeMs} " +
-                "distanceAt=${snapshot.nextTurnDistance?.updatedAtElapsedRealtimeMs} " +
-                "stateAt=${snapshot.navigationState?.updatedAtElapsedRealtimeMs} " +
-                "positionAt=${snapshot.currentPosition?.updatedAtElapsedRealtimeMs}"
-        )
-        AppLog.d(
-            "Nav: AA data availability " +
-                "nextManeuver=${nextManeuver ?: "(none)"} " +
-                "action='$actionText' " +
-                "nextDistance=${distanceMeters ?: "(none)"} " +
-                "nextTime=${timeSeconds ?: "(none)"} " +
-                "nextRoad='${if (road.isBlank()) "(none)" else road}' " +
-                "currentRoad='${if (currentRoad.isBlank()) "(none)" else currentRoad}' " +
-                "eta='${estimatedArrival ?: "(none)"}' " +
-                "remainingDistance=${totalDistanceMeters ?: "(none)"} " +
-                "remainingTime=${totalTimeSeconds ?: "(none)"} " +
-                "lanes='${laneGuidance ?: "(none)"}' " +
-                "speedLimit=(not provided by current AA nav messages) " +
-                "trafficDelayBaselineEta=(not provided by current AA nav messages)"
-        )
 
         return FullNavigationMessage(
             distanceMeters = distanceMeters,
@@ -717,5 +684,6 @@ class AapNavigationHelper(
                     .createNotificationChannel(channel)
             }
         }
+
     }
 }
