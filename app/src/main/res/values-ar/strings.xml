@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">يتم تفعيل الوضع الداكن عندما يكون سطوع الشاشة أقل من هذه القيمة. يُبلغ أندرويد عن السطوع بنطاق 0–255، لكن النطاق الفعلي قد يختلف حسب الجهاز. قد تحتاج إلى التجربة للعثور على الحد المناسب لجهازك.</string>
     <string name="current_light_reading">الضوء الحالي: %d لوكس</string>
     <string name="enable_fine_lux_control">تحكم دقيق (0–100 لوكس)</string>
+    <string name="car_signal_calibration_info_format">قيمة car_mode الحالية: %1$d. التعيين: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = نهار، قيمة غير صفرية = ليل</string>
+    <string name="car_signal_mapping_inverted">0 = ليل، قيمة غير صفرية = نهار</string>
+    <string name="car_signal_unavailable">لا يمكن قراءة car_mode على هذه الوحدة الآن.</string>
+    <string name="car_signal_headlights_question">هل المصابيح الأمامية قيد التشغيل الآن؟</string>
+    <string name="car_signal_calibration_title">معايرة ILL+</string>
+    <string name="car_signal_recalibrate">إعادة المعايرة</string>
+    <string name="car_signal_headlights_on">تشغيل</string>
+    <string name="car_signal_headlights_off">إيقاف</string>
+    <string name="car_signal_calibration_saved">تم حفظ معايرة ILL+ وتطبيقها</string>
     <string name="night_mode_start">وقت بدء الوضع الليلي</string>
     <string name="night_mode_end">وقت انتهاء الوضع الليلي</string>
 

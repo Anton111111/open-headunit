@@ -39,6 +39,16 @@
     <string name="current_light_reading">მიმდინარე განათება: %d Lux</string>
     <string name="current_brightness_reading">მიმდინარე სიკაშკაშე: %d / 255</string>
     <string name="enable_fine_lux_control">ზუსტი კონტროლი (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">მიმდინარე car_mode: %1$d. მაპინგი: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = დღე, არანულოვანი = ღამე</string>
+    <string name="car_signal_mapping_inverted">0 = ღამე, არანულოვანი = დღე</string>
+    <string name="car_signal_unavailable">ამ მოწყობილობაზე car_mode-ის წაკითხვა ახლა შეუძლებელია.</string>
+    <string name="car_signal_headlights_question">ახლა ფარები ჩართულია?</string>
+    <string name="car_signal_calibration_title">ILL+ კალიბრაცია</string>
+    <string name="car_signal_recalibrate">ხელახლა დაკალიბრება</string>
+    <string name="car_signal_headlights_on">ჩართულია</string>
+    <string name="car_signal_headlights_off">გამორთულია</string>
+    <string name="car_signal_calibration_saved">ILL+ კალიბრაცია შენახულია და გამოყენებულია</string>
     <string name="night_mode_start">მუქი რეჟიმის დაწყების დრო</string>
     <string name="night_mode_end">მუქი რეჟიმის დასრულების დრო</string>
 

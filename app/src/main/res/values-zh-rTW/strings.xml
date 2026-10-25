@@ -37,6 +37,16 @@
     <string name="threshold_brightness_hint">當螢幕亮度低於此值時啟用深色模式。Android 以 0–255 回報亮度，但實際範圍可能因裝置而異。你可能需要多試幾次，才能找到適合你裝置的門檻值。</string>
     <string name="current_light_reading">目前光線：%d Lux</string>
     <string name="enable_fine_lux_control">精細控制 (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">目前 car_mode：%1$d。對應：%2$s。</string>
+    <string name="car_signal_mapping_default">0 = 白天，非 0 = 夜間</string>
+    <string name="car_signal_mapping_inverted">0 = 夜間，非 0 = 白天</string>
+    <string name="car_signal_unavailable">目前無法在此主機上讀取 car_mode。</string>
+    <string name="car_signal_headlights_question">現在車燈是否開啟？</string>
+    <string name="car_signal_calibration_title">ILL+ 校準</string>
+    <string name="car_signal_recalibrate">重新校準</string>
+    <string name="car_signal_headlights_on">開啟</string>
+    <string name="car_signal_headlights_off">關閉</string>
+    <string name="car_signal_calibration_saved">ILL+ 校準已儲存並套用</string>
     <string name="night_mode_start">夜間模式開始時間</string>
     <string name="night_mode_end">夜間模式結束時間</string>
 

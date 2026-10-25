@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">Modul întunecat se activează când luminozitatea ecranului este sub această valoare. Android raportează luminozitatea ca 0–255, dar intervalul real poate varia în funcție de dispozitiv. Poate fi nevoie să încerci mai multe valori pentru a găsi pragul potrivit pentru dispozitivul tău.</string>
     <string name="current_light_reading">Lumină actuală: %d Lux</string>
     <string name="enable_fine_lux_control">Control fin (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode curent: %1$d. Mapare: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Zi, diferit de zero = Noapte</string>
+    <string name="car_signal_mapping_inverted">0 = Noapte, diferit de zero = Zi</string>
+    <string name="car_signal_unavailable">Nu se poate citi car_mode pe această unitate în acest moment.</string>
+    <string name="car_signal_headlights_question">Farurile sunt aprinse acum?</string>
+    <string name="car_signal_calibration_title">Calibrare ILL+</string>
+    <string name="car_signal_recalibrate">Recalibrează</string>
+    <string name="car_signal_headlights_on">Aprinse</string>
+    <string name="car_signal_headlights_off">Stinse</string>
+    <string name="car_signal_calibration_saved">Calibrarea ILL+ a fost salvată și aplicată</string>
     <string name="night_mode_start">Oră început mod de noapte</string>
     <string name="night_mode_end">Oră sfârșit mod de noapte</string>
 

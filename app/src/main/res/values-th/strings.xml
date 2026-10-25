@@ -245,6 +245,16 @@
     <string name="current_light_reading">แสงปัจจุบัน: %d Lux</string>
     <string name="current_brightness_reading">ความสว่างปัจจุบัน: %d / 255</string>
     <string name="enable_fine_lux_control">การควบคุมแบบละเอียด (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">ค่า car_mode ปัจจุบัน: %1$d การแมป: %2$s</string>
+    <string name="car_signal_mapping_default">0 = กลางวัน, ไม่เป็นศูนย์ = กลางคืน</string>
+    <string name="car_signal_mapping_inverted">0 = กลางคืน, ไม่เป็นศูนย์ = กลางวัน</string>
+    <string name="car_signal_unavailable">ไม่สามารถอ่าน car_mode บนเฮดยูนิตนี้ได้ในขณะนี้</string>
+    <string name="car_signal_headlights_question">ตอนนี้ไฟหน้ารถเปิดอยู่หรือไม่?</string>
+    <string name="car_signal_calibration_title">การปรับเทียบ ILL+</string>
+    <string name="car_signal_recalibrate">ปรับเทียบใหม่</string>
+    <string name="car_signal_headlights_on">เปิด</string>
+    <string name="car_signal_headlights_off">ปิด</string>
+    <string name="car_signal_calibration_saved">บันทึกและนำการปรับเทียบ ILL+ ไปใช้แล้ว</string>
     <string name="night_mode_start">เวลาเริ่มต้นโหมดกลางคืน</string>
     <string name="night_mode_end">เวลาสิ้นสุดโหมดกลางคืน</string>
 

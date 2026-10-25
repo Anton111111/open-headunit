@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">画面の明るさがこの値よりも低い場合、ダークモードが有効になります。Android上では明るさが0~255の範囲で表されますが、実際の範囲はデバイスによって異なる場合があります。そのため、お使いのデバイスに最適な値を見つける必要があります。</string>
     <string name="current_light_reading">現在の明るさ: %d ルクス</string>
     <string name="enable_fine_lux_control">微調整 (0–100 ルクス)</string>
+    <string name="car_signal_calibration_info_format">現在のcar_mode: %1$d。マッピング: %2$s。</string>
+    <string name="car_signal_mapping_default">0 = 昼、0以外 = 夜</string>
+    <string name="car_signal_mapping_inverted">0 = 夜、0以外 = 昼</string>
+    <string name="car_signal_unavailable">このヘッドユニットでは現在 car_mode を読み取れません。</string>
+    <string name="car_signal_headlights_question">現在ヘッドライトは点灯していますか？</string>
+    <string name="car_signal_calibration_title">ILL+ キャリブレーション</string>
+    <string name="car_signal_recalibrate">再キャリブレーション</string>
+    <string name="car_signal_headlights_on">オン</string>
+    <string name="car_signal_headlights_off">オフ</string>
+    <string name="car_signal_calibration_saved">ILL+ キャリブレーションを保存して適用しました</string>
     <string name="night_mode_start">ナイトモードの開始時間</string>
     <string name="night_mode_end">ナイトモードの終了時間</string>
 

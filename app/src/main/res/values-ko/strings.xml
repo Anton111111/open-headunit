@@ -41,6 +41,16 @@
     <string name="threshold_brightness_hint">화면 밝기가 이 값보다 낮으면 다크 모드가 적용됩니다. Android는 밝기를 0–255로 표시하지만, 실제 범위는 기기에 따라 다를 수 있습니다. 기기에 맞는 기준값을 찾으려면 여러 값을 시험해 봐야 할 수 있습니다.</string>
     <string name="current_light_reading">현재 조도: %d Lux</string>
     <string name="enable_fine_lux_control">조도 미세 조정(0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">현재 car_mode: %1$d. 매핑: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = 주간, 0이 아님 = 야간</string>
+    <string name="car_signal_mapping_inverted">0 = 야간, 0이 아님 = 주간</string>
+    <string name="car_signal_unavailable">이 헤드유닛에서 지금 car_mode를 읽을 수 없습니다.</string>
+    <string name="car_signal_headlights_question">지금 전조등이 켜져 있나요?</string>
+    <string name="car_signal_calibration_title">ILL+ 보정</string>
+    <string name="car_signal_recalibrate">다시 보정</string>
+    <string name="car_signal_headlights_on">켜짐</string>
+    <string name="car_signal_headlights_off">꺼짐</string>
+    <string name="car_signal_calibration_saved">ILL+ 보정이 저장되어 적용되었습니다</string>
     <string name="current_brightness_reading">현재 밝기: %d / 255</string>
     <string name="night_mode_start">다크 모드 시작 시간</string>
     <string name="night_mode_end">다크 모드 종료 시간</string>

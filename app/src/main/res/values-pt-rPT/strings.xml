@@ -246,6 +246,16 @@
     <string name="current_light_reading">Luz atual: %d Lux</string>
     <string name="current_brightness_reading">Brilho atual: %d / 255</string>
     <string name="enable_fine_lux_control">Controlo preciso (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode atual: %1$d. Mapeamento: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Dia, diferente de zero = Noite</string>
+    <string name="car_signal_mapping_inverted">0 = Noite, diferente de zero = Dia</string>
+    <string name="car_signal_unavailable">Não foi possível ler car_mode nesta unidade neste momento.</string>
+    <string name="car_signal_headlights_question">Os faróis estão ligados agora?</string>
+    <string name="car_signal_calibration_title">Calibração ILL+</string>
+    <string name="car_signal_recalibrate">Recalibrar</string>
+    <string name="car_signal_headlights_on">Ligados</string>
+    <string name="car_signal_headlights_off">Desligados</string>
+    <string name="car_signal_calibration_saved">Calibração ILL+ guardada e aplicada</string>
     <string name="night_mode_start">Hora de início do modo noturno</string>
     <string name="night_mode_end">Hora de fim do modo noturno</string>
 

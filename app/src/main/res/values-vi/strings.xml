@@ -39,6 +39,16 @@
     <string name="current_light_reading">Ánh sáng hiện tại: %d Lux</string>
     <string name="current_brightness_reading">Độ sáng hiện tại: %d / 255</string>
     <string name="enable_fine_lux_control">Điều chỉnh tinh (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode hiện tại: %1$d. Ánh xạ: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Ban ngày, khác 0 = Ban đêm</string>
+    <string name="car_signal_mapping_inverted">0 = Ban đêm, khác 0 = Ban ngày</string>
+    <string name="car_signal_unavailable">Không thể đọc car_mode trên đầu phát này lúc này.</string>
+    <string name="car_signal_headlights_question">Đèn pha hiện đang bật chứ?</string>
+    <string name="car_signal_calibration_title">Hiệu chỉnh ILL+</string>
+    <string name="car_signal_recalibrate">Hiệu chỉnh lại</string>
+    <string name="car_signal_headlights_on">Bật</string>
+    <string name="car_signal_headlights_off">Tắt</string>
+    <string name="car_signal_calibration_saved">Hiệu chỉnh ILL+ đã được lưu và áp dụng</string>
     <string name="night_mode_start">Giờ bắt đầu chế độ tối</string>
     <string name="night_mode_end">Giờ kết thúc chế độ tối</string>
 

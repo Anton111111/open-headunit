@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">Темний режим вмикається, коли яскравість екрана нижча за це значення. Android повідомляє яскравість у діапазоні 0–255, але фактичний діапазон може залежати від пристрою. Щоб підібрати потрібний поріг, можливо, доведеться поекспериментувати.</string>
     <string name="current_light_reading">Поточне освітлення: %d лк</string>
     <string name="enable_fine_lux_control">Точне керування (0–100 лк)</string>
+    <string name="car_signal_calibration_info_format">Поточний car_mode: %1$d. Відповідність: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = День, ненульове = Ніч</string>
+    <string name="car_signal_mapping_inverted">0 = Ніч, ненульове = День</string>
+    <string name="car_signal_unavailable">Зараз неможливо прочитати car_mode на цьому головному пристрої.</string>
+    <string name="car_signal_headlights_question">Зараз фари ввімкнені?</string>
+    <string name="car_signal_calibration_title">Калібрування ILL+</string>
+    <string name="car_signal_recalibrate">Перекалібрувати</string>
+    <string name="car_signal_headlights_on">Увімкнені</string>
+    <string name="car_signal_headlights_off">Вимкнені</string>
+    <string name="car_signal_calibration_saved">Калібрування ILL+ збережено й застосовано</string>
     <string name="night_mode_start">Час початку нічного режиму</string>
     <string name="night_mode_end">Час закінчення нічного режиму</string>
 

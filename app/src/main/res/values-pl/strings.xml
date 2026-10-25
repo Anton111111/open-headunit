@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">Tryb ciemny aktywuje się, gdy jasność ekranu jest poniżej tej wartości. Android raportuje jasność jako 0–255, ale rzeczywisty zakres może się różnić w zależności od urządzenia. Może być konieczne eksperymentowanie, aby znaleźć właściwy próg dla Twojego urządzenia.</string>
     <string name="current_light_reading">Aktualne światło: %d Lux</string>
     <string name="enable_fine_lux_control">Precyzyjna kontrola (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Bieżąca wartość car_mode: %1$d. Mapowanie: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Dzień, wartość różna od zera = Noc</string>
+    <string name="car_signal_mapping_inverted">0 = Noc, wartość różna od zera = Dzień</string>
+    <string name="car_signal_unavailable">Nie można teraz odczytać car_mode na tej jednostce.</string>
+    <string name="car_signal_headlights_question">Czy światła są teraz włączone?</string>
+    <string name="car_signal_calibration_title">Kalibracja ILL+</string>
+    <string name="car_signal_recalibrate">Kalibruj ponownie</string>
+    <string name="car_signal_headlights_on">Włączone</string>
+    <string name="car_signal_headlights_off">Wyłączone</string>
+    <string name="car_signal_calibration_saved">Kalibracja ILL+ została zapisana i zastosowana</string>
     <string name="night_mode_start">Czas rozpoczęcia trybu nocnego</string>
     <string name="night_mode_end">Czas zakończenia trybu nocnego</string>
 

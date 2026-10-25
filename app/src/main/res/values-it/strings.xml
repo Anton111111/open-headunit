@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">La modalità notte si attiva quando la luminosità dello schermo è inferiore a questo valore. Android riporta la luminosità tra 0 e 255, ma l\'intervallo effettivo può variare in base al dispositivo. Potrebbe essere necessario sperimentare per trovare la soglia giusta per il tuo dispositivo.</string>
     <string name="current_light_reading">Luce attuale: %d Lux</string>
     <string name="enable_fine_lux_control">Controllo di precisione (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode attuale: %1$d. Mappatura: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Giorno, diverso da zero = Notte</string>
+    <string name="car_signal_mapping_inverted">0 = Notte, diverso da zero = Giorno</string>
+    <string name="car_signal_unavailable">Impossibile leggere car_mode su questa unità principale in questo momento.</string>
+    <string name="car_signal_headlights_question">I fari sono accesi adesso?</string>
+    <string name="car_signal_calibration_title">Calibrazione ILL+</string>
+    <string name="car_signal_recalibrate">Ricalibra</string>
+    <string name="car_signal_headlights_on">Accesi</string>
+    <string name="car_signal_headlights_off">Spenti</string>
+    <string name="car_signal_calibration_saved">Calibrazione ILL+ salvata e applicata</string>
     <string name="night_mode_start">Ora inizio modalità notte</string>
     <string name="night_mode_end">Ora fine modalità notte</string>
 

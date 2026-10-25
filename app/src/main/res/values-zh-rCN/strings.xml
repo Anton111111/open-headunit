@@ -37,6 +37,16 @@
     <string name="threshold_brightness_hint">当屏幕亮度低于此值时启用深色模式。Android 报告的亮度范围为 0–255，但实际范围可能因设备而异。您可能需要多次尝试，才能找到适合您设备的阈值。</string>
     <string name="current_light_reading">当前光线：%d Lux</string>
     <string name="enable_fine_lux_control">精细控制（0–100 Lux）</string>
+    <string name="car_signal_calibration_info_format">当前 car_mode：%1$d。映射：%2$s。</string>
+    <string name="car_signal_mapping_default">0 = 白天，非 0 = 夜间</string>
+    <string name="car_signal_mapping_inverted">0 = 夜间，非 0 = 白天</string>
+    <string name="car_signal_unavailable">当前无法在此主机上读取 car_mode。</string>
+    <string name="car_signal_headlights_question">现在车灯是否已开启？</string>
+    <string name="car_signal_calibration_title">ILL+ 校准</string>
+    <string name="car_signal_recalibrate">重新校准</string>
+    <string name="car_signal_headlights_on">开启</string>
+    <string name="car_signal_headlights_off">关闭</string>
+    <string name="car_signal_calibration_saved">ILL+ 校准已保存并应用</string>
     <string name="night_mode_start">夜间模式开始时间</string>
     <string name="night_mode_end">夜间模式结束时间</string>
 

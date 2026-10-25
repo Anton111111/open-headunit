@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">Тёмный режим активируется, когда яркость экрана ниже этого значения. Android сообщает яркость как 0–255, но фактический диапазон может отличаться в зависимости от устройства. Возможно, вам придётся поэкспериментировать, чтобы найти подходящий порог для вашего устройства.</string>
     <string name="current_light_reading">Освещённость: %d лк</string>
     <string name="enable_fine_lux_control">Точная настройка (0–100 лк)</string>
+    <string name="car_signal_calibration_info_format">Текущее значение car_mode: %1$d. Сопоставление: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = День, ненулевое = Ночь</string>
+    <string name="car_signal_mapping_inverted">0 = Ночь, ненулевое = День</string>
+    <string name="car_signal_unavailable">Сейчас невозможно прочитать car_mode на этом головном устройстве.</string>
+    <string name="car_signal_headlights_question">Сейчас фары включены?</string>
+    <string name="car_signal_calibration_title">Калибровка ILL+</string>
+    <string name="car_signal_recalibrate">Перекалибровать</string>
+    <string name="car_signal_headlights_on">Включены</string>
+    <string name="car_signal_headlights_off">Отключены</string>
+    <string name="car_signal_calibration_saved">Калибровка ILL+ сохранена и применена</string>
     <string name="night_mode_start">Время начала ночного режима</string>
     <string name="night_mode_end">Время окончания ночного режима</string>
 
