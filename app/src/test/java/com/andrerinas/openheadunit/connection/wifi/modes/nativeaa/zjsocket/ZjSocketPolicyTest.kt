@@ -145,4 +145,20 @@ class ZjSocketPolicyTest {
         assertTrue(ZjSocketPolicy.cancellationEndsCarrier(stopped = false, carrierActive = false))
         assertTrue(ZjSocketPolicy.cancellationEndsCarrier(stopped = true, carrierActive = false))
     }
+
+    @Test
+    fun `the socket is probed once, at the first ZBT refusal, while unmeasured`() {
+        assertTrue(ZjSocketPolicy.probesDuringZbtWait(refusals = 1, zjAnswer = null))
+        assertFalse(ZjSocketPolicy.probesDuringZbtWait(refusals = 2, zjAnswer = null))
+        assertFalse(ZjSocketPolicy.probesDuringZbtWait(refusals = 1, zjAnswer = false))
+        assertFalse(ZjSocketPolicy.probesDuringZbtWait(refusals = 1, zjAnswer = true))
+    }
+
+    @Test
+    fun `a socket that connects ends the ZBT wait only after a refusal`() {
+        assertTrue(ZjSocketPolicy.endsZbtWait(refusals = 1, zjConnects = true))
+        assertFalse(ZjSocketPolicy.endsZbtWait(refusals = 0, zjConnects = true))
+        assertFalse(ZjSocketPolicy.endsZbtWait(refusals = 3, zjConnects = false))
+        assertFalse(ZjSocketPolicy.endsZbtWait(refusals = 3, zjConnects = null))
+    }
 }

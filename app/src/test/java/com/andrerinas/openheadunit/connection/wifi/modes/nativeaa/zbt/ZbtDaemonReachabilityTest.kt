@@ -207,6 +207,29 @@ class ZbtDaemonReachabilityTest {
     }
 
     @Test
+    fun `a refusal made final by another route ends the window and is cached`() {
+        val refusalsSeen = mutableListOf<Int>()
+        val reachable = ZbtDaemonReachability.resolve(
+            nowMs = { clock }, dial = scripted(false), retryRefusals = true,
+            sleep = { clock += it }, refusalIsFinal = { refusalsSeen += it; true }
+        )
+        assertFalse(reachable)
+        assertEquals(listOf(0L), dialTimes)
+        assertEquals(listOf(1), refusalsSeen)
+        assertTrue(ZbtDaemonReachability.cached(nowMs = clock) == false)
+    }
+
+    @Test
+    fun `a refusal not made final keeps the whole window`() {
+        val reachable = ZbtDaemonReachability.resolve(
+            nowMs = { clock }, dial = scripted(false), retryRefusals = true,
+            sleep = { clock += it }, refusalIsFinal = { false }
+        )
+        assertFalse(reachable)
+        assertEquals(7, dials)
+    }
+
+    @Test
     fun `a daemon that never listens is dialled across the window and then ruled out`() {
         assertFalse(retrying(scripted(false)))
         assertEquals(listOf(0L, 1_000L, 3_000L, 7_000L, 15_000L, 23_000L, 30_000L), dialTimes)

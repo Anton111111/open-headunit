@@ -80,6 +80,12 @@ object ZjSocketPolicy {
     fun cancellationEndsCarrier(stopped: Boolean, carrierActive: Boolean): Boolean =
         stopped || !carrierActive
 
+    /** The socket is asked once, at ZBT's first refusal, so a unit without 3152 skips its 30 s window. */
+    fun probesDuringZbtWait(refusals: Int, zjAnswer: Boolean?): Boolean = refusals == 1 && zjAnswer == null
+
+    /** A socket that connects makes a ZBT refusal final; a daemon that answers its first dial still wins. */
+    fun endsZbtWait(refusals: Int, zjConnects: Boolean?): Boolean = refusals >= 1 && zjConnects == true
+
     /** The gap before the next dial; [count] is the join refusals or the refused connects in a row. */
     fun retryDelayMs(afterServed: Boolean, count: Int): Long =
         if (afterServed) JoinRefusalPolicy.retryDelayMs(count, BASE_RETRY_MS)

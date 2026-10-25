@@ -24,6 +24,7 @@ import com.andrerinas.openheadunit.aap.AapService
 
 import com.andrerinas.openheadunit.connection.wifi.direct.WifiBandCapability
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketCarrier
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketPolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketProbe
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscoveryPolicy
@@ -893,6 +894,12 @@ class NativeAaHandshakeManager(
         )
     }
 
+    /** Runs inside the ZBT window, after each refusal: the measurement's own gates already passed. */
+    private fun zjSocketEndsZbtWait(refusals: Int): Boolean {
+        if (ZjSocketPolicy.probesDuringZbtWait(refusals, ZjSocketProbe.answer())) ZjSocketProbe.measure()
+        return ZjSocketPolicy.endsZbtWait(refusals, ZjSocketProbe.answer())
+    }
+
     fun start() = start(resumingMeasurement = false)
 
     @SuppressLint("MissingPermission")
@@ -940,8 +947,11 @@ class NativeAaHandshakeManager(
             scope.launch(Dispatchers.IO + CoroutineName("NativeAa-ZbtReachability")) {
                 val measurement = ZbtDiscovery.measurement(discovery.decision)
                 val completion = measurement.awaitResolution(
-                    keepTrying = { measuringDaemon && measureGeneration == generation }
+                    keepTrying = { measuringDaemon && measureGeneration == generation },
+                    refusalIsFinal = ::zjSocketEndsZbtWait
                 )
+                // A socket refused early in the window may be up by its end, so ask it again.
+                ZjSocketProbe.forgetNegative()
                 // Only after ZBT refused, so a daemon that answers is never joined by a second dial.
                 if (completion != ZbtDiscovery.Measurement.Completion.CANCELLED &&
                     measuringDaemon && measureGeneration == generation && wantsZjSocketProbe()
