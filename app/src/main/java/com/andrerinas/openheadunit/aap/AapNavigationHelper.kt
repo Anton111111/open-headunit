@@ -189,13 +189,20 @@ class AapNavigationHelper(
             ?.number
             ?: maneuverType?.let { maneuverTypeToLegacyTurnSide(it) }
         val nextManeuver = state?.stepsList?.firstOrNull()?.maneuver?.type?.number
-        val turnNumber = state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitNumber
-            ?: detail?.takeIf { it.hasTurnNumber() }?.turnNumber
-        val turnAngle = state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitAngle
-            ?: detail?.takeIf { it.hasTurnAngle() }?.turnAngle
-val actionText = state?.stepsList?.firstOrNull()?.maneuver?.type?.let { maneuverTypeToAction(it) }
-    ?: detail?.takeIf { it.hasNextTurn() }?.let { nextEventToAction(it.nextTurn) }
-    ?: context.getString(R.string.nav_action_unknown)
+        val isRoundaboutManeuver = maneuverType?.let(::isRoundaboutManeuverType)
+            ?: LegacyNextEvent.forNumber(nextEventType)?.let(::isRoundaboutLegacyEvent)
+            ?: false
+        val turnNumber = (
+            state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitNumber
+                ?: detail?.takeIf { it.hasTurnNumber() }?.turnNumber
+            ).takeIf { isRoundaboutManeuver }
+        val turnAngle = (
+            state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitAngle
+                ?: detail?.takeIf { it.hasTurnAngle() }?.turnAngle
+            ).takeIf { isRoundaboutManeuver }
+        val actionText = state?.stepsList?.firstOrNull()?.maneuver?.type?.let { maneuverTypeToAction(it) }
+            ?: detail?.takeIf { it.hasNextTurn() }?.let { nextEventToAction(it.nextTurn) }
+            ?: context.getString(R.string.nav_action_unknown)
 
         val destFirst = currentPosition?.destinationDistancesList?.firstOrNull()
         val totalDistanceMeters = destFirst
@@ -387,6 +394,29 @@ val actionText = state?.stepsList?.firstOrNull()?.maneuver?.type?.let { maneuver
             parts.add(context.getString(R.string.night_overlay_exit_angle, it))
         }
         return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+    }
+
+    private fun isRoundaboutLegacyEvent(event: LegacyNextEvent): Boolean {
+        return when (event) {
+            LegacyNextEvent.ROUNDABOUT_ENTER,
+            LegacyNextEvent.ROUNDABOUT_EXIT,
+            LegacyNextEvent.ROUNDABOUT_ENTER_AND_EXIT -> true
+            else -> false
+        }
+    }
+
+    private fun isRoundaboutManeuverType(
+        type: NavigationStatus.NavigationManeuver.NavigationType
+    ): Boolean {
+        return when (type) {
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER,
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_EXIT,
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW,
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CW_WITH_ANGLE,
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW,
+            NavigationStatus.NavigationManeuver.NavigationType.ROUNDABOUT_ENTER_AND_EXIT_CCW_WITH_ANGLE -> true
+            else -> false
+        }
     }
 
     private fun toOverlayIcon(
