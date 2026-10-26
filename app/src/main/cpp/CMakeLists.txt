@@ -39,6 +39,10 @@ add_library(hur_soft_video SHARED ffmpeg_video_decoder.cpp)
 
 target_compile_features(hur_soft_video PRIVATE cxx_std_17)
 target_compile_options(hur_soft_video PRIVATE -Wall -Wextra -Werror)
+if(ANDROID_ABI STREQUAL "armeabi-v7a")
+    # FFmpeg dispatches NEON at runtime; the JNI bridge keeps the ARMv7 baseline.
+    target_compile_options(hur_soft_video PRIVATE -mfpu=vfpv3-d16)
+endif()
 
 find_library(log-lib log)
 find_library(android-lib android)

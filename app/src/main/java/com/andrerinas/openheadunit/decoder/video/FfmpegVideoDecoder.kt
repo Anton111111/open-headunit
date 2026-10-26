@@ -1,5 +1,6 @@
 package com.andrerinas.openheadunit.decoder.video
 
+import android.os.Build
 import android.os.SystemClock
 import android.view.Surface
 import androidx.annotation.Keep
@@ -103,7 +104,9 @@ class FfmpegVideoDecoder(
     companion object {
         // Matches the native positive-result flag; negative values remain decode failures.
         private const val RENDERED_KEYFRAME = 1 shl 30
-        private val libraryLoaded: Boolean = try {
+        private val libraryLoaded: Boolean = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            false
+        } else try {
             System.loadLibrary("hur_soft_video")
             true
         } catch (e: UnsatisfiedLinkError) {
