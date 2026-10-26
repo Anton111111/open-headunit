@@ -179,10 +179,11 @@ class SettingsRestartAdmissionTest {
         `when`(usb.hasPermission(device)).thenReturn(true)
         set(manager, "context", context)
         val method = CommManager::class.java.getDeclaredMethod("connectUsb", android.hardware.usb.UsbDevice::class.java,
-            CommManager.ConnectionState.Disconnected::class.java, kotlin.coroutines.Continuation::class.java)
+            CommManager.ConnectionState.Disconnected::class.java, Any::class.java,
+            ConnectionArbiter.Claim::class.java, ConnectionAdmission::class.java, kotlin.coroutines.Continuation::class.java)
             .apply { isAccessible = true }
         val retry = launch(start = CoroutineStart.UNDISPATCHED) {
-            suspendCoroutineUninterceptedOrReturn<Unit> { method.invoke(manager, device, saved, it) }
+            suspendCoroutineUninterceptedOrReturn<Unit> { method.invoke(manager, device, saved, null, null, ConnectionAdmission.UNRESTRICTED, it) }
         }
         assertFalse(retry.isCompleted)
         manager.cancelPendingSettingsRestart()

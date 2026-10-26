@@ -35,6 +35,7 @@ import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.AapProjectionActivity
 import com.andrerinas.openheadunit.aap.AapService
 import com.andrerinas.openheadunit.aap.NativeTransport
+import com.andrerinas.openheadunit.aap.ProjectionWatchdogPolicy
 import com.andrerinas.openheadunit.app.BaseActivity
 import com.andrerinas.openheadunit.app.BtAutoStartRearmPolicy
 import com.andrerinas.openheadunit.connection.CommManager
@@ -543,13 +544,18 @@ class MainActivity : BaseActivity() {
 
     private fun showAutoConnectPill() {
         val pill = findViewById<View>(R.id.auto_connect_pill) ?: return
-        val pillText = findViewById<TextView>(R.id.auto_connect_pill_text)
-        pillText?.text = autoConnectStatusText ?: getString(R.string.android_auto_starting)
-        if (pill.visibility == View.VISIBLE) return
+        val stage = ConnectionStageTracker.stage.value
+        val title = applyPillTitle(stage)
+        if (pill.visibility == View.VISIBLE) {
+            // An attempt that starts while the pill only waited turns the step back into the
+            // second line; nothing else would bring it back until the next step.
+            applyStageText(stage.takeIf { title != StatusPillPolicy.Title.STEP }, animate = true)
+            return
+        }
 
         // After the guard, so a pill that is merely changing step still gets the crossfade below.
         // Reading the tracker here is what restores the step line after an activity recreate.
-        applyStageText(ConnectionStageTracker.stage.value, animate = false)
+        applyStageText(stage.takeIf { title != StatusPillPolicy.Title.STEP }, animate = false)
         applyNetworkText(ConnectionStageTracker.network.value, animate = false)
         pill.visibility = View.VISIBLE
         // The pill lives in the notice stack, so the stack is what has to come up.
@@ -560,6 +566,24 @@ class MainActivity : BaseActivity() {
                 splash.bringToFront()
             }
         }
+    }
+
+    /**
+     * The pill's first line and its spinner. A stack that only waits for the phone shows the step
+     * there, without the spinner, so the pill does not claim a start that is not happening (#1147).
+     */
+    private fun applyPillTitle(stage: ConnectionStage?): StatusPillPolicy.Title {
+        val title = stage?.let {
+            StatusPillPolicy.title(it, autoConnectInProgress, hasCustomText = autoConnectStatusText != null)
+        } ?: StatusPillPolicy.Title.STARTING
+        findViewById<TextView>(R.id.auto_connect_pill_text)?.text = when (title) {
+            StatusPillPolicy.Title.CUSTOM -> autoConnectStatusText
+            StatusPillPolicy.Title.STEP -> stage?.let { getString(it.label) }
+            StatusPillPolicy.Title.STARTING -> getString(R.string.android_auto_starting)
+        }
+        findViewById<View>(R.id.auto_connect_pill_spinner)?.visibility =
+            if (title == StatusPillPolicy.Title.STEP) View.GONE else View.VISIBLE
+        return title
     }
 
     private fun hideAutoConnectPill() {
@@ -580,9 +604,25 @@ class MainActivity : BaseActivity() {
         }
         // It does not move the tracker, so the pill has to be asked again when it changes.
         viewModel.homeShowsBringUp.observe(this) { renderStagePill(ConnectionStageTracker.stage.value) }
+        // Nor does a session going live or ending: the tracker can hold the same step across both.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                App.provide(this@MainActivity).commManager.connectionState.collect {
+                    renderStagePill(ConnectionStageTracker.stage.value)
+                }
+            }
+        }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 ConnectionStageTracker.network.collect { renderNetworkLine(it) }
+            }
+        }
+        // The session coming up does not move the tracker, so the pill has to be asked again then.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                App.provide(this@MainActivity).commManager.connectionState.collect {
+                    renderStagePill(ConnectionStageTracker.stage.value)
+                }
             }
         }
     }
@@ -636,8 +676,16 @@ class MainActivity : BaseActivity() {
             PhoneExitQuietPolicy.suppressesPill(ConnectionStageTracker.phoneLeftAtMs, now)
         val homeTellsIt = viewModel.homeShowsBringUp.value == true
         // PILL_THEN_OVERLAY hands the screen to the overlay part-way through an attempt.
-        // Re-raising the pill under it would undo that promotion.
-        val shown = if (stage == null || overlayOwnsScreen() || phoneLeftQuiet || homeTellsIt) null else stage
+        // Re-raising the pill under it would undo that promotion. A live session keeps the tracker
+        // on its last step until it ends, and the home seen during one says so already.
+        val withheld = StatusPillPolicy.withheld(
+            stage = stage,
+            sessionLive = ProjectionWatchdogPolicy.isSessionLive(App.provide(this).commManager.connectionState.value),
+            overlayOwnsScreen = overlayOwnsScreen(),
+            phoneLeftQuiet = phoneLeftQuiet,
+            homeTellsIt = homeTellsIt,
+        )
+        val shown = StatusPillPolicy.shown(stage, withheld)
         // What the user is actually being told, which no other line records. A reporter's
         // screenshot and their log can then be read against each other. A step the overlay hides
         // is still named: without that, a session where an auto-connect happened to be in flight
@@ -647,10 +695,13 @@ class MainActivity : BaseActivity() {
             renderedStage = shown
             val step = when {
                 shown != null -> shown.name
-                stage != null && phoneLeftQuiet -> "${stage.name} (not shown, the phone ended the session)"
-                stage != null && homeTellsIt -> "${stage.name} (not shown, the home's main button tells it)"
-                stage != null -> "${stage.name} (not shown, the overlay owns the screen)"
-                else -> "hidden"
+                stage == null -> "hidden"
+                else -> "${stage.name} (not shown, " + when (withheld) {
+                    StatusPillPolicy.Withheld.SESSION_LIVE -> "the session is live"
+                    StatusPillPolicy.Withheld.PHONE_LEFT -> "the phone ended the session"
+                    StatusPillPolicy.Withheld.HOME_TELLS_IT -> "the home's main button tells it"
+                    else -> "the overlay owns the screen"
+                } + ")"
             }
             AppLog.i("MainActivity: status pill step: $step")
         }
@@ -668,7 +719,9 @@ class MainActivity : BaseActivity() {
             hideAutoConnectPill()
         } else {
             showAutoConnectPill()
-            applyStageText(shown, animate = true)
+            // Already the first line when the stack only waits, so not repeated under it.
+            val title = applyPillTitle(shown)
+            applyStageText(shown.takeIf { title != StatusPillPolicy.Title.STEP }, animate = true)
         }
     }
 
@@ -1044,9 +1097,33 @@ class MainActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_HOME)) {
+            // Like any launcher, Home leaves whatever inner screen was open (USB list, network
+            // list, app drawer) for the home itself. The home then shows its first page.
+            returnToHomeRoot()
             viewModel.homePressed.value = SystemClock.uptimeMillis()
         }
         handleLaunchIntent(intent)
+    }
+
+    /**
+     * Pops the nav back stack down to the home. super.onNewIntent has already marked the fragment
+     * state as not saved, so the pop is legal here; the check only guards a host that changes that.
+     */
+    private fun returnToHomeRoot() {
+        val navHost = supportFragmentManager.findFragmentById(R.id.main_content)
+            as? androidx.navigation.fragment.NavHostFragment ?: return
+        val navController = navHost.navController
+        val current = navController.currentDestination?.id ?: return
+        if (current == R.id.homeFragment) return
+        if (supportFragmentManager.isStateSaved) {
+            AppLog.w("MainActivity: Home key on an inner screen with the fragment state saved, not popping")
+            return
+        }
+        if (navController.popBackStack(R.id.homeFragment, false)) {
+            AppLog.i("MainActivity: Home key, back to the home from ${runCatching { resources.getResourceEntryName(current) }.getOrDefault(current.toString())}")
+        } else {
+            AppLog.w("MainActivity: Home key, the home is not on the back stack")
+        }
     }
 
     /**

@@ -31,4 +31,14 @@ interface IProjectionView {
      * backends that cannot observe per-frame draws (SurfaceView).
      */
     fun longFrameEvents(): Long
+
+    /**
+     * Frames this view has drawn since it was created, or -1 when the backend cannot count them.
+     *
+     * A plain SurfaceView is composited by SurfaceFlinger with no draw callback, so it returns
+     * -1. TextureView and the GLES view count every frame they display; the onboarding video
+     * test uses the difference between this and the decoder's count to tell a slow decoder from
+     * a renderer that drops the picture.
+     */
+    fun drawnFrames(): Long = -1L
 }

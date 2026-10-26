@@ -10,7 +10,34 @@ package com.andrerinas.openheadunit.connection.usb
 object UsbAttachPolicy {
 
     /**
-     * @param isGoogleVendor        vendor id is 0x18D1; a Pixel, or an Android Auto dongle
+     * Checks if a device has a Google vendor ID (0x18D1) or belongs to a known Android Auto dongle
+     * (e.g. smartBox, Carlinkit with Xiaomi VID 0x2717, Allwinner VID 0x1F3A, or dongle product names).
+     */
+    fun isGoogleOrDongleVendor(
+        vendorId: Int,
+        productName: String? = null,
+        manufacturerName: String? = null,
+    ): Boolean {
+        if (vendorId == 0x18D1) return true // Google / AAWireless
+        if (vendorId == 0x2717) return true // Xiaomi / Carlinkit / smartBox
+        if (vendorId == 0x1F3A) return true // Allwinner AA dongles
+        val product = productName ?: ""
+        val mfg = manufacturerName ?: ""
+        if (product.contains("smartbox", ignoreCase = true) ||
+            product.contains("carlinkit", ignoreCase = true) ||
+            product.contains("autokit", ignoreCase = true)) {
+            return true
+        }
+        if (mfg.contains("smartbox", ignoreCase = true) ||
+            mfg.contains("carlinkit", ignoreCase = true) ||
+            mfg.contains("autokit", ignoreCase = true)) {
+            return true
+        }
+        return false
+    }
+
+    /**
+     * @param isGoogleVendor        vendor id is 0x18D1, or a known Android Auto dongle
      * @param autoStartOnUsb        the user asked us to start on any USB attach
      * @param allowListConfigured   the user has marked at least one device as allowed
      * @param deviceAllowed         this device is on that list

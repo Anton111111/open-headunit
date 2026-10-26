@@ -61,6 +61,7 @@ class UsbLauncherListener(private val manager: UsbLauncherManager) : UsbReceiver
     }
 
     override fun onUsbDetach(device: UsbDevice) {
+        manager.noteRecoveryDeviceDetached(device)
         val commManager = App.provide(service).commManager
 
         service.userExitedAA = false
@@ -88,6 +89,10 @@ class UsbLauncherListener(private val manager: UsbLauncherManager) : UsbReceiver
             AppLog.i("Accessory detach cooldown finished. Checking for re-connection...")
             manager.checkAlreadyConnected(force = true, settingsRestart = manager.pendingSettingsRestart())
         }
+    }
+
+    override fun onUsbRecoveryPermission(token: String, granted: Boolean, device: UsbDevice) {
+        manager.onRecoveryPermission(token, granted, device)
     }
 
     override fun onUsbPermission(granted: Boolean, connect: Boolean, device: UsbDevice) {

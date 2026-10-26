@@ -78,6 +78,8 @@ class AutomationActivity : AppCompatActivity() {
             startActivity(
                 AapProjectionActivity.intent(this).apply {
                     addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    // The session starts after this, so the screen must not take itself for stale.
+                    putExtra(AapProjectionActivity.EXTRA_EXPECT_SESSION, true)
                 }
             )
         } catch (e: Exception) {

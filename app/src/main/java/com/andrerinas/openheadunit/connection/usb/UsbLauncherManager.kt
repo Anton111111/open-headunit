@@ -11,6 +11,7 @@ import com.andrerinas.openheadunit.R
 import com.andrerinas.openheadunit.aap.AapService
 import com.andrerinas.openheadunit.aap.AapTransport
 import com.andrerinas.openheadunit.connection.AutoConnectHoldPolicy
+import com.andrerinas.openheadunit.connection.UsbRecoveryAdmission
 import com.andrerinas.openheadunit.connection.CommManager
 import com.andrerinas.openheadunit.connection.ConnectionArbiter
 import com.andrerinas.openheadunit.connection.ConnectionPriorityPolicy.Owner
@@ -23,6 +24,7 @@ import com.andrerinas.openheadunit.utils.ConnectionIssue
 import com.andrerinas.openheadunit.utils.ConnectionIssues
 import com.andrerinas.openheadunit.utils.ToastUtils
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +33,8 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -217,6 +221,8 @@ class UsbLauncherManager(val service: AapService) {
             UsbReceiver.createFilter(),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        ContextCompat.registerReceiver(service, receiver, UsbReceiver.createRecoveryPermissionFilter(),
+            ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     fun unregister() {
@@ -280,6 +286,169 @@ class UsbLauncherManager(val service: AapService) {
 
     internal fun pendingSettingsRestart() = App.provide(service).commManager.pendingUsbSettingsRestart()
 
+    private data class RecoveryObservation(
+        val deviceName: String, val vendorId: Int, val productId: Int,
+        val bus: StaleAccessoryRecoveryPolicy.BusObservation,
+        @Volatile var target: UsbRecoveryTarget? = null,
+    )
+    private val recoveryObservation = AtomicReference<RecoveryObservation?>(null)
+
+    internal fun noteRecoveryDeviceDetached(device: UsbDevice) {
+        val observation = recoveryObservation.get() ?: return
+        observation.target?.let { target ->
+            target.noteDetach(device.deviceName, device.vendorId, device.productId)
+            if (!target.canFollowEnumeration && !target.canRetryUnchangedWithoutIdentity) observation.bus.noteDetach()
+        }
+        // An unrelated peripheral does not imply re-enumeration. A relevant companion's
+        // detach does invalidate identity confidence, including between snapshot checks.
+        if (device.deviceName == observation.deviceName && device.vendorId == observation.vendorId &&
+            device.productId == observation.productId) observation.bus.noteDetach()
+    }
+
+    internal fun describeRecoveryDevice(device: UsbDevice): UsbRecoveryDevice = UsbRecoveryDevice.capture(device)
+
+    internal fun recoveryNowMs(): Long = System.nanoTime() / 1_000_000L
+
+    internal fun recoveryPermissionIntent(token: String): android.app.PendingIntent =
+        UsbReceiver.createRecoveryPermissionPendingIntent(service, token)
+
+    private data class RecoveryPermission(val token: String, val path: String,
+        val result: CompletableDeferred<Boolean> = CompletableDeferred())
+    private val recoveryPermission = AtomicReference<RecoveryPermission?>(null)
+
+    internal fun onRecoveryPermission(token: String, granted: Boolean, device: UsbDevice) {
+        val pending = recoveryPermission.get() ?: return
+        if (pending.token == token && pending.path == device.deviceName) pending.result.complete(granted)
+    }
+
+    private enum class RecoveryPermissionResult { GRANTED, REJECTED, LOST_CANDIDATE }
+
+    /** Permission results only wake the owning recovery; they never launch a general scan. */
+    private suspend fun awaitRecoveryPermission(manager: UsbManager, device: UsbDevice,
+        deadline: Long, claim: ConnectionArbiter.Claim, stillOwned: () -> Boolean): RecoveryPermissionResult {
+        if (manager.hasPermission(device)) return RecoveryPermissionResult.GRANTED
+        val request = RecoveryPermission(java.util.UUID.randomUUID().toString(), device.deviceName)
+        if (!ConnectionArbiter.runIfHeld(claim) { recoveryPermission.set(request) }) return RecoveryPermissionResult.LOST_CANDIDATE
+        var intent: android.app.PendingIntent? = null
+        try {
+            while (SettingsActivity.isVisible && recoveryNowMs() < deadline && stillOwned()) delay(100)
+            if (SettingsActivity.isVisible || recoveryNowMs() >= deadline || !stillOwned()) return RecoveryPermissionResult.LOST_CANDIDATE
+            intent = recoveryPermissionIntent(request.token)
+            manager.requestPermission(device, intent)
+            while (recoveryNowMs() < deadline && stillOwned()) {
+                if (request.result.isCompleted) {
+                    if (!request.result.await()) return RecoveryPermissionResult.REJECTED
+                    return if (manager.hasPermission(device)) RecoveryPermissionResult.GRANTED
+                        else RecoveryPermissionResult.LOST_CANDIDATE
+                }
+                if (manager.hasPermission(device)) return RecoveryPermissionResult.GRANTED // Manifest auto-grant without a reply.
+                delay(100)
+            }
+            // A denial delivered before candidate invalidation still ends this recovery.
+            if (request.result.isCompleted && !request.result.await()) return RecoveryPermissionResult.REJECTED
+            return RecoveryPermissionResult.LOST_CANDIDATE
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            AppLog.w("UsbLauncher: recovery permission request failed: ${error.message}")
+            return RecoveryPermissionResult.REJECTED
+        } finally {
+            recoveryPermission.compareAndSet(request, null)
+            intent?.cancel()
+        }
+    }
+
+    /**
+     * Poll for only the failed accessory, including when a ROM omits attach notifications.
+     * The original claim remains held through selection and permission; a newer attempt wins.
+     */
+    private suspend fun reconnectRecoveryTarget(manager: UsbManager, target: UsbRecoveryTarget,
+        owner: Any, claim: ConnectionArbiter.Claim, deadline: Long) {
+        if (!target.canFollowEnumeration) {
+            AppLog.i("UsbLauncher: recovery target has missing or ambiguous identity; not selecting another accessory")
+            return
+        }
+        val comm = App.provide(service).commManager
+        val episodeObservation = recoveryObservation.get()
+        fun owned() = !cancelledByUser && !service.isStopping &&
+            comm.ownsUsbRecheck(owner) && ConnectionArbiter.holds(claim)
+        fun select(): UsbDevice? {
+            val list = manager.deviceList.values.toList()
+            // Binder/descriptor reads must not hold the identity monitor used by detach.
+            val permissions = list.associate { it.deviceName to manager.hasPermission(it) }
+            val chosen = target.select(list.map(::describeRecoveryDevice)) { permissions[it] == true } ?: return null
+            return list.singleOrNull { it.deviceName == chosen.path }?.takeIf {
+                UsbDeviceCompat.isInAccessoryMode(it) && UsbDeviceCompat.isConnectable(service, it)
+            }
+        }
+        while (recoveryNowMs() < deadline && owned()) {
+            if (SettingsActivity.isVisible) { delay(100); continue }
+            val candidate = select()
+            if (candidate == null) { delay(100); continue }
+            var identity = describeRecoveryDevice(candidate)
+            target.retainKnownFields(identity)
+            val bus = StaleAccessoryRecoveryPolicy.BusObservation()
+            val observation = RecoveryObservation(candidate.deviceName, candidate.vendorId, candidate.productId, bus, target)
+            // Arm before permission and re-read after arming, so no cached selection can cross
+            // a detach. A late detach for a reused path is conservatively treated as invalidation.
+            if (!ConnectionArbiter.runIfHeld(claim) { recoveryObservation.set(observation) }) return
+            try {
+                fun current(): UsbDevice? = select()?.takeIf { identity.agreesWith(describeRecoveryDevice(it)) }
+                if (current() == null) continue
+                when (awaitRecoveryPermission(manager, candidate, deadline, claim) {
+                    owned() && !bus.hasDetached && current() != null
+                }) {
+                    RecoveryPermissionResult.REJECTED -> return // Do not retry a user's denial.
+                    RecoveryPermissionResult.LOST_CANDIDATE -> {
+                        // A disappearing enumeration may return. Conflicting known identity
+                        // at its address is not permission to adopt a different device.
+                        val atPath = manager.deviceList[candidate.deviceName]
+                        if (atPath != null && identity.conflictsWith(describeRecoveryDevice(atPath))) return
+                        continue
+                    }
+                    RecoveryPermissionResult.GRANTED -> Unit
+                }
+                // Permission may reveal a serial hidden on Android 10+. Pin that additional
+                // evidence too, so a later same-path replacement cannot discard it again.
+                val fresh = current()
+                if (fresh == null) {
+                    val atPath = manager.deviceList[candidate.deviceName]
+                    if (atPath != null && identity.conflictsWith(describeRecoveryDevice(atPath))) return
+                    continue
+                }
+                identity = describeRecoveryDevice(fresh)
+                target.retainKnownFields(identity)
+                while (SettingsActivity.isVisible && owned() && recoveryNowMs() < deadline) delay(100)
+                if (SettingsActivity.isVisible || recoveryNowMs() >= deadline) return
+                if (!owned()) return
+                if (bus.hasDetached || !manager.hasPermission(fresh)) continue
+                val identityAdmission = target.guard(bus)
+                val admission = object : UsbRecoveryAdmission {
+                    override fun resolve(manager: UsbManager): UsbDevice? {
+                        val device = current()?.takeIf { manager.hasPermission(it) }
+                        if (device == null) bus.noteDetach()
+                        return device
+                    }
+                    override fun run(action: () -> Unit): Boolean {
+                        if (cancelledByUser || service.isStopping || SettingsActivity.isVisible ||
+                            recoveryNowMs() >= deadline) return false
+                        // CommManager checks the recovery owner and transferred claim. Do not
+                        // test the old claim here: successful admission replaces it deliberately.
+                        return identityAdmission.run(action)
+                    }
+                }
+                AppLog.i("UsbLauncher: targeted recovery found ${fresh.deviceName}; reconnecting the matching accessory")
+                comm.reconnectUsb(fresh, owner, claim, admission)
+                return
+            } finally {
+                // Keep tracking companion detach events between candidate attempts. The
+                // enclosing recovery owns this observer and removes it when the job ends.
+                recoveryObservation.compareAndSet(observation, episodeObservation)
+            }
+        }
+        AppLog.i("UsbLauncher: targeted recovery ended without one identifiable accessory")
+    }
+
     private var staleSteps = 0
     private var staleLastStepAtMs = 0L
     private var staleGaveUpOn: String? = null
@@ -288,7 +457,10 @@ class UsbLauncherManager(val service: AapService) {
      * A USB handshake ended. A failure on a phone still in accessory mode starts the bounded
      * recovery ladder; a success resets it.
      */
-    fun onUsbHandshakeEnded(failure: AapTransport.HandshakeFailure) {
+    fun onUsbHandshakeEnded(outcome: CommManager.UsbHandshakeOutcome) {
+        val commManager = App.provide(service).commManager
+        if (!commManager.ownsUsbRecheck(outcome.recoveryOwner)) return
+        val failure = outcome.failure
         if (failure == AapTransport.HandshakeFailure.NONE) {
             staleGaveUpOn = null
             staleSteps = 0
@@ -297,7 +469,14 @@ class UsbLauncherManager(val service: AapService) {
             return
         }
         val usbManager = UsbDeviceCompat.usbManager(service) ?: return
-        val device = usbManager.deviceList.values.firstOrNull { UsbDeviceCompat.isInAccessoryMode(it) }
+        // The failure may reach Main after detach or another attachment. Never reset the
+        // first accessory on the bus just because the failed device has already disappeared.
+        val failedIdentity = outcome.identity ?: describeRecoveryDevice(outcome.device)
+        val device = usbManager.deviceList[outcome.device.deviceName]?.takeIf {
+            it.vendorId == outcome.device.vendorId && it.productId == outcome.device.productId &&
+                UsbDeviceCompat.isInAccessoryMode(it) && UsbDeviceCompat.isConnectable(service, it) &&
+                failedIdentity.agreesWith(describeRecoveryDevice(it))
+        }
         val now = SystemClock.elapsedRealtime()
         val steps = StaleAccessoryRecoveryPolicy.stepsInEpisode(
             staleSteps, now - staleLastStepAtMs, staleGaveUpOn, device?.deviceName
@@ -340,7 +519,7 @@ class UsbLauncherManager(val service: AapService) {
                 staleLastStepAtMs = now
                 AppLog.i("UsbLauncher: stale accessory $name: handshake failed ($failure), " +
                     "step $staleSteps of ${StaleAccessoryRecoveryPolicy.MAX_STEPS}: $step")
-                runRecoveryStep(usbManager, device, name, step)
+                runRecoveryStep(usbManager, device, name, step, outcome.recoveryOwner, failedIdentity)
             }
         }
     }
@@ -351,52 +530,105 @@ class UsbLauncherManager(val service: AapService) {
         device: UsbDevice,
         name: String,
         step: StaleAccessoryRecoveryPolicy.Step,
+        recoveryOwner: Any,
+        failedIdentity: UsbRecoveryDevice,
     ) {
         val app = App.provide(service)
         val commManager = app.commManager
         val usbMode = UsbAccessoryMode(usbManager)
+        // Exit/Save or a newer connection revokes this owner. Do not acquire a fresh owner
+        // after waiting: that would make work from the cancelled recovery valid again.
+        val recoveryClaim = checkNotNull(attemptClaim)
         launchAttempt(null, Dispatchers.IO) {
             commManager.awaitDisconnectComplete()
-            ConnectionStageTracker.report(ConnectionStage.USB_SWITCHING)
-            val before = usbManager.deviceList.keys.toSet()
-            val issued = if (step == StaleAccessoryRecoveryPolicy.Step.RESWITCH) {
-                usbMode.connectAndSwitch(device, app.settings.useLibusb).also { if (it) noteAccessorySwitchRequested() }
-            } else {
-                usbMode.resetDevice(device)
-            }
-            val startedAt = System.nanoTime() / 1_000_000L
-            var observation = if (issued) StaleAccessoryRecoveryPolicy.Observation.WAITING
-                else StaleAccessoryRecoveryPolicy.Observation.NO_CHANGE
-            while (observation == StaleAccessoryRecoveryPolicy.Observation.WAITING) {
-                delay(100)
-                val list = usbManager.deviceList
-                val reattached = list.any { (key, d) ->
-                    key !in before && UsbDeviceCompat.isConnectable(service, d)
+            currentCoroutineContext().ensureActive()
+            if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
+                !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
+            val busObservation = StaleAccessoryRecoveryPolicy.BusObservation()
+            val observationOwner = RecoveryObservation(device.deviceName, device.vendorId, device.productId, busObservation)
+            // Arm before the blocking USB request, not after it returns: firmware can
+            // detach and reattach entirely inside that call or between two list polls.
+            if (!ConnectionArbiter.runIfHeld(recoveryClaim) {
+                recoveryObservation.set(observationOwner)
+            }) return@launchAttempt
+            try {
+                ConnectionStageTracker.report(ConnectionStage.USB_SWITCHING)
+                val before = usbManager.deviceList
+                val current = before[device.deviceName] ?: return@launchAttempt
+                if (current.vendorId != device.vendorId || current.productId != device.productId ||
+                    !UsbDeviceCompat.isInAccessoryMode(current) || !UsbDeviceCompat.isConnectable(service, current)) return@launchAttempt
+                if (busObservation.hasDetached ||
+                    !failedIdentity.agreesWith(describeRecoveryDevice(current))) return@launchAttempt
+                val target = UsbRecoveryTarget(failedIdentity, before.values.map(::describeRecoveryDevice),
+                    before.values.filter { UsbDeviceCompat.isConnectable(service, it) }.map { it.deviceName }.toSet())
+                observationOwner.target = target
+                val issued = if (step == StaleAccessoryRecoveryPolicy.Step.RESWITCH) {
+                    usbMode.connectAndSwitch(current, app.settings.useLibusb).also { if (it) noteAccessorySwitchRequested() }
+                } else {
+                    usbMode.resetDevice(current)
                 }
-                val elapsed = System.nanoTime() / 1_000_000L - startedAt
-                observation = StaleAccessoryRecoveryPolicy.observe(
-                    !list.containsKey(device.deviceName), reattached, elapsed
-                )
-            }
-            val elapsed = System.nanoTime() / 1_000_000L - startedAt
-            when (observation) {
-                StaleAccessoryRecoveryPolicy.Observation.REENUMERATED ->
-                    AppLog.i("UsbLauncher: stale accessory $name: $step re-enumerated the phone in ${elapsed}ms")
-                StaleAccessoryRecoveryPolicy.Observation.NO_CHANGE ->
-                    AppLog.i("UsbLauncher: stale accessory $name: no re-enumeration within ${elapsed}ms " +
-                        "of $step; trying the handshake once more")
-                else ->
-                    AppLog.i("UsbLauncher: stale accessory $name: the phone left the bus after $step " +
-                        "and did not come back")
-            }
-            when (StaleAccessoryRecoveryPolicy.afterObservation(observation)) {
-                // The slot is busy, so this queues; the completion replays it once.
-                StaleAccessoryRecoveryPolicy.FollowUp.RECONNECT_ON_ATTACH ->
-                    deferCheckWhileSwitching(force = true, userRequested = false, settingsRestart = null,
-                        recoveryOwner = commManager.usbRecheckOwner(), accessoryOnly = false)
-                StaleAccessoryRecoveryPolicy.FollowUp.RETRY_HANDSHAKE ->
-                    connectWithRetry(device, maxRetries = 0)
-                StaleAccessoryRecoveryPolicy.FollowUp.STOP -> Unit
+                val startedAt = recoveryNowMs()
+                val deadline = startedAt + StaleAccessoryRecoveryPolicy.DETACH_WAIT_MS + StaleAccessoryRecoveryPolicy.REATTACH_WAIT_MS
+                AppLog.i("UsbLauncher: stale accessory $name: $step returned $issued; observing the USB bus")
+                // A failed request can still be followed by a delayed detach. Keep the same
+                // bounded observation window for both results, rather than reopening stale USB.
+                var observation = StaleAccessoryRecoveryPolicy.Observation.WAITING
+                while (observation == StaleAccessoryRecoveryPolicy.Observation.WAITING) {
+                    delay(100)
+                    if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
+                        !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
+                    val list = usbManager.deviceList
+                    target.observe(list.values.map(::describeRecoveryDevice))
+                    val original = list[device.deviceName]
+                    val originalPresent = original != null && original.vendorId == device.vendorId &&
+                        original.productId == device.productId
+                    val reattached = list.any { (key, d) ->
+                        (key !in before || key == device.deviceName) && UsbDeviceCompat.isConnectable(service, d)
+                    }
+                    val elapsed = recoveryNowMs() - startedAt
+                    observation = busObservation.update(
+                        originalPresent, reattached, elapsed
+                    )
+                }
+                currentCoroutineContext().ensureActive()
+                if (cancelledByUser || service.isStopping || !commManager.ownsUsbRecheck(recoveryOwner) ||
+                    !ConnectionArbiter.holds(recoveryClaim)) return@launchAttempt
+                val elapsed = recoveryNowMs() - startedAt
+                when (observation) {
+                    StaleAccessoryRecoveryPolicy.Observation.REENUMERATED ->
+                        AppLog.i("UsbLauncher: stale accessory $name: $step observed detach and a connectable bus entry after ${elapsed}ms")
+                    StaleAccessoryRecoveryPolicy.Observation.NO_CHANGE ->
+                        AppLog.i("UsbLauncher: stale accessory $name: no re-enumeration within ${elapsed}ms " +
+                            "of $step; trying the handshake once more")
+                    else ->
+                        AppLog.i("UsbLauncher: stale accessory $name: the phone left the bus after $step " +
+                            "and did not come back")
+                }
+                when (StaleAccessoryRecoveryPolicy.afterObservation(observation)) {
+                    // The fallback resolves only the captured target. Ordinary attach requests
+                    // stay queued independently and are not converted into recovery authority.
+                    StaleAccessoryRecoveryPolicy.FollowUp.RECONNECT_ON_ATTACH ->
+                        reconnectRecoveryTarget(usbManager, target, recoveryOwner, recoveryClaim, deadline)
+                    StaleAccessoryRecoveryPolicy.FollowUp.RETRY_HANDSHAKE -> {
+                        // The last observation and the open are separate operations. Re-read the
+                        // bus and permissions; never reuse the pre-reset UsbDevice. Re-enumerated
+                        // devices go through the target resolver and its own permission request.
+                        val fresh = usbManager.deviceList[device.deviceName]
+                        if (target.canFollowEnumeration) {
+                            reconnectRecoveryTarget(usbManager, target, recoveryOwner, recoveryClaim, deadline)
+                        } else if (target.canRetryUnchangedWithoutIdentity && !busObservation.hasDetached && fresh != null && fresh.vendorId == device.vendorId && fresh.productId == device.productId &&
+                            UsbDeviceCompat.isInAccessoryMode(fresh) && UsbDeviceCompat.isConnectable(service, fresh) &&
+                            usbManager.hasPermission(fresh) && !SettingsActivity.isVisible) {
+                            commManager.reconnectUsb(fresh, recoveryOwner, recoveryClaim, target.guard(busObservation))
+                        } else {
+                            reconnectRecoveryTarget(usbManager, target, recoveryOwner, recoveryClaim, deadline)
+                        }
+                    }
+                    StaleAccessoryRecoveryPolicy.FollowUp.STOP -> Unit
+                }
+            } finally {
+                // A cancelled step must not remove a newer step's observation window.
+                recoveryObservation.compareAndSet(observationOwner, null)
             }
         }
     }
@@ -574,8 +806,13 @@ class UsbLauncherManager(val service: AapService) {
             val nonAccessoryDevices = deviceList.filter { !UsbDeviceCompat.isInAccessoryMode(it) }
             val allowList = settings.allowedDevices
             val candidates = nonAccessoryDevices.filter {
+                val isGoogleOrDongle = UsbAttachPolicy.isGoogleOrDongleVendor(
+                    vendorId = it.vendorId,
+                    productName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) it.productName else null,
+                    manufacturerName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) it.manufacturerName else null,
+                )
                 UsbAttachPolicy.shouldAttemptAoaSwitch(
-                    isGoogleVendor = it.vendorId == 0x18D1,
+                    isGoogleVendor = isGoogleOrDongle,
                     autoStartOnUsb = usbAutoStart,
                     allowListConfigured = allowList.isNotEmpty(),
                     deviceAllowed = settings.isConnectingDevice(UsbDeviceCompat(it)),

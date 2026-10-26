@@ -15,13 +15,13 @@ class OnboardingLauncherPolicyTest {
     }
 
     @Test
-    fun `a granted role stores launcher mode`() {
-        assertEquals(Outcome.COMMIT, OnboardingLauncherPolicy.resolve(requestPending = true, roleHeld = true))
+    fun `a granted role confirms default launcher`() {
+        assertEquals(Outcome.CONFIRMED, OnboardingLauncherPolicy.resolve(requestPending = true, roleHeld = true))
     }
 
     @Test
-    fun `a declined or unanswered request turns the switch back off`() {
-        assertEquals(Outcome.REVERT, OnboardingLauncherPolicy.resolve(requestPending = true, roleHeld = false))
+    fun `an unanswered request leaves launcher mode enabled but unconfirmed`() {
+        assertEquals(Outcome.UNCONFIRMED, OnboardingLauncherPolicy.resolve(requestPending = true, roleHeld = false))
     }
 
     @Test
