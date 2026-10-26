@@ -24,6 +24,24 @@ Android Auto may deliver AVC SPS/PPS separately from picture data. The AVC
 decoder uses `AV_CODEC_FLAG2_CHUNKS` so these configuration packets update
 decoder state without being rejected as a missing picture. Decode errors are
 still reported; they are not swallowed to accommodate configuration packets.
+Parameter sets are collected across the full access unit on both backends,
+including while MediaCodec is running or a surface is absent. The cache preserves
+each syntax ID, replaces updates to that ID, and replays VPS/SPS/PPS in dependency
+order into a fresh decoder. Identical sets reuse stored bytes. Encoded picture
+bytes are passed through unchanged.
+The message type selects the CSD or timestamped-DATA payload offset; start-code
+lookalikes at another offset do not change the envelope.
+A fragment-loss verdict remains attached to its assembly until LAST or replacement;
+surviving middle fragments cannot make an incomplete picture eligible for decoding.
+
+Transport recovery is acknowledged only after a non-corrupt keyframe is decoded
+and accepted by the output sink. The repair callback runs outside the decoder
+monitor. Repeated consumer stalls can switch either decoder backend to Surface
+output; selecting bundled software decoding does not disable that recovery.
+SPS dimensions only seed initial configuration. Active dimensions come from the
+MediaCodec output format or accepted FFmpeg frames on either output path, not
+from an inactive SPS received later. YUV fallback copying handles padded rows,
+and new EGL contexts recreate texture storage even when frame sizes are unchanged.
 
 
 ## Source authentication
@@ -150,6 +168,18 @@ differences.
 Configuration-only packets were tested before playback and midstream, with
 parameter sets both combined and sent individually. The no-FFmpeg native build
 also rejected both codec IDs, preserving optional-backend availability.
+The Kotlin-to-JNI path also exercised parameter sets arriving during a surface
+gap, after a long SEI or many NALs, and with multiple active IDs. Recreation
+without repeated headers produced the same decoded pixels. Output-side repair
+excluded rejected YUV frames and failed Surface submissions. First-creation
+failure injection verified the cold retry limit without assuming an earlier
+successful decoder instance.
+Mixed-resolution SPS inputs also exercised actual output-size transitions through
+YUV and RGBA, and a throwing output sink entered the existing recovery path.
+The production GL renderer was separately exercised against host EGL/GLES with
+padded-plane fallback copying, context recreation, texture allocation and pixel
+readback. Android windowing, SurfaceTexture and scheduling were substituted in
+that renderer check; it is not a head-unit driver verification.
 ARM64 library and JNI wrapper ELF `LOAD` segments have 16 KB alignment.
 
 These checks do not establish native ARM performance or end-to-end Android
