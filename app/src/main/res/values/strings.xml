@@ -1513,8 +1513,12 @@
     <string name="home_favorites_full">All four favorites are taken. Long-press one on the home screen to change it.</string>
     <string name="home_choose_favorite_app">Choose an app or shortcut</string>
     <string name="home_shortcut_badge">Shortcut</string>
-    <string name="home_show_favorite_apps">Apps and widgets on the home screen</string>
-    <string name="home_show_favorite_apps_description">Your favorite apps and widgets under the main button, when Open Headunit is your launcher</string>
+    <string name="home_show_favorite_apps">Favorite apps on the home screen</string>
+    <string name="home_show_favorite_apps_description">Your favorite apps under the main button, when Open Headunit is your launcher</string>
+    <string name="home_show_widgets">Widgets on the home screen</string>
+    <string name="home_show_widgets_description">Your widgets, their pages and the Add widget tile, when Open Headunit is your launcher</string>
+    <string name="home_surface_opacity">Panel opacity</string>
+    <string name="home_surface_opacity_description">Lower it to let your background image show through the home screen\'s panels and buttons.</string>
     <string name="home_show_clock">Date and time on the home screen</string>
     <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
     <string name="home_show_speed">GPS speed on the home screen</string>

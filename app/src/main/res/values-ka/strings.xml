@@ -1397,8 +1397,12 @@
     <string name="home_favorites_full">ოთხივე რჩეული დაკავებულია. შესაცვლელად დიდხანს დააჭირეთ ერთ-ერთს მთავარ ეკრანზე.</string>
     <string name="home_choose_favorite_app">აირჩიეთ აპი ან მალსახმობი</string>
     <string name="home_shortcut_badge">მალსახმობი</string>
-    <string name="home_show_favorite_apps">აპები და ვიჯეტები მთავარ ეკრანზე</string>
-    <string name="home_show_favorite_apps_description">შენი რჩეული აპები და ვიჯეტები მთავარი ღილაკის ქვემოთ, როცა Open Headunit შენი ლაუნჩერია</string>
+    <string name="home_show_favorite_apps">რჩეული აპები მთავარ ეკრანზე</string>
+    <string name="home_show_favorite_apps_description">შენი რჩეული აპები მთავარი ღილაკის ქვემოთ, როცა Open Headunit შენი ლაუნჩერია</string>
+    <string name="home_show_widgets">ვიჯეტები მთავარ ეკრანზე</string>
+    <string name="home_show_widgets_description">შენი ვიჯეტები, მათი გვერდები და „ვიჯეტის დამატება“ ფილა, როცა Open Headunit შენი ლაუნჩერია</string>
+    <string name="home_surface_opacity">პანელების გამჭვირვალობა</string>
+    <string name="home_surface_opacity_description">შეამცირე, რომ შენი ფონის სურათი მთავარი ეკრანის პანელებსა და ღილაკებში გამოჩნდეს.</string>
     <string name="home_show_clock">თარიღი და დრო მთავარ ეკრანზე</string>
     <string name="home_show_clock_description">დრო და დღევანდელი თარიღი მთავარი ღილაკის ზემოთ</string>
     <string name="home_show_speed">GPS სიჩქარე მთავარ ეკრანზე</string>

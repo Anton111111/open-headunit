@@ -44,6 +44,7 @@ import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Connection
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Decision
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.Status
 import com.andrerinas.openheadunit.main.HomePrimaryPolicy.TileState
+import com.andrerinas.openheadunit.main.HomeSurfaceOpacityPolicy
 import com.andrerinas.openheadunit.main.HomeThemePolicy.Mode
 import com.andrerinas.openheadunit.view.WordFitTextView
 
@@ -183,37 +184,52 @@ object HomeUiHelper {
         @ColorInt val wifi: Int,
         @ColorInt val self: Int,
         @ColorInt val monochrome: Int,
-        @ColorInt val countdownRing: Int
+        @ColorInt val countdownRing: Int,
+        val surfaceOpacityPercent: Int = HomeSurfaceOpacityPolicy.DEFAULT
     ) {
         val isDark: Boolean get() = mode != Mode.DAY
+
+        /** A button fill or border made as see-through as the panels; text and icons stay opaque. */
+        fun fill(@ColorInt color: Int): Int = HomeSurfaceOpacityPolicy.apply(color, surfaceOpacityPercent)
+
+        /** The fill a press or a focus shows below Android 5, where there is no ripple. */
+        fun pressedFill(@ColorInt color: Int): Int = HomeSurfaceOpacityPolicy.pressed(color, surfaceOpacityPercent)
         val ripple: Int get() = when (mode) {
             Mode.DAY, Mode.DARK -> RIPPLE_COLOR_ON_DARK
             Mode.EXTREME_DARK -> RIPPLE_COLOR_EXTREME
         }
     }
 
-    fun palette(context: Context, mode: Mode): Palette {
+    /** @param surfaceOpacityPercent applied to the fills only, see [HomeSurfaceOpacityPolicy]. */
+    fun palette(context: Context, mode: Mode, surfaceOpacityPercent: Int = HomeSurfaceOpacityPolicy.DEFAULT): Palette {
         val extreme = mode == Mode.EXTREME_DARK
         fun color(@ColorRes normal: Int, @ColorRes extremeDark: Int) =
             ContextCompat.getColor(context, if (extreme) extremeDark else normal)
+        fun surface(@ColorRes normal: Int, @ColorRes extremeDark: Int) =
+            HomeSurfaceOpacityPolicy.apply(color(normal, extremeDark), surfaceOpacityPercent)
         return Palette(
             mode = mode,
-            panel = color(R.color.home_panel, R.color.home_extreme_panel),
-            panelStroke = color(R.color.home_panel_stroke, R.color.home_extreme_panel_stroke),
-            tile = color(R.color.home_tile, R.color.home_extreme_tile),
-            tilePressed = color(R.color.home_tile_pressed, R.color.home_extreme_tile_pressed),
-            tileStroke = color(R.color.home_tile_stroke, R.color.home_extreme_tile_stroke),
-            slotStroke = color(R.color.home_slot_stroke, R.color.home_extreme_slot_stroke),
+            panel = surface(R.color.home_panel, R.color.home_extreme_panel),
+            panelStroke = surface(R.color.home_panel_stroke, R.color.home_extreme_panel_stroke),
+            tile = surface(R.color.home_tile, R.color.home_extreme_tile),
+            tilePressed = HomeSurfaceOpacityPolicy.pressed(
+                color(R.color.home_tile_pressed, R.color.home_extreme_tile_pressed), surfaceOpacityPercent
+            ),
+            tileStroke = surface(R.color.home_tile_stroke, R.color.home_extreme_tile_stroke),
+            slotStroke = surface(R.color.home_slot_stroke, R.color.home_extreme_slot_stroke),
             text = color(R.color.home_text, R.color.home_extreme_text),
             textMuted = color(R.color.home_text_muted, R.color.home_extreme_text_muted),
-            appsTile = color(R.color.home_apps_tile, R.color.home_extreme_apps_tile),
-            appsTilePressed = color(R.color.home_apps_tile_pressed, R.color.home_extreme_apps_tile_pressed),
+            appsTile = surface(R.color.home_apps_tile, R.color.home_extreme_apps_tile),
+            appsTilePressed = HomeSurfaceOpacityPolicy.pressed(
+                color(R.color.home_apps_tile_pressed, R.color.home_extreme_apps_tile_pressed), surfaceOpacityPercent
+            ),
             appsIcon = color(R.color.home_apps_icon, R.color.home_extreme_apps_icon),
             usb = color(R.color.home_usb, R.color.home_extreme_usb),
             wifi = color(R.color.home_wifi, R.color.home_extreme_wifi),
             self = color(R.color.home_self, R.color.home_extreme_self),
             monochrome = color(R.color.home_monochrome, R.color.home_extreme_monochrome),
-            countdownRing = color(R.color.home_countdown_ring, R.color.home_extreme_countdown_ring)
+            countdownRing = color(R.color.home_countdown_ring, R.color.home_extreme_countdown_ring),
+            surfaceOpacityPercent = surfaceOpacityPercent
         )
     }
 
@@ -312,7 +328,7 @@ object HomeUiHelper {
             slot.background = pressable(
                 palette.ripple,
                 { shape(palette.panel, radius, palette.slotStroke, dp(context, 2), dash, gap) },
-                { shape(palette.tile, radius, palette.slotStroke, dp(context, 2), dash, gap) }
+                { shape(palette.tilePressed, radius, palette.slotStroke, dp(context, 2), dash, gap) }
             )
             icon?.setColorFilter(palette.textMuted, PorterDuff.Mode.SRC_IN)
             icon?.alpha = 1f
@@ -353,14 +369,14 @@ object HomeUiHelper {
             when (state) {
                 TileState.ACTIVE -> {
                     val onColor = readableOn(color)
-                    paintTile(tile, pressable(color, radius), onColor, onColor)
+                    paintTile(tile, pressable(color, radius, palette), onColor, onColor)
                 }
                 TileState.CONNECTING -> {
                     val strokePx = dp(context, 2)
                     val frame = pressable(
                         palette.ripple,
-                        { shape(palette.tile, radius, color, strokePx) },
-                        { shape(palette.tilePressed, radius, color, strokePx) }
+                        { shape(palette.tile, radius, palette.fill(color), strokePx) },
+                        { shape(palette.tilePressed, radius, palette.fill(color), strokePx) }
                     )
                     // The same light as the progress bar, across the whole tile, icon and label included.
                     val shine = startTileShine(tile, withAlpha(color, TILE_SHINE_ALPHA), radius)
@@ -575,18 +591,18 @@ object HomeUiHelper {
         val iconTile = rootView.findViewById<View>(R.id.home_primary_icon_tile)
 
         if (!palette.isDark) {
-            // Day: the whole card wears the connection's color.
+            // Day: the whole card wears the connection's color, as see-through as the panels.
             val shade = ColorUtils.darkenColor(color, 0.78f)
-            card.background = rounded(color, panelRadius)
-            iconTile?.background = rounded(shade, tileRadius)
+            card.background = rounded(palette.fill(color), panelRadius)
+            iconTile?.background = rounded(palette.fill(shade), tileRadius)
             icon?.clearColorFilter()
             listOf(kicker, title, subtitle, detail).forEach { it?.setTextColor(Color.WHITE) }
             action?.apply {
-                background = pressable(Color.WHITE, ctaRadius)
+                background = pressable(Color.WHITE, ctaRadius, palette)
                 setTextColor(ColorUtils.darkenColor(color, 0.66f))
             }
             cancel?.apply {
-                background = pressable(shade, cancelRadius)
+                background = pressable(shade, cancelRadius, palette)
                 setTextColor(Color.WHITE)
             }
             return
@@ -607,14 +623,14 @@ object HomeUiHelper {
                 // An outline lights far fewer pixels than a filled button.
                 background = pressable(
                     palette.ripple,
-                    { shape(Color.TRANSPARENT, ctaRadius, color, dp(context, 2)) },
-                    { shape(palette.tilePressed, ctaRadius, color, dp(context, 2)) },
+                    { shape(Color.TRANSPARENT, ctaRadius, palette.fill(color), dp(context, 2)) },
+                    { shape(palette.tilePressed, ctaRadius, palette.fill(color), dp(context, 2)) },
                     // A see-through button would hide its own ripple without a mask.
                     mask = { rounded(Color.WHITE, ctaRadius) }
                 )
                 setTextColor(color)
             } else {
-                background = pressable(color, ctaRadius)
+                background = pressable(color, ctaRadius, palette)
                 setTextColor(readableOn(color))
             }
         }
@@ -1015,10 +1031,11 @@ object HomeUiHelper {
     }
 
     // Ripple is API 21; older units get a darker shade while pressed instead.
-    private fun pressable(color: Int, radiusPx: Float): Drawable = pressable(
+    /** A filled button in [color], as see-through as [palette] says. */
+    private fun pressable(color: Int, radiusPx: Float, palette: Palette): Drawable = pressable(
         RIPPLE_COLOR,
-        { rounded(color, radiusPx) },
-        { rounded(ColorUtils.darkenColor(color, 0.85f), radiusPx) }
+        { rounded(palette.fill(color), radiusPx) },
+        { rounded(palette.pressedFill(ColorUtils.darkenColor(color, 0.85f)), radiusPx) }
     )
 
     private fun pressable(
@@ -1028,7 +1045,10 @@ object HomeUiHelper {
         mask: (() -> Drawable)? = null
     ): Drawable {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            return RippleDrawable(ColorStateList.valueOf(ripple), normal(), mask?.invoke())
+            // Without a mask the ripple is clipped to the fill's own alpha, so a see-through button
+            // would hide it; an opaque copy of the shape keeps it.
+            val clip = mask?.invoke() ?: (normal() as? GradientDrawable)?.apply { setColor(Color.WHITE) }
+            return RippleDrawable(ColorStateList.valueOf(ripple), normal(), clip)
         }
         // Below 5.0 there is no ripple to show focus, so a focused button looks pressed; otherwise
         // a D-pad moves across the home with nothing on screen saying where it is.

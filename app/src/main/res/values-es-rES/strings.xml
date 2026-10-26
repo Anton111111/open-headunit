@@ -1426,8 +1426,12 @@
     <string name="home_favorites_full">Ya tienes las cuatro favoritas. Mantén pulsada una en la pantalla de inicio para cambiarla.</string>
     <string name="home_choose_favorite_app">Elige una app o un atajo</string>
     <string name="home_shortcut_badge">Atajo</string>
-    <string name="home_show_favorite_apps">Apps y widgets en la pantalla de inicio</string>
-    <string name="home_show_favorite_apps_description">Tus apps favoritas y widgets bajo el botón principal, cuando Open Headunit es tu aplicación de inicio</string>
+    <string name="home_show_favorite_apps">Apps favoritas en la pantalla de inicio</string>
+    <string name="home_show_favorite_apps_description">Tus apps favoritas bajo el botón principal, cuando Open Headunit es tu aplicación de inicio</string>
+    <string name="home_show_widgets">Widgets en la pantalla de inicio</string>
+    <string name="home_show_widgets_description">Tus widgets, sus páginas y el mosaico Añadir un widget, cuando Open Headunit es tu aplicación de inicio</string>
+    <string name="home_surface_opacity">Opacidad de los paneles</string>
+    <string name="home_surface_opacity_description">Bájala para que tu imagen de fondo se vea a través de los paneles y botones de la pantalla de inicio.</string>
     <string name="home_show_clock">Fecha y hora en la pantalla de inicio</string>
     <string name="home_show_clock_description">La hora y la fecha de hoy, arriba del botón principal</string>
     <string name="home_show_speed">Velocidad GPS en la pantalla de inicio</string>

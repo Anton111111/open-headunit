@@ -93,6 +93,9 @@ class CustomizationFragment : Fragment() {
     private var rowColorWifi: View? = null
     private var switchAutoMonochromeNight: SwitchMaterial? = null
     private var switchShowFavoriteApps: SwitchMaterial? = null
+    private var switchShowWidgets: SwitchMaterial? = null
+    private var sliderSurfaceOpacity: com.google.android.material.slider.Slider? = null
+    private var txtSurfaceOpacityValue: TextView? = null
     private var switchShowClock: SwitchMaterial? = null
     private var switchShowSpeed: SwitchMaterial? = null
     private var btnMakeAllMonochrome: MaterialButton? = null
@@ -226,11 +229,15 @@ class CustomizationFragment : Fragment() {
         rowColorWifi = view.findViewById(R.id.row_color_wifi)
         switchAutoMonochromeNight = view.findViewById(R.id.switch_auto_monochrome_night)
         switchShowFavoriteApps = view.findViewById(R.id.switch_show_favorite_apps)
+        switchShowWidgets = view.findViewById(R.id.switch_show_widgets)
+        sliderSurfaceOpacity = view.findViewById(R.id.slider_surface_opacity)
+        txtSurfaceOpacityValue = view.findViewById(R.id.txt_surface_opacity_value)
         switchShowClock = view.findViewById(R.id.switch_show_clock)
         switchShowSpeed = view.findViewById(R.id.switch_show_speed)
         // A tap anywhere on a switch row flips its switch, not only on the switch itself.
         toggleSwitchFromRow(view.findViewById(R.id.row_auto_monochrome_night), switchAutoMonochromeNight)
         toggleSwitchFromRow(view.findViewById(R.id.row_show_favorite_apps), switchShowFavoriteApps)
+        toggleSwitchFromRow(view.findViewById(R.id.row_show_widgets), switchShowWidgets)
         toggleSwitchFromRow(view.findViewById(R.id.row_show_clock), switchShowClock)
         toggleSwitchFromRow(view.findViewById(R.id.row_show_speed), switchShowSpeed)
         btnMakeAllMonochrome = view.findViewById(R.id.btn_make_all_monochrome)
@@ -356,6 +363,21 @@ class CustomizationFragment : Fragment() {
         switchShowFavoriteApps?.setOnCheckedChangeListener { _, isChecked ->
             settings.showHomeFavoriteApps = isChecked
             updatePreviewScale(settings.homeButtonScalePercent)
+        }
+
+        switchShowWidgets?.isChecked = settings.showHomeWidgets
+        switchShowWidgets?.setOnCheckedChangeListener { _, isChecked ->
+            settings.showHomeWidgets = isChecked
+        }
+
+        val opacity = settings.homeSurfaceOpacityPercent
+        sliderSurfaceOpacity?.value = opacity.toFloat()
+        txtSurfaceOpacityValue?.text = "$opacity%"
+        sliderSurfaceOpacity?.addOnChangeListener { _, value, fromUser ->
+            if (!fromUser) return@addOnChangeListener
+            settings.homeSurfaceOpacityPercent = value.toInt()
+            txtSurfaceOpacityValue?.text = "${value.toInt()}%"
+            context?.let { renderMiniHome(it) }
         }
 
         switchShowClock?.isChecked = settings.showHomeClock
@@ -824,7 +846,11 @@ class CustomizationFragment : Fragment() {
     /** The new home's look right now: day, dark or extreme dark, as the home screen would pick it. */
     private fun homePalette(ctx: Context): HomeUiHelper.Palette {
         val isNightActive = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        return HomeUiHelper.palette(ctx, HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive))
+        return HomeUiHelper.palette(
+            ctx,
+            HomeThemePolicy.resolve(settings.appTheme, settings.useExtremeDarkMode, isNightActive),
+            settings.homeSurfaceOpacityPercent
+        )
     }
 
     /** A sample of [color] as the home draws it for [connection]. 0 is the home's own color. */

@@ -1412,8 +1412,12 @@
     <string name="home_favorites_full">Mind a négy kedvenc foglalt. Tarts lenyomva egyet a kezdőképernyőn a cseréjéhez.</string>
     <string name="home_choose_favorite_app">Válassz alkalmazást vagy parancsikont</string>
     <string name="home_shortcut_badge">Parancsikon</string>
-    <string name="home_show_favorite_apps">Alkalmazások és widgetek a kezdőképernyőn</string>
-    <string name="home_show_favorite_apps_description">Kedvenc alkalmazásaid és widgeteid a fő gomb alatt, amikor az Open Headunit az indítód</string>
+    <string name="home_show_favorite_apps">Kedvenc alkalmazások a kezdőképernyőn</string>
+    <string name="home_show_favorite_apps_description">Kedvenc alkalmazásaid a fő gomb alatt, amikor az Open Headunit az indítód</string>
+    <string name="home_show_widgets">Widgetek a kezdőképernyőn</string>
+    <string name="home_show_widgets_description">A widgeteid, azok oldalai és a Widget hozzáadása csempe, amikor az Open Headunit az indítód</string>
+    <string name="home_surface_opacity">Panelek átlátszatlansága</string>
+    <string name="home_surface_opacity_description">Csökkentsd, hogy a háttérképed átlátszódjon a kezdőképernyő paneljein és gombjain.</string>
     <string name="home_show_clock">Dátum és idő a kezdőképernyőn</string>
     <string name="home_show_clock_description">A pontos idő és a mai dátum a fő gomb tetején</string>
     <string name="home_show_speed">GPS-sebesség a kezdőképernyőn</string>

@@ -1414,8 +1414,12 @@
     <string name="home_favorites_full">お気に入りは4つとも使用中です。ホーム画面で長押しすると変更できます。</string>
     <string name="home_choose_favorite_app">アプリまたはショートカットを選択</string>
     <string name="home_shortcut_badge">ショートカット</string>
-    <string name="home_show_favorite_apps">ホーム画面のアプリとウィジェット</string>
-    <string name="home_show_favorite_apps_description">Open Headunit をランチャーにしているとき、お気に入りのアプリとウィジェットをメインボタンの下に表示します</string>
+    <string name="home_show_favorite_apps">ホーム画面のお気に入りアプリ</string>
+    <string name="home_show_favorite_apps_description">Open Headunit をランチャーにしているとき、お気に入りのアプリをメインボタンの下に表示します</string>
+    <string name="home_show_widgets">ホーム画面のウィジェット</string>
+    <string name="home_show_widgets_description">Open Headunit をランチャーにしているとき、ウィジェット、そのページ、「ウィジェットを追加」タイルを表示します</string>
+    <string name="home_surface_opacity">パネルの不透明度</string>
+    <string name="home_surface_opacity_description">下げると、ホーム画面のパネルやボタンから背景画像が透けて見えます。</string>
     <string name="home_show_clock">ホーム画面に日付と時刻</string>
     <string name="home_show_clock_description">メインボタンの上に時刻と今日の日付</string>
     <string name="home_show_speed">ホーム画面にGPS速度</string>

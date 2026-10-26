@@ -1413,8 +1413,12 @@
     <string name="home_favorites_full">Усі чотири місця зайняті. Утримуйте одну з програм на головному екрані, щоб змінити її.</string>
     <string name="home_choose_favorite_app">Виберіть програму або ярлик</string>
     <string name="home_shortcut_badge">Ярлик</string>
-    <string name="home_show_favorite_apps">Програми та віджети на головному екрані</string>
-    <string name="home_show_favorite_apps_description">Ваші улюблені програми та віджети під головною кнопкою, коли Open Headunit є вашим лаунчером</string>
+    <string name="home_show_favorite_apps">Улюблені програми на головному екрані</string>
+    <string name="home_show_favorite_apps_description">Ваші улюблені програми під головною кнопкою, коли Open Headunit є вашим лаунчером</string>
+    <string name="home_show_widgets">Віджети на головному екрані</string>
+    <string name="home_show_widgets_description">Ваші віджети, їхні сторінки та плитка «Додати віджет», коли Open Headunit є вашим лаунчером</string>
+    <string name="home_surface_opacity">Прозорість панелей</string>
+    <string name="home_surface_opacity_description">Зменште значення, щоб фонове зображення проглядало крізь панелі й кнопки головного екрана.</string>
     <string name="home_show_clock">Дата і час на головному екрані</string>
     <string name="home_show_clock_description">Час і сьогоднішня дата вгорі головної кнопки</string>
     <string name="home_show_speed">Швидкість GPS на головному екрані</string>

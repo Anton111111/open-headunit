@@ -14,8 +14,8 @@ object HomePagesHintPolicy {
         val launcherActive: Boolean,
         /** Android 5.0 and up, where a widget can be added at all. */
         val widgetsSupported: Boolean,
-        /** The apps and widgets switch in Customization. */
-        val appsAndWidgetsOn: Boolean,
+        /** The widgets switch in Customization. */
+        val widgetsOn: Boolean,
         /** A phone is connected or being connected. */
         val connected: Boolean,
         /** What the main button says right now; null before the first render. */
@@ -44,7 +44,7 @@ object HomePagesHintPolicy {
         !input.alreadyShown &&
             input.launcherActive &&
             input.widgetsSupported &&
-            input.appsAndWidgetsOn &&
+            input.widgetsOn &&
             !input.connected &&
             isIdle(input.status) &&
             !input.bringUpRunning &&

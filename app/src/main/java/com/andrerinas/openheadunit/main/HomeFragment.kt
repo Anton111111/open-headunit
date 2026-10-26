@@ -680,10 +680,12 @@ class HomeFragment : Fragment() {
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
     // A theme change recreates the activity, so the palette can be kept for the life of the view.
-    private fun homePalette(ctx: Context): HomeUiHelper.Palette = cachedPalette ?: run {
+    private fun homePalette(ctx: Context): HomeUiHelper.Palette {
         val appSettings = App.provide(ctx).settings
+        // The opacity is changed on another screen, so a palette cached before it is stale.
+        cachedPalette?.takeIf { it.surfaceOpacityPercent == appSettings.homeSurfaceOpacityPercent }?.let { return it }
         val mode = HomeThemePolicy.resolve(appSettings.appTheme, appSettings.useExtremeDarkMode, isNightActive())
-        HomeUiHelper.palette(ctx, mode).also { cachedPalette = it }
+        return HomeUiHelper.palette(ctx, mode, appSettings.homeSurfaceOpacityPercent).also { cachedPalette = it }
     }
 
     private fun updateLauncherViews() {
@@ -879,8 +881,8 @@ class HomeFragment : Fragment() {
      */
     private fun renderPages(root: View, appSettings: Settings, isLauncherActive: Boolean, area: View, main: LinearLayout) {
         val pager = root.findViewById<HomePager>(R.id.home_pager) ?: return
-        // With the favorites switch off the stored pages are left as they are, not even pruned.
-        val widgetsShown = appSettings.showHomeFavoriteApps
+        // With the widgets switch off the stored pages are left as they are, not even pruned.
+        val widgetsShown = appSettings.showHomeWidgets
         val stored = if (isLauncherActive && widgetsShown) prunePages(root.context, appSettings.homeWidgetPages) else emptyList()
         val pages = if (isLauncherActive) {
             HomePagesPolicy.pages(compactHome, stored.size, widgetRowOnItsOwnPage(appSettings), widgetsShown)
@@ -919,7 +921,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun widgetRowOnItsOwnPage(appSettings: Settings): Boolean =
-        widgetRowOverflows && !ultrawideHome && appSettings.showHomeFavoriteApps && appSettings.homeWidgets.isNotEmpty()
+        widgetRowOverflows && !ultrawideHome && appSettings.showHomeWidgets && appSettings.homeWidgets.isNotEmpty()
 
     private fun appsPage(ctx: Context, area: View): View = LinearLayout(ctx).apply {
         id = R.id.home_page_apps
@@ -1072,7 +1074,7 @@ class HomeFragment : Fragment() {
                 compactHome,
                 appSettings.homeWidgetPages.size,
                 widgetRowOnItsOwnPage(appSettings),
-                widgetsShown = appSettings.showHomeFavoriteApps
+                widgetsShown = appSettings.showHomeWidgets
             )
         val actions = mutableListOf<HomeActionDialog.Action>()
         if (canAdd) {
@@ -1108,7 +1110,9 @@ class HomeFragment : Fragment() {
     private fun showActions(title: String, actions: List<HomeActionDialog.Action>) {
         val ctx = context ?: return
         actionDialog?.dismiss()
-        actionDialog = HomeActionDialog.show(ctx, title, actions, homePalette(ctx))
+        // The menu stays opaque whatever the home's opacity, or it would vanish over the home.
+        val opaque = HomeUiHelper.palette(ctx, homePalette(ctx).mode)
+        actionDialog = HomeActionDialog.show(ctx, title, actions, opaque)
     }
 
     private fun addWidgetPage() {
@@ -1223,8 +1227,8 @@ class HomeFragment : Fragment() {
         row.removeAllViews()
         val appSettings = App.provide(ctx).settings
         // A widget can only be drawn in one place, and on this screen that place is its own page.
-        // The favorites switch turns the widgets off with the favorites, add tile included.
-        if (!appSettings.isCarLauncherActive || !appSettings.showHomeFavoriteApps || widgetRowOnItsOwnPage(appSettings)) {
+        // The widgets switch turns the row off, add tile included.
+        if (!appSettings.isCarLauncherActive || !appSettings.showHomeWidgets || widgetRowOnItsOwnPage(appSettings)) {
             scroll.visibility = View.GONE
             return
         }
@@ -2112,7 +2116,7 @@ class HomeFragment : Fragment() {
             alreadyShown = appSettings.homePagesHintShown,
             launcherActive = appSettings.isCarLauncherActive,
             widgetsSupported = HomeWidgets.supported(),
-            appsAndWidgetsOn = appSettings.showHomeFavoriteApps,
+            widgetsOn = appSettings.showHomeWidgets,
             connected = commManager.isConnected,
             status = decision?.status,
             bringUpRunning = ConnectionStageTracker.stage.value != null || MainActivity.overlayOwnsScreen(),

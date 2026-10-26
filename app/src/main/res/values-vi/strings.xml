@@ -1412,8 +1412,12 @@
     <string name="home_favorites_full">Đã đủ bốn ứng dụng yêu thích. Nhấn giữ một ứng dụng trên màn hình chính để đổi.</string>
     <string name="home_choose_favorite_app">Chọn ứng dụng hoặc lối tắt</string>
     <string name="home_shortcut_badge">Lối tắt</string>
-    <string name="home_show_favorite_apps">Ứng dụng và tiện ích trên màn hình chính</string>
-    <string name="home_show_favorite_apps_description">Ứng dụng yêu thích và tiện ích của bạn dưới nút chính, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="home_show_favorite_apps">Ứng dụng yêu thích trên màn hình chính</string>
+    <string name="home_show_favorite_apps_description">Ứng dụng yêu thích của bạn dưới nút chính, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="home_show_widgets">Tiện ích trên màn hình chính</string>
+    <string name="home_show_widgets_description">Tiện ích của bạn, các trang của chúng và ô Thêm tiện ích, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="home_surface_opacity">Độ mờ của bảng</string>
+    <string name="home_surface_opacity_description">Giảm xuống để hình nền của bạn hiện qua các bảng và nút trên màn hình chính.</string>
     <string name="home_show_clock">Ngày và giờ trên màn hình chính</string>
     <string name="home_show_clock_description">Giờ và ngày hôm nay ở trên nút chính</string>
     <string name="home_show_speed">Tốc độ GPS trên màn hình chính</string>

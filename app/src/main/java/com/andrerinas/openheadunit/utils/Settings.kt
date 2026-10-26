@@ -13,6 +13,7 @@ import com.andrerinas.openheadunit.input.KeyCode
 import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
 import com.andrerinas.openheadunit.main.FavoriteTarget
 import com.andrerinas.openheadunit.main.HomePagesPolicy
+import com.andrerinas.openheadunit.main.HomeSurfaceOpacityPolicy
 import com.andrerinas.openheadunit.main.HomeWidgetsPolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
@@ -1631,10 +1632,21 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("home-pages-hint-shown", false)
         set(value) { prefs.edit().putBoolean("home-pages-hint-shown", value).apply() }
 
-    /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
+    /** The favorite apps on the launcher home; off, they are hidden but kept. */
     var showHomeFavoriteApps: Boolean
         get() = prefs.getBoolean("show-home-favorite-apps", true)
         set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
+
+    /** The widgets and their pages on the launcher home; off, they are hidden but kept. Until it is
+     *  first saved it follows the favorites switch, which used to control both. */
+    var showHomeWidgets: Boolean
+        get() = prefs.getBoolean("show-home-widgets", showHomeFavoriteApps)
+        set(value) { prefs.edit().putBoolean("show-home-widgets", value).apply() }
+
+    /** How opaque the home's panels and tiles are, so a background image can show through. */
+    var homeSurfaceOpacityPercent: Int
+        get() = HomeSurfaceOpacityPolicy.clamp(prefs.getInt("home-surface-opacity-percent", HomeSurfaceOpacityPolicy.DEFAULT))
+        set(value) { prefs.edit().putInt("home-surface-opacity-percent", HomeSurfaceOpacityPolicy.clamp(value)).apply() }
 
     /** Date and time on the home screen. Off by default: the driver asks for them. */
     var showHomeClock: Boolean
