@@ -13,6 +13,7 @@ import com.andrerinas.openheadunit.decoder.video.DeviceMemoryProfile
 import com.andrerinas.openheadunit.decoder.video.SoftwareYuvFrameSink
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder
 import com.andrerinas.openheadunit.utils.AppLog
+import com.andrerinas.openheadunit.utils.HeadUnitScreenConfig
 import com.andrerinas.openheadunit.utils.Settings
 import com.andrerinas.openheadunit.utils.SystemOptimizer
 import com.andrerinas.openheadunit.view.GlProjectionView
@@ -76,10 +77,15 @@ class VideoPreflightRunner(
                 VideoDecoder.isHevcDecoderAvailable(includeSoftware = true)
         }
         val clips = VideoPreflightClips.forPanel(
-            panel,
-            hevc,
-            settings.videoCodec,
-            settings.forceSoftwareDecoding,
+            panelCeiling = panel,
+            // Include an explicit choice even before runtime caps; Auto uses the negotiated canvas.
+            // The panel progression below still runs when that canvas has not been initialized yet.
+            configuredResolution = Settings.Resolution.fromId(settings.resolutionId)?.codec
+                ?: HeadUnitScreenConfig.negotiatedResolutionType,
+            hardwareHevcSupported = hevc,
+            hardwareHevcReliable = VideoDecoder.isHevcReliable(),
+            storedCodec = settings.videoCodec,
+            forceSoftware = settings.forceSoftwareDecoding,
             selectedSoftwareHevcAvailable = softwareHevc,
         )
         val backends = backendLadder(optimizerResult.recommendedViewMode)
