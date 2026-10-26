@@ -182,7 +182,7 @@ class DpiSettingsFragment : Fragment() {
         }
     }
 
-    private data class Preview(val w: Int, val h: Int, val name: String, val par: Int)
+    private data class Preview(val w: Int, val h: Int, val name: String, val par: Int, val panelW: Int, val panelH: Int)
 
     /** The visible size Android Auto gets at the stored resolution, its name and the pixel aspect ratio. */
     private fun previewResolution(): Preview {
@@ -198,7 +198,7 @@ class DpiSettingsFragment : Fragment() {
         val par = AnnouncedDensityPolicy.pixelAspectE4(
             settings.videoFitMode, pw, ph, r.width, r.height, settings.pixelAspectRatioE4
         )
-        return Preview(w, h, r.resName, par)
+        return Preview(w, h, r.resName, par, pw, ph)
     }
 
     private fun preview(value: Int, override: Boolean = pendingOverride): AnnouncedDensityPolicy.Decision {
@@ -206,7 +206,7 @@ class DpiSettingsFragment : Fragment() {
         val preset = OnboardingDisplayPolicy.initialPreset(
             settings.displaySizePreset, SystemOptimizer.DisplaySizePreset.SMALL_7_8
         )
-        return AnnouncedDensityPolicy.decide(value, preset, p.w, p.h, p.par, override)
+        return AnnouncedDensityPolicy.decide(value, preset, p.w, p.h, p.par, override, p.panelW, p.panelH)
     }
 
     /** Says so while the picked value is lower on the wire than on the slider, or sent past a floor. */

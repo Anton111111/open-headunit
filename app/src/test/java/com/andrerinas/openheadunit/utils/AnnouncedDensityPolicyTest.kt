@@ -58,6 +58,54 @@ class AnnouncedDensityPolicyTest {
         assertEquals(113, AnnouncedDensityPolicy.decide(0, DisplaySizePreset.STANDARD_9_10, 800, 480).announced)
     }
 
+    /** Automatic for a landscape panel, with the geometry the callers derive. */
+    private fun automatic(panelW: Int, panelH: Int, resW: Int, resH: Int, preset: DisplaySizePreset): AnnouncedDensityPolicy.Decision {
+        val mode = Settings.VideoFitMode.FILL
+        val (w, h) = AnnouncedDensityPolicy.visibleSize(mode, panelW, panelH, resW, resH)
+        val par = AnnouncedDensityPolicy.pixelAspectE4(mode, panelW, panelH, resW, resH, 0)
+        return AnnouncedDensityPolicy.decide(0, preset, w, h, par, panelW = panelW, panelH = panelH)
+    }
+
+    @Test
+    fun `a phone-size 1080p panel gets a density for its size, up to the floor`() {
+        val d = automatic(2400, 1080, 1920, 1080, DisplaySizePreset.PHONE_4_6)
+        assertEquals(384, d.announced)
+        assertEquals(Reason.PANEL, d.reason)
+        assertEquals(
+            "384 (dp canvas 1000x450, requested automatic, panel-based)",
+            AnnouncedDensityPolicy.describe(d, 1920, 1080, AnnouncedDensityPolicy.pixelAspectE4(Settings.VideoFitMode.FILL, 2400, 1080, 1920, 1080, 0))
+        )
+    }
+
+    @Test
+    fun `a 6 inch 720p head unit moves only to its height floor`() {
+        val d = automatic(1440, 720, 1280, 720, DisplaySizePreset.PHONE_4_6)
+        assertEquals(256, d.announced)
+        assertEquals(Reason.PANEL, d.reason)
+    }
+
+    @Test
+    fun `larger panels keep the codec-based value`() {
+        assertEquals(Reason.AUTOMATIC, automatic(1280, 800, 1920, 1080, DisplaySizePreset.SMALL_7_8).reason)
+        assertEquals(240, automatic(1280, 800, 1920, 1080, DisplaySizePreset.SMALL_7_8).announced)
+        assertEquals(144, automatic(1024, 600, 1280, 720, DisplaySizePreset.STANDARD_9_10).announced)
+    }
+
+    @Test
+    fun `a wide 10 inch panel gets a dp of 1 160th of an inch`() {
+        val d = automatic(1920, 720, 1280, 720, DisplaySizePreset.STANDARD_9_10)
+        assertEquals(205, d.announced)
+        assertEquals(Reason.PANEL, d.reason)
+    }
+
+    @Test
+    fun `an unknown panel or a stored value ignores the panel size`() {
+        assertEquals(Reason.AUTOMATIC, AnnouncedDensityPolicy.decide(0, DisplaySizePreset.PHONE_4_6, 1920, 1080).reason)
+        assertEquals(
+            240, AnnouncedDensityPolicy.decide(240, DisplaySizePreset.PHONE_4_6, 1920, 1080, panelW = 2400, panelH = 1080).announced
+        )
+    }
+
     @Test
     fun `portrait is clamped to the narrow layout's width`() {
         val d = AnnouncedDensityPolicy.decide(240, small, 480, 800)

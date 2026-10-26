@@ -16,7 +16,7 @@ object AnnouncedDensityPolicy {
     const val PORTRAIT_MIN_WIDTH_DP = 730
     private const val FALLBACK_DPI = 160
 
-    enum class Reason { AS_STORED, AUTOMATIC, WIDTH_FLOOR, HEIGHT_FLOOR, PORTRAIT, PORTRAIT_FLOOR, FLOOR_OVERRIDE }
+    enum class Reason { AS_STORED, AUTOMATIC, PANEL, WIDTH_FLOOR, HEIGHT_FLOOR, PORTRAIT, PORTRAIT_FLOOR, FLOOR_OVERRIDE }
 
     data class Decision(val announced: Int, val requested: Int, val reason: Reason)
 
@@ -49,6 +49,17 @@ object AnnouncedDensityPolicy {
         return ProjectionGeometryPolicy.pixelAspectRatioE4(mode, panelW, panelH, w, h, w - vw, h - vh)
     }
 
+    /**
+     * The density that makes one dp 1/160 inch on this panel: its pixels per inch at the preset's
+     * diagonal, per row of the canvas the phone lays out. 0 when the panel is unknown.
+     */
+    fun panelDpi(preset: DisplaySizePreset, panelW: Int, panelH: Int, visibleW: Int, visibleH: Int, parE4: Int): Int {
+        if (panelW <= 0 || panelH <= 0 || visibleW <= 0 || visibleH <= 0) return 0
+        val ppi = Math.hypot(panelW.toDouble(), panelH.toDouble()) / preset.diagonalInch
+        val shownRows = minOf(panelH.toDouble(), visibleH * minOf(panelW.toDouble() / visibleW, panelH.toDouble() / visibleH))
+        return Math.round(phoneCanvas(visibleW, visibleH, parE4).second * ppi / shownRows).toInt()
+    }
+
     fun canvasDp(px: Int, dpi: Int): Int = if (dpi <= 0) 0 else px * 160 / dpi
 
     /** The panel as the projection holds it: a settings screen can be held the other way round. */
@@ -73,7 +84,8 @@ object AnnouncedDensityPolicy {
 
     fun decide(
         stored: Int, preset: DisplaySizePreset, visibleW: Int, visibleH: Int,
-        parE4: Int = ProjectionGeometryPolicy.SQUARE_PIXELS_E4, floorOverride: Boolean = false
+        parE4: Int = ProjectionGeometryPolicy.SQUARE_PIXELS_E4, floorOverride: Boolean = false,
+        panelW: Int = 0, panelH: Int = 0
     ): Decision {
         if (visibleW <= 0 || visibleH <= 0) {
             return if (stored > 0) Decision(stored, stored, Reason.AS_STORED)
@@ -93,9 +105,10 @@ object AnnouncedDensityPolicy {
             }
         }
         if (stored <= 0) {
-            return Decision(
-                OnboardingDisplayPolicy.recommendedDpi(preset, visibleW, visibleH, false), 0, Reason.AUTOMATIC
-            )
+            // The codec-based value is too small on a dense panel, so Automatic never goes below the panel's own.
+            val codec = OnboardingDisplayPolicy.recommendedDpi(preset, visibleW, visibleH, false)
+            val panel = minOf(panelDpi(preset, panelW, panelH, visibleW, visibleH, parE4), huigMaxDpi(visibleW, visibleH))
+            return if (panel > codec) Decision(panel, 0, Reason.PANEL) else Decision(codec, 0, Reason.AUTOMATIC)
         }
         val max = huigMaxDpi(visibleW, visibleH)
         if (stored <= max) return Decision(stored, stored, Reason.AS_STORED)
@@ -118,6 +131,7 @@ object AnnouncedDensityPolicy {
         val why = when (decision.reason) {
             Reason.AS_STORED -> "within the HUIG floor"
             Reason.AUTOMATIC -> "codec-based"
+            Reason.PANEL -> "panel-based"
             Reason.WIDTH_FLOOR -> "clamped to the $HUIG_MIN_WIDTH_DP dp width floor"
             Reason.HEIGHT_FLOOR -> "clamped to the $HUIG_MIN_HEIGHT_DP dp height floor"
             Reason.PORTRAIT -> "portrait, within the $PORTRAIT_MIN_WIDTH_DP dp width floor"
