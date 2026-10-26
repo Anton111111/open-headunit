@@ -952,3 +952,6 @@ subprocess.run(["python3", str(Path(__file__).with_name("vpn-start.py"))], check
 
 # Platform-version configuration: session exclusion must not silently become an all-app VPN.
 subprocess.run(["python3", str(Path(__file__).with_name("vpn-config.py"))], check=True)
+
+# Exercise the service module-retry branch with production wake and completion methods.
+subprocess.run(["python3", str(Path(__file__).with_name("module-retry.py"))], check=True)
