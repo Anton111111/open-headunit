@@ -735,6 +735,12 @@
     <string name="settings_tab_basic">Základní</string>
     <string name="settings_tab_advanced">Pokročilé</string>
     <string name="settings_search_hint">Hledat v nastavení</string>
+    <string name="settings_scope_wifi_hidden">Zobrazeno nastavení USB. Nastavení WiFi je skryté.</string>
+    <string name="settings_scope_usb_hidden">Zobrazeno nastavení WiFi. Nastavení USB je skryté.</string>
+    <string name="settings_scope_usb_wifi_hidden">Zobrazeno nastavení Self Mode. Nastavení USB a WiFi je skryté.</string>
+    <string name="settings_scope_change">Změnit</string>
+    <string name="settings_search_clear">Vymazat hledání</string>
+    <string name="settings_search_no_results">Žádné nastavení neodpovídá „%1$s“.</string>
     <string name="connection_mode">Režim připojení</string>
     <string name="connection_kind_usb_cable">USB kabel (přímé připojení)</string>
     <string name="connection_kind_usb_wireless_adapter">Bezdrátový USB adaptér</string>
@@ -1443,4 +1449,16 @@
     <string name="audio_settings_reconnect">Nastavení zvuku uloženo. Pro jeho použití znovu připojte Android Auto.</string>
     <string name="native_aa_candidate_android_radio_description">Použít Bluetooth Androidu místo automatického výběru modulu Bluetooth jednotky. Pro automatický výběr ponechte vypnuté. Pokud je zapnutá některá možnost připojení přes modul, nejprve ji vypněte.</string>
     <string name="external_bt_candidate_transport_description">Vynutit připojení přes modul Bluetooth jednotky místo automatického výběru. Vyžaduje kompatibilní službu modulu. Ponechte vypnuté, aby se při neodpovídající službě mohlo použít Bluetooth Androidu; zapnutí tuto náhradní cestu zakáže.</string>
+    <string name="audio_matching_mode">Časová korekce hudby</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Výchozí</string>
+    <string name="audio_matching_wsola_hint">Nenáročný</string>
+    <string name="audio_matching_phase_vocoder_hint">Vyvážený</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Nízká latence</string>
+    <string name="audio_matching_phase_gradient_hint">Pomalé přehrávání</string>
+    <string name="audio_matching_description">OHU zůstává výchozí. WSOLA zarovnává překrývající se průběhy; Phase Vocoder upravuje spektrální fáze. Short používá kratší analytické okno. Phase Gradient rekonstruuje fáze integrací fázových gradientů. Tyto nezávislé implementace přidávají zpoždění zpracování; názvy nehodnotí kvalitu zvuku.\n\nNativní metody: hudba PCM. Navigace, hlasové odpovědi, systémové zvuky a AAC používají OHU.\nPro použití se znovu připojte. Nastavení odstraněných enginů se vrátí na OHU.</string>
 </resources>

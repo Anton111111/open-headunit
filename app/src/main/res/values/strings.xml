@@ -17,6 +17,12 @@
     <string name="settings_tab_basic">Basic</string>
     <string name="settings_tab_advanced">Advanced</string>
     <string name="settings_search_hint">Search settings</string>
+    <string name="settings_scope_wifi_hidden">Showing USB settings. WiFi settings are hidden.</string>
+    <string name="settings_scope_usb_hidden">Showing WiFi settings. USB settings are hidden.</string>
+    <string name="settings_scope_usb_wifi_hidden">Showing Self Mode settings. USB and WiFi settings are hidden.</string>
+    <string name="settings_scope_change">Change</string>
+    <string name="settings_search_clear">Clear search</string>
+    <string name="settings_search_no_results">No settings match \"%1$s\".</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">Connection mode</string>
@@ -530,7 +536,7 @@
     <!-- Video Settings -->
     <string name="category_video">Video</string>
     <string name="force_software_decoding">Force Software Decoding</string>
-    <string name="force_software_decoding_description">May fix issues on some devices, but is slower.</string>
+    <string name="force_software_decoding_description">Uses the selected software decoder for H.264 or H.265. Bundled FFmpeg is available on ARMv7 and ARM64 devices running Android 5.0 or newer. May fix device decoder issues, but is slower.</string>
     <string name="software_video_decoder">Software Decoder Source</string>
     <string name="software_video_decoder_bundled">Bundled FFmpeg</string>
     <string name="software_video_decoder_device">Device MediaCodec</string>
@@ -1618,4 +1624,18 @@
     <string name="wifi_scan_legacy_limit">Renewal on Android 8–10\n• Request a pause on connection, then every five minutes while connected.\n• Android may enable searches between requests. The interval limits repeated cleanup work; it cannot keep every scan stopped.\n\nIf enabling searches fails, keep Shizuku running and retry. Rebooting resets this temporary control.</string>
     <string name="native_aa_candidate_android_radio_description">Use Android Bluetooth instead of automatically selecting the head unit Bluetooth module. Leave off for automatic selection. If a module connection option is enabled, turn it off first.</string>
     <string name="external_bt_candidate_transport_description">Force connection through the head unit Bluetooth module instead of automatic selection. This requires a compatible module service. Leave off to allow Android Bluetooth when that service does not respond; forcing this option prevents that fallback.</string>
+
+    <string name="audio_matching_mode">Music time correction</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Default</string>
+    <string name="audio_matching_wsola_hint">Lightweight</string>
+    <string name="audio_matching_phase_vocoder_hint">Balanced</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Low latency</string>
+    <string name="audio_matching_phase_gradient_hint">Slow playback</string>
+    <string name="audio_matching_option" translatable="false">%1$s\n(%2$s)</string>
+    <string name="audio_matching_description">OHU remains the default. WSOLA aligns overlapping waveforms; Phase Vocoder adjusts spectral phases. Short uses a shorter analysis window. Phase Gradient integrates phase gradients to reconstruct phases. These independent methods add processing latency; their names do not rank sound quality.\n\nNative methods: PCM music. Navigation, voice responses, system sounds and AAC use OHU.\nReconnect to apply. Removed engine preferences reset to OHU.</string>
 </resources>

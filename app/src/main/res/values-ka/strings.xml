@@ -663,6 +663,12 @@
     <string name="settings_tab_basic">ძირითადი</string>
     <string name="settings_tab_advanced">დამატებითი</string>
     <string name="settings_search_hint">პარამეტრების ძებნა</string>
+    <string name="settings_scope_wifi_hidden">ნაჩვენებია USB-ის პარამეტრები. WiFi-ის პარამეტრები დამალულია.</string>
+    <string name="settings_scope_usb_hidden">ნაჩვენებია WiFi-ის პარამეტრები. USB-ის პარამეტრები დამალულია.</string>
+    <string name="settings_scope_usb_wifi_hidden">ნაჩვენებია ავტონომიური რეჟიმის პარამეტრები. USB-ისა და WiFi-ის პარამეტრები დამალულია.</string>
+    <string name="settings_scope_change">შეცვლა</string>
+    <string name="settings_search_clear">ძებნის გასუფთავება</string>
+    <string name="settings_search_no_results">„%1$s“-ს არცერთი პარამეტრი არ ემთხვევა.</string>
     <string name="connection_mode">კავშირის რეჟიმი</string>
     <string name="connection_kind_usb_cable">USB კაბელი (პირდაპირი)</string>
     <string name="connection_kind_usb_wireless_adapter">USB უსადენო ადაპტერი</string>
@@ -1428,4 +1434,16 @@
     <string name="audio_settings_reconnect">აუდიოს პარამეტრები შენახულია. გასააქტიურებლად Android Auto-ს ხელახლა დაუკავშირდით.</string>
     <string name="native_aa_candidate_android_radio_description">მოწყობილობის Bluetooth მოდულის ავტომატური არჩევის ნაცვლად გამოიყენეთ Android-ის Bluetooth. ავტომატური არჩევისთვის დატოვეთ გამორთული. თუ მოდულით დაკავშირების რომელიმე ვარიანტი ჩართულია, ჯერ ის გამორთეთ.</string>
     <string name="external_bt_candidate_transport_description">ავტომატური არჩევის ნაცვლად იძულებით გამოიყენეთ მოწყობილობის Bluetooth მოდულით კავშირი. საჭიროა მოდულის თავსებადი სერვისი. დატოვეთ გამორთული, რათა სერვისის უპასუხოდ დარჩენისას Android-ის Bluetooth გამოიყენოთ; ჩართვა ამ სათადარიგო გზას გამორიცხავს.</string>
+    <string name="audio_matching_mode">მუსიკის დროითი კორექცია</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">ნაგულისხმევი</string>
+    <string name="audio_matching_wsola_hint">მსუბუქი</string>
+    <string name="audio_matching_phase_vocoder_hint">დაბალანსებული</string>
+    <string name="audio_matching_phase_vocoder_short_hint">მცირე დაყოვნება</string>
+    <string name="audio_matching_phase_gradient_hint">ნელი დაკვრა</string>
+    <string name="audio_matching_description">OHU რჩება ნაგულისხმევ ვარიანტად. WSOLA ასწორებს გადაფარულ ტალღებს; Phase Vocoder ცვლის სპექტრულ ფაზებს. Short იყენებს უფრო მოკლე ანალიზის ფანჯარას. Phase Gradient აღადგენს ფაზებს ფაზის გრადიენტების ინტეგრირებით. ეს დამოუკიდებელი იმპლემენტაციები ამატებს დამუშავების დაყოვნებას; სახელები არ აღნიშნავს ხმის ხარისხის რეიტინგს.\n\nნატიური მეთოდები: PCM მუსიკა. ნავიგაცია, ხმოვანი პასუხები, სისტემური ხმები და AAC იყენებს OHU-ს.\nგამოსაყენებლად ხელახლა დაუკავშირდით. წაშლილი ძრავების პარამეტრები ბრუნდება OHU-ზე.</string>
 </resources>

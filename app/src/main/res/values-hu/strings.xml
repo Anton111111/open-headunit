@@ -732,6 +732,12 @@
     <string name="settings_tab_basic">Alapvető</string>
     <string name="settings_tab_advanced">Speciális</string>
     <string name="settings_search_hint">Beállítások keresése</string>
+    <string name="settings_scope_wifi_hidden">USB-beállítások láthatók. A WiFi-beállítások rejtve vannak.</string>
+    <string name="settings_scope_usb_hidden">WiFi-beállítások láthatók. Az USB-beállítások rejtve vannak.</string>
+    <string name="settings_scope_usb_wifi_hidden">Az önálló mód beállításai láthatók. Az USB- és WiFi-beállítások rejtve vannak.</string>
+    <string name="settings_scope_change">Módosítás</string>
+    <string name="settings_search_clear">Keresés törlése</string>
+    <string name="settings_search_no_results">Egy beállítás sem felel meg ennek: „%1$s”.</string>
     <string name="connection_mode">Csatlakozási mód</string>
     <string name="connection_kind_usb_cable">USB-kábel (közvetlen)</string>
     <string name="connection_kind_usb_wireless_adapter">USB-s vezeték nélküli adapter</string>
@@ -1443,4 +1449,16 @@
     <string name="audio_settings_reconnect">Hangbeállítások elmentve. Az alkalmazásukhoz csatlakoztassa újra az Android Auto-t.</string>
     <string name="native_aa_candidate_android_radio_description">Az Android Bluetooth használata a fejegység Bluetooth-moduljának automatikus kiválasztása helyett. Az automatikus választáshoz hagyja kikapcsolva. Ha valamelyik modulkapcsolati lehetőség be van kapcsolva, előbb kapcsolja ki.</string>
     <string name="external_bt_candidate_transport_description">Kapcsolódás kényszerítése a fejegység Bluetooth-modulján keresztül az automatikus választás helyett. Kompatibilis modulszolgáltatás szükséges. Hagyja kikapcsolva, hogy az Android Bluetooth használható maradjon, ha a szolgáltatás nem válaszol; bekapcsolva ez a tartalék út nem használható.</string>
+    <string name="audio_matching_mode">Zene időkorrekciója</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Alapértelmezett</string>
+    <string name="audio_matching_wsola_hint">Kis erőforrásigény</string>
+    <string name="audio_matching_phase_vocoder_hint">Kiegyensúlyozott</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Alacsony késleltetés</string>
+    <string name="audio_matching_phase_gradient_hint">Lassú lejátszás</string>
+    <string name="audio_matching_description">Az OHU marad az alapértelmezett. A WSOLA átfedő hullámformákat igazít; a Phase Vocoder spektrális fázisokat módosít. A Short rövidebb elemzési ablakot használ. A Phase Gradient fázisgradiensek integrálásával rekonstruálja a fázisokat. Ezek az önálló megvalósítások feldolgozási késleltetést okoznak; nevük nem hangminőségi rangsor.\n\nNatív módszerek: PCM-zene. A navigáció, hangos válaszok, rendszerhangok és AAC OHU-t használnak.\nAz alkalmazáshoz csatlakozzon újra. Az eltávolított motorok beállítása OHU-ra áll vissza.</string>
 </resources>

@@ -8,6 +8,12 @@
     <string name="settings_tab_basic">Básico</string>
     <string name="settings_tab_advanced">Avançado</string>
     <string name="settings_search_hint">Pesquisar definições</string>
+    <string name="settings_scope_wifi_hidden">A mostrar definições de USB. As definições de WiFi estão ocultas.</string>
+    <string name="settings_scope_usb_hidden">A mostrar definições de WiFi. As definições de USB estão ocultas.</string>
+    <string name="settings_scope_usb_wifi_hidden">A mostrar definições do Modo Próprio. As definições de USB e WiFi estão ocultas.</string>
+    <string name="settings_scope_change">Alterar</string>
+    <string name="settings_search_clear">Limpar pesquisa</string>
+    <string name="settings_search_no_results">Nenhuma definição corresponde a \"%1$s\".</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">Modo de ligação</string>
@@ -1495,4 +1501,16 @@
     <string name="audio_settings_reconnect">Definições de áudio guardadas. Volte a ligar o Android Auto para as aplicar.</string>
     <string name="native_aa_candidate_android_radio_description">Usar o Bluetooth do Android em vez de selecionar automaticamente o módulo Bluetooth da unidade. Deixe desativado para seleção automática. Se alguma opção de ligação pelo módulo estiver ativada, desative-a primeiro.</string>
     <string name="external_bt_candidate_transport_description">Forçar a ligação pelo módulo Bluetooth da unidade em vez da seleção automática. Requer um serviço de módulo compatível. Deixe desativado para permitir o Bluetooth do Android quando o serviço não responder; ativar impede esta alternativa.</string>
+    <string name="audio_matching_mode">Correção temporal da música</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Predefinido</string>
+    <string name="audio_matching_wsola_hint">Leve</string>
+    <string name="audio_matching_phase_vocoder_hint">Equilibrado</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Baixa latência</string>
+    <string name="audio_matching_phase_gradient_hint">Reprodução lenta</string>
+    <string name="audio_matching_description">OHU continua a ser a opção predefinida. WSOLA alinha formas de onda sobrepostas; Phase Vocoder ajusta as fases espectrais. Short usa uma janela de análise mais curta. Phase Gradient reconstrói fases integrando os seus gradientes. Estas implementações independentes acrescentam latência; os nomes não classificam a qualidade sonora.\n\nMétodos nativos: música PCM. Navegação, respostas de voz, sons do sistema e AAC usam OHU.\nVolte a ligar para aplicar. As definições dos motores removidos regressam a OHU.</string>
 </resources>

@@ -731,6 +731,12 @@
     <string name="settings_tab_basic">基础</string>
     <string name="settings_tab_advanced">高级</string>
     <string name="settings_search_hint">搜索设置</string>
+    <string name="settings_scope_wifi_hidden">正在显示 USB 设置。WiFi 设置已隐藏。</string>
+    <string name="settings_scope_usb_hidden">正在显示 WiFi 设置。USB 设置已隐藏。</string>
+    <string name="settings_scope_usb_wifi_hidden">正在显示独立模式设置。USB 和 WiFi 设置已隐藏。</string>
+    <string name="settings_scope_change">更改</string>
+    <string name="settings_search_clear">清除搜索</string>
+    <string name="settings_search_no_results">没有与“%1$s”匹配的设置。</string>
     <string name="connection_mode">连接方式</string>
     <string name="connection_kind_usb_cable">USB 线缆（直连）</string>
     <string name="connection_kind_usb_wireless_adapter">USB 无线适配器</string>
@@ -1439,4 +1445,16 @@
     <string name="audio_settings_reconnect">音频设置已保存。重新连接 Android Auto 后生效。</string>
     <string name="native_aa_candidate_android_radio_description">使用 Android 蓝牙，而不是自动选择车机的蓝牙模块。保持关闭以使用自动选择。如果已开启通过模块连接的选项，请先将其关闭。</string>
     <string name="external_bt_candidate_transport_description">强制通过车机的蓝牙模块连接，而不是自动选择。需要兼容的模块服务。保持关闭可在服务无响应时使用 Android 蓝牙；开启此选项将禁止这一备用连接方式。</string>
+    <string name="audio_matching_mode">音乐时间校正</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">默认</string>
+    <string name="audio_matching_wsola_hint">轻量</string>
+    <string name="audio_matching_phase_vocoder_hint">均衡</string>
+    <string name="audio_matching_phase_vocoder_short_hint">低延迟</string>
+    <string name="audio_matching_phase_gradient_hint">慢速播放</string>
+    <string name="audio_matching_description">OHU 仍为默认选项。WSOLA 对齐重叠波形，Phase Vocoder 调整频谱相位，Short 使用更短的分析窗口。Phase Gradient 通过积分相位梯度重建相位。这些独立实现的方法会增加处理延迟；名称不代表音质排名。\n\n原生方法：适用于 PCM 音乐。导航提示、语音回复、系统声音和 AAC 使用 OHU。\n重新连接后生效。已删除引擎的保存设置会重置为 OHU。</string>
 </resources>

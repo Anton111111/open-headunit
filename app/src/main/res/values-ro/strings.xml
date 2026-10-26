@@ -735,6 +735,12 @@
     <string name="settings_tab_basic">De bază</string>
     <string name="settings_tab_advanced">Avansate</string>
     <string name="settings_search_hint">Caută în setări</string>
+    <string name="settings_scope_wifi_hidden">Se afișează setările USB. Setările WiFi sunt ascunse.</string>
+    <string name="settings_scope_usb_hidden">Se afișează setările WiFi. Setările USB sunt ascunse.</string>
+    <string name="settings_scope_usb_wifi_hidden">Se afișează setările pentru modul local. Setările USB și WiFi sunt ascunse.</string>
+    <string name="settings_scope_change">Schimbă</string>
+    <string name="settings_search_clear">Șterge căutarea</string>
+    <string name="settings_search_no_results">Nicio setare nu corespunde cu „%1$s”.</string>
     <string name="connection_mode">Mod de conectare</string>
     <string name="connection_kind_usb_cable">Cablu USB (direct)</string>
     <string name="connection_kind_usb_wireless_adapter">Adaptor wireless USB</string>
@@ -1439,4 +1445,16 @@
     <string name="audio_settings_reconnect">Setările audio au fost salvate. Reconectează Android Auto pentru a le aplica.</string>
     <string name="native_aa_candidate_android_radio_description">Folosește Bluetooth din Android în loc să selectezi automat modulul Bluetooth al unității. Lasă dezactivat pentru selecție automată. Dacă este activată o opțiune de conectare prin modul, dezactiveaz-o mai întâi.</string>
     <string name="external_bt_candidate_transport_description">Forțează conectarea prin modulul Bluetooth al unității în locul selecției automate. Necesită un serviciu de modul compatibil. Lasă dezactivat pentru a permite Bluetooth din Android când serviciul nu răspunde; activarea împiedică această alternativă.</string>
+    <string name="audio_matching_mode">Corecție temporală a muzicii</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Implicit</string>
+    <string name="audio_matching_wsola_hint">Consum redus</string>
+    <string name="audio_matching_phase_vocoder_hint">Echilibrat</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Latență redusă</string>
+    <string name="audio_matching_phase_gradient_hint">Redare lentă</string>
+    <string name="audio_matching_description">OHU rămâne implicit. WSOLA aliniază formele de undă suprapuse; Phase Vocoder ajustează fazele spectrale. Short folosește o fereastră de analiză mai scurtă. Phase Gradient reconstruiește fazele prin integrarea gradienților de fază. Aceste implementări independente adaugă latență de procesare; numele nu clasifică calitatea sunetului.\n\nMetode native: muzică PCM. Navigarea, răspunsurile vocale, sunetele de sistem și AAC folosesc OHU.\nReconectează-te pentru aplicare. Setările motoarelor eliminate revin la OHU.</string>
 </resources>

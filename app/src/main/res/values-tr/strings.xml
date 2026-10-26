@@ -730,6 +730,12 @@
     <string name="settings_tab_basic">Temel</string>
     <string name="settings_tab_advanced">Gelişmiş</string>
     <string name="settings_search_hint">Ayarlarda ara</string>
+    <string name="settings_scope_wifi_hidden">USB ayarları gösteriliyor. WiFi ayarları gizli.</string>
+    <string name="settings_scope_usb_hidden">WiFi ayarları gösteriliyor. USB ayarları gizli.</string>
+    <string name="settings_scope_usb_wifi_hidden">Dahili Mod ayarları gösteriliyor. USB ve WiFi ayarları gizli.</string>
+    <string name="settings_scope_change">Değiştir</string>
+    <string name="settings_search_clear">Aramayı temizle</string>
+    <string name="settings_search_no_results">\"%1$s\" ile eşleşen ayar yok.</string>
     <string name="connection_mode">Bağlantı modu</string>
     <string name="connection_kind_usb_cable">USB kablosu (doğrudan)</string>
     <string name="connection_kind_usb_wireless_adapter">USB kablosuz adaptör</string>
@@ -1436,4 +1442,16 @@
     <string name="audio_settings_reconnect">Ses ayarları kaydedildi. Uygulamak için Android Auto\'yu yeniden bağlayın.</string>
     <string name="native_aa_candidate_android_radio_description">Ünitenin Bluetooth modülünü otomatik seçmek yerine Android Bluetooth kullanın. Otomatik seçim için kapalı bırakın. Modül üzerinden bağlantı seçeneği açıksa önce onu kapatın.</string>
     <string name="external_bt_candidate_transport_description">Otomatik seçim yerine ünitenin Bluetooth modülü üzerinden bağlantıyı zorlayın. Uyumlu bir modül hizmeti gerektirir. Hizmet yanıt vermediğinde Android Bluetooth kullanılabilmesi için kapalı bırakın; açılması bu yedek yolu engeller.</string>
+    <string name="audio_matching_mode">Müzik zaman düzeltmesi</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Varsayılan</string>
+    <string name="audio_matching_wsola_hint">Hafif</string>
+    <string name="audio_matching_phase_vocoder_hint">Dengeli</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Düşük gecikme</string>
+    <string name="audio_matching_phase_gradient_hint">Yavaş oynatma</string>
+    <string name="audio_matching_description">OHU varsayılan olarak kalır. WSOLA örtüşen dalga biçimlerini hizalar; Phase Vocoder spektral fazları ayarlar. Short daha kısa analiz penceresi kullanır. Phase Gradient faz gradyanlarını entegre ederek fazları yeniden oluşturur. Bu bağımsız uygulamalar işleme gecikmesi ekler; adlar ses kalitesini sıralamaz.\n\nYerel yöntemler: PCM müzik. Navigasyon, sesli yanıtlar, sistem sesleri ve AAC OHU kullanır.\nUygulamak için yeniden bağlanın. Kaldırılan motorların ayarları OHU olarak sıfırlanır.</string>
 </resources>

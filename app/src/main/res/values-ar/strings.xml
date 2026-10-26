@@ -737,6 +737,12 @@
     <string name="settings_tab_basic">أساسي</string>
     <string name="settings_tab_advanced">متقدم</string>
     <string name="settings_search_hint">البحث في الإعدادات</string>
+    <string name="settings_scope_wifi_hidden">عرض إعدادات USB. إعدادات WiFi مخفية.</string>
+    <string name="settings_scope_usb_hidden">عرض إعدادات WiFi. إعدادات USB مخفية.</string>
+    <string name="settings_scope_usb_wifi_hidden">عرض إعدادات الوضع الذاتي. إعدادات USB وWiFi مخفية.</string>
+    <string name="settings_scope_change">تغيير</string>
+    <string name="settings_search_clear">مسح البحث</string>
+    <string name="settings_search_no_results">لا توجد إعدادات تطابق \"%1$s\".</string>
     <string name="connection_mode">وضع الاتصال</string>
     <string name="connection_kind_usb_cable">كابل USB (مباشر)</string>
     <string name="connection_kind_usb_wireless_adapter">محول USB لاسلكي</string>
@@ -1444,4 +1450,16 @@
     <string name="audio_settings_reconnect">تم حفظ إعدادات الصوت. أعد توصيل Android Auto لتطبيقها.</string>
     <string name="native_aa_candidate_android_radio_description">استخدم Bluetooth في Android بدلاً من اختيار وحدة Bluetooth في الجهاز تلقائياً. اترك الخيار معطلاً للاختيار التلقائي. إذا كان أي خيار للاتصال عبر الوحدة مفعلاً، فعطّله أولاً.</string>
     <string name="external_bt_candidate_transport_description">افرض الاتصال عبر وحدة Bluetooth في الجهاز بدلاً من الاختيار التلقائي. يتطلب ذلك خدمة وحدة متوافقة. اترك الخيار معطلاً للسماح باستخدام Bluetooth في Android عند عدم استجابة الخدمة؛ تفعيله يمنع هذا البديل.</string>
+    <string name="audio_matching_mode">تصحيح توقيت الموسيقى</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">افتراضي</string>
+    <string name="audio_matching_wsola_hint">خفيف</string>
+    <string name="audio_matching_phase_vocoder_hint">متوازن</string>
+    <string name="audio_matching_phase_vocoder_short_hint">تأخر منخفض</string>
+    <string name="audio_matching_phase_gradient_hint">تشغيل بطيء</string>
+    <string name="audio_matching_description">يبقى OHU الخيار الافتراضي. يحاذي WSOLA الموجات المتداخلة ويضبط Phase Vocoder الأطوار الطيفية. يستخدم Short نافذة تحليل أقصر. يعيد Phase Gradient بناء الأطوار بتكامل تدرجات الطور. تضيف هذه التطبيقات المستقلة تأخرًا في المعالجة؛ ولا تمثل أسماؤها ترتيبًا لجودة الصوت.\n\nالطرق الأصلية: موسيقى PCM. تستخدم إرشادات الملاحة والردود الصوتية وأصوات النظام وAAC OHU.\nأعد الاتصال للتطبيق. تعود إعدادات المحركات المحذوفة إلى OHU.</string>
 </resources>
