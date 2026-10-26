@@ -1445,4 +1445,16 @@
     <string name="audio_settings_reconnect">音訊設定已儲存。重新連線 Android Auto 後生效。</string>
     <string name="native_aa_candidate_android_radio_description">使用 Android 藍牙，而不是自動選擇車機的藍牙模組。保持關閉以使用自動選擇。如果已開啟透過模組連線的選項，請先將其關閉。</string>
     <string name="external_bt_candidate_transport_description">強制透過車機的藍牙模組連線，而不是自動選擇。需要相容的模組服務。保持關閉可在服務無回應時使用 Android 藍牙；開啟此選項將禁止這個備用連線方式。</string>
+    <string name="audio_matching_mode">音樂時間校正</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">預設</string>
+    <string name="audio_matching_wsola_hint">輕量</string>
+    <string name="audio_matching_phase_vocoder_hint">均衡</string>
+    <string name="audio_matching_phase_vocoder_short_hint">低延遲</string>
+    <string name="audio_matching_phase_gradient_hint">慢速播放</string>
+    <string name="audio_matching_description">OHU 仍為預設選項。WSOLA 對齊重疊波形，Phase Vocoder 調整頻譜相位，Short 使用較短的分析視窗。Phase Gradient 透過積分相位梯度重建相位。這些獨立實作的方法會增加處理延遲；名稱不代表音質排名。\n\n原生方法：適用於 PCM 音樂。導航提示、語音回覆、系統音效和 AAC 使用 OHU。\n重新連線後生效。已刪除引擎的儲存設定會重設為 OHU。</string>
 </resources>

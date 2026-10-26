@@ -1449,4 +1449,16 @@
     <string name="audio_settings_reconnect">Configurações de áudio salvas. Reconecte o Android Auto para aplicá-las.</string>
     <string name="native_aa_candidate_android_radio_description">Usar o Bluetooth do Android em vez de selecionar automaticamente o módulo Bluetooth da central. Deixe desativado para seleção automática. Se alguma opção de conexão pelo módulo estiver ativada, desative-a primeiro.</string>
     <string name="external_bt_candidate_transport_description">Forçar a conexão pelo módulo Bluetooth da central em vez da seleção automática. Requer um serviço de módulo compatível. Deixe desativado para permitir o Bluetooth do Android quando o serviço não responder; ativar impede essa alternativa.</string>
+    <string name="audio_matching_mode">Correção de tempo da música</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Padrão</string>
+    <string name="audio_matching_wsola_hint">Leve</string>
+    <string name="audio_matching_phase_vocoder_hint">Equilibrado</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Baixa latência</string>
+    <string name="audio_matching_phase_gradient_hint">Reprodução lenta</string>
+    <string name="audio_matching_description">OHU continua sendo o padrão. WSOLA alinha formas de onda sobrepostas; Phase Vocoder ajusta as fases espectrais. Short usa uma janela de análise mais curta. Phase Gradient reconstrói fases integrando seus gradientes. Estas implementações independentes adicionam latência; os nomes não classificam a qualidade sonora.\n\nMétodos nativos: música PCM. Navegação, respostas de voz, sons do sistema e AAC usam OHU.\nReconecte para aplicar. As configurações dos mecanismos removidos voltam para OHU.</string>
 </resources>
