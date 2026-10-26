@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
+import android.media.MediaFormat
 import android.os.Build
 import android.view.Surface
 import com.andrerinas.openheadunit.decoder.video.VideoDecoder.CodecType
@@ -13,6 +14,9 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.mockito.ArgumentMatchers.*
 import org.mockito.Mockito.*
+import java.nio.ByteBuffer
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /** Real session selection/recovery; platform output is scripted, not the decoder's decisions. */
@@ -71,6 +75,15 @@ class VideoCodecSessionTest {
             setOwner("softwareVideoDecoder", owner)
             return owner
         }
+        fun startInputOwner(owner: MediaCodec) {
+            val loop = VideoDecoder::class.java.getDeclaredMethod("feedThreadLoop").apply { isAccessible = true }
+            val worker = Thread { loop.invoke(decoder) }
+            setOwner("codec", owner)
+            setOwner("running", true)
+            setOwner("feedThread", worker)
+            worker.start()
+        }
+
         fun failOutputOwner(renderFirst: Boolean = false): MediaCodec {
             val codec = mock(MediaCodec::class.java)
             val failure = IllegalStateException("synthetic component dequeue failure")
@@ -240,6 +253,136 @@ class VideoCodecSessionTest {
                 assertEquals(List(5) { "sync_consecutive_errors" }, f.errors)
                 f.decoder.stop("projection disconnected")
                 assertFalse(f.decoder.hasRenderedThisSession)
+            }
+        }
+    }
+
+    @Test fun `parsed codec evidence survives an absent surface before any decoder exists`() {
+        val vectors = mapOf(
+            CodecType.H264 to "67 42 80 1F F4 02 80 2D C8",
+            CodecType.H265 to "42 01 01 01 00 00 03 00 00 80 00 00 03 00 00 03 00 5D A0 02 80 80 2D 16 59 38"
+        )
+        for ((type, hex) in vectors) Fixture(preference = other(type)).use { f ->
+            val sps = byteArrayOf(0, 0, 0, 1) + hex.split(" ").map { it.toInt(16).toByte() }.toByteArray()
+            f.decoder.setSurface(null)
+            f.decode(sps, other(type))
+            f.decode(slice(type), other(type))
+            assertEquals(type, f.decoder.sessionHealth().finalCodec)
+            assertTrue(f.decoder.sessionHealth().codecFallbackUsed)
+            f.decoder.setSurface(f.surface)
+            f.decode(slice(type), other(type))
+            assertEquals(type, f.decoder.sessionHealth().finalCodec)
+
+            f.decoder.stop("projection disconnected")
+            f.decoder.beginSession()
+            f.decode(slice(other(type)), other(type))
+            f.assertSelected(other(type))
+        }
+    }
+
+    @Test fun `first platform creation failures stop retrying without a successful codec pin`() {
+        withPlatformCodecs {
+            mockStatic(android.util.Log::class.java).use { logs ->
+                logs.`when`<String> { android.util.Log.getStackTraceString(any(Throwable::class.java)) }
+                    .thenReturn("synthetic creation failure")
+                mockStatic(MediaFormat::class.java).use { formats ->
+                    formats.`when`<MediaFormat> { MediaFormat.createVideoFormat(anyString(), anyInt(), anyInt()) }
+                        .thenAnswer { mock(MediaFormat::class.java) }
+                    mockStatic(MediaCodec::class.java).use { codecs ->
+                        var attempts = 0
+                        codecs.`when`<MediaCodec> { MediaCodec.createByCodecName(anyString()) }.thenAnswer {
+                            attempts++
+                            throw IllegalStateException("component unavailable")
+                        }
+                        Fixture(preference = CodecType.H264).use { f ->
+                            `when`(f.surface.isValid).thenReturn(true)
+                            val packet = slice(CodecType.H264) // No SPS evidence and no successful start.
+                            repeat(8) { f.decode(packet, CodecType.H264) }
+                            assertEquals(3, f.errors.size)
+                            assertTrue(attempts > 0)
+                            val latchedAttempts = attempts
+                            repeat(8) { f.decode(packet, CodecType.H264) }
+                            assertEquals(latchedAttempts, attempts)
+                            assertFalse(f.decoder.hasRenderedThisSession)
+                            f.assertSelected(CodecType.H264)
+
+                            f.decoder.stop(DecoderStopPolicy.REASON_SURFACE_DESTROYED)
+                            f.decode(packet, CodecType.H264)
+                            assertTrue("a new surface must allow another real creation attempt", attempts > latchedAttempts)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun `strong codec correction gets its own cold-start budget at the previous limit`() {
+        val hevcSps = byteArrayOf(0, 0, 0, 1) +
+            "42 01 01 01 00 00 03 00 00 80 00 00 03 00 00 03 00 5D A0 02 80 80 2D 16 59 38"
+                .split(" ").map { it.toInt(16).toByte() }.toByteArray()
+        Fixture(preference = CodecType.H264).use { f ->
+            f.decode(slice(CodecType.H264), CodecType.H264)
+            repeat(2) { f.consumeRestart(slice(CodecType.H264), CodecType.H264) }
+            f.consumeRestart(hevcSps, CodecType.H264)
+            assertEquals(CodecType.H265, f.decoder.sessionHealth().finalCodec)
+            assertTrue(f.decoder.sessionHealth().codecFallbackUsed)
+            verify(f.surface).isValid
+            repeat(3) { retry ->
+                f.consumeRestart(slice(CodecType.H265), CodecType.H264)
+                if (retry < 2) verify(f.surface).isValid else verifyNoInteractions(f.surface)
+            }
+        }
+    }
+
+    @Test fun `parameter sets received by a running platform owner survive surface recreation`() {
+        fun annex(hex: String) = byteArrayOf(0, 0, 0, 1) +
+            hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val sps0 = annex("6742c01fda0320f684000003000400000300f03c60ca80")
+        val pps0 = annex("68ce0f2c80")
+        val sps1 = annex("6742c01f5680c83da10000030001000003003c8f1832a0")
+        val pps1 = annex("6848e0fc80")
+        withPlatformCodecs {
+            val stored = java.util.IdentityHashMap<MediaFormat, MutableMap<String, ByteArray>>()
+            val submitted = LinkedBlockingQueue<ByteArray>()
+            mockStatic(MediaFormat::class.java).use { formats ->
+                formats.`when`<MediaFormat> { MediaFormat.createVideoFormat(anyString(), anyInt(), anyInt()) }
+                    .thenAnswer {
+                        val format = mock(MediaFormat::class.java)
+                        val data = mutableMapOf<String, ByteArray>()
+                        stored[format] = data
+                        doAnswer { call ->
+                            val bytes = (call.arguments[1] as ByteBuffer).duplicate()
+                            data[call.arguments[0] as String] = ByteArray(bytes.remaining()).also { bytes.get(it) }
+                            null
+                        }.`when`(format).setByteBuffer(anyString(), org.mockito.kotlin.any())
+                        format
+                    }
+                val owner = mock(MediaCodec::class.java)
+                val input = ByteBuffer.allocate(4096)
+                `when`(owner.dequeueInputBuffer(anyLong())).thenReturn(0)
+                `when`(owner.getInputBuffer(anyInt())).thenReturn(input)
+                doAnswer { call ->
+                    val size = call.arguments[2] as Int
+                    submitted.add(ByteArray(size).also { input.duplicate().get(it) })
+                    null
+                }.`when`(owner).queueInputBuffer(anyInt(), anyInt(), anyInt(), anyLong(), anyInt())
+                Fixture(preference = CodecType.H264).use { f ->
+                    f.decode(sps0 + pps0, CodecType.H264)
+                    // Run the production feed loop without Android's thread-priority wrapper.
+                    f.startInputOwner(owner)
+                    f.decode(sps1 + pps1, CodecType.H264)
+                    assertArrayEquals(sps1 + pps1, submitted.poll(3, TimeUnit.SECONDS))
+                    assertTrue(f.decoder.detachSurfaceIfCurrent(f.surface, DecoderStopPolicy.REASON_SURFACE_DESTROYED))
+                    f.decoder.setSurface(f.surface)
+                    val buildFormat = VideoDecoder::class.java.getDeclaredMethod(
+                        "buildFormat", String::class.java, Int::class.javaPrimitiveType,
+                        Int::class.javaPrimitiveType, String::class.java
+                    ).apply { isAccessible = true }
+                    val format = buildFormat.invoke(f.decoder, CodecType.H264.mimeType, 800, 480, "OMX.vendor.H264.decoder")
+                    val replay = stored[format]!!
+                    assertArrayEquals(sps0 + sps1, replay["csd-0"])
+                    assertArrayEquals(pps0 + pps1, replay["csd-1"])
+                }
             }
         }
     }

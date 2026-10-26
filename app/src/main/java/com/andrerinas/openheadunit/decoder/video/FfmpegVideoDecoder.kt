@@ -19,6 +19,15 @@ class FfmpegVideoDecoder(
     val isStarted: Boolean
         get() = nativeHandle != 0L
 
+    /** Output-side evidence from the most recent decode, not just an input IDR header. */
+    var keyframeRendered: Boolean = false
+        private set
+
+    var outputWidth: Int = 0
+        private set
+    var outputHeight: Int = 0
+        private set
+
     fun start(): Boolean {
         if (!libraryLoaded) {
             AppLog.e("FFmpeg ${codecType.displayName} decoder native library is not loaded")
@@ -44,14 +53,21 @@ class FfmpegVideoDecoder(
     }
 
     fun decode(buffer: ByteArray, offset: Int, size: Int): Int {
+        keyframeRendered = false
         val handle = nativeHandle
         if (handle == 0L) return 0
-        return nativeDecode(handle, buffer, offset, size, SystemClock.elapsedRealtimeNanos() / 1000L)
+        val result = nativeDecode(handle, buffer, offset, size, SystemClock.elapsedRealtimeNanos() / 1000L)
+        if (result < 0) return result
+        keyframeRendered = result and RENDERED_KEYFRAME != 0
+        return result and RENDERED_KEYFRAME.inv()
     }
 
     fun stop() {
         val handle = nativeHandle
         nativeHandle = 0
+        keyframeRendered = false
+        outputWidth = 0
+        outputHeight = 0
         if (handle != 0L && libraryLoaded) {
             nativeRelease(handle)
         }
@@ -60,6 +76,13 @@ class FfmpegVideoDecoder(
     private fun recommendedThreadCount(): Int {
         val cores = Runtime.getRuntime().availableProcessors()
         return cores.coerceIn(2, 6)
+    }
+
+    @Keep
+    @Suppress("unused")
+    private fun onNativeOutputSize(width: Int, height: Int) {
+        outputWidth = width
+        outputHeight = height
     }
 
     @Keep
@@ -78,6 +101,8 @@ class FfmpegVideoDecoder(
     }
 
     companion object {
+        // Matches the native positive-result flag; negative values remain decode failures.
+        private const val RENDERED_KEYFRAME = 1 shl 30
         private val libraryLoaded: Boolean = try {
             System.loadLibrary("hur_soft_video")
             true

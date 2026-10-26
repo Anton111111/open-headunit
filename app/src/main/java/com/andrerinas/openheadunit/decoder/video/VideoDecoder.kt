@@ -219,10 +219,7 @@ class VideoDecoder(
 
     private var mWidth = 0
     private var mHeight = 0
-    private var vps: ByteArray? = null
-    private var sps: ByteArray? = null
-    private var pps: ByteArray? = null
-    @Volatile private var codecConfigured = false
+    private val parameterSets = ParameterSetCache()
     @Volatile private var currentCodecType = CodecType.H264
     private var currentCodecName: String? = null
 
@@ -410,7 +407,7 @@ class VideoDecoder(
     @Volatile var lastInputBytesReceivedMs: Long = 0L
 
     // The bundled decoder can render directly to a surface or through the GLES YUV sink.
-    // Keep an active YUV sink when the projection watchdog rebuilds the renderer.
+    // Bundled output has no MediaCodec presentation-timestamp accounting.
     val usingBundledSoftwareVideo: Boolean get() = softwareVideoDecoder != null
 
     @Volatile private var decoderNeedsRestart = false
@@ -892,12 +889,9 @@ class VideoDecoder(
             if (DecoderStopPolicy.endsSession(reason)) {
                 codecTypePinned = false
                 renderedThisSession = false
-                vps = null
-                sps = null
-                pps = null
+                parameterSets.clear()
                 mWidth = 0
                 mHeight = 0
-                codecConfigured = false
                 loggedParameterSet = false
                 // Session-scoped, like everything else in this block: a restart does not change what
                 // the phone is sending, so a change reported across one would be reporting the
@@ -961,6 +955,7 @@ class VideoDecoder(
      * before the first rendered frame.
      */
     fun decode(buffer: ByteArray, offset: Int, size: Int, forceSoftware: Boolean, announcedCodec: CodecType) {
+        var repairedKeyframeCallback: (() -> Unit)? = null
         val frame = synchronized(this) {
             // Input-side liveness: bytes are arriving from the phone right now.
             lastInputBytesReceivedMs = elapsedRealtime()
@@ -973,14 +968,13 @@ class VideoDecoder(
                 // recover a decoder. That would feed the same bytes to an incompatible decoder.
                 // A session that already rendered is excluded from this cold-start limit.
                 if (DecoderRestartPolicy.countsTowardFailure(
-                        codecTypePinned,
                         renderedSinceLastStart = lastFrameRenderedMs != 0L,
                         renderedThisSession = renderedThisSession
                     )
                 ) {
                     restartsSinceLastFrame++
                     if (restartsSinceLastFrame >= MAX_RESTARTS_WITHOUT_FRAME) {
-                        AppLog.e("${currentCodecType.displayName} failed $restartsSinceLastFrame times without rendering a frame. Stopping this decoder; changing codecs requires a new negotiation.")
+                        AppLog.e("${currentCodecType.displayName} failed $restartsSinceLastFrame times without rendering a frame. Stopping initialization retries for this codec.")
                         decoderPermanentlyFailed = true
                     }
                 } else if (lastFrameRenderedMs != 0L || renderedThisSession) {
@@ -996,7 +990,6 @@ class VideoDecoder(
                 onDecoderError?.invoke(restartReason)
             }
 
-            if (decoderPermanentlyFailed) return
 
             // Buffer management for backward compatibility
             // Modern devices (API 21+) use the original buffer with offset/size to avoid GC pressure.
@@ -1015,71 +1008,94 @@ class VideoDecoder(
             }
 
 
-            // Only initial parameter-set evidence can correct the announced codec. Restarts retain that
-            // selection; a lack of decoded frames is not evidence of a different encoding.
-            if (codec == null && softwareVideoDecoder == null) {
-                val typeToUse = if (codecTypePinned) {
-                    currentCodecType
-                } else {
-                    val detectedType = CodecTypeSelectionPolicy.detect(frameData, frameOffset, size)
-                    val selected = CodecTypeSelectionPolicy.select(detectedType, announcedCodec)
-                    if (selected != announcedCodec) {
-                        codecFallbackUsed = true
-                        AppLog.w(
-                            "Stream parameter sets identify ${selected.displayName}, but this session " +
-                                "announced ${announcedCodec.displayName}; using the stream codec"
-                        )
+            // Strong stream evidence belongs to the session, not to a successfully created owner.
+            // Keep it while a surface is absent or the first decoder creation fails.
+            if (codec == null && softwareVideoDecoder == null && !codecTypePinned) {
+                val detectedType = CodecTypeSelectionPolicy.detect(frameData, frameOffset, size)
+                val selected = CodecTypeSelectionPolicy.select(detectedType, announcedCodec)
+                if (selected != currentCodecType) {
+                    if (detectedType != null) {
+                        // A proven different codec has not spent the previous codec's budget.
+                        restartsSinceLastFrame = 0
+                        decoderPermanentlyFailed = false
                     }
-                    selected
+                    parameterSets.clear()
+                    mWidth = 0
+                    mHeight = 0
                 }
-                currentCodecType = typeToUse
+                currentCodecType = selected
+                codecTypePinned = detectedType != null
+                if (selected != announcedCodec) {
+                    codecFallbackUsed = true
+                    AppLog.w(
+                        "Stream parameter sets identify ${selected.displayName}, but this session " +
+                            "announced ${announcedCodec.displayName}; using the stream codec"
+                    )
+                }
+            }
 
-                if (!codecConfigured) {
-                    scanAndApplyConfig(frameData, frameOffset, size, typeToUse)
+            // Capture the entire access unit on every backend, including while an owner is
+            // running or absent. Recovery must retain all configurations the live decoder saw.
+            scanAndApplyConfig(frameData, frameOffset, size, currentCodecType)
+            if (decoderPermanentlyFailed) return
 
-                    if (mWidth == 0) {
-                         // Fallback dimensions if SPS/PPS parsing fails or is missing
-                         val negotiatedW = HeadUnitScreenConfig.getNegotiatedWidth()
-                         val negotiatedH = HeadUnitScreenConfig.getNegotiatedHeight()
-                         if (negotiatedW > 0 && negotiatedH > 0) {
-                             AppLog.i("Fallback to negotiated dimensions: ${negotiatedW}x${negotiatedH}")
-                             mWidth = negotiatedW
-                             mHeight = negotiatedH
-                             dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
-                         }
+            if (codec == null && softwareVideoDecoder == null) {
+                if (mWidth == 0) {
+                    val negotiatedW = HeadUnitScreenConfig.getNegotiatedWidth()
+                    val negotiatedH = HeadUnitScreenConfig.getNegotiatedHeight()
+                    if (negotiatedW > 0 && negotiatedH > 0) {
+                        AppLog.i("Fallback to negotiated dimensions: ${negotiatedW}x${negotiatedH}")
+                        mWidth = negotiatedW
+                        mHeight = negotiatedH
+                        dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
                     }
                 }
 
                 if (mSurface == null || !mSurface!!.isValid) return
                 if (mWidth == 0 || mHeight == 0) return
 
-                if (VideoDecoderBackendPolicy.useBundled(typeToUse, settings.forceSoftwareDecoding || forceSoftware, settings.softwareVideoDecoder)) {
-                    startBundledVideo(typeToUse, mWidth, mHeight)
+                if (VideoDecoderBackendPolicy.useBundled(currentCodecType, settings.forceSoftwareDecoding || forceSoftware, settings.softwareVideoDecoder)) {
+                    startBundledVideo(currentCodecType, mWidth, mHeight)
                 } else {
-                    start(typeToUse.mimeType, settings.forceSoftwareDecoding || forceSoftware, mWidth, mHeight)
+                    start(currentCodecType.mimeType, settings.forceSoftwareDecoding || forceSoftware, mWidth, mHeight)
                 }
             }
 
             softwareVideoDecoder?.let { decoder ->
-                val renderedFrames = decoder.decode(frameData, frameOffset, size)
+                val renderedFrames = try {
+                    decoder.decode(frameData, frameOffset, size)
+                } catch (e: Exception) {
+                    AppLog.e("Bundled ${currentCodecType.displayName} output failed", e)
+                    scheduleRestart("software_video_output_exception")
+                    return@synchronized null
+                }
                 if (renderedFrames > 0) {
+                    if (decoder.outputWidth > 0 && decoder.outputHeight > 0 &&
+                        (mWidth != decoder.outputWidth || mHeight != decoder.outputHeight)) {
+                        mWidth = decoder.outputWidth
+                        mHeight = decoder.outputHeight
+                        dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
+                    }
                     onSoftwareFramesRendered(renderedFrames)
+                    if (decoder.keyframeRendered) repairedKeyframeCallback = onKeyframeObserved
                 } else if (renderedFrames < 0) {
                     AppLog.e("Bundled ${currentCodecType.displayName} decoder failed with code $renderedFrames")
                     scheduleRestart("software_video_error_$renderedFrames")
                 }
-                return
+                return@synchronized null
             }
 
             if (codec == null) return
 
             prepareFrame(frameData, frameOffset, size)
-        } ?: return
+        }
+        // Notify other owners only after releasing the decoder's state monitor.
+        repairedKeyframeCallback?.invoke()
 
         // Outside the monitor on purpose: stop() synchronizes on this object, and a wait held
         // inside it would block the teardown for up to the whole budget. Out here stop() clears
         // running and the wait aborts within one slice.
-        offerWithBackpressure(frame)
+        frame?.let { offerWithBackpressure(it) }
     }
 
     /**
@@ -1377,10 +1393,17 @@ class VideoDecoder(
                 height = height
             )
             if (!decoder.start()) {
-                AppLog.e("Bundled FFmpeg ${type.displayName} decoder is unavailable")
+                AppLog.e("Bundled FFmpeg ${type.displayName} decoder failed to initialize")
+                if (surface.isValid) scheduleRestart("bundled_video_start_failed")
                 return
             }
             softwareVideoDecoder = decoder
+            for (slot in 0..parameterSets.lastIndex) {
+                val data = parameterSets[slot] ?: continue
+                if (decoder.decode(data, 0, data.size) < 0) {
+                    throw IllegalStateException("cached parameter sets rejected")
+                }
+            }
             currentCodecName = if (type == CodecType.H264) "ffmpeg-h264" else "ffmpeg-hevc"
             running = true
             startTime = System.nanoTime()
@@ -1388,11 +1411,14 @@ class VideoDecoder(
             AppLog.i("Bundled FFmpeg ${type.displayName} decoder initialized")
         } catch (e: Exception) {
             AppLog.e("Failed to start bundled FFmpeg ${type.displayName} decoder", e)
+            softwareVideoDecoder?.stop()
             softwareVideoDecoder = null
             running = false
+            if (mSurface == null || !mSurface!!.isValid) return
             scheduleRestart("bundled_video_start_failed: ${e.message}")
         }
     }
+
 
     private fun onSoftwareFramesRendered(renderedFrames: Int) {
         lastFrameRenderedMs = elapsedRealtime()
@@ -1424,9 +1450,9 @@ class VideoDecoder(
     }
 
     /**
-     * Splits a combined packet into multiple NAL units and normalizes start codes.
+     * Walks the full access unit and exposes only parameter-set ranges, without copying picture data.
      */
-    private fun forEachNalUnit(buffer: ByteArray, offset: Int, size: Int, callback: (ByteArray, Int) -> Unit) {
+    private inline fun forEachParameterSet(buffer: ByteArray, offset: Int, size: Int, type: CodecType, callback: (Int, Int, Int) -> Unit) {
         var currentPos = offset
         val limit = offset + size
 
@@ -1453,19 +1479,20 @@ class VideoDecoder(
                     }
                 }
 
-                val rawNal = buffer.copyOfRange(nalStart, nalEnd)
-                val fixedNal = if (startCodeLen == 3) {
-                    // Normalize to 4-byte start codes for better decoder compatibility
-                    ByteArray(rawNal.size + 1).apply {
-                        this[0] = 0; System.arraycopy(rawNal, 0, this, 1, rawNal.size)
+                val header = nalStart + startCodeLen
+                if (header < nalEnd) {
+                    val first = buffer[header].toInt() and 0xFF
+                    val kind = if (type == CodecType.H265) (first and 0x7E) shr 1 else first and 0x1F
+                    val parameterSet = if (type == CodecType.H265) kind in 32..34 else kind == 7 || kind == 8
+                    if (parameterSet) {
+                        callback(header, nalEnd - header, kind)
                     }
-                } else rawNal
-
-                callback(fixedNal, if (startCodeLen == 3) 4 else 4)
+                }
                 currentPos = nalEnd
             } else break
         }
     }
+
 
     /**
      * Reads this session's sequence parameter set: picture size for the codec, and the buffering
@@ -1487,6 +1514,8 @@ class VideoDecoder(
      * than assume either way. Read-only - nothing modifies the bitstream.
      */
     private fun applyParameterSet(nalData: ByteArray, headerLen: Int, type: CodecType) {
+        val seedDimensions = codec == null && softwareVideoDecoder == null && !renderedThisSession
+        if (!seedDimensions && loggedParameterSet) return
         val length = nalData.size - headerLen
         val summary: String?
         val parsedWidth: Int
@@ -1503,7 +1532,7 @@ class VideoDecoder(
             parsedHeight = parsed?.height ?: 0
         }
 
-        applyStreamDimensions(parsedWidth, parsedHeight, type)
+        if (seedDimensions) applyStreamDimensions(parsedWidth, parsedHeight, type)
 
         if (loggedParameterSet) return
         loggedParameterSet = true
@@ -1515,7 +1544,7 @@ class VideoDecoder(
     }
 
     /**
-     * Takes the picture size from the stream rather than from what was negotiated.
+     * Seeds initial configuration from an SPS; it does not identify the active picture's SPS.
      *
      * H.265 had no parser at all, so `mWidth` stayed zero and every H.265 session configured its
      * codec from `HeadUnitScreenConfig`'s negotiated size - which is what the phone was *asked* for,
@@ -1524,9 +1553,9 @@ class VideoDecoder(
      *
      * Bounded rather than trusted, in the same spirit as the crop-rectangle check: a parse that comes
      * back with something outside any resolution a head unit projects is more likely a desync than a
-     * discovery, and the negotiated size is the better guess in that case. Nothing here is final
-     * either way - [handleOutputFormatChange] corrects the size again from the component's own output
-     * format once frames start, which is the authority when they disagree.
+     * discovery, and the negotiated size is the better guess in that case. Actual MediaCodec
+     * output format or FFmpeg frame dimensions remain authoritative. Receiving another SPS
+     * while playing must not change the displayed size before a picture uses it.
      */
     private fun applyStreamDimensions(width: Int, height: Int, type: CodecType) {
         if (width <= 0 || height <= 0) return
@@ -1548,27 +1577,12 @@ class VideoDecoder(
      * Extracts SPS/PPS/VPS data for the decoder configuration (CSD).
      */
     private fun scanAndApplyConfig(buffer: ByteArray, offset: Int, size: Int, type: CodecType) {
-        forEachNalUnit(buffer, offset, size) { nalData, headerLen ->
-            val nalFirstByte = nalData[headerLen].toInt()
-            if (type == CodecType.H264) {
-                val nalType = nalFirstByte and 0x1F
-                if (nalType == 7) { // SPS
-                    sps = nalData
-                    applyParameterSet(nalData, headerLen, CodecType.H264)
-                } else if (nalType == 8) pps = nalData // PPS
-
-                // H.264 requires at least SPS to start
-                if (sps != null) codecConfigured = true
-            } else {
-                val nalType = (nalFirstByte and 0x7E) shr 1
-                if (nalType == 32) vps = nalData
-                else if (nalType == 33) {
-                    sps = nalData
-                    applyParameterSet(nalData, headerLen, CodecType.H265)
-                } else if (nalType == 34) pps = nalData
-
-                // H.265 requires VPS and SPS to start reliably
-                if (vps != null && sps != null) codecConfigured = true
+        forEachParameterSet(buffer, offset, size, type) { header, length, kind ->
+            val previous = parameterSets.latest(kind)
+            val data = parameterSets.store(buffer, header, length, type == CodecType.H265, kind)
+                ?: return@forEachParameterSet
+            if ((kind == 7 || kind == 33) && data !== previous) {
+                applyParameterSet(data, 4, type)
             }
         }
     }
@@ -1590,9 +1604,8 @@ class VideoDecoder(
 
         // Apply Codec Specific Data (CSD) from parsed SPS/PPS/VPS
         if (mimeType == CodecType.H265.mimeType) {
-            val combined = (vps ?: byteArrayOf()) + (sps ?: byteArrayOf()) + (pps ?: byteArrayOf())
-            if (combined.isNotEmpty()) {
-                format.setByteBuffer("csd-0", ByteBuffer.wrap(combined))
+            parameterSets.codecSpecificData(hevc = true, index = 0)?.let {
+                format.setByteBuffer("csd-0", ByteBuffer.wrap(it))
             }
             // [BUG_FIX] Dynamic buffer size based on resolution.
             // 8MB is too large for many older 1080p decoders (Allwinner/Rockchip),
@@ -1612,8 +1625,10 @@ class VideoDecoder(
             format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize)
             requestedMaxInputSize = maxInputSize
         } else {
-            if (sps != null) format.setByteBuffer("csd-0", ByteBuffer.wrap(sps!!))
-            if (pps != null) format.setByteBuffer("csd-1", ByteBuffer.wrap(pps!!))
+            val sequenceData = parameterSets.codecSpecificData(hevc = false, index = 0)
+            val pictureData = parameterSets.codecSpecificData(hevc = false, index = 1)
+            if (sequenceData != null) format.setByteBuffer("csd-0", ByteBuffer.wrap(sequenceData))
+            if (pictureData != null) format.setByteBuffer("csd-1", ByteBuffer.wrap(pictureData))
 
             // [BUG_FIX] Lower buffer for legacy devices (Android < 9) to prevent startup stalls.
             // Kept as a ceiling; see the H.265 branch above for why the request itself is now
@@ -1852,43 +1867,29 @@ class VideoDecoder(
      *
      * Diagnostic only - see [ParameterSetTracker] for why nothing here writes to the stored CSD or
      * the configured size. Runs only on units the config scanner says carry parameter sets, which is
-     * keyframes and config messages, so the per-NAL copying [forEachNalUnit] does is paid a few times
-     * a minute rather than sixty times a second.
+     * keyframes and config messages; [forEachParameterSet] never copies their picture payload.
      */
     private fun trackParameterSets(data: ByteArray, offset: Int, size: Int) {
         val hevc = currentCodecType == CodecType.H265
-        var spsNal: ByteArray? = null
-        var spsHeaderLen = 0
-        forEachNalUnit(data, offset, size) { nalData, headerLen ->
-            val first = nalData[headerLen].toInt()
-            val kind = if (hevc) {
-                when ((first and 0x7E) shr 1) {
-                    32 -> ParameterSetTracker.Kind.VPS
-                    33 -> ParameterSetTracker.Kind.SPS
-                    34 -> ParameterSetTracker.Kind.PPS
-                    else -> null
-                }
-            } else {
-                when (first and 0x1F) {
-                    7 -> ParameterSetTracker.Kind.SPS
-                    8 -> ParameterSetTracker.Kind.PPS
-                    else -> null
-                }
+        var spsOffset = -1
+        var spsLength = 0
+        forEachParameterSet(data, offset, size, currentCodecType) { header, length, nalKind ->
+            val kind = when (nalKind) {
+                32 -> ParameterSetTracker.Kind.VPS
+                7, 33 -> ParameterSetTracker.Kind.SPS
+                8, 34 -> ParameterSetTracker.Kind.PPS
+                else -> return@forEachParameterSet
             }
-            if (kind != null) {
-                parameterSetTracker.offer(kind, nalData, headerLen, nalData.size - headerLen)
-                if (kind == ParameterSetTracker.Kind.SPS) {
-                    spsNal = nalData
-                    spsHeaderLen = headerLen
-                }
+            parameterSetTracker.offer(kind, data, header, length)
+            if (kind == ParameterSetTracker.Kind.SPS) {
+                spsOffset = header
+                spsLength = length
             }
         }
 
         val change = parameterSetTracker.takeChange() ?: return
         val kinds = change.kinds.joinToString(" ")
-        // Snapshotted because the lambda above assigns it; a captured var is not smart-castable.
-        val sps = spsNal
-        val sizeNote = if (sps != null) describeSizeChange(sps, spsHeaderLen, hevc) else "size unread"
+        val sizeNote = if (spsOffset >= 0) describeSizeChange(data, spsOffset, spsLength, hevc) else "size unread"
         AppLog.w(
             "VideoDecoder: parameter sets changed mid-session ($kinds, $sizeNote) - change #${change.ordinal}"
         )
@@ -1899,8 +1900,7 @@ class VideoDecoder(
      * configured size is corrected by the component's own output format, and second-guessing it from
      * here is the behaviour change this measurement exists to justify or rule out.
      */
-    private fun describeSizeChange(nalData: ByteArray, headerLen: Int, hevc: Boolean): String {
-        val length = nalData.size - headerLen
+    private fun describeSizeChange(nalData: ByteArray, headerLen: Int, length: Int, hevc: Boolean): String {
         val width: Int
         val height: Int
         if (hevc) {

@@ -12,8 +12,7 @@ object DecoderRestartPolicy {
      * keeps warm reconfiguration outside that limit.
      */
     fun countsTowardFailure(
-        codecTypePinned: Boolean,
         renderedSinceLastStart: Boolean,
         renderedThisSession: Boolean
-    ): Boolean = codecTypePinned && !renderedSinceLastStart && !renderedThisSession
+    ): Boolean = !renderedSinceLastStart && !renderedThisSession
 }
