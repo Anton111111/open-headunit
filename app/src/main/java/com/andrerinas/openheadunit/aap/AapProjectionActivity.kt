@@ -758,10 +758,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
         val effectiveMode = forcedViewModeOverride ?: settings.viewMode
         // After a plain rebuild fails to stick, escalate away from a non-SurfaceView backend
-        // (unless the bundled software HEVC decoder is active, which needs the GLES YUV sink).
+        // (unless a bundled software video decoder is active, which may use the GLES YUV sink).
         val shouldFallBack = displayStallRecoveries >= 2 &&
             effectiveMode != Settings.ViewMode.SURFACE &&
-            !videoDecoder.usingBundledSoftwareHevc
+            !videoDecoder.usingBundledSoftwareVideo
         ProjectionHealthRecorder.noteRendererRecovery(shouldFallBack)
         if (shouldFallBack) {
             AppLog.w("Display stall ($reason) again on $effectiveMode. Falling back to SurfaceView for this session. See issue #650.")
@@ -2591,7 +2591,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         container.addView(view)
         videoDecoder.softwareYuvFrameSink = projectionView as? SoftwareYuvFrameSink
         if (videoDecoder.softwareYuvFrameSink != null) {
-            AppLog.i("Using GLES YUV sink for bundled software HEVC")
+            AppLog.i("GLES YUV output sink attached")
         }
 
         projectionView.addCallback(this)

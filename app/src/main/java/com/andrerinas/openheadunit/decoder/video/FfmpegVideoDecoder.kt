@@ -7,7 +7,8 @@ import com.andrerinas.openheadunit.utils.AppLog
 import java.nio.ByteBuffer
 
 @Keep
-class FfmpegHevcDecoder(
+class FfmpegVideoDecoder(
+    private val codecType: VideoDecoder.CodecType,
     private val surface: Surface?,
     private val yuvFrameSink: SoftwareYuvFrameSink?,
     private val width: Int,
@@ -20,23 +21,23 @@ class FfmpegHevcDecoder(
 
     fun start(): Boolean {
         if (!libraryLoaded) {
-            AppLog.e("FFmpeg HEVC decoder native library is not loaded")
+            AppLog.e("FFmpeg ${codecType.displayName} decoder native library is not loaded")
             return false
         }
-        if (!isAvailable()) {
-            AppLog.e("FFmpeg HEVC decoder is not available. Package FFmpeg headers/libs for this ABI.")
+        if (!isAvailable(codecType)) {
+            AppLog.e("FFmpeg ${codecType.displayName} decoder is not available. Package FFmpeg headers/libs for this ABI.")
             return false
         }
         if (yuvFrameSink == null && surface?.isValid != true) {
-            AppLog.e("FFmpeg HEVC decoder cannot start: surface is invalid")
+            AppLog.e("FFmpeg ${codecType.displayName} decoder cannot start: surface is invalid")
             return false
         }
 
         val threadCount = recommendedThreadCount()
-        AppLog.i("FFmpeg HEVC decoder thread count: $threadCount")
-        nativeHandle = nativeCreate(surface, this, yuvFrameSink != null, width, height, threadCount)
+        AppLog.i("FFmpeg ${codecType.displayName} decoder thread count: $threadCount")
+        nativeHandle = nativeCreate(codecType.ffmpegCodecId, surface, this, yuvFrameSink != null, width, height, threadCount)
         if (nativeHandle == 0L) {
-            AppLog.e("FFmpeg HEVC decoder failed to initialize")
+            AppLog.e("FFmpeg ${codecType.displayName} decoder failed to initialize")
             return false
         }
         return true
@@ -78,19 +79,19 @@ class FfmpegHevcDecoder(
 
     companion object {
         private val libraryLoaded: Boolean = try {
-            System.loadLibrary("hur_soft_hevc")
+            System.loadLibrary("hur_soft_video")
             true
         } catch (e: UnsatisfiedLinkError) {
-            AppLog.e("Failed to load hur_soft_hevc", e)
+            AppLog.e("Failed to load hur_soft_video", e)
             false
         }
 
-        fun isAvailable(): Boolean {
-            return libraryLoaded && nativeIsAvailable()
+        fun isAvailable(codecType: VideoDecoder.CodecType): Boolean {
+            return libraryLoaded && nativeIsAvailable(codecType.ffmpegCodecId)
         }
 
-        private external fun nativeIsAvailable(): Boolean
-        private external fun nativeCreate(surface: Surface?, callback: FfmpegHevcDecoder, useYuvCallback: Boolean, width: Int, height: Int, threadCount: Int): Long
+        private external fun nativeIsAvailable(codecId: Int): Boolean
+        private external fun nativeCreate(codecId: Int, surface: Surface?, callback: FfmpegVideoDecoder, useYuvCallback: Boolean, width: Int, height: Int, threadCount: Int): Long
         private external fun nativeDecode(handle: Long, buffer: ByteArray, offset: Int, size: Int, presentationTimeUs: Long): Int
         private external fun nativeRelease(handle: Long)
     }

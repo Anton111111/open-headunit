@@ -34,6 +34,7 @@ class VideoTransportBoundaryTest {
                     null
                 }.whenever(decoder).decode(any<ByteArray>(), any(), any(), any(), any())
                 val video = AapVideo(decoder, Settings(context)) { fail("healthy split $split requested recovery") }
+                video.recordAnnouncedCodec(VideoDecoder.CodecType.H264)
                 val reassembler = AapMessageReassembler()
                 var acks = 0
                 listOf(9 to bytes.copyOfRange(0, split), 10 to bytes.copyOfRange(split, bytes.size)).forEach { (flags, data) ->
@@ -65,6 +66,7 @@ class VideoTransportBoundaryTest {
         field("videoBacklog", AtomicInteger())
         field("videoBufferPool", LinkedBlockingQueue<ByteArray>())
         whenever(video.isPayload(any())).thenReturn(true)
+        whenever(video.announcedCodec).thenReturn(VideoDecoder.CodecType.H264)
         doReturn(101).whenever(transport).getSessionId(Channel.ID_VID)
         doNothing().whenever(transport).sendMediaAck(any(), any())
         val data = ByteArray(16)

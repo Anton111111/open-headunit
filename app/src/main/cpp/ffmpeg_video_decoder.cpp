@@ -7,7 +7,7 @@
 #include <cstring>
 #include <memory>
 
-#define LOG_TAG "HurSoftHevc"
+#define LOG_TAG "HurSoftVideo"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -24,10 +24,21 @@ extern "C" {
 namespace {
 
 #if HUR_HAVE_FFMPEG
-class HevcDecoder {
+// Stable JNI identifiers, independent of FFmpeg's AVCodecID enum values.
+const AVCodec* findDecoder(jint codecId) {
+    switch (codecId) {
+        case 1: return avcodec_find_decoder(AV_CODEC_ID_H264);
+        case 2: return avcodec_find_decoder(AV_CODEC_ID_HEVC);
+        default: return nullptr;
+    }
+}
+
+class FfmpegDecoder {
 public:
-    HevcDecoder(JNIEnv* env, ANativeWindow* outputWindow, jobject yuvCallback, int fallbackWidth, int fallbackHeight, int threadCount)
-        : window(outputWindow), requestedWidth(fallbackWidth), requestedHeight(fallbackHeight), threads(threadCount) {
+    FfmpegDecoder(JNIEnv* env, const AVCodec* decoder, ANativeWindow* outputWindow, jobject yuvCallback,
+                  int fallbackWidth, int fallbackHeight, int threadCount)
+        : selectedCodec(decoder), window(outputWindow), requestedWidth(fallbackWidth),
+          requestedHeight(fallbackHeight), threads(threadCount) {
         env->GetJavaVM(&javaVm);
         if (yuvCallback != nullptr) {
             callback = env->NewGlobalRef(yuvCallback);
@@ -46,7 +57,7 @@ public:
         }
     }
 
-    ~HevcDecoder() {
+    ~FfmpegDecoder() {
         release(nullptr);
     }
 
@@ -56,16 +67,7 @@ public:
             return false;
         }
 
-        const AVCodec* decoder = avcodec_find_decoder_by_name("hevc");
-        if (decoder == nullptr) {
-            decoder = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-        }
-        if (decoder == nullptr) {
-            LOGE("FFmpeg HEVC decoder not found");
-            return false;
-        }
-
-        codecContext = avcodec_alloc_context3(decoder);
+        codecContext = avcodec_alloc_context3(selectedCodec);
         if (codecContext == nullptr) {
             LOGE("Failed to allocate AVCodecContext");
             return false;
@@ -74,10 +76,15 @@ public:
         codecContext->thread_count = std::max(1, threads);
         codecContext->thread_type = FF_THREAD_SLICE;
         codecContext->flags2 |= AV_CODEC_FLAG2_FAST;
+        if (selectedCodec->id == AV_CODEC_ID_H264) {
+            // Android Auto can send SPS/PPS separately from the picture. AVC's
+            // chunk mode accepts those packets and completes output at picture end.
+            codecContext->flags2 |= AV_CODEC_FLAG2_CHUNKS;
+        }
         codecContext->lowres = 0;
 
-        if (avcodec_open2(codecContext, decoder, nullptr) < 0) {
-            LOGE("Failed to open FFmpeg HEVC decoder");
+        if (avcodec_open2(codecContext, selectedCodec, nullptr) < 0) {
+            LOGE("Failed to open FFmpeg %s decoder", selectedCodec->name);
             return false;
         }
 
@@ -410,6 +417,7 @@ private:
         return true;
     }
 
+    const AVCodec* selectedCodec;
     ANativeWindow* window = nullptr;
     JavaVM* javaVm = nullptr;
     jobject callback = nullptr;
@@ -437,20 +445,26 @@ private:
 } // namespace
 
 extern "C" JNIEXPORT jboolean JNICALL
-Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_nativeIsAvailable(
-    JNIEnv*, jobject) {
+Java_com_andrerinas_openheadunit_decoder_video_FfmpegVideoDecoder_00024Companion_nativeIsAvailable(
+    JNIEnv*, jobject, jint codecId) {
 #if HUR_HAVE_FFMPEG
-    return avcodec_find_decoder_by_name("hevc") != nullptr ||
-           avcodec_find_decoder(AV_CODEC_ID_HEVC) != nullptr;
+    return findDecoder(codecId) != nullptr;
 #else
+    (void)codecId;
     return JNI_FALSE;
 #endif
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_nativeCreate(
-    JNIEnv* env, jobject, jobject surface, jobject callback, jboolean useYuvCallback, jint width, jint height, jint threadCount) {
+Java_com_andrerinas_openheadunit_decoder_video_FfmpegVideoDecoder_00024Companion_nativeCreate(
+    JNIEnv* env, jobject, jint codecId, jobject surface, jobject callback, jboolean useYuvCallback,
+    jint width, jint height, jint threadCount) {
 #if HUR_HAVE_FFMPEG
+    const AVCodec* selectedCodec = findDecoder(codecId);
+    if (selectedCodec == nullptr) {
+        LOGE("Unsupported or unavailable FFmpeg codec: %d", codecId);
+        return 0;
+    }
     ANativeWindow* window = nullptr;
     if (surface != nullptr) {
         window = ANativeWindow_fromSurface(env, surface);
@@ -460,8 +474,9 @@ Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_
         return 0;
     }
 
-    auto decoder = std::make_unique<HevcDecoder>(
+    auto decoder = std::make_unique<FfmpegDecoder>(
         env,
+        selectedCodec,
         window,
         useYuvCallback == JNI_TRUE ? callback : nullptr,
         width,
@@ -473,6 +488,7 @@ Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_
     return reinterpret_cast<jlong>(decoder.release());
 #else
     (void)env;
+    (void)codecId;
     (void)surface;
     (void)callback;
     (void)useYuvCallback;
@@ -484,10 +500,10 @@ Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_nativeDecode(
+Java_com_andrerinas_openheadunit_decoder_video_FfmpegVideoDecoder_00024Companion_nativeDecode(
     JNIEnv* env, jobject, jlong handle, jbyteArray buffer, jint offset, jint size, jlong presentationTimeUs) {
 #if HUR_HAVE_FFMPEG
-    auto* decoder = reinterpret_cast<HevcDecoder*>(handle);
+    auto* decoder = reinterpret_cast<FfmpegDecoder*>(handle);
     if (decoder == nullptr) return -1;
     return decoder->decode(env, buffer, offset, size, presentationTimeUs);
 #else
@@ -502,10 +518,10 @@ Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_andrerinas_openheadunit_decoder_video_FfmpegHevcDecoder_00024Companion_nativeRelease(
+Java_com_andrerinas_openheadunit_decoder_video_FfmpegVideoDecoder_00024Companion_nativeRelease(
     JNIEnv* env, jobject, jlong handle) {
 #if HUR_HAVE_FFMPEG
-    auto* decoder = reinterpret_cast<HevcDecoder*>(handle);
+    auto* decoder = reinterpret_cast<FfmpegDecoder*>(handle);
     if (decoder != nullptr) {
         decoder->release(env);
     }

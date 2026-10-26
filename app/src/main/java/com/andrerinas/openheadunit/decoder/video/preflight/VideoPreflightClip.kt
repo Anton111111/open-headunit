@@ -78,13 +78,19 @@ object VideoPreflightClips {
         hevcSupported: Boolean,
         storedCodec: String,
         forceSoftware: Boolean,
+        selectedSoftwareHevcAvailable: Boolean = false,
     ): List<VideoPreflightClip> {
         val clips = mutableListOf(VideoPreflightClip.H264_480P)
         if (panelCeiling.height >= 720) clips += VideoPreflightClip.H264_720P
         if (panelCeiling.height >= 1080) clips += VideoPreflightClip.H264_1080P
-        val wantsH265 = !forceSoftware &&
-            (panelCeiling.height > 1080 || storedCodec.contains("265"))
-        if (hevcSupported && wantsH265) clips += VideoPreflightClip.H265_1080P
+        val wantsH265 = if (forceSoftware) {
+            // Match negotiation: software HEVC is an explicit codec choice, never a side effect
+            // of a large panel or an available bundled AVC decoder.
+            storedCodec.contains("265") && selectedSoftwareHevcAvailable
+        } else {
+            hevcSupported && (panelCeiling.height > 1080 || storedCodec.contains("265"))
+        }
+        if (wantsH265) clips += VideoPreflightClip.H265_1080P
         return clips
     }
 }

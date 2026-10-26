@@ -530,7 +530,7 @@
     <!-- Video Settings -->
     <string name="category_video">Video</string>
     <string name="force_software_decoding">Force Software Decoding</string>
-    <string name="force_software_decoding_description">May fix issues on some devices, but is slower.</string>
+    <string name="force_software_decoding_description">Uses the selected software decoder for H.264 or H.265. Bundled FFmpeg is available on ARM64 devices running Android 5.0 or newer. May fix device decoder issues, but is slower.</string>
     <string name="software_video_decoder">Software Decoder Source</string>
     <string name="software_video_decoder_bundled">Bundled FFmpeg</string>
     <string name="software_video_decoder_device">Device MediaCodec</string>

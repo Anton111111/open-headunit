@@ -86,4 +86,36 @@ class VideoPreflightClipsTest {
 
         assertFalse(VideoPreflightClip.H265_1080P in clips)
     }
+
+    @Test
+    fun `explicit software hevc is exercised without hardware support`() {
+        for (hardware in listOf(false, true)) {
+            val clips = VideoPreflightClips.forPanel(
+                Settings.Resolution._1920x1080,
+                hevcSupported = hardware,
+                storedCodec = "H.265",
+                forceSoftware = true,
+                selectedSoftwareHevcAvailable = true,
+            )
+            assertEquals(VideoPreflightClip.H265_1080P, clips.last())
+            assertTrue(VideoPreflightClip.H264_1080P in clips)
+        }
+    }
+
+    @Test
+    fun `software avc and Auto do not inherit hevc availability on a large panel`() {
+        for (preference in listOf("H.264", "Auto")) {
+            val clips = VideoPreflightClips.forPanel(
+                Settings.Resolution._2560x1440,
+                hevcSupported = true,
+                storedCodec = preference,
+                forceSoftware = true,
+                selectedSoftwareHevcAvailable = true,
+            )
+            assertEquals(
+                listOf(VideoPreflightClip.H264_480P, VideoPreflightClip.H264_720P, VideoPreflightClip.H264_1080P),
+                clips,
+            )
+        }
+    }
 }

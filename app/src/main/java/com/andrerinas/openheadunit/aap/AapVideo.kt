@@ -23,6 +23,15 @@ internal class AapVideo(private val videoDecoder: VideoDecoder, private val sett
         private const val ANOMALY_REPORT_INTERVAL_MS = 5000L
     }
 
+    /** Set from ServiceDiscovery's wire value, never from a mutable preference or decoder state. */
+    @Volatile
+    var announcedCodec: VideoDecoder.CodecType? = null
+        private set
+
+    fun recordAnnouncedCodec(codec: VideoDecoder.CodecType) {
+        announcedCodec = codec
+    }
+
     /**
      * Reassembly buffer for fragmented frames. Grows on demand.
      *
@@ -251,6 +260,8 @@ internal class AapVideo(private val videoDecoder: VideoDecoder, private val sett
     }
 
     fun process(message: AapMessage): Boolean {
+        // Media must follow ServiceDiscovery. Do not guess a codec for premature/stale packets.
+        val announcedCodec = announcedCodec ?: return isPayload(message)
         val buf = message.data
         val len = message.size
         val flags = message.flags.toInt()
@@ -284,7 +295,7 @@ internal class AapVideo(private val videoDecoder: VideoDecoder, private val sett
         return when (val action = decision.action) {
             is VideoFragmentAssembler.Action.DecodeWhole -> {
                 messageBuffer.clear()
-                videoDecoder.decode(buf, action.payloadOffset, len - action.payloadOffset, settings.forceSoftwareDecoding, settings.videoCodec)
+                videoDecoder.decode(buf, action.payloadOffset, len - action.payloadOffset, settings.forceSoftwareDecoding, announcedCodec)
                 true
             }
 
@@ -350,9 +361,9 @@ internal class AapVideo(private val videoDecoder: VideoDecoder, private val sett
                         legacyAssembledBuffer = ByteArray(assembledSize + 1024)
                     }
                     messageBuffer.get(legacyAssembledBuffer!!, 0, assembledSize)
-                    videoDecoder.decode(legacyAssembledBuffer!!, 0, assembledSize, settings.forceSoftwareDecoding, settings.videoCodec)
+                    videoDecoder.decode(legacyAssembledBuffer!!, 0, assembledSize, settings.forceSoftwareDecoding, announcedCodec)
                 } else {
-                    videoDecoder.decode(messageBuffer.array(), 0, assembledSize, settings.forceSoftwareDecoding, settings.videoCodec)
+                    videoDecoder.decode(messageBuffer.array(), 0, assembledSize, settings.forceSoftwareDecoding, announcedCodec)
                 }
 
                 messageBuffer.clear()
@@ -376,6 +387,7 @@ internal class AapVideo(private val videoDecoder: VideoDecoder, private val sett
         // Decoding is synchronous here, so there is nothing to drain - but the fragment run has to
         // be closed, or a session that ends mid-frame leaves the next one's first fragments looking
         // like a truncation.
+        announcedCodec = null
         discardNextAssembly = false
         assembler.reset()
         lastAnomalyReportMs = 0L
