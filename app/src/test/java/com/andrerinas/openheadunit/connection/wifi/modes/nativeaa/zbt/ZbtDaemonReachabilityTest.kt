@@ -53,6 +53,21 @@ class ZbtDaemonReachabilityTest {
     }
 
     @Test
+    fun `retired observation cannot overwrite a completed carrier measurement`() {
+        assertFalse(ZbtDaemonReachability.resolve(
+            nowMs = { 1_000L },
+            dial = {
+                ZbtDaemonReachability.claimCarrier().use {
+                    ZbtDaemonReachability.record(true, nowMs = 1_000L)
+                }
+                false
+            }
+        ))
+        assertFalse(ZbtDaemonReachability.carrierWantsClient())
+        assertEquals(true, ZbtDaemonReachability.cached(nowMs = 1_000L))
+    }
+
+    @Test
     fun `nothing is known before anything is asked`() {
         assertNull(ZbtDaemonReachability.cached(nowMs = 1_000L))
     }

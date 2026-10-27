@@ -115,11 +115,21 @@ class ZbtIdentityProbeTest {
         }
     }
 
-    private fun measuredSocket(bytes: ByteArray, preempt: Boolean, denyRead: Boolean = false): Socket =
+    private fun measuredSocket(
+        bytes: ByteArray,
+        preempt: Boolean,
+        denyRead: Boolean = false,
+        preemptOnClose: Boolean = false
+    ): Socket =
         object : Socket() {
             override fun connect(endpoint: SocketAddress, timeout: Int) {}
             override fun setSoTimeout(timeout: Int) {}
-            override fun close() {}
+            private var closed = false
+            override fun close() {
+                if (closed) return
+                closed = true
+                if (preemptOnClose) ZbtDaemonReachability.claimCarrier().close()
+            }
             override fun getInputStream(): InputStream {
                 if (denyRead) {
                     if (preempt) ZbtDaemonReachability.claimCarrier().close()
@@ -164,6 +174,18 @@ class ZbtIdentityProbeTest {
                 measuredSocket(byteArrayOf(), true, denyRead = true)
             }) }))
         assertNull(ZbtDaemonReachability.cached(100L, requireIdentity = true))
+    }
+
+    @Test fun `carrier preemption during identity socket close leaves no negative cache`() {
+        ZbtDaemonReachability.forget()
+        try {
+            assertFalse(ZbtDaemonReachability.resolve(nowMs = { 100L }, requireIdentity = true,
+                identityDial = { ZbtIdentityProbe.probe(socketFactory = {
+                    measuredSocket(ByteArray(ZbtFraming.HEADER_SIZE), false, preemptOnClose = true)
+                }) }))
+            assertFalse(ZbtDaemonReachability.carrierWantsClient())
+            assertNull(ZbtDaemonReachability.cached(100L, requireIdentity = true))
+        } finally { ZbtDaemonReachability.forget() }
     }
 
     @Test fun `ordinary malformed result still settles the identity decision`() {

@@ -79,8 +79,9 @@ object ZbtDaemonReachability {
      * the vendor's other processes are outside this bookkeeping and are not controlled here.
      */
     fun claimCarrier(): CarrierClaim {
-        val claim = CarrierClaim()
+        val claim: CarrierClaim
         val toClose = synchronized(clientsLock) {
+            claim = CarrierClaim()
             carriers.add(claim)
             observers.keys.toList()
         }
@@ -212,6 +213,9 @@ object ZbtDaemonReachability {
         var refusals = 0
         while (true) {
             var identity: ZbtIdentityProbe.Outcome? = null
+            // A claim may come and go while the observer closes its socket. Current ownership
+            // alone cannot detect that preemption; publish only in the same carrier generation.
+            val observationCarrierId = synchronized(clientsLock) { nextCarrierId.get() }
             val reachable = try {
                 if (requireIdentity) {
                     identity = identityDial?.invoke() ?: dial?.invoke()?.let {
@@ -240,8 +244,12 @@ object ZbtDaemonReachability {
             if (requireIdentity && (carrierLive() || carrierWantsClient())) return identityAnswer?.reachable == true
             if (carrierLive() || carrierWantsClient()) return true
             if (reachable) {
-                if (requireIdentity) identityAnswer = IdentityAnswer(true, nowMs())
-                else record(true, nowMs())
+                synchronized(clientsLock) {
+                    if (nextCarrierId.get() == observationCarrierId) {
+                        if (requireIdentity) identityAnswer = IdentityAnswer(true, nowMs())
+                        else record(true, nowMs())
+                    }
+                }
                 return true
             }
             refusals++
@@ -255,14 +263,18 @@ object ZbtDaemonReachability {
                 ZbtReachabilityPolicy.redialAfterMs(refusals, spentMs)?.coerceAtMost(windowMs - spentMs)
             } else null
             if (wait == null) {
-                if (requireIdentity) {
-                    // A settings preview must not settle the arming's boot-refusal decision.
-                    if (identity != ZbtIdentityProbe.Outcome.REFUSED || cacheIdentityRefusal) {
-                        identityAnswer = IdentityAnswer(
-                            false, nowMs(), refused = identity == ZbtIdentityProbe.Outcome.REFUSED
-                        )
+                synchronized(clientsLock) {
+                    if (nextCarrierId.get() == observationCarrierId) {
+                        if (requireIdentity) {
+                            // A settings preview must not settle the arming's boot-refusal decision.
+                            if (identity != ZbtIdentityProbe.Outcome.REFUSED || cacheIdentityRefusal) {
+                                identityAnswer = IdentityAnswer(
+                                    false, nowMs(), refused = identity == ZbtIdentityProbe.Outcome.REFUSED
+                                )
+                            }
+                        } else record(false, nowMs())
                     }
-                } else record(false, nowMs())
+                }
                 if (requireIdentity) AppLog.i(
                     "NativeAA: [ZBT candidate] no confirmed ZBT greeting; retaining Android Bluetooth route."
                 )
