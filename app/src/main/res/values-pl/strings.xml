@@ -103,6 +103,7 @@
     <string name="orientation_portrait">Pionowo (90°)</string>
     <string name="orientation_portrait_reverse">Pionowo odwrócone (270°)</string>
     <string name="enter_dpi_value">Wprowadź wartość DPI (0 dla auto)</string>
+    <string name="enter_audio_offset_value">Wprowadź wartość (0-250)</string>
     <string name="custom_margin">Własne marginesy</string>
     <string name="custom_margin_description">Ustaw własne marginesy ekranu (0 dla auto).</string>
     <string name="enter_custom_margins">Wprowadź marginesy (0 dla auto)</string>

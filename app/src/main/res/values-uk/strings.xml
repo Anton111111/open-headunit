@@ -103,6 +103,7 @@
     <string name="orientation_portrait">Портретна (90°)</string>
     <string name="orientation_portrait_reverse">Портретна перевернута (270°)</string>
     <string name="enter_dpi_value">Введіть значення DPI (0 — автоматично)</string>
+    <string name="enter_audio_offset_value">Введіть значення (0-250)</string>
     <string name="custom_margin">Власні відступи</string>
     <string name="custom_margin_description">Власні відступи дисплея (0 — авто).</string>
     <string name="enter_custom_margins">Введіть власні відступи (0 — авто)</string>

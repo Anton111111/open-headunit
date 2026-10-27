@@ -102,6 +102,7 @@
     <string name="orientation_portrait">纵向 (90°)</string>
     <string name="orientation_portrait_reverse">反向纵向 (270°)</string>
     <string name="enter_dpi_value">输入 DPI 值（0 为自动）</string>
+    <string name="enter_audio_offset_value">输入值（0-250）</string>
     <string name="custom_margin">自定义边距</string>
     <string name="custom_margin_description">设置自定义显示边距（0 为自动）。</string>
     <string name="enter_custom_margins">输入自定义边距（0 为自动）</string>

@@ -114,6 +114,7 @@
     <string name="orientation_portrait">세로(90°)</string>
     <string name="orientation_portrait_reverse">역방향 세로(270°)</string>
     <string name="enter_dpi_value">DPI 값 입력(0은 자동)</string>
+    <string name="enter_audio_offset_value">값 입력(0-250)</string>
     <string name="custom_margin">사용자 지정 여백</string>
     <string name="custom_margin_description">화면 여백을 직접 설정합니다(0은 자동).</string>
     <string name="enter_custom_margins">사용자 지정 여백 입력(0은 자동)</string>

@@ -351,6 +351,7 @@
     <string name="orientation_portrait">Vertical (90°)</string>
     <string name="orientation_portrait_reverse">Vertical invertido (270°)</string>
     <string name="enter_dpi_value">Introduzir valor DPI (0 para automático)</string>
+    <string name="enter_audio_offset_value">Introduzir valor (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">Proporção de píxeis x10000 (10000 = píxeis quadrados)</string>
     <string name="custom_margin">Margem personalizada</string>
     <string name="custom_margin_description">Definir margens de ecrã personalizadas (0 para automático).</string>

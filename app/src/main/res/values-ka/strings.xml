@@ -112,6 +112,7 @@
     <string name="orientation_portrait">პორტრეტული (90°)</string>
     <string name="orientation_portrait_reverse">შებრუნებული პორტრეტული (270°)</string>
     <string name="enter_dpi_value">შეიყვანეთ DPI მნიშვნელობა (0 ავტომატურისთვის)</string>
+    <string name="enter_audio_offset_value">შეიყვანეთ მნიშვნელობა (0-250)</string>
     <string name="custom_margin">მორგებული ველები</string>
     <string name="custom_margin_description">ეკრანის მორგებული ველების დაყენება (0 ავტომატურისთვის).</string>
     <string name="enter_custom_margins">შეიყვანეთ მორგებული ველები (0 ავტომატურისთვის)</string>

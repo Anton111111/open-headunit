@@ -350,6 +350,7 @@
     <string name="orientation_portrait">แนวตั้ง (90°)</string>
     <string name="orientation_portrait_reverse">แนวตั้งกลับด้าน (270°)</string>
     <string name="enter_dpi_value">ป้อนค่า DPI (0 สำหรับอัตโนมัติ)</string>
+    <string name="enter_audio_offset_value">ป้อนค่า (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">อัตราส่วนพิกเซล x10000 (10000 = พิกเซลสี่เหลี่ยมจัตุรัส)</string>
     <string name="custom_margin">ระยะขอบที่กำหนดเอง</string>
     <string name="custom_margin_description">กำหนดระยะขอบการแสดงผลเอง (0 สำหรับอัตโนมัติ)</string>

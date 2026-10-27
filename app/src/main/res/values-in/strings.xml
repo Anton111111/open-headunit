@@ -350,6 +350,7 @@
     <string name="orientation_portrait">Potret (90°)</string>
     <string name="orientation_portrait_reverse">Potret Terbalik (270°)</string>
     <string name="enter_dpi_value">Masukkan nilai DPI (0 untuk otomatis)</string>
+    <string name="enter_audio_offset_value">Masukkan nilai (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">Rasio aspek piksel x10000 (10000 = piksel persegi)</string>
     <string name="custom_margin">Margin Kustom</string>
     <string name="custom_margin_description">Atur margin tampilan kustom (0 untuk otomatis).</string>

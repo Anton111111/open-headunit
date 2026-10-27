@@ -3826,18 +3826,18 @@ class SettingsFragment : Fragment() {
         val textGuidance = dialogView.findViewById<android.widget.TextView>(R.id.text_guidance_val)
         val textSystem = dialogView.findViewById<android.widget.TextView>(R.id.text_system_val)
 
-        // Mapping: 0 to 100 on SeekBar -> 0% to 200% Gain. Default is 50 (100% Gain, 0 Offset)
-        // Offset = (seekValue - 50) * 2
-        // seekValue = (offset / 2) + 50
+        // Mapping: 0 to 250 on SeekBar -> 0% to 250% Gain. Default is 100 (100% Gain, 0 Offset)
+        // Offset = seekValue - 100
+        // seekValue = offset + 100
 
-        seekMedia.progress = ((pendingMediaVolumeOffset ?: 0) / 2) + 50
-        seekGuidance.progress = ((pendingGuidanceVolumeOffset ?: 0) / 2) + 50
-        seekSystem.progress = ((pendingSystemVolumeOffset ?: 0) / 2) + 50
+        seekMedia.progress = (pendingMediaVolumeOffset ?: 0) + 100
+        seekGuidance.progress = (pendingGuidanceVolumeOffset ?: 0) + 100
+        seekSystem.progress = (pendingSystemVolumeOffset ?: 0) + 100
 
         val updateLabels = {
-            textMedia.text = "${(seekMedia.progress * 2)}%"
-            textGuidance.text = "${(seekGuidance.progress * 2)}%"
-            textSystem.text = "${(seekSystem.progress * 2)}%"
+            textMedia.text = "${seekMedia.progress}%"
+            textGuidance.text = "${seekGuidance.progress}%"
+            textSystem.text = "${seekSystem.progress}%"
         }
         updateLabels()
 
@@ -3853,13 +3853,27 @@ class SettingsFragment : Fragment() {
         seekGuidance.setOnSeekBarChangeListener(listener)
         seekSystem.setOnSeekBarChangeListener(listener)
 
+        val promptValue = { seek: android.widget.SeekBar ->
+            showNumericInputDialog(
+                getString(R.string.enter_audio_offset_value),
+                null,
+                seek.progress
+            ) { typed ->
+                seek.progress = typed.coerceIn(0, seek.max)
+                updateLabels()
+            }
+        }
+        textMedia.setOnClickListener { promptValue(seekMedia) }
+        textGuidance.setOnClickListener { promptValue(seekGuidance) }
+        textSystem.setOnClickListener { promptValue(seekSystem) }
+
         MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
             .setTitle(R.string.audio_volume_offset)
             .setView(dialogView)
             .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                pendingMediaVolumeOffset = (seekMedia.progress - 50) * 2
-                pendingGuidanceVolumeOffset = (seekGuidance.progress - 50) * 2
-                pendingSystemVolumeOffset = (seekSystem.progress - 50) * 2
+                pendingMediaVolumeOffset = seekMedia.progress - 100
+                pendingGuidanceVolumeOffset = seekGuidance.progress - 100
+                pendingSystemVolumeOffset = seekSystem.progress - 100
                 checkChanges()
                 updateSettingsList()
                 dialog.dismiss()

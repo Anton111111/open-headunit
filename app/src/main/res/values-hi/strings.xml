@@ -350,6 +350,7 @@
     <string name="orientation_portrait">पोर्ट्रेट (90°)</string>
     <string name="orientation_portrait_reverse">रिवर्स पोर्ट्रेट (270°)</string>
     <string name="enter_dpi_value">DPI मान दर्ज करें (ऑटो के लिए 0)</string>
+    <string name="enter_audio_offset_value">मान दर्ज करें (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">पिक्सल आस्पेक्ट रेशियो x10000 (10000 = चौकोर पिक्सल)</string>
     <string name="custom_margin">कस्टम मार्जिन</string>
     <string name="custom_margin_description">कस्टम डिस्प्ले मार्जिन सेट करें (ऑटो के लिए 0)।</string>
