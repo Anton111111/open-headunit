@@ -23,6 +23,8 @@ internal object XyAutoMediaSession {
     @Volatile private var requested = Request(null, null)
     private var owner: Any? = null
     private var lease: XyAutoMediaLease? = null
+    // Worker-owned capability snapshot for logging only; journal recovery must still run.
+    private var supportedForReporting = false
 
     @Suppress("DEPRECATION")
     fun supported(context: Context): Boolean = try {
@@ -47,6 +49,7 @@ internal object XyAutoMediaSession {
             val previous = lease
             lease = null
             owner = service
+            supportedForReporting = supported(app)
             releaseSafely(previous)
             if (requested.owner !== service) return@submit
             lease = createLease(app)
@@ -68,7 +71,9 @@ internal object XyAutoMediaSession {
                 releaseSafely(lease)
                 return@submit
             }
-            val result = if (supported(app)) {
+            val isSupported = supported(app)
+            supportedForReporting = isSupported
+            val result = if (isSupported) {
                 lease?.acquire { requested === request } ?: XyAutoMediaLease.Result.UNAVAILABLE
             } else {
                 releaseSafely(lease)
@@ -87,6 +92,7 @@ internal object XyAutoMediaSession {
             releaseSafely(lease)
             owner = null
             lease = null
+            supportedForReporting = false
         }
     }
 
@@ -116,6 +122,7 @@ internal object XyAutoMediaSession {
     }
 
     private fun report(result: XyAutoMediaLease.Result) {
+        if (!supportedForReporting) return
         AppLog.i("XYAuto projection media policy: $result (property state, not HFP/A2DP status)")
     }
 
