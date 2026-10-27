@@ -26,6 +26,7 @@ import com.andrerinas.openheadunit.aap.protocol.messages.BluetoothAnnouncePolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
 import com.andrerinas.openheadunit.utils.OemAppManager
 import com.andrerinas.openheadunit.utils.CarLauncherManager
+import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
 import com.andrerinas.openheadunit.utils.UpdateChecker
 import com.andrerinas.openheadunit.utils.UpdateLinkPolicy
 import androidx.activity.OnBackPressedCallback
@@ -313,6 +314,11 @@ class SettingsFragment : Fragment() {
         updateSettingsList()
     }
 
+    private val homeRoleLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        CarLauncherManager.onRoleRequestResult(requireContext())
+        updateSettingsList()
+    }
+
     private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         val action = pendingStorageAction
         pendingStorageAction = null
@@ -356,6 +362,12 @@ class SettingsFragment : Fragment() {
 
         settings = App.provide(requireContext()).settings
 
+        // Picking this app as home clears this screen before its Save, so a held role counts as on.
+        val held = CarLauncherManager.isDefaultLauncher(requireContext())
+        if (OnboardingLauncherPolicy.launcherModeOnOpen(settings.enableCarLauncher, held) != settings.enableCarLauncher) {
+            settings.enableCarLauncher = true
+            AppLog.i("SettingsFragment: the app holds the home role, storing car launcher mode")
+        }
         // Initialize local state with current values
         pending.loadFrom(settings)
 
@@ -1668,7 +1680,7 @@ class SettingsFragment : Fragment() {
                 pendingEnableCarLauncher = isChecked
                 CarLauncherManager.setLauncherEnabled(requireContext(), isChecked)
                 if (isChecked && !CarLauncherManager.isDefaultLauncher(requireContext())) {
-                    CarLauncherManager.promptSetDefaultLauncher(requireContext())
+                    CarLauncherManager.promptSetDefaultLauncher(requireContext(), homeRoleLauncher)
                 }
                 checkChanges()
                 updateSettingsList()
@@ -1682,7 +1694,7 @@ class SettingsFragment : Fragment() {
                 nameResId = R.string.pref_set_default_launcher_title,
                 value = getString(if (isDefault) R.string.pref_default_launcher_status_active else R.string.pref_default_launcher_status_inactive),
                 onClick = {
-                    CarLauncherManager.promptSetDefaultLauncher(requireContext())
+                    CarLauncherManager.promptSetDefaultLauncher(requireContext(), homeRoleLauncher)
                 }
             ))
         }
