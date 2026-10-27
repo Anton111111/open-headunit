@@ -438,7 +438,7 @@ internal class AapAudio(
             Channel.ID_AU2 -> systemVolumeOffset
             else -> 0
         }
-        val gain = (1.0f + (offset / 100.0f)).coerceIn(0.0f, 2.0f)
+        val gain = (1.0f + (offset / 100.0f)).coerceIn(0.0f, 2.5f)
 
         // The latency preference sets the network reserve for every audio sink. Guidance
         // shares the same delivery stalls as music. Short completed prompts can still drain
@@ -597,9 +597,9 @@ internal class AapAudio(
     }
 
     fun updateGains() {
-        val mediaGain = (1.0f + (settings.mediaVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
-        val guidanceGain = (1.0f + (settings.guidanceVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
-        val systemGain = (1.0f + (settings.systemVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
+        val mediaGain = (1.0f + (settings.mediaVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
+        val guidanceGain = (1.0f + (settings.guidanceVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
+        val systemGain = (1.0f + (settings.systemVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
 
         audioDecoder.setGain(Channel.ID_AUD, mediaGain, decoderSession)
         audioDecoder.setGain(Channel.ID_AU1, guidanceGain, decoderSession)

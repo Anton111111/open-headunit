@@ -3826,7 +3826,7 @@ class SettingsFragment : Fragment() {
         val textGuidance = dialogView.findViewById<android.widget.TextView>(R.id.text_guidance_val)
         val textSystem = dialogView.findViewById<android.widget.TextView>(R.id.text_system_val)
 
-        // Mapping: 0 to 100 on SeekBar -> 0% to 200% Gain. Default is 50 (100% Gain, 0 Offset)
+        // Mapping: 0 to 125 on SeekBar -> 0% to 250% Gain. Default is 50 (100% Gain, 0 Offset)
         // Offset = (seekValue - 50) * 2
         // seekValue = (offset / 2) + 50
 

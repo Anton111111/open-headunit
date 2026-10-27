@@ -32,7 +32,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:rotation="270"
-                android:max="100"/>
+                android:max="125"/>
         </FrameLayout>
         <TextView
             android:id="@+id/text_media_val"
@@ -70,7 +70,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:rotation="270"
-                android:max="100"/>
+                android:max="125"/>
         </FrameLayout>
         <TextView
             android:id="@+id/text_guidance_val"
@@ -108,7 +108,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:rotation="270"
-                android:max="100"/>
+                android:max="125"/>
         </FrameLayout>
         <TextView
             android:id="@+id/text_system_val"
