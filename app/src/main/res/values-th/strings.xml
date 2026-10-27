@@ -1463,8 +1463,12 @@
     <string name="home_favorites_full">รายการโปรดครบทั้งสี่แล้ว กดค้างที่แอปหนึ่งบนหน้าจอหลักเพื่อเปลี่ยน</string>
     <string name="home_choose_favorite_app">เลือกแอปหรือทางลัด</string>
     <string name="home_shortcut_badge">ทางลัด</string>
-    <string name="home_show_favorite_apps">แอปและวิดเจ็ตบนหน้าจอหลัก</string>
-    <string name="home_show_favorite_apps_description">แอปโปรดและวิดเจ็ตของคุณใต้ปุ่มหลัก เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="home_show_favorite_apps">แอปโปรดบนหน้าจอหลัก</string>
+    <string name="home_show_favorite_apps_description">แอปโปรดของคุณใต้ปุ่มหลัก เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="home_show_widgets">วิดเจ็ตบนหน้าจอหลัก</string>
+    <string name="home_show_widgets_description">วิดเจ็ตของคุณ หน้าของวิดเจ็ต และไทล์เพิ่มวิดเจ็ต เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="home_surface_opacity">ความทึบของแผง</string>
+    <string name="home_surface_opacity_description">ลดค่าลงเพื่อให้ภาพพื้นหลังของคุณมองเห็นทะลุแผงและปุ่มของหน้าจอหลัก</string>
     <string name="home_show_clock">วันที่และเวลาบนหน้าจอหลัก</string>
     <string name="home_show_clock_description">เวลาและวันที่ของวันนี้ที่ด้านบนปุ่มหลัก</string>
     <string name="home_show_speed">ความเร็ว GPS บนหน้าจอหลัก</string>

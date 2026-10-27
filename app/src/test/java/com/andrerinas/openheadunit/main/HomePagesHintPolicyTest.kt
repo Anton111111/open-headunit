@@ -15,7 +15,7 @@ class HomePagesHintPolicyTest {
         alreadyShown = false,
         launcherActive = true,
         widgetsSupported = true,
-        appsAndWidgetsOn = true,
+        widgetsOn = true,
         connected = false,
         status = HomePrimaryPolicy.Status.READY,
         bringUpRunning = false,
@@ -37,7 +37,7 @@ class HomePagesHintPolicyTest {
     fun `only the launcher home with widgets has pages to add`() {
         assertFalse(HomePagesHintPolicy.shouldShow(ready.copy(launcherActive = false)))
         assertFalse(HomePagesHintPolicy.shouldShow(ready.copy(widgetsSupported = false)))
-        assertFalse(HomePagesHintPolicy.shouldShow(ready.copy(appsAndWidgetsOn = false)))
+        assertFalse(HomePagesHintPolicy.shouldShow(ready.copy(widgetsOn = false)))
     }
 
     @Test

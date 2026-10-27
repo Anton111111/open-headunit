@@ -1408,8 +1408,12 @@
     <string name="home_favorites_full">四个收藏位已满。在主画面上长按其中一个即可更换。</string>
     <string name="home_choose_favorite_app">选择应用或快捷方式</string>
     <string name="home_shortcut_badge">快捷方式</string>
-    <string name="home_show_favorite_apps">主画面应用与小部件</string>
-    <string name="home_show_favorite_apps_description">当 Open Headunit 是你的启动器时，在主按钮下方显示你收藏的应用与小部件</string>
+    <string name="home_show_favorite_apps">主屏幕上的收藏应用</string>
+    <string name="home_show_favorite_apps_description">当 Open Headunit 是你的启动器时，在主按钮下方显示你收藏的应用</string>
+    <string name="home_show_widgets">主屏幕上的小部件</string>
+    <string name="home_show_widgets_description">当 Open Headunit 是你的启动器时，显示你的小部件、它们的页面和“添加小部件”图块</string>
+    <string name="home_surface_opacity">面板不透明度</string>
+    <string name="home_surface_opacity_description">调低后，背景图片会透过主屏幕的面板和按钮显示出来。</string>
     <string name="home_show_clock">在主屏幕上显示日期和时间</string>
     <string name="home_show_clock_description">在主按钮上方显示时间和今天的日期</string>
     <string name="home_show_speed">在主屏幕上显示 GPS 速度</string>

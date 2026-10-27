@@ -1415,8 +1415,12 @@
     <string name="home_favorites_full">Alle vier Favoriten sind belegt. Halte einen auf dem Startbildschirm gedrückt, um ihn zu ändern.</string>
     <string name="home_choose_favorite_app">App oder Verknüpfung auswählen</string>
     <string name="home_shortcut_badge">Verknüpfung</string>
-    <string name="home_show_favorite_apps">Apps und Widgets auf dem Startbildschirm</string>
-    <string name="home_show_favorite_apps_description">Deine Lieblings-Apps und Widgets unter dem Hauptbutton, wenn Open Headunit dein Launcher ist</string>
+    <string name="home_show_favorite_apps">Lieblings-Apps auf dem Startbildschirm</string>
+    <string name="home_show_favorite_apps_description">Deine Lieblings-Apps unter dem Hauptbutton, wenn Open Headunit dein Launcher ist</string>
+    <string name="home_show_widgets">Widgets auf dem Startbildschirm</string>
+    <string name="home_show_widgets_description">Deine Widgets, ihre Seiten und die Kachel „Widget hinzufügen“, wenn Open Headunit dein Launcher ist</string>
+    <string name="home_surface_opacity">Deckkraft der Panels</string>
+    <string name="home_surface_opacity_description">Verringere den Wert, damit dein Hintergrundbild durch die Panels und Buttons des Startbildschirms scheint.</string>
     <string name="home_show_clock">Datum und Uhrzeit auf dem Startbildschirm</string>
     <string name="home_show_clock_description">Die Uhrzeit und das heutige Datum oben auf der Hauptschaltfläche</string>
     <string name="home_show_speed">GPS-Geschwindigkeit auf dem Startbildschirm</string>

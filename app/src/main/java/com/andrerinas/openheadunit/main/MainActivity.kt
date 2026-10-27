@@ -220,10 +220,13 @@ class MainActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             Settings.setUsbAttachedActivityEnabled(applicationContext, appSettings.listenForUsbDevices)
             val launcherStored = appSettings.enableCarLauncher
-            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, CarLauncherManager.isDefaultLauncher(applicationContext))) {
+            val held = CarLauncherManager.isDefaultLauncher(applicationContext)
+            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, held)) {
                 CarLauncherManager.syncWithSettings(applicationContext, launcherStored)
             } else {
-                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, keeping the launcher alias")
+                // A granted home role starts this screen and clears the one that asked, before it can store the mode.
+                appSettings.enableCarLauncher = OnboardingLauncherPolicy.launcherModeOnOpen(launcherStored, held)
+                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, storing car launcher mode")
             }
         }
 

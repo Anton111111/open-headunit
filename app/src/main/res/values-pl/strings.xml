@@ -1417,8 +1417,12 @@
     <string name="home_favorites_full">Wszystkie cztery ulubione są zajęte. Przytrzymaj jedną na ekranie głównym, aby ją zmienić.</string>
     <string name="home_choose_favorite_app">Wybierz aplikację lub skrót</string>
     <string name="home_shortcut_badge">Skrót</string>
-    <string name="home_show_favorite_apps">Aplikacje i widżety na ekranie głównym</string>
-    <string name="home_show_favorite_apps_description">Twoje ulubione aplikacje i widżety pod głównym przyciskiem, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="home_show_favorite_apps">Ulubione aplikacje na ekranie głównym</string>
+    <string name="home_show_favorite_apps_description">Twoje ulubione aplikacje pod głównym przyciskiem, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="home_show_widgets">Widżety na ekranie głównym</string>
+    <string name="home_show_widgets_description">Twoje widżety, ich strony i kafelek Dodaj widget, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="home_surface_opacity">Przezroczystość paneli</string>
+    <string name="home_surface_opacity_description">Zmniejsz ją, aby obraz tła prześwitywał przez panele i przyciski ekranu głównego.</string>
     <string name="home_show_clock">Data i godzina na ekranie głównym</string>
     <string name="home_show_clock_description">Godzina i dzisiejsza data, u góry głównego przycisku</string>
     <string name="home_show_speed">Prędkość GPS na ekranie głównym</string>

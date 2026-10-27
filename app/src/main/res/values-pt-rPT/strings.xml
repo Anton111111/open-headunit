@@ -1464,8 +1464,12 @@
     <string name="home_favorites_full">Os quatro favoritos já estão ocupados. Mantenha premido um no ecrã inicial para o alterar.</string>
     <string name="home_choose_favorite_app">Escolha uma app ou atalho</string>
     <string name="home_shortcut_badge">Atalho</string>
-    <string name="home_show_favorite_apps">Apps e widgets no ecrã inicial</string>
-    <string name="home_show_favorite_apps_description">As tuas apps favoritas e widgets sob o botão principal, quando o Open Headunit é o teu launcher</string>
+    <string name="home_show_favorite_apps">Apps favoritas no ecrã inicial</string>
+    <string name="home_show_favorite_apps_description">As tuas apps favoritas sob o botão principal, quando o Open Headunit é o teu launcher</string>
+    <string name="home_show_widgets">Widgets no ecrã inicial</string>
+    <string name="home_show_widgets_description">Os teus widgets, as respetivas páginas e o mosaico Adicionar um widget, quando o Open Headunit é o teu launcher</string>
+    <string name="home_surface_opacity">Opacidade dos painéis</string>
+    <string name="home_surface_opacity_description">Diminui para que a imagem de fundo se veja através dos painéis e dos botões do ecrã inicial.</string>
     <string name="home_show_clock">Data e hora no ecrã inicial</string>
     <string name="home_show_clock_description">A hora e a data de hoje, no topo do botão principal</string>
     <string name="home_show_speed">Velocidade do GPS no ecrã inicial</string>

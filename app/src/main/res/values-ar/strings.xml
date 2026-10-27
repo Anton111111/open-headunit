@@ -1413,8 +1413,12 @@
     <string name="home_favorites_full">المفضلات الأربع ممتلئة. اضغط مطولًا على أحدها في الشاشة الرئيسية لتغييره.</string>
     <string name="home_choose_favorite_app">اختر تطبيقًا أو اختصارًا</string>
     <string name="home_shortcut_badge">اختصار</string>
-    <string name="home_show_favorite_apps">التطبيقات والأدوات على الشاشة الرئيسية</string>
-    <string name="home_show_favorite_apps_description">تطبيقاتك المفضلة وأدواتك أسفل الزر الرئيسي، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="home_show_favorite_apps">التطبيقات المفضلة على الشاشة الرئيسية</string>
+    <string name="home_show_favorite_apps_description">تطبيقاتك المفضلة أسفل الزر الرئيسي، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="home_show_widgets">الأدوات على الشاشة الرئيسية</string>
+    <string name="home_show_widgets_description">أدواتك وصفحاتها وبلاطة «إضافة أداة»، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="home_surface_opacity">شفافية اللوحات</string>
+    <string name="home_surface_opacity_description">خفّض القيمة لتظهر صورة الخلفية عبر لوحات الشاشة الرئيسية وأزرارها.</string>
     <string name="home_show_clock">التاريخ والوقت على الشاشة الرئيسية</string>
     <string name="home_show_clock_description">الوقت وتاريخ اليوم في أعلى الزر الرئيسي</string>
     <string name="home_show_speed">سرعة GPS على الشاشة الرئيسية</string>

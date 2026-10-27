@@ -43,7 +43,7 @@ object HomePagesPolicy {
      * @param widgetRowOverflows the row under the favorites has widgets and no room on this screen,
      *   so they get a page instead of disappearing. Meaningless on the compact home, where that row
      *   already has the favorites' page to itself.
-     * @param widgetsShown the favorites switch is on. Off, the home has no widget row and no widget
+     * @param widgetsShown the widgets switch is on. Off, the home has no widget row and no widget
      *   page, whatever is stored; the stored widgets are kept for when it is turned back on.
      */
     fun pages(

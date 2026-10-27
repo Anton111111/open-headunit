@@ -1408,8 +1408,12 @@
     <string name="home_favorites_full">Toate cele patru favorite sunt ocupate. Ține apăsat pe una în ecranul principal pentru a o schimba.</string>
     <string name="home_choose_favorite_app">Alege o aplicație sau o comandă rapidă</string>
     <string name="home_shortcut_badge">Comandă rapidă</string>
-    <string name="home_show_favorite_apps">Aplicații și widgeturi pe ecranul principal</string>
-    <string name="home_show_favorite_apps_description">Aplicațiile tale favorite și widgeturile sub butonul principal, când Open Headunit este launcherul tău</string>
+    <string name="home_show_favorite_apps">Aplicații favorite pe ecranul principal</string>
+    <string name="home_show_favorite_apps_description">Aplicațiile tale favorite sub butonul principal, când Open Headunit este launcherul tău</string>
+    <string name="home_show_widgets">Widgeturi pe ecranul principal</string>
+    <string name="home_show_widgets_description">Widgeturile tale, paginile lor și cardul Adaugă un widget, când Open Headunit este launcherul tău</string>
+    <string name="home_surface_opacity">Opacitatea panourilor</string>
+    <string name="home_surface_opacity_description">Micșorează valoarea ca imaginea de fundal să se vadă prin panourile și butoanele ecranului principal.</string>
     <string name="home_show_clock">Data și ora pe ecranul principal</string>
     <string name="home_show_clock_description">Ora și data de astăzi, sus pe butonul principal</string>
     <string name="home_show_speed">Viteza GPS pe ecranul principal</string>
