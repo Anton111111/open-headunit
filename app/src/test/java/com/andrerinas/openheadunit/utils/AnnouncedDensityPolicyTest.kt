@@ -67,12 +67,12 @@ class AnnouncedDensityPolicyTest {
     }
 
     @Test
-    fun `a phone-size 1080p panel gets a density for its size, up to the floor`() {
+    fun `a phone-size 1080p panel grows only to the widescreen line it already had`() {
         val d = automatic(2400, 1080, 1920, 1080, DisplaySizePreset.PHONE_4_6)
-        assertEquals(384, d.announced)
-        assertEquals(Reason.PANEL, d.reason)
+        assertEquals(309, d.announced)
+        assertEquals(Reason.WIDESCREEN_KEPT, d.reason)
         assertEquals(
-            "384 (dp canvas 1000x450, requested automatic, panel-based)",
+            "309 (dp canvas 1242x559, requested automatic, panel-based, held at the 1240 dp widescreen line)",
             AnnouncedDensityPolicy.describe(d, 1920, 1080, AnnouncedDensityPolicy.pixelAspectE4(Settings.VideoFitMode.FILL, 2400, 1080, 1920, 1080, 0))
         )
     }
@@ -89,6 +89,11 @@ class AnnouncedDensityPolicyTest {
         assertEquals(Reason.AUTOMATIC, automatic(1280, 800, 1920, 1080, DisplaySizePreset.SMALL_7_8).reason)
         assertEquals(240, automatic(1280, 800, 1920, 1080, DisplaySizePreset.SMALL_7_8).announced)
         assertEquals(144, automatic(1024, 600, 1280, 720, DisplaySizePreset.STANDARD_9_10).announced)
+    }
+
+    @Test
+    fun `the widescreen hint reads the stretched canvas`() {
+        assertEquals(309, AnnouncedDensityPolicy.widescreenHintDpi(2400, 1080))
     }
 
     @Test

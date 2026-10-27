@@ -83,7 +83,7 @@ class DpiSettingsFragment : Fragment() {
             AnnouncedDensityPolicy.canvasDp(cw, auto0.announced), AnnouncedDensityPolicy.canvasDp(ch, auto0.announced)
         )
 
-        val wide = AnnouncedDensityPolicy.widescreenHintDpi(pw, ph)
+        val wide = AnnouncedDensityPolicy.widescreenHintDpi(cw, ch)
         if (wide > 0) {
             widescreenHint.text = getString(R.string.dpi_widescreen_hint, wide)
             widescreenHint.visibility = View.VISIBLE
