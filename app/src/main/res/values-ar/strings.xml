@@ -103,6 +103,7 @@
     <string name="orientation_portrait">عمودي (90°)</string>
     <string name="orientation_portrait_reverse">عمودي معكوس (270°)</string>
     <string name="enter_dpi_value">أدخل قيمة DPI (0 للتلقائي)</string>
+    <string name="enter_audio_offset_value">أدخل قيمة (0-250)</string>
     <string name="custom_margin">هوامش مخصصة</string>
     <string name="custom_margin_description">تعيين هوامش عرض مخصصة (0 للتلقائي).</string>
     <string name="enter_custom_margins">أدخل الهوامش المخصصة (0 للتلقائي)</string>

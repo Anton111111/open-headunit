@@ -102,6 +102,7 @@
     <string name="orientation_portrait">Álló (90°)</string>
     <string name="orientation_portrait_reverse">Fordított álló (270°)</string>
     <string name="enter_dpi_value">Adja meg a DPI-értéket (0 = automatikus)</string>
+    <string name="enter_audio_offset_value">Adja meg az értéket (0-250)</string>
     <string name="custom_margin">Egyedi margó</string>
     <string name="custom_margin_description">Egyéni képernyőmargók beállítása (0 = automatikus).</string>
     <string name="enter_custom_margins">Adja meg az egyéni margókat (0 = automatikus)</string>

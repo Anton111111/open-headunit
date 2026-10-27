@@ -108,6 +108,7 @@
     <string name="orientation_portrait">Dọc (90°)</string>
     <string name="orientation_portrait_reverse">Dọc ngược (270°)</string>
     <string name="enter_dpi_value">Nhập DPI (0 = tự động)</string>
+    <string name="enter_audio_offset_value">Nhập giá trị (0-250)</string>
     <string name="custom_margin">Lề tuỳ chỉnh</string>
     <string name="custom_margin_description">Đặt lề hiển thị tuỳ chỉnh (0 = tự động).</string>
     <string name="enter_custom_margins">Nhập lề tuỳ chỉnh (0 = tự động)</string>

@@ -102,6 +102,7 @@
     <string name="orientation_portrait">直向 (90°)</string>
     <string name="orientation_portrait_reverse">直向反轉 (270°)</string>
     <string name="enter_dpi_value">輸入 DPI 值 (0 為自動)</string>
+    <string name="enter_audio_offset_value">輸入值 (0-250)</string>
     <string name="custom_margin">自訂邊距</string>
     <string name="custom_margin_description">設定自訂顯示邊距 (0 為自動)。</string>
     <string name="enter_custom_margins">輸入自訂邊距 (0 為自動)</string>

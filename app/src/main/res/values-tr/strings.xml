@@ -108,6 +108,7 @@
     <string name="orientation_portrait">Dikey (90°)</string>
     <string name="orientation_portrait_reverse">Ters Dikey (270°)</string>
     <string name="enter_dpi_value">DPI değeri girin (otomatik için 0)</string>
+    <string name="enter_audio_offset_value">Değeri girin (0-250)</string>
     <string name="custom_margin">Özel Kenar Boşluğu</string>
     <string name="custom_margin_description">Özel ekran kenar boşluklarını ayarla (otomatik için 0).</string>
     <string name="enter_custom_margins">Özel kenar boşluklarını girin (otomatik için 0)</string>

@@ -102,6 +102,7 @@
     <string name="orientation_portrait">Staand (90°)</string>
     <string name="orientation_portrait_reverse">Staand omgekeerd (270°)</string>
     <string name="enter_dpi_value">DPI-waarde invoeren (0 = automatisch)</string>
+    <string name="enter_audio_offset_value">Waarde invoeren (0-250)</string>
     <string name="custom_margin">Aangepaste marge</string>
     <string name="custom_margin_description">Stel aangepaste schermmarges in (0 = automatisch).</string>
     <string name="enter_custom_margins">Voer aangepaste marges in (0 = automatisch)</string>

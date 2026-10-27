@@ -135,6 +135,7 @@
     <string name="orientation_portrait">Hochformat (90°)</string>
     <string name="orientation_portrait_reverse">Hochformat umgekehrt (270°)</string>
     <string name="enter_dpi_value">DPI eingeben (0 für Auto)</string>
+    <string name="enter_audio_offset_value">Wert eingeben (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">Pixelseitenverhältnis x10000 (10000 = quadratische Pixel)</string>
     <string name="custom_margin">Eigene Ränder</string>
     <string name="custom_margin_description">Ränder manuell setzen (0 für Auto).</string>

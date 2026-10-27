@@ -103,6 +103,7 @@
     <string name="orientation_portrait">Na výšku (90°)</string>
     <string name="orientation_portrait_reverse">Na výšku obráceně (270°)</string>
     <string name="enter_dpi_value">Zadejte hodnotu DPI (0 pro automatické)</string>
+    <string name="enter_audio_offset_value">Zadejte hodnotu (0-250)</string>
     <string name="custom_margin">Vlastní okraje</string>
     <string name="custom_margin_description">Nastavit vlastní okraje zobrazení (0 pro automatické).</string>
     <string name="enter_custom_margins">Zadejte vlastní okraje (0 pro automatické)</string>

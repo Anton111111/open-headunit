@@ -103,6 +103,7 @@
     <string name="orientation_portrait">Vertical (90°)</string>
     <string name="orientation_portrait_reverse">Vertical inversat (270°)</string>
     <string name="enter_dpi_value">Introdu valoarea DPI (0 pentru auto)</string>
+    <string name="enter_audio_offset_value">Introdu valoarea (0-250)</string>
     <string name="custom_margin">Margini personalizate</string>
     <string name="custom_margin_description">Setează margini de afișare personalizate (0 pentru auto).</string>
     <string name="enter_custom_margins">Introdu marginile personalizate (0 pentru auto)</string>

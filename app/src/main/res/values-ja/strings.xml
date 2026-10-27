@@ -107,6 +107,7 @@
     <string name="orientation_portrait">縦向き (90°)</string>
     <string name="orientation_portrait_reverse">縦向きの反転 (270°)</string>
     <string name="enter_dpi_value">DPI値を入力してください (自動の場合は0)</string>
+    <string name="enter_audio_offset_value">値を入力してください (0-250)</string>
     <string name="custom_margin">カスタムマージン</string>
     <string name="custom_margin_description">カスタム表示マージンを設定する (自動の場合は0)。</string>
     <string name="enter_custom_margins">カスタムマージンを入力 (自動の場合は0)</string>

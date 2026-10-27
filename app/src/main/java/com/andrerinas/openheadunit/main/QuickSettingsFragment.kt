@@ -1,10 +1,15 @@
 package com.andrerinas.openheadunit.main
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -315,14 +320,14 @@ class QuickSettingsFragment : DialogFragment() {
         val textGuidance = dialogView.findViewById<android.widget.TextView>(R.id.text_guidance_val)
         val textSystem = dialogView.findViewById<android.widget.TextView>(R.id.text_system_val)
 
-        seekMedia.progress = (settings.mediaVolumeOffset / 2) + 50
-        seekGuidance.progress = (settings.guidanceVolumeOffset / 2) + 50
-        seekSystem.progress = (settings.systemVolumeOffset / 2) + 50
+        seekMedia.progress = settings.mediaVolumeOffset + 100
+        seekGuidance.progress = settings.guidanceVolumeOffset + 100
+        seekSystem.progress = settings.systemVolumeOffset + 100
 
         val updateLabels = {
-            textMedia.text = "${(seekMedia.progress * 2)}%"
-            textGuidance.text = "${(seekGuidance.progress * 2)}%"
-            textSystem.text = "${(seekSystem.progress * 2)}%"
+            textMedia.text = "${seekMedia.progress}%"
+            textGuidance.text = "${seekGuidance.progress}%"
+            textSystem.text = "${seekSystem.progress}%"
         }
         updateLabels()
 
@@ -338,13 +343,23 @@ class QuickSettingsFragment : DialogFragment() {
         seekGuidance.setOnSeekBarChangeListener(listener)
         seekSystem.setOnSeekBarChangeListener(listener)
 
+        val promptValue = { seek: android.widget.SeekBar ->
+            showNumericInputDialog(getString(R.string.enter_audio_offset_value), seek.progress) { typed ->
+                seek.progress = typed.coerceIn(0, seek.max)
+                updateLabels()
+            }
+        }
+        textMedia.setOnClickListener { promptValue(seekMedia) }
+        textGuidance.setOnClickListener { promptValue(seekGuidance) }
+        textSystem.setOnClickListener { promptValue(seekSystem) }
+
         MaterialAlertDialogBuilder(requireContext(), R.style.DarkAlertDialog)
             .setTitle(R.string.audio_volume_offset)
             .setView(dialogView)
             .setPositiveButton(android.R.string.ok) { dialog, _ ->
-                settings.mediaVolumeOffset = (seekMedia.progress - 50) * 2
-                settings.guidanceVolumeOffset = (seekGuidance.progress - 50) * 2
-                settings.systemVolumeOffset = (seekSystem.progress - 50) * 2
+                settings.mediaVolumeOffset = seekMedia.progress - 100
+                settings.guidanceVolumeOffset = seekGuidance.progress - 100
+                settings.systemVolumeOffset = seekSystem.progress - 100
                 settings.commit()
                 notifyChange()
                 updateSettingsList()
@@ -352,6 +367,51 @@ class QuickSettingsFragment : DialogFragment() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    private fun showNumericInputDialog(
+        title: String,
+        initialValue: Int,
+        onConfirm: (Int) -> Unit
+    ) {
+        val context = requireContext()
+        val editView = EditText(context).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(initialValue.toString())
+        }
+
+        // Use a container to add padding around the EditText
+        val container = android.widget.FrameLayout(context)
+        val params = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+        val margin = (24 * context.resources.displayMetrics.density).toInt()
+        params.setMargins(margin, 8, margin, 8)
+        container.addView(editView, params)
+
+        val dialog = MaterialAlertDialogBuilder(context, R.style.DarkAlertDialog)
+            .setTitle(title)
+            .setView(container)
+            .setPositiveButton(android.R.string.ok) { dialog, _ ->
+                val newVal = (editView.text.toString().toIntOrNull() ?: 0).coerceAtLeast(0)
+                onConfirm(newVal)
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .setOnDismissListener {
+                val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+                        as? InputMethodManager
+                imm?.hideSoftInputFromWindow(editView.windowToken, 0)
+            }
+            .create()
+
+        dialog.window?.clearFlags(
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
+        )
+        dialog.show()
+        editView.requestFocus()
     }
 
     private fun showAudioLatencyDialog() {

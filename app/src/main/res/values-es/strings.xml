@@ -103,6 +103,7 @@
     <string name="orientation_portrait">Vertical (90°)</string>
     <string name="orientation_portrait_reverse">Vertical invertido (270°)</string>
     <string name="enter_dpi_value">Escribe el valor de DPI (0 para automático)</string>
+    <string name="enter_audio_offset_value">Escribe el valor (0-250)</string>
     <string name="custom_margin">Margen personalizado</string>
     <string name="custom_margin_description">Establecer márgenes de pantalla personalizados (0 para automático).</string>
     <string name="enter_custom_margins">Escribe márgenes personalizados (0 para automático)</string>
