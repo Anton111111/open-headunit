@@ -247,7 +247,9 @@ class P2pPersistentGroupPurgeTest {
         })
 
         fun start() {
-            P2pPersistentGroupPurge.purge(manager, mock(WifiP2pManager.Channel::class.java), "self", handler) {
+            P2pPersistentGroupPurge.purge(
+                manager, mock(WifiP2pManager.Channel::class.java), "self", handler, isCurrent = { true },
+            ) {
                 done.add(it)
                 onDone()
             }

@@ -23,7 +23,7 @@ object P2pPersistentGroupPurge {
 
     /**
      * Deletes every stored profile this unit owns, then reports a short verdict for the log.
-     * [onDone] always runs exactly once, whatever the platform answered.
+     * [onDone] runs exactly once while [isCurrent] remains true; a stopped owner gets no continuation.
      */
     @SuppressLint("MissingPermission")
     fun purge(
@@ -31,9 +31,10 @@ object P2pPersistentGroupPurge {
         channel: WifiP2pManager.Channel,
         ownAddress: String?,
         handler: Handler,
+        isCurrent: () -> Boolean,
         onDone: (verdict: String) -> Unit,
     ) {
-        val attempt = Attempt(handler, onDone)
+        val attempt = Attempt(handler, isCurrent, onDone)
 
         try {
             val listenerClass = Class.forName(LISTENER_CLASS)
@@ -68,6 +69,7 @@ object P2pPersistentGroupPurge {
 
     private class Attempt(
         private val handler: Handler,
+        private val isCurrent: () -> Boolean,
         private val onDone: (String) -> Unit,
     ) {
         val lock = Any()
@@ -76,12 +78,15 @@ object P2pPersistentGroupPurge {
         private var infoReceived = false
         val timeout = Runnable { finish("unavailable (no answer in ${ANSWER_TIMEOUT_MS / 1000}s)") }
 
-        fun isActive(): Boolean = synchronized(lock) { !finished }
+        fun isActive(): Boolean = isCurrent() && synchronized(lock) { !finished }
 
-        fun acceptInfo(): Boolean = synchronized(lock) {
-            if (finished || infoReceived) false else {
-                infoReceived = true
-                true
+        fun acceptInfo(): Boolean {
+            if (!isCurrent()) return false
+            return synchronized(lock) {
+                if (finished || infoReceived) false else {
+                    infoReceived = true
+                    true
+                }
             }
         }
 
@@ -92,7 +97,7 @@ object P2pPersistentGroupPurge {
             }
             // Platform calls and the continuation may reenter; never invoke them under our lock.
             handler.removeCallbacks(timeout)
-            onDone(verdict)
+            if (isCurrent()) onDone(verdict)
         }
     }
 
@@ -146,6 +151,8 @@ object P2pPersistentGroupPurge {
         var purged = 0
         var refusal: String? = null
         for (netId in ours) {
+            // Stop/timeout retires the remaining batch, not a platform call already admitted.
+            // The call stays outside the lock: a platform may wait for a cross-thread callback.
             if (!attempt.isActive()) return
             var completed = false
             val report = report@{ failure: String? ->

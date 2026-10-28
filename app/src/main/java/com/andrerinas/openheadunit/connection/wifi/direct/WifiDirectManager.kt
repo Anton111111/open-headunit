@@ -2261,7 +2261,13 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                             "the band or channel setting no longer allows, so it is replaced."
                     )
                 }
-                if (group != null && sameIdentity && matchesSetting) {
+                // Below Q a rename has no requested name to compare: it must reach the purge.
+                // Keep an advertised network only while its endpoint still needs retirement.
+                val purgeRequired = P2pIdentityRotationPolicy.purgeBeforeCreate(
+                    Build.VERSION.SDK_INT, appSettings.wifiDirectStableIdentity,
+                    appSettings.wifiDirectRotationPending,
+                ) && !endpointRetirementOwed()
+                if (group != null && sameIdentity && matchesSetting && !purgeRequired) {
                     AppLog.i(
                         "WifiDirectManager: a group named ${group.networkName} is already up from " +
                             "before this bring-up; reading it instead of tearing it down."
@@ -3029,10 +3035,16 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                 // Consumed here, not after the create: a stop() landing mid-purge must not leave
                 // the request behind to purge a group nobody asked to rename.
                 appSettings.wifiDirectRotationPending = false
-                P2pPersistentGroupPurge.purge(mgr, ch, localDeviceAddress, handler) { verdict ->
-                    lastPersistentPurgeVerdict = verdict
-                    AppLog.i("WifiDirectManager: persistent profile purge: $verdict")
-                    if (!supersededByStop(gen, "Native AA group recreate")) create()
+                // Removing our Handler callbacks does not revoke a listener held by the framework.
+                // Fence the purge itself, not only its create continuation, against a stopped owner.
+                P2pPersistentGroupPurge.purge(
+                    mgr, ch, localDeviceAddress, handler, isCurrent = { gen == generation },
+                ) { verdict ->
+                    if (!supersededByStop(gen, "Native AA group recreate")) {
+                        lastPersistentPurgeVerdict = verdict
+                        AppLog.i("WifiDirectManager: persistent profile purge: $verdict")
+                        create()
+                    }
                 }
             } else {
                 appSettings.wifiDirectRotationPending = false
