@@ -1473,7 +1473,7 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
                     lastIdentityReportSsid = ssid
                     AppLog.i(
                         "WifiDirectManager: " + P2pGroupIdentityPolicy.describeReadBack(
-                            nativeRequestedIdentity, ssid, psk, group.networkId) +
+                            nativeRequestedIdentity, ssid, psk, WifiDirectCompat.getGroupNetworkId(group)) +
                             " bssid=$bssid address=${MacAddressPolicy.label(bssid)}" +
                             " stable=${GroupIdentityStabilityPolicy.label(verdict.stability)}" +
                             // Only below Q, where the count is the whole mechanism. Named here because
@@ -2684,7 +2684,11 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
     private fun nativeGroupNameSuffixSource(): String? =
         AapService.wifiDirectName.value
             ?: try {
-                Settings.Global.getString(context.contentResolver, "device_name")
+                // Global and its device_name setting were introduced in API 17.
+                // A missing name uses the existing suffix fallback, not a failed group creation.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                    Settings.Global.getString(context.contentResolver, "device_name")
+                } else null
             } catch (e: Exception) {
                 null
             }
@@ -3189,11 +3193,17 @@ class WifiDirectManager(private val context: Context) : WifiP2pManager.Connectio
         val telephony = try {
             context.getSystemService(Context.TELEPHONY_SERVICE) as? android.telephony.TelephonyManager
         } catch (e: Exception) { null }
+        // Read-only diagnostics: use the legacy table on API 16 and label the table actually read.
+        val globalSettings = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1
         val sources = linkedMapOf<String, String?>(
             "TelephonyManager.networkCountry" to attempt { telephony?.networkCountryIso },
             "TelephonyManager.simCountry" to attempt { telephony?.simCountryIso },
-            "Settings.Global wifi_country_code" to attempt {
-                Settings.Global.getString(context.contentResolver, "wifi_country_code")
+            "${if (globalSettings) "Settings.Global" else "Settings.System"} wifi_country_code" to attempt {
+                if (globalSettings) {
+                    Settings.Global.getString(context.contentResolver, "wifi_country_code")
+                } else {
+                    Settings.System.getString(context.contentResolver, "wifi_country_code")
+                }
             },
         )
         for (key in COUNTRY_PROPERTY_KEYS) {

@@ -87,15 +87,28 @@ object P2pPersistentGroupPurge {
         groupList: Any?,
         finish: (String) -> Unit,
     ) {
+        var unknownIds = 0
         val ours = try {
             val list = groupList?.javaClass?.getMethod("getGroupList")?.invoke(groupList) as? Collection<*>
-            list.orEmpty().filterIsInstance<WifiP2pGroup>().filter { isOurs(it, ownAddress) }
+            val ids = ArrayList<Int>()
+            for (group in list.orEmpty()) {
+                if (group !is WifiP2pGroup || !isOurs(group, ownAddress)) continue
+                // Each deletion needs this owned profile's real ID; zero is a valid profile.
+                // An unreadable entry must not suppress cleanup of other identifiable profiles.
+                val netId = WifiDirectCompat.getGroupNetworkId(group)
+                when {
+                    netId == null -> unknownIds++
+                    P2pGroupIdentityPolicy.isPersistentNetworkId(netId) -> ids.add(netId)
+                }
+            }
+            ids
         } catch (t: Throwable) {
             finish("unavailable (${t.javaClass.simpleName}: ${t.message})")
             return
         }
         if (ours.isEmpty()) {
-            finish("no profile of ours")
+            finish(if (unknownIds > 0) "unavailable (network id missing for $unknownIds owned profiles)"
+                else "no profile of ours")
             return
         }
 
@@ -117,11 +130,11 @@ object P2pPersistentGroupPurge {
         val report = {
             answered++
             if (answered == ours.size) {
-                finish(if (purged > 0) "purged $purged of ${ours.size}" else "refused (${refusal ?: "unknown"})")
+                val verdict = if (purged > 0) "purged $purged of ${ours.size}" else "refused (${refusal ?: "unknown"})"
+                finish(verdict + if (unknownIds > 0) "; network id unavailable for $unknownIds owned profiles" else "")
             }
         }
-        for (group in ours) {
-            val netId = group.networkId
+        for (netId in ours) {
             val listener = object : WifiP2pManager.ActionListener {
                 override fun onSuccess() {
                     purged++
@@ -144,7 +157,6 @@ object P2pPersistentGroupPurge {
     }
 
     private fun isOurs(group: WifiP2pGroup, ownAddress: String?): Boolean {
-        if (group.networkId < 0) return false
         if (group.isGroupOwner) return true
         val owner = group.owner?.deviceAddress ?: return false
         return ownAddress != null && owner.equals(ownAddress, ignoreCase = true)
