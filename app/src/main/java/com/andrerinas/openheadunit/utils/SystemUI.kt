@@ -69,9 +69,10 @@ object SystemUI {
 
         // Modern Edge-to-Edge for Android 11+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Only force decor to NOT fit if we are in some kind of immersive mode.
-            // If mode is NONE, we want the system to fit the window naturally.
-            window.setDecorFitsSystemWindows(mode == Settings.FullscreenMode.NONE)
+            // Normally force decor to NOT fit only when we are in some kind of immersive mode.
+            // NONE fits naturally on older releases, but API 35+ targeting 35+ enforces
+            // edge-to-edge: its root must own fitting instead.
+            window.setDecorFitsSystemWindows(mode == Settings.FullscreenMode.NONE && !enforcesEdgeToEdge(window))
         }
 
         // Apply visibility using Compat API
@@ -149,6 +150,10 @@ object SystemUI {
         }
     }
 
+    // Both gates matter: adding system padding while the OS still fits NONE would count it twice.
+    private fun enforcesEdgeToEdge(window: Window): Boolean =
+        Build.VERSION.SDK_INT >= 35 && window.context.applicationInfo.targetSdkVersion >= 35
+
     private fun applyInsets(
         window: Window,
         root: View,
@@ -199,9 +204,9 @@ object SystemUI {
 
         // Set up listener for dynamic system bars (API 21+)
         ViewCompat.setOnApplyWindowInsetsListener(root) { v, insetsCompat ->
-            if (mode == Settings.FullscreenMode.NONE) {
-                // In standard mode, let the system handle fitting and don't apply manual padding.
-                // We still update HeadUnitScreenConfig with 0 insets because the window is already resized.
+            if (mode == Settings.FullscreenMode.NONE && !enforcesEdgeToEdge(window)) {
+                // The system already fits this window. Keep only the manual padding seeded above,
+                // and report only that padding so the bar-reduced canvas is not reduced twice.
                 HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB)
                 onInsetsChanged?.invoke()
                 return@setOnApplyWindowInsetsListener insetsCompat
@@ -235,6 +240,8 @@ object SystemUI {
             // content shrinks while the IME is up (0 when the keyboard is hidden).
             typeMask = typeMask or WindowInsetsCompat.Type.ime()
 
+            // Bars, cutout and IME can cover the same edge. Take their union, not their sum;
+            // manual margins are an additional user offset and are applied exactly once below.
             val bars = if (typeMask != 0) {
                 insetsCompat.getInsets(typeMask)
             } else {
@@ -243,8 +250,17 @@ object SystemUI {
 
             v.setPadding(bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB)
             HeadUnitScreenConfig.updateInsets(bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB)
+            // Keyboard padding is temporary viewport space, not a new projection size to remember.
+            if (mode == Settings.FullscreenMode.NONE &&
+                insetsCompat.getInsets(WindowInsetsCompat.Type.ime()) == androidx.core.graphics.Insets.NONE
+            ) {
+                // Edge-to-edge content bounds can stay fixed when bars/cutouts change. Record the
+                // new inner canvas now; a content layout-size callback need not happen.
+                canvasView?.let { HeadUnitScreenConfig.noteWindowContent(it.width, it.height) }
+            }
 
             onInsetsChanged?.invoke()
+            // This root owns fitting; descendants must not apply the consumed system insets again.
             WindowInsetsCompat.CONSUMED
         }
 
