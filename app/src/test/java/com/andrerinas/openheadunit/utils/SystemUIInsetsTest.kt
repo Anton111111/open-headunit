@@ -89,10 +89,6 @@ class SystemUIInsetsTest {
 
     private fun assertGeometry(left: Int, top: Int, right: Int, bottom: Int, width: Int = 1000, height: Int = 600) {
         assertEquals(listOf(left, top, right, bottom), listOf(root.paddingLeft, root.paddingTop, root.paddingRight, root.paddingBottom))
-        assertEquals(listOf(left, top, right, bottom), listOf(
-            HeadUnitScreenConfig.systemInsetLeft, HeadUnitScreenConfig.systemInsetTop,
-            HeadUnitScreenConfig.systemInsetRight, HeadUnitScreenConfig.systemInsetBottom,
-        ))
         root.measure(
             View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY),
@@ -337,6 +333,30 @@ class SystemUIInsetsTest {
     }
 
     @Test
+    fun `newly resolved orientation preserves bars reported before screen init`() {
+        val settings = prepareProjection()
+        val activity = controller.get()
+        val configuration = activity.resources.configuration
+        val orientation = configuration.orientation
+        try {
+            settings.screenOrientation = Settings.ScreenOrientation.SYSTEM
+            configuration.orientation = android.content.res.Configuration.ORIENTATION_UNDEFINED
+            HeadUnitScreenConfig.init(activity, activity.resources.displayMetrics, settings)
+            configuration.orientation = orientation
+
+            // Insets can arrive before init has resolved the window's effective orientation.
+            SystemUI.apply(activity.window, root, Settings.FullscreenMode.NONE)
+            dispatch(insets(cutout = Insets.NONE))
+            HeadUnitScreenConfig.init(activity, activity.resources.displayMetrics, settings)
+            HeadUnitScreenConfig.noteWindowContent(1000, 600)
+            scaleProjection()
+            assertProjection(0, 24, 0, 48)
+        } finally {
+            configuration.orientation = orientation
+        }
+    }
+
+    @Test
     fun `keyboard dispatch does not replace the permanent projection canvas`() {
         prepareProjection()
         applyProjection(Settings.FullscreenMode.NONE)
@@ -350,6 +370,34 @@ class SystemUIInsetsTest {
         }
         dispatch(insets(cutout = Insets.NONE))
         assertProjection(0, 24, 0, 48)
+    }
+
+    @Test
+    fun `settings keyboard cannot change a later projection window measurement`() {
+        val other = Robolectric.buildActivity(Activity::class.java).setup()
+        try {
+            val otherRoot = FrameLayout(other.get())
+            other.get().setContentView(otherRoot)
+            prepareProjection()
+            applyProjection(Settings.FullscreenMode.NONE)
+            dispatch(insets(cutout = Insets.NONE))
+            HeadUnitScreenConfig.updateSurfaceDimensions(1000, 528)
+
+            SystemUI.apply(other.get().window, otherRoot, Settings.FullscreenMode.NONE, notesCanvas = false)
+            ViewCompat.dispatchApplyWindowInsets(otherRoot, insets(cutout = Insets.NONE, ime = Insets.of(0, 0, 0, 240)))
+            assertEquals(240, otherRoot.paddingBottom)
+
+            // The projection's layout callback can arrive while settings owns keyboard focus.
+            val content = controller.get().findViewById<View>(android.R.id.content)
+            content.layout(0, 0, 1000, 601)
+            content.layout(0, 0, 1000, 600)
+            scaleProjection()
+            assertEquals(1000, child.layoutParams.width)
+            assertEquals(528, child.layoutParams.height)
+            assertEquals(528, HeadUnitScreenConfig.getUsableHeight())
+        } finally {
+            other.pause().stop().destroy()
+        }
     }
 
     @Test

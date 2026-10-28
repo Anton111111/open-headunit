@@ -408,10 +408,18 @@ object HeadUnitScreenConfig {
         right: Int,
         bottom: Int,
         settings: Settings,
+        configOrientation: Int,
         contentW: Int = 0,
         contentH: Int = 0,
     ) {
-        reportedInsetsHash = computeSettingsHash(settings)
+        // The window may report bars before init() resolves its orientation. Tag them with the
+        // reporting window, not the previous canvas orientation, or init() erases a valid report.
+        val reportedNormalisation = ScreenOrientationPolicy.normalisation(
+            settings.screenOrientation,
+            configOrientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE,
+            configOrientation == android.content.res.Configuration.ORIENTATION_PORTRAIT,
+        )
+        reportedInsetsHash = computeSettingsHash(settings, reportedNormalisation)
         val changed = systemInsetLeft != left || systemInsetTop != top || systemInsetRight != right || systemInsetBottom != bottom
 
         systemInsetLeft = left
@@ -793,7 +801,12 @@ object HeadUnitScreenConfig {
      * Computes a hash of all settings that affect screen dimensions.
      * Used to invalidate the cached surface dimensions when settings change.
      */
-    fun computeSettingsHash(settings: Settings): Int = ScreenSettingsHash.of(
+    fun computeSettingsHash(settings: Settings): Int = computeSettingsHash(settings, normalisation)
+
+    private fun computeSettingsHash(
+        settings: Settings,
+        normalisation: ScreenOrientationPolicy.Normalisation,
+    ): Int = ScreenSettingsHash.of(
         resolutionId = settings.resolutionId,
         dpiPixelDensity = settings.dpiPixelDensity,
         pixelAspectRatioE4 = settings.pixelAspectRatioE4,

@@ -39,8 +39,8 @@ object SystemUI {
     }
 
     /**
-     * [notesCanvas] false for a window that is not the projection, so it cannot describe a canvas
-     * the video will never be drawn into.
+     * [notesCanvas] false for a window that is not the projection. Its own decor and keyboard
+     * must not replace either the projection's canvas or the insets used to measure that canvas.
      */
     fun apply(
         window: Window,
@@ -175,7 +175,9 @@ object SystemUI {
         canvasView?.let { noteContentSize(it) }
 
         root.setPadding(manualL, manualT, manualR, manualB)
-        HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings)
+        if (notesCanvas) {
+            HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings, root.resources.configuration.orientation)
+        }
 
         // Android 4.x Legacy Fallback
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -195,7 +197,12 @@ object SystemUI {
                     val insetR = size.x - rect.right
 
                     AppLog.d("[UI_DEBUG] Legacy SystemUI: Detected Insets L$insetL T$insetT R$insetR B$insetB")
-                    HeadUnitScreenConfig.updateInsets(manualL + insetL, manualT + insetT, manualR + insetR, manualB + insetB, settings)
+                    if (notesCanvas) {
+                        HeadUnitScreenConfig.updateInsets(
+                            manualL + insetL, manualT + insetT, manualR + insetR, manualB + insetB,
+                            settings, root.resources.configuration.orientation,
+                        )
+                    }
                     onInsetsChanged?.invoke()
                     root.viewTreeObserver.removeGlobalOnLayoutListener(this)
                 }
@@ -207,7 +214,9 @@ object SystemUI {
             if (mode == Settings.FullscreenMode.NONE && !enforcesEdgeToEdge(window)) {
                 // The system already fits this window. Keep only the manual padding seeded above,
                 // and report only that padding so the bar-reduced canvas is not reduced twice.
-                HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings)
+                if (notesCanvas) {
+                    HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings, root.resources.configuration.orientation)
+                }
                 onInsetsChanged?.invoke()
                 return@setOnApplyWindowInsetsListener insetsCompat
             }
@@ -249,16 +258,19 @@ object SystemUI {
             }
 
             v.setPadding(bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB)
-            // Keyboard padding is temporary viewport space, not a new projection size to remember.
-            // Publish every root-owned mode so returning from NONE also retires the fitted surface.
-            val publishCanvas = enforcesEdgeToEdge(window) && canvasView != null &&
-                insetsCompat.getInsets(WindowInsetsCompat.Type.ime()) == androidx.core.graphics.Insets.NONE
-            HeadUnitScreenConfig.updateInsets(
-                bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB,
-                settings,
-                if (publishCanvas) canvasView!!.width else 0,
-                if (publishCanvas) canvasView!!.height else 0,
-            )
+            if (notesCanvas) {
+                // Keyboard padding is temporary viewport space, not a new projection size to remember.
+                // Publish every root-owned mode so returning from NONE also retires the fitted surface.
+                val publishCanvas = enforcesEdgeToEdge(window) && canvasView != null &&
+                    insetsCompat.getInsets(WindowInsetsCompat.Type.ime()) == androidx.core.graphics.Insets.NONE
+                HeadUnitScreenConfig.updateInsets(
+                    bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB,
+                    settings,
+                    v.resources.configuration.orientation,
+                    if (publishCanvas) canvasView!!.width else 0,
+                    if (publishCanvas) canvasView!!.height else 0,
+                )
+            }
 
             onInsetsChanged?.invoke()
             // This root owns fitting; descendants must not apply the consumed system insets again.
