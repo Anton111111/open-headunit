@@ -175,7 +175,7 @@ object SystemUI {
         canvasView?.let { noteContentSize(it) }
 
         root.setPadding(manualL, manualT, manualR, manualB)
-        HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB)
+        HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings)
 
         // Android 4.x Legacy Fallback
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -195,7 +195,7 @@ object SystemUI {
                     val insetR = size.x - rect.right
 
                     AppLog.d("[UI_DEBUG] Legacy SystemUI: Detected Insets L$insetL T$insetT R$insetR B$insetB")
-                    HeadUnitScreenConfig.updateInsets(manualL + insetL, manualT + insetT, manualR + insetR, manualB + insetB)
+                    HeadUnitScreenConfig.updateInsets(manualL + insetL, manualT + insetT, manualR + insetR, manualB + insetB, settings)
                     onInsetsChanged?.invoke()
                     root.viewTreeObserver.removeGlobalOnLayoutListener(this)
                 }
@@ -207,7 +207,7 @@ object SystemUI {
             if (mode == Settings.FullscreenMode.NONE && !enforcesEdgeToEdge(window)) {
                 // The system already fits this window. Keep only the manual padding seeded above,
                 // and report only that padding so the bar-reduced canvas is not reduced twice.
-                HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB)
+                HeadUnitScreenConfig.updateInsets(manualL, manualT, manualR, manualB, settings)
                 onInsetsChanged?.invoke()
                 return@setOnApplyWindowInsetsListener insetsCompat
             }
@@ -249,15 +249,16 @@ object SystemUI {
             }
 
             v.setPadding(bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB)
-            HeadUnitScreenConfig.updateInsets(bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB)
             // Keyboard padding is temporary viewport space, not a new projection size to remember.
-            if (mode == Settings.FullscreenMode.NONE &&
+            // Publish every root-owned mode so returning from NONE also retires the fitted surface.
+            val publishCanvas = enforcesEdgeToEdge(window) && canvasView != null &&
                 insetsCompat.getInsets(WindowInsetsCompat.Type.ime()) == androidx.core.graphics.Insets.NONE
-            ) {
-                // Edge-to-edge content bounds can stay fixed when bars/cutouts change. Record the
-                // new inner canvas now; a content layout-size callback need not happen.
-                canvasView?.let { HeadUnitScreenConfig.noteWindowContent(it.width, it.height) }
-            }
+            HeadUnitScreenConfig.updateInsets(
+                bars.left + manualL, bars.top + manualT, bars.right + manualR, bars.bottom + manualB,
+                settings,
+                if (publishCanvas) canvasView!!.width else 0,
+                if (publishCanvas) canvasView!!.height else 0,
+            )
 
             onInsetsChanged?.invoke()
             // This root owns fitting; descendants must not apply the consumed system insets again.
@@ -286,7 +287,7 @@ object SystemUI {
     private fun noteContentSize(content: View) {
         if (content.width <= 0 || content.height <= 0) return
         val ime = ViewCompat.getRootWindowInsets(content)?.getInsets(WindowInsetsCompat.Type.ime())
-        if (ime != null && (ime.bottom > 0 || ime.top > 0)) return
+        if (ime != null && ime != androidx.core.graphics.Insets.NONE) return
         HeadUnitScreenConfig.noteWindowContent(content.width, content.height)
     }
 

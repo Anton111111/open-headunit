@@ -91,6 +91,9 @@ object HeadUnitScreenConfig {
     var systemInsetBottom: Int = 0
         private set
 
+    // A scale callback can init() after the listener has already reported the new settings' bars.
+    private var reportedInsetsHash: Int? = null
+
     // Raw Screen Dimensions (Full Display)
     private var realScreenWidthPx: Int = 0
     private var realScreenHeightPx: Int = 0
@@ -258,10 +261,11 @@ object HeadUnitScreenConfig {
 
         // A measured canvas is the area inside the insets, so the anchor carries them. Only the
         // immersive display reading is the whole panel already; outside it the fallback is the
-        // window metrics, which are bar-reduced like any other canvas. The insets in force are the
-        // right ones unless the settings moved, in which case the manual ones are re-seeded below.
-        val insetW = if (settingsChanged) settings.insetLeft + settings.insetRight else systemInsetLeft + systemInsetRight
-        val insetH = if (settingsChanged) settings.insetTop + settings.insetBottom else systemInsetTop + systemInsetBottom
+        // window metrics, which are bar-reduced like any other canvas. Keep a listener's report
+        // for these settings even when init() is reached from that listener's scale callback.
+        val seedManualInsets = settingsChanged && reportedInsetsHash != currentHash
+        val insetW = if (seedManualInsets) settings.insetLeft + settings.insetRight else systemInsetLeft + systemInsetRight
+        val insetH = if (seedManualInsets) settings.insetTop + settings.insetBottom else systemInsetTop + systemInsetBottom
         val panelIsTheAnchor = choice.source == ProjectionCanvasPolicy.Source.DISPLAY && immersive
         val anchor = if (panelIsTheAnchor) {
             ProjectionCanvasPolicy.Rect(choice.width, choice.height)
@@ -292,9 +296,8 @@ object HeadUnitScreenConfig {
 
         density = displayMetrics.density
 
-        // Manual insets only; the bars are re-read by the insets listener right after this. Left
-        // alone otherwise, or a bar already in force would be subtracted from the canvas twice.
-        if (settingsChanged) {
+        // Seed manual insets only while no listener has reported this configuration yet.
+        if (seedManualInsets) {
             systemInsetLeft = settings.insetLeft
             systemInsetTop = settings.insetTop
             systemInsetRight = settings.insetRight
@@ -344,9 +347,10 @@ object HeadUnitScreenConfig {
      * this screen mode plus whatever insets are in force. Recorded so the first session in a mode
      * announces the shape it will actually draw into, rather than learning it from a surface that
      * only arrives after the answer went out.
+     * Returns whether adopting it recalculated the geometry.
      */
-    fun noteWindowContent(contentW: Int, contentH: Int) {
-        if (contentW <= 0 || contentH <= 0 || App.isPiPActive) return
+    fun noteWindowContent(contentW: Int, contentH: Int): Boolean {
+        if (contentW <= 0 || contentH <= 0 || App.isPiPActive) return false
         val content = ScreenOrientationPolicy.normalise(contentW, contentH, normalisation)
         val canvas = ProjectionCanvasPolicy.canvas(
             content.width, content.height,
@@ -356,15 +360,19 @@ object HeadUnitScreenConfig {
         if (!isInitialized) {
             pendingWindowCanvasW = canvas.width
             pendingWindowCanvasH = canvas.height
-            return
+            return false
         }
         val hash = liveHash()
         val known = windowCanvas
         if (known != null && known.width == canvas.width && known.height == canvas.height && known.hash == hash) {
-            return
+            return false
         }
-        windowCanvas = ProjectionCanvasPolicy.Measurement(canvas.width, canvas.height, hash)
-        adoptCanvas(canvas.width, canvas.height, "the activity window")
+        val measurement = ProjectionCanvasPolicy.Measurement(canvas.width, canvas.height, hash)
+        // A surface belongs to the window geometry it was measured in, not just its settings.
+        // Keep surface precedence for repeated reports of an unchanged window.
+        if (ProjectionCanvasPolicy.windowChanged(known, measurement)) surfaceCanvas = null
+        windowCanvas = measurement
+        return adoptCanvas(canvas.width, canvas.height, "the activity window")
     }
 
     /**
@@ -394,15 +402,26 @@ object HeadUnitScreenConfig {
         return true
     }
 
-    fun updateInsets(left: Int, top: Int, right: Int, bottom: Int) {
-        if (systemInsetLeft == left && systemInsetTop == top && systemInsetRight == right && systemInsetBottom == bottom) {
-            return
-        }
+    fun updateInsets(
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+        settings: Settings,
+        contentW: Int = 0,
+        contentH: Int = 0,
+    ) {
+        reportedInsetsHash = computeSettingsHash(settings)
+        val changed = systemInsetLeft != left || systemInsetTop != top || systemInsetRight != right || systemInsetBottom != bottom
 
         systemInsetLeft = left
         systemInsetTop = top
         systemInsetRight = right
         systemInsetBottom = bottom
+
+        // Publish the new canvas before recalculate() can notify a listener that re-enters init().
+        if (contentW > 0 && contentH > 0 && noteWindowContent(contentW, contentH)) return
+        if (!changed) return
 
         if (!isInitialized) return
 
@@ -762,7 +781,7 @@ object HeadUnitScreenConfig {
 
         AppLog.i("[UI_DEBUG_FIX] Surface mismatch detected! Usable: ${screenWidthPx}x${screenHeightPx}, Actual surface: ${finalSurfaceW}x${finalSurfaceH} (diff: ${diffW}x${diffH})")
 
-        // The surface is the canvas, so it outranks every other reading until the settings change.
+        // The surface outranks other readings until the settings or owning window geometry change.
         surfaceCanvas = ProjectionCanvasPolicy.Measurement(finalSurfaceW, finalSurfaceH, liveHash())
         adoptCanvas(finalSurfaceW, finalSurfaceH, "the projection surface")
 
