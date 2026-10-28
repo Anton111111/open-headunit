@@ -1066,14 +1066,24 @@ class AapService : Service() {
     }
 
     // Guarded by this service's monitor: capture runs off the main service-command thread.
-    // Only a successful capture promotion owns this claim, until MicRecorder releases it.
+    // Only a successful capture promotion owns this claim, until release or service shutdown.
     // A setting/permission snapshot is admission for a new capture, not ownership of an open one.
     private var microphoneTypeClaimed = false
+
+    // Serialize shutdown with in-flight promotions. Queued recorder cleanup and service refreshes
+    // must not recreate the foreground notification after the user or framework has stopped it.
+    @Synchronized
+    private fun stopForegroundForShutdown() {
+        isDestroying = true
+        microphoneTypeClaimed = false
+        stopForeground(true)
+    }
 
     // Refresh the current claim rather than starting a new capture. In particular, a task-removal
     // restart must not drop the microphone type while AudioRecord is still delivering buffers.
     @Synchronized
     private fun startForegroundWithCurrentTypes() {
+        if (isDestroying) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(1, createNotification(), ForegroundServiceTypePolicy.withMicrophone(
                 Build.VERSION.SDK_INT, microphoneTypeClaimed, microphoneTypeClaimed))
@@ -1092,6 +1102,7 @@ class AapService : Service() {
      */
     @Synchronized
     private fun promoteForMicrophone(): Boolean {
+        if (isDestroying) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
 
         val mask = ForegroundServiceTypePolicy.withMicrophone(
@@ -1127,7 +1138,7 @@ class AapService : Service() {
         // Release ownership even if Android refuses this downgrade, so a later refresh cannot
         // reassert the microphone type for a capture that has already closed.
         microphoneTypeClaimed = false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        if (isDestroying || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
         try {
             startForeground(1, createNotification(),
@@ -3068,7 +3079,7 @@ class AapService : Service() {
     override fun onDestroy() {
         AppLog.i("AapService destroying... (wakeLock held=${bootWakeLock?.isHeld == true})")
         FloatingButtonManager.removeOverlay(this)
-        isDestroying = true
+        stopForegroundForShutdown()
         deviceHackManager?.stop()
         deviceHackManager = null
         com.andrerinas.openheadunit.connection.bluetooth.xyauto.XyAutoMediaSession.close(this)
@@ -3121,7 +3132,6 @@ class AapService : Service() {
 
         releaseWifiLock()
         unregisterNetworkMonitor()
-        stopForeground(true)
         wifiLauncherManager.stop(WifiLauncherStopSequence.LAST, keepNativeGroup)
         destroyIsUserStop = false
         stopDummyVpn(DummyVpnPolicy.Reason.SERVICE_DESTROYED)
@@ -3134,7 +3144,7 @@ class AapService : Service() {
             AppLog.e("Error releasing MediaSession: ${e.message}")
         }
         mediaSession = null
-        // The claim outlives no service: a stale one would call startForeground on a dead instance.
+        // No owner means queued capture must decline; retained claims already reject after shutdown.
         MicRecorder.foregroundClaim = null
         commManager.destroy()
         nightModeManager?.stop()
@@ -3223,7 +3233,7 @@ class AapService : Service() {
             sendBroadcast(Intent("com.andrerinas.openheadunit.ACTION_FINISH_ACTIVITIES").apply {
                 setPackage(packageName)
             })
-            isDestroying = true
+            stopForegroundForShutdown()
             // Asked before the disconnect, and the latch made before it too. The teardown that
             // gives the network back runs on serviceScope and suspends on the disconnect, and
             // onDestroy cancels that scope: a stopSelf() taken here killed it at the await and left
@@ -3240,7 +3250,6 @@ class AapService : Service() {
             // published so an older queued terminal notification cannot finish this Stop.
             exitTeardownState = commManager.connectionState.value as? CommManager.ConnectionState.Disconnected
             selfLauncherManager.stop(wasConnected = false)
-            stopForeground(true)
             if (teardownDone == null) {
                 stopSelf()
             } else {
