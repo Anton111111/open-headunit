@@ -41,6 +41,9 @@ class VideoDecoder(
 ) {
     companion object {
         private const val TIMEOUT_US = 10000L
+        // A ready output wakes the codec wait immediately; this is not a render delay.
+        // Bound idle polling well below stop's 500ms join and the 2s stall watchdog.
+        private const val OUTPUT_TIMEOUT_US = 50_000L
         private const val MAX_RESTARTS_WITHOUT_FRAME = 3
 
         // sync_stall watchdog tuning. An intermittently slow decoder — one that renders, just not
@@ -2103,9 +2106,8 @@ class VideoDecoder(
      * `rendered` against `fed` to judge the codec, and `presented` against nothing else at all when
      * the complaint is that the picture is not smooth.
      *
-     * Called from the output thread on every loop iteration. That loop turns over at least every
-     * 10ms (dequeueOutputBuffer's timeout) whether or not a frame came out, so the tick still
-     * fires while nothing is rendering - which is the case most worth reporting.
+     * Called on every output-loop iteration, including bounded dequeue timeouts while the phone
+     * is idle or the codec has stopped producing frames.
      */
     private fun logThroughput(
         info: (String) -> Unit = { AppLog.i(it) },
@@ -2227,7 +2229,7 @@ class VideoDecoder(
         // codec after that replacement sets running=true again.
         outputLoop@ while (running && outputThread === self) {
             try {
-                val outputIndex = currentCodec.dequeueOutputBuffer(bufferInfo, 10000L)
+                val outputIndex = currentCodec.dequeueOutputBuffer(bufferInfo, OUTPUT_TIMEOUT_US)
                 if (!running || outputThread !== self) break
                 if (outputIndex >= 0) {
                     // The codec produced output, whatever the screen ends up showing. This is the
@@ -2422,9 +2424,8 @@ class VideoDecoder(
                     logThroughput(info, warn)
 
                     // A window can only close on an output buffer, and a phone that goes idle
-                    // mid-window sends none - so the cap is also held on wall clock, once per loop
-                    // turn (the dequeue above times out in 10ms). On expiry there is no buffer to
-                    // show; the transition and its line happen now, the next buffer renders.
+                    // mid-window sends none. Check the wall-clock cap on each bounded dequeue
+                    // timeout too; the next buffer renders even if none arrived at expiry.
                     if (concealState == CorruptionConcealmentPolicy.State.CONCEALING) {
                         val tickNow = elapsedRealtime()
                         applyConcealmentTransition(
@@ -2480,9 +2481,9 @@ class VideoDecoder(
                                 lastSyncStallSuppressedLogMs = now
                                 events.warn("Decoder has had no keyframe since it started ${stallGap}ms ago - waiting for one instead of rebuilding.")
                             }
-                            // The ask runs on the shorter of the two clocks. This loop turns over every
-                            // 10ms, so it needs its own throttle rather than the report's - the same
-                            // one every other keyframe request in the app is held to.
+                            // The ask runs on the shorter of the two clocks. Output polling is
+                            // faster than the request interval, so keep the same throttle as
+                            // every other keyframe request in the app.
                             if (VideoRecoveryPolicy.canRequestKeyframe(now, lastKeyframeStarvedAskMs)) {
                                 lastKeyframeStarvedAskMs = now
                                 events.callback(onKeyframeStarved)
