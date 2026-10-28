@@ -15,6 +15,7 @@ import org.junit.Test
 import org.mockito.ArgumentMatchers.*
 import org.mockito.Mockito.*
 import java.nio.ByteBuffer
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -383,6 +384,36 @@ class VideoCodecSessionTest {
                     assertArrayEquals(sps0 + sps1, replay["csd-0"])
                     assertArrayEquals(pps0 + pps1, replay["csd-1"])
                 }
+            }
+        }
+    }
+
+    @Test fun `a software first frame listener registered during delivery survives for the next picture`() {
+        Fixture(preference = CodecType.H264, forceSoftware = true).use { f ->
+            val packet = slice(CodecType.H264)
+            f.beginPinnedSession(CodecType.H264, packet)
+            f.bundledOutput(1, 0, 1, 1)
+            val notifications = mutableListOf<String>()
+            var registrar: Thread? = null
+            f.decoder.onFirstFrameListener = {
+                notifications.add("first")
+                val registered = CountDownLatch(1)
+                registrar = Thread {
+                    f.decoder.onFirstFrameListener = { notifications.add("replacement") }
+                    registered.countDown()
+                }.also { it.start() }
+                assertTrue("registration must not wait for an external callback", registered.await(3, TimeUnit.SECONDS))
+            }
+            try {
+                f.decode(packet, CodecType.H264)
+                f.decode(packet, CodecType.H264)
+                assertEquals(listOf("first"), notifications)
+                f.decode(packet, CodecType.H264)
+                f.decode(packet, CodecType.H264)
+                assertEquals(listOf("first", "replacement"), notifications)
+            } finally {
+                registrar?.join(3_000)
+                assertFalse("registration worker must exit", registrar?.isAlive == true)
             }
         }
     }
