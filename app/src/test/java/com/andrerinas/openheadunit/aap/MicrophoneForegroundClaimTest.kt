@@ -21,7 +21,7 @@ import org.mockito.kotlin.*
 
 /** Exercises the actual Service decision, rather than preselecting a mocked claim result. */
 class MicrophoneForegroundClaimTest {
-    @Test fun `service declines missing microphone type and can claim after permission or setting recovers`() {
+    @Test fun `service refresh preserves microphone ownership until capture releases it`() {
         val sdk = Build.VERSION::class.java.getDeclaredField("SDK_INT").apply { isAccessible = true }
         val oldSdk = sdk.getInt(null)
         // SDK_INT is final in the host Android stub; restore its original value after this test.
@@ -63,20 +63,65 @@ class MicrophoneForegroundClaimTest {
                 .set(service, lazyOf(settings))
             val promote = AapService::class.java.getDeclaredMethod("promoteForMicrophone").apply { isAccessible = true }
             fun claim() = promote.invoke(service) as Boolean
+            val command = mock<Intent>()
+            whenever(command.action).thenReturn(AapService.ACTION_CONNECT_SOCKET)
+            doCallRealMethod().whenever(service).onStartCommand(anyOrNull(), any(), any())
+            fun refresh() {
+                assertEquals(android.app.Service.START_STICKY, service.onStartCommand(command, 0, 1))
+            }
+            val demote = AapService::class.java.getDeclaredMethod("demoteAfterMicrophone").apply { isAccessible = true }
+            val baseMask = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            val capturing = baseMask or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
 
-            for (deniedBySetting in listOf(true, false)) {
+            setSdk(28)
+            refresh()
+            assertTrue(claim())
+            demote.invoke(service)
+            verify(service).startForeground(eq(1), same(notification))
+            verify(service, never()).startForeground(any(), any(), any())
+
+            for (sdkInt in listOf(29, 30, 34, 35, 36)) {
+                setSdk(sdkInt)
                 clearInvocations(service)
-                allowed = deniedBySetting
-                whenever(settings.useHeadUnitMicrophone).thenReturn(!deniedBySetting)
-                assertFalse(claim())
-                verify(service, never()).startForeground(any(), any(), any())
+                refresh()
+                verify(service).startForeground(eq(1), same(notification), eq(baseMask))
+
+                for (deniedBySetting in listOf(true, false)) {
+                    clearInvocations(service)
+                    allowed = deniedBySetting
+                    whenever(settings.useHeadUnitMicrophone).thenReturn(!deniedBySetting)
+                    assertFalse(claim())
+                    verify(service, never()).startForeground(any(), any(), any())
+
+                    allowed = true
+                    whenever(settings.useHeadUnitMicrophone).thenReturn(true)
+                    assertTrue(claim())
+                    verify(service).startForeground(eq(1), same(notification), eq(capturing))
+
+                    // A setting/permission change does not transfer the capture worker's ownership
+                    // to an unrelated service command; its release remains the closing boundary.
+                    clearInvocations(service)
+                    allowed = false
+                    whenever(settings.useHeadUnitMicrophone).thenReturn(false)
+                    refresh()
+                    verify(service).startForeground(eq(1), same(notification), eq(capturing))
+
+                    clearInvocations(service)
+                    demote.invoke(service)
+                    refresh()
+                    verify(service, times(2)).startForeground(eq(1), same(notification), eq(baseMask))
+                }
 
                 allowed = true
                 whenever(settings.useHeadUnitMicrophone).thenReturn(true)
-                assertTrue(claim())
-                val mask = argumentCaptor<Int>()
-                verify(service).startForeground(eq(1), same(notification), mask.capture())
-                assertTrue(mask.firstValue and ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE != 0)
+                doThrow(SecurityException("background microphone")).whenever(service)
+                    .startForeground(eq(1), same(notification), eq(capturing))
+                assertFalse(claim())
+                clearInvocations(service)
+                refresh()
+                verify(service).startForeground(eq(1), same(notification), eq(baseMask))
+                doNothing().whenever(service).startForeground(eq(1), same(notification), eq(capturing))
             }
         } finally {
             resources.asReversed().forEach { it.close() }

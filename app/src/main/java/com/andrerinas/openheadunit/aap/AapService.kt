@@ -1065,6 +1065,23 @@ class AapService : Service() {
         }
     }
 
+    // Guarded by this service's monitor: capture runs off the main service-command thread.
+    // Only a successful capture promotion owns this claim, until MicRecorder releases it.
+    // A setting/permission snapshot is admission for a new capture, not ownership of an open one.
+    private var microphoneTypeClaimed = false
+
+    // Refresh the current claim rather than starting a new capture. In particular, a task-removal
+    // restart must not drop the microphone type while AudioRecord is still delivering buffers.
+    @Synchronized
+    private fun startForegroundWithCurrentTypes() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, createNotification(), ForegroundServiceTypePolicy.withMicrophone(
+                Build.VERSION.SDK_INT, microphoneTypeClaimed, microphoneTypeClaimed))
+        } else {
+            startForeground(1, createNotification())
+        }
+    }
+
     /**
      * Re-claims the foreground types with the microphone added, for as long as capture is open.
      *
@@ -1073,6 +1090,7 @@ class AapService : Service() {
      * is eligible. Returns whether the claim succeeded, so a refusal declines the phone's request
      * rather than losing the service.
      */
+    @Synchronized
     private fun promoteForMicrophone(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return true
 
@@ -1093,6 +1111,7 @@ class AapService : Service() {
 
         return try {
             startForeground(1, createNotification(), mask)
+            microphoneTypeClaimed = true
             AppLog.i("AapService: claimed the microphone foreground-service type for this capture")
             true
         } catch (e: Exception) {
@@ -1103,7 +1122,11 @@ class AapService : Service() {
     }
 
     /** Drops the microphone type again once capture is closed, so it is held only while it is true. */
+    @Synchronized
     private fun demoteAfterMicrophone() {
+        // Release ownership even if Android refuses this downgrade, so a later refresh cannot
+        // reassert the microphone type for a capture that has already closed.
+        microphoneTypeClaimed = false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
 
         try {
@@ -1124,12 +1147,7 @@ class AapService : Service() {
         if (ScreenPower.isInteractive(this) != false) AccPowerState.noteOn()
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(1, createNotification(),
-                    ForegroundServiceTypePolicy.baseTypeMask(Build.VERSION.SDK_INT))
-            } else {
-                startForeground(1, createNotification())
-            }
+            startForegroundWithCurrentTypes()
         } catch (e: Exception) {
             AppLog.e("ForegroundServiceStartNotAllowedException/Exception caught in onCreate: ${e.message}", e)
             stopSelf()
@@ -3185,12 +3203,7 @@ class AapService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(1, createNotification(),
-                    ForegroundServiceTypePolicy.baseTypeMask(Build.VERSION.SDK_INT))
-            } else {
-                startForeground(1, createNotification())
-            }
+            startForegroundWithCurrentTypes()
         } catch (e: Exception) {
             AppLog.e("ForegroundServiceStartNotAllowedException/Exception caught in onStartCommand: ${e.message}", e)
             stopSelf()
