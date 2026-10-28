@@ -1413,6 +1413,7 @@
     <string name="home_favorites_full">Všechny čtyři oblíbené jsou obsazené. Podržte jednu na domovské obrazovce a změňte ji.</string>
     <string name="home_choose_favorite_app">Vyberte aplikaci nebo zkratku</string>
     <string name="home_shortcut_badge">Zkratka</string>
+    <string name="app_drawer_tab_shortcuts">Zkratky</string>
     <string name="home_show_favorite_apps">Oblíbené aplikace na domovské obrazovce</string>
     <string name="home_show_favorite_apps_description">Vaše oblíbené aplikace pod hlavním tlačítkem, když je Open Headunit váš spouštěč</string>
     <string name="home_show_widgets">Widgety na domovské obrazovce</string>

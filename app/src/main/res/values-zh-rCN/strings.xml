@@ -1409,6 +1409,7 @@
     <string name="home_favorites_full">四个收藏位已满。在主画面上长按其中一个即可更换。</string>
     <string name="home_choose_favorite_app">选择应用或快捷方式</string>
     <string name="home_shortcut_badge">快捷方式</string>
+    <string name="app_drawer_tab_shortcuts">快捷方式</string>
     <string name="home_show_favorite_apps">主屏幕上的收藏应用</string>
     <string name="home_show_favorite_apps_description">当 Open Headunit 是你的启动器时，在主按钮下方显示你收藏的应用</string>
     <string name="home_show_widgets">主屏幕上的小部件</string>

@@ -1458,6 +1458,7 @@
     <string name="home_favorites_full">Les quatre favoris sont déjà pris. Appuyez longuement sur l\'un d\'eux sur l\'écran d\'accueil pour le changer.</string>
     <string name="home_choose_favorite_app">Choisir une app ou un raccourci</string>
     <string name="home_shortcut_badge">Raccourci</string>
+    <string name="app_drawer_tab_shortcuts">Raccourcis</string>
     <string name="home_show_favorite_apps">Apps favorites sur l\'écran d\'accueil</string>
     <string name="home_show_favorite_apps_description">Vos apps favorites sous le bouton principal, quand Open Headunit est votre lanceur</string>
     <string name="home_show_widgets">Widgets sur l\'écran d\'accueil</string>

@@ -1398,6 +1398,7 @@
     <string name="home_favorites_full">ოთხივე რჩეული დაკავებულია. შესაცვლელად დიდხანს დააჭირეთ ერთ-ერთს მთავარ ეკრანზე.</string>
     <string name="home_choose_favorite_app">აირჩიეთ აპი ან მალსახმობი</string>
     <string name="home_shortcut_badge">მალსახმობი</string>
+    <string name="app_drawer_tab_shortcuts">მალსახმობები</string>
     <string name="home_show_favorite_apps">რჩეული აპები მთავარ ეკრანზე</string>
     <string name="home_show_favorite_apps_description">შენი რჩეული აპები მთავარი ღილაკის ქვემოთ, როცა Open Headunit შენი ლაუნჩერია</string>
     <string name="home_show_widgets">ვიჯეტები მთავარ ეკრანზე</string>

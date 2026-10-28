@@ -1417,6 +1417,7 @@
     <string name="home_favorites_full">Alle vier favorieten zijn bezet. Houd er een ingedrukt op het startscherm om hem te wijzigen.</string>
     <string name="home_choose_favorite_app">Kies een app of snelkoppeling</string>
     <string name="home_shortcut_badge">Snelkoppeling</string>
+    <string name="app_drawer_tab_shortcuts">Snelkoppelingen</string>
     <string name="home_show_favorite_apps">Favoriete apps op het startscherm</string>
     <string name="home_show_favorite_apps_description">Je favoriete apps onder de hoofdknop, als Open Headunit je launcher is</string>
     <string name="home_show_widgets">Widgets op het startscherm</string>

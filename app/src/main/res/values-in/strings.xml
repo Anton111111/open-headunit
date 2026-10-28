@@ -1460,6 +1460,7 @@
     <string name="home_favorites_full">Keempat favorit sudah terisi. Tekan lama salah satunya di layar beranda untuk menggantinya.</string>
     <string name="home_choose_favorite_app">Pilih aplikasi atau pintasan</string>
     <string name="home_shortcut_badge">Pintasan</string>
+    <string name="app_drawer_tab_shortcuts">Pintasan</string>
     <string name="home_show_favorite_apps">Aplikasi favorit di layar beranda</string>
     <string name="home_show_favorite_apps_description">Aplikasi favorit Anda di bawah tombol utama, saat Open Headunit menjadi peluncur Anda</string>
     <string name="home_show_widgets">Widget di layar beranda</string>

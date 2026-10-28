@@ -1416,6 +1416,7 @@
     <string name="home_favorites_full">Alle vier Favoriten sind belegt. Halte einen auf dem Startbildschirm gedrückt, um ihn zu ändern.</string>
     <string name="home_choose_favorite_app">App oder Verknüpfung auswählen</string>
     <string name="home_shortcut_badge">Verknüpfung</string>
+    <string name="app_drawer_tab_shortcuts">Verknüpfungen</string>
     <string name="home_show_favorite_apps">Lieblings-Apps auf dem Startbildschirm</string>
     <string name="home_show_favorite_apps_description">Deine Lieblings-Apps unter dem Hauptbutton, wenn Open Headunit dein Launcher ist</string>
     <string name="home_show_widgets">Widgets auf dem Startbildschirm</string>

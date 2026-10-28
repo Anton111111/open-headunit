@@ -1459,6 +1459,7 @@
     <string name="home_favorites_full">चारों पसंदीदा भरे हुए हैं। बदलने के लिए होम स्क्रीन पर किसी एक को दबाकर रखें।</string>
     <string name="home_choose_favorite_app">ऐप या शॉर्टकट चुनें</string>
     <string name="home_shortcut_badge">शॉर्टकट</string>
+    <string name="app_drawer_tab_shortcuts">शॉर्टकट</string>
     <string name="home_show_favorite_apps">होम स्क्रीन पर पसंदीदा ऐप्स</string>
     <string name="home_show_favorite_apps_description">जब Open Headunit आपका लॉन्चर हो, तब मुख्य बटन के नीचे आपके पसंदीदा ऐप्स</string>
     <string name="home_show_widgets">होम स्क्रीन पर विजेट</string>
