@@ -1443,7 +1443,11 @@ class VideoDecoder(
             loggedFirstSoftwareFrame = true
             AppLog.i("First bundled software ${currentCodecType.displayName} frame rendered")
         }
-        onFirstFrameListener?.let { it(); onFirstFrameListener = null }
+        // Claim before invoking: a callback or the UI may register the next listener during delivery.
+        val firstFrameListener = synchronized(outputPublicationLock) {
+            onFirstFrameListener.also { onFirstFrameListener = null }
+        }
+        firstFrameListener?.invoke()
 
         frameCount += renderedFrames
         // The bundled decoder has no output thread, so drive the throughput tick from here. It
