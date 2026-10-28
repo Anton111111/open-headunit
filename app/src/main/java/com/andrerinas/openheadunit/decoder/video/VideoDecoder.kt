@@ -383,7 +383,6 @@ class VideoDecoder(
 
     // Reuse buffers for older API levels to minimize GC pressure
     private var inputBuffers: Array<ByteBuffer>? = null
-    private var legacyFrameBuffer: ByteArray? = null
 
     var dimensionsListener: VideoDimensionsListener? = null
     var onFpsChanged: ((Int) -> Unit)? = null
@@ -898,7 +897,6 @@ class VideoDecoder(
             codec = null
             softwareVideoDecoder = null
             inputBuffers = null
-            legacyFrameBuffer = null
             codecBufferInfo = null
             if (!DecoderStopPolicy.isDecoderRestart(reason)) {
                 restartsSinceLastFrame = 0
@@ -1022,28 +1020,10 @@ class VideoDecoder(
                 onDecoderError?.invoke(restartReason)
             }
 
-
-            // Buffer management for backward compatibility
-            // Modern devices (API 21+) use the original buffer with offset/size to avoid GC pressure.
-            val frameData: ByteArray
-            val frameOffset: Int
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                if (legacyFrameBuffer == null || legacyFrameBuffer!!.size < size) {
-                    legacyFrameBuffer = ByteArray(size + 1024)
-                }
-                System.arraycopy(buffer, offset, legacyFrameBuffer!!, 0, size)
-                frameData = legacyFrameBuffer!!
-                frameOffset = 0
-            } else {
-                frameData = buffer
-                frameOffset = offset
-            }
-
-
             // Strong stream evidence belongs to the session, not to a successfully created owner.
             // Keep it while a surface is absent or the first decoder creation fails.
             if (codec == null && softwareVideoDecoder == null && !codecTypePinned) {
-                val detectedType = CodecTypeSelectionPolicy.detect(frameData, frameOffset, size)
+                val detectedType = CodecTypeSelectionPolicy.detect(buffer, offset, size)
                 val selected = CodecTypeSelectionPolicy.select(detectedType, announcedCodec)
                 if (selected != currentCodecType) {
                     if (detectedType != null) {
@@ -1068,7 +1048,7 @@ class VideoDecoder(
 
             // Capture the entire access unit on every backend, including while an owner is
             // running or absent. Recovery must retain all configurations the live decoder saw.
-            scanAndApplyConfig(frameData, frameOffset, size, currentCodecType)
+            scanAndApplyConfig(buffer, offset, size, currentCodecType)
             if (decoderPermanentlyFailed) return
 
             if (codec == null && softwareVideoDecoder == null) {
@@ -1095,7 +1075,7 @@ class VideoDecoder(
 
             softwareVideoDecoder?.let { decoder ->
                 val renderedFrames = try {
-                    decoder.decode(frameData, frameOffset, size)
+                    decoder.decode(buffer, offset, size)
                 } catch (e: Exception) {
                     AppLog.e("Bundled ${currentCodecType.displayName} output failed", e)
                     scheduleRestart("software_video_output_exception")
@@ -1119,7 +1099,7 @@ class VideoDecoder(
 
             if (codec == null) return
 
-            prepareFrame(frameData, frameOffset, size)
+            prepareFrame(buffer, offset, size)
         }
         // Notify other owners only after releasing the decoder's state monitor.
         repairedKeyframeCallback?.invoke()
