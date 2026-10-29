@@ -522,8 +522,6 @@
     <string name="wireless_24ghz_warning">Nota: Android Auto inalámbrico en dispositivos de 2,4 GHz puede causar retrasos, tirones y desconexiones. Si tienes problemas, prueba con USB para confirmar si se trata de una limitación de la red.</string>
     <string name="supported_nativeaa">Soporte inalámbrico mejorado</string>
     <string name="supported_nativeaa_desc">¡Buenas noticias! Tu dispositivo es compatible con el modo \"Inalámbrico nativo\", que ofrece una experiencia de Android Auto más fluida.\n\nPara activarlo, hay que actualizar la caché de Bluetooth. Sigue estos pasos:\n1. Elimina la vinculación existente en tu teléfono\n2. Toca OK para reiniciar el Bluetooth\n3. Vuelve a vincular tu teléfono\n\n¿Quieres cambiar ahora al modo Android Auto nativo?</string>
-    <string name="fake_speed_title">Desactivar bloqueo de video (velocidad falsa)</string>
-    <string name="fake_speed_description">Indica al teléfono una velocidad baja constante (0,5 m/s) para evitar que se bloquee el video mientras conduces. Úsalo con precaución.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nativo</string>
     <string name="wireless_mode_server">Headunit Server</string>

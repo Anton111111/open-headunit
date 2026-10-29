@@ -200,7 +200,6 @@ class SettingsFragment : Fragment() {
     private var pendingShowToastMessages by pending::showToastMessages
     private var pendingScreenOrientation by pending::screenOrientation
     private var pendingAppLanguage by pending::appLanguage
-    private var pendingFakeSpeed by pending::fakeSpeed
     private var pendingAutoRestartWifi by pending::autoRestartWifi
     private var pendingNarrowBandProfileCap by pending::narrowBandProfileCap
     private var pendingDebugVideoLowLatency by pending::debugVideoLowLatency
@@ -642,7 +641,6 @@ class SettingsFragment : Fragment() {
         pendingAutoKillOemApps?.let { if (it != settings.autoKillOemApps) settings.autoKillOemApps = it }
         pendingRaiseProjectionDuringCall?.let { if (it != settings.raiseProjectionDuringCall) settings.raiseProjectionDuringCall = it }
         pendingAutoEnableHotspot?.let { if (it != settings.autoEnableHotspot) settings.autoEnableHotspot = it }
-        pendingFakeSpeed?.let { if (it != settings.fakeSpeed) settings.fakeSpeed = it }
         pendingAutoRestartWifi?.let { if (it != settings.autoRestartWifiWhenP2pStuck) settings.autoRestartWifiWhenP2pStuck = it }
         pendingUseLibusb?.let { if (it != settings.useLibusb) settings.useLibusb = it }
         pendingNarrowBandProfileCap?.let { if (it != settings.narrowBandProfileCap) settings.narrowBandProfileCap = it }
@@ -1868,18 +1866,6 @@ class SettingsFragment : Fragment() {
             isChecked = pendingShowNavigationNotifications ?: settings.showNavigationNotifications,
             onCheckedChanged = { isChecked ->
                 pendingShowNavigationNotifications = isChecked
-                checkChanges()
-                updateSettingsList()
-            }
-        ))
-
-        items.add(SettingItem.ToggleSettingEntry(
-            stableId = "fakeSpeed",
-            nameResId = R.string.fake_speed_title,
-            descriptionResId = R.string.fake_speed_description,
-            isChecked = pendingFakeSpeed ?: settings.fakeSpeed,
-            onCheckedChanged = { isChecked ->
-                pendingFakeSpeed = isChecked
                 checkChanges()
                 updateSettingsList()
             }

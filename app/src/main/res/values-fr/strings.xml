@@ -881,8 +881,6 @@
     <string name="wait_for_wifi_description">Au démarrage, attendre la connexion au Wi-Fi avant de lancer le Wi-Fi Direct. Activez cette option si votre autoradio a besoin de quelques secondes pour se connecter au Wi-Fi après la mise sous tension.</string>
     <string name="wait_for_wifi_timeout">Délai d\'attente du Wi-Fi</string>
     <string name="wireless_24ghz_warning">Remarque : Android Auto sans fil sur des appareils 2,4 GHz peut entraîner des ralentissements, des saccades et des déconnexions. En cas de problème, faites un test par USB pour savoir s\'il s\'agit d\'une limite du réseau.</string>
-    <string name="fake_speed_title">Désactiver le verrouillage vidéo (fausse vitesse)</string>
-    <string name="fake_speed_description">Indique au téléphone une vitesse faible constante (0,5 m/s) pour que la vidéo ne soit pas bloquée pendant la conduite. À utiliser avec prudence.</string>
     <string name="wireless_mode_helper">Assistant sans fil</string>
     <string name="wireless_mode_native">Natif</string>
     <string name="wireless_mode_server">Serveur Headunit</string>

@@ -521,8 +521,6 @@
     <string name="wireless_24ghz_warning">Poznámka: Bezdrátové Android Auto na zařízeních s 2,4 GHz může způsobovat zpoždění, sekání a odpojování. Pokud máte potíže, vyzkoušejte USB a zjistěte, zda jde o omezení sítě.</string>
     <string name="supported_nativeaa">Vylepšená bezdrátová podpora</string>
     <string name="supported_nativeaa_desc">Skvělé zprávy! Vaše zařízení podporuje režim „Native Wireless“, který zajišťuje plynulejší používání Android Auto.\n\nPro jeho zapnutí je třeba obnovit mezipaměť Bluetooth. Postupujte takto:\n1. Odstraňte stávající spárování v telefonu\n2. Klepnutím na OK restartujte Bluetooth\n3. Telefon znovu spárujte\n\nChcete nyní přepnout do režimu Native AA?</string>
-    <string name="fake_speed_title">Zakázat zámek videa (Fake Speed)</string>
-    <string name="fake_speed_description">Hlásí telefonu stálou nízkou rychlost (0,5 m/s), aby se za jízdy neblokoval obsah videa. Používejte opatrně.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nativní</string>
     <string name="wireless_mode_server">Headunit Server</string>

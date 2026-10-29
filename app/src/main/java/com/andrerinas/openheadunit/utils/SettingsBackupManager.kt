@@ -104,7 +104,6 @@ object SettingsBackupManager {
         "dpi-pixel-density" to ValueType.INT,
         "display-size-preset" to ValueType.STRING,
         "pixel-aspect-ratio-e4" to ValueType.INT,
-        "fake_speed" to ValueType.BOOLEAN,
         "inset-left" to ValueType.INT,
         "inset-top" to ValueType.INT,
         "inset-right" to ValueType.INT,

@@ -522,8 +522,6 @@
     <string name="wireless_24ghz_warning">Uwaga: Bezprzewodowe Android Auto na urządzeniach 2,4 GHz może powodować opóźnienia, zacięcia i rozłączenia. W przypadku problemów sprawdź połączenie przez USB, aby potwierdzić, czy jest to ograniczenie sieciowe.</string>
     <string name="supported_nativeaa">Ulepszona obsługa łączności bezprzewodowej</string>
     <string name="supported_nativeaa_desc">Dobra wiadomość! Twoje urządzenie obsługuje tryb \"Native Wireless\", który zapewnia płynniejsze działanie Android Auto.\n\nAby go włączyć, musimy odświeżyć pamięć podręczną Bluetooth. Zrób to tak:\n1. Usuń istniejące sparowanie w telefonie\n2. Wybierz OK, aby zrestartować Bluetooth\n3. Sparuj telefon ponownie\n\nCzy chcesz teraz przełączyć się na tryb Native AA?</string>
-    <string name="fake_speed_title">Wyłącz blokadę wideo (Fake Speed)</string>
-    <string name="fake_speed_description">Zgłasza do telefonu stałą niską prędkość (0,5 m/s), aby zapobiec blokowaniu treści wideo podczas jazdy. Używaj ostrożnie.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Natywny</string>
     <string name="wireless_mode_server">Headunit Server</string>

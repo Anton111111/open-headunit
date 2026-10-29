@@ -529,8 +529,6 @@
     <string name="wait_for_wifi_description">All\'avvio, attendi la connessione WiFi prima di avviare il WiFi Direct. Abilita se la tua head unit ha bisogno di qualche secondo per connettersi al WiFi dopo l\'accensione.</string>
     <string name="wait_for_wifi_timeout">Timeout attesa WiFi</string>
     <string name="wireless_24ghz_warning">Nota: Android Auto wireless su dispositivi a 2.4GHz può causare lag, scatti e disconnessioni. Se riscontri problemi, prova via USB per confermare se si tratta di un limite della rete.</string>
-    <string name="fake_speed_title">Disabilita blocco video (Fake Speed)</string>
-    <string name="fake_speed_description">Riporta una velocità costante bassa (0,5 m/s) al telefono per evitare che i contenuti video vengano bloccati durante la guida. Usare con cautela.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Native</string>
     <string name="wireless_mode_server">Headunit Server</string>
