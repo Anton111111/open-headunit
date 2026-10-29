@@ -819,8 +819,9 @@ class HomeFragment : Fragment() {
      * - A small or narrow screen used as the launcher has no room for the main button and the
      *   favorite apps together, so the main button keeps the first page and the favorite apps and
      *   widgets get the next one.
-     * - A very wide unit gets two columns: the card on the driver's side and the favorites and
-     *   widgets beside it, so the width is used instead of left empty under a wide card.
+     * - A very wide unit (8:3, not 16:9) gets two columns: the card on the driver's side and the
+     *   favorites and widgets beside it, so the width is used instead of left empty under a wide
+     *   card.
      * - Everything else keeps the card on top and the favorites under it.
      *
      * Any widget page the driver added follows those. The pages are rebuilt here, so this runs
@@ -834,9 +835,11 @@ class HomeFragment : Fragment() {
 
         val small = config.screenHeightDp < COMPACT_HEIGHT_DP || config.screenWidthDp < COMPACT_WIDTH_DP
         val compact = isLauncherActive && small
-        val wide = isLauncherActive &&
-            config.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-            config.screenWidthDp >= WIDE_WIDTH_DP
+        val wide = isLauncherActive && HomePagesPolicy.sideBySide(
+            config.orientation == Configuration.ORIENTATION_LANDSCAPE,
+            config.screenWidthDp,
+            config.screenHeightDp
+        )
         compactHome = compact
         ultrawideHome = wide
 
@@ -3072,8 +3075,6 @@ class HomeFragment : Fragment() {
         private const val PAGES_HINT_PREFERRED_SPOT_DP = 120
 
         private const val COMPACT_WIDTH_DP = 400
-        /** Where the unit is wide enough for the card and the favorites side by side. */
-        private const val WIDE_WIDTH_DP = 1100
         /** The idle page dots, about half as bright as the muted text. */
         private const val DOT_IDLE_ALPHA = 0x80
         fun resetAutoStart() {

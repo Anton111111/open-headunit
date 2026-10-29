@@ -1409,6 +1409,7 @@
     <string name="home_favorites_full">Toate cele patru favorite sunt ocupate. Ține apăsat pe una în ecranul principal pentru a o schimba.</string>
     <string name="home_choose_favorite_app">Alege o aplicație sau o comandă rapidă</string>
     <string name="home_shortcut_badge">Comandă rapidă</string>
+    <string name="app_drawer_tab_shortcuts">Comenzi rapide</string>
     <string name="home_show_favorite_apps">Aplicații favorite pe ecranul principal</string>
     <string name="home_show_favorite_apps_description">Aplicațiile tale favorite sub butonul principal, când Open Headunit este launcherul tău</string>
     <string name="home_show_widgets">Widgeturi pe ecranul principal</string>

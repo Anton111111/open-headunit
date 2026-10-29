@@ -1410,6 +1410,7 @@ Open Headunit предоставляется «как есть» без каки
     <string name="home_favorites_full">Все четыре места заняты. Удерживайте одно из приложений на главном экране, чтобы заменить его.</string>
     <string name="home_choose_favorite_app">Выберите приложение или ярлык</string>
     <string name="home_shortcut_badge">Ярлык</string>
+    <string name="app_drawer_tab_shortcuts">Ярлыки</string>
     <string name="home_show_favorite_apps">Избранные приложения на главном экране</string>
     <string name="home_show_favorite_apps_description">Ваши избранные приложения под главной кнопкой, когда Open Headunit является вашим лаунчером</string>
     <string name="home_show_widgets">Виджеты на главном экране</string>

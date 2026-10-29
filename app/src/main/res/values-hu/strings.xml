@@ -1413,6 +1413,7 @@
     <string name="home_favorites_full">Mind a négy kedvenc foglalt. Tarts lenyomva egyet a kezdőképernyőn a cseréjéhez.</string>
     <string name="home_choose_favorite_app">Válassz alkalmazást vagy parancsikont</string>
     <string name="home_shortcut_badge">Parancsikon</string>
+    <string name="app_drawer_tab_shortcuts">Parancsikonok</string>
     <string name="home_show_favorite_apps">Kedvenc alkalmazások a kezdőképernyőn</string>
     <string name="home_show_favorite_apps_description">Kedvenc alkalmazásaid a fő gomb alatt, amikor az Open Headunit az indítód</string>
     <string name="home_show_widgets">Widgetek a kezdőképernyőn</string>

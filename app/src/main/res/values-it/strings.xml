@@ -1415,6 +1415,7 @@
     <string name="home_favorites_full">I quattro preferiti sono già occupati. Tieni premuto uno nella schermata iniziale per cambiarlo.</string>
     <string name="home_choose_favorite_app">Scegli un\'app o una scorciatoia</string>
     <string name="home_shortcut_badge">Scorciatoia</string>
+    <string name="app_drawer_tab_shortcuts">Scorciatoie</string>
     <string name="home_show_favorite_apps">App preferite nella schermata iniziale</string>
     <string name="home_show_favorite_apps_description">Le tue app preferite sotto il pulsante principale, quando Open Headunit è il tuo launcher</string>
     <string name="home_show_widgets">Widget nella schermata iniziale</string>

@@ -1427,6 +1427,7 @@
     <string name="home_favorites_full">Ya tienes las cuatro favoritas. Mantén pulsada una en la pantalla de inicio para cambiarla.</string>
     <string name="home_choose_favorite_app">Elige una app o un atajo</string>
     <string name="home_shortcut_badge">Atajo</string>
+    <string name="app_drawer_tab_shortcuts">Atajos</string>
     <string name="home_show_favorite_apps">Apps favoritas en la pantalla de inicio</string>
     <string name="home_show_favorite_apps_description">Tus apps favoritas bajo el botón principal, cuando Open Headunit es tu aplicación de inicio</string>
     <string name="home_show_widgets">Widgets en la pantalla de inicio</string>
