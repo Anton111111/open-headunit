@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">El modo oscuro se activa cuando el brillo de la pantalla es inferior a este valor. Android indica el brillo de 0 a 255, pero el rango real puede variar según el dispositivo. Puede que tengas que probar varios valores para encontrar el umbral adecuado para tu dispositivo.</string>
     <string name="current_light_reading">Luz actual: %d Lux</string>
     <string name="enable_fine_lux_control">Control fino (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode actual: %1$d. Asignación: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Día, distinto de cero = Noche</string>
+    <string name="car_signal_mapping_inverted">0 = Noche, distinto de cero = Día</string>
+    <string name="car_signal_unavailable">No se puede leer car_mode en esta unidad principal ahora mismo.</string>
+    <string name="car_signal_headlights_question">¿Están encendidas las luces ahora?</string>
+    <string name="car_signal_calibration_title">Calibración ILL+</string>
+    <string name="car_signal_recalibrate">Recalibrar</string>
+    <string name="car_signal_headlights_on">Encendidas</string>
+    <string name="car_signal_headlights_off">Apagadas</string>
+    <string name="car_signal_calibration_saved">Calibración ILL+ guardada y aplicada</string>
     <string name="night_mode_start">Hora de inicio del modo noche</string>
     <string name="night_mode_end">Hora de fin del modo noche</string>
 

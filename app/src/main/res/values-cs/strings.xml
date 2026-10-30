@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">Tmavý režim se aktivuje, když je jas obrazovky pod touto hodnotou. Android hlásí jas jako 0–255, ale skutečný rozsah se může lišit podle zařízení. Možná budete muset experimentovat, abyste našli správnou prahovou hodnotu pro vaše zařízení.</string>
     <string name="current_light_reading">Aktuální osvětlení: %d lx</string>
     <string name="enable_fine_lux_control">Jemné ovládání (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Aktuální car_mode: %1$d. Mapování: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Den, nenulová hodnota = Noc</string>
+    <string name="car_signal_mapping_inverted">0 = Noc, nenulová hodnota = Den</string>
+    <string name="car_signal_unavailable">Na této hlavní jednotce teď nelze číst car_mode.</string>
+    <string name="car_signal_headlights_question">Jsou teď zapnutá světla?</string>
+    <string name="car_signal_calibration_title">Kalibrace ILL+</string>
+    <string name="car_signal_recalibrate">Překalibrovat</string>
+    <string name="car_signal_headlights_on">Zapnuto</string>
+    <string name="car_signal_headlights_off">Vypnuto</string>
+    <string name="car_signal_calibration_saved">Kalibrace ILL+ byla uložena a použita</string>
     <string name="night_mode_start">Čas zahájení nočního režimu</string>
     <string name="night_mode_end">Čas ukončení nočního režimu</string>
 

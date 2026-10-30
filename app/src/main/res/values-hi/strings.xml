@@ -251,6 +251,16 @@
     <string name="current_light_reading">मौजूदा रोशनी: %d Lux</string>
     <string name="current_brightness_reading">स्क्रीन की मौजूदा रोशनी: %d / 255</string>
     <string name="enable_fine_lux_control">सटीक नियंत्रण (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">वर्तमान car_mode: %1$d. मैपिंग: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = दिन, शून्य नहीं = रात</string>
+    <string name="car_signal_mapping_inverted">0 = रात, शून्य नहीं = दिन</string>
+    <string name="car_signal_unavailable">इस हेड यूनिट पर अभी car_mode पढ़ा नहीं जा सकता।</string>
+    <string name="car_signal_headlights_question">क्या अभी हेडलाइट्स चालू हैं?</string>
+    <string name="car_signal_calibration_title">ILL+ कैलिब्रेशन</string>
+    <string name="car_signal_recalibrate">पुनः कैलिब्रेट करें</string>
+    <string name="car_signal_headlights_on">चालू</string>
+    <string name="car_signal_headlights_off">बंद</string>
+    <string name="car_signal_calibration_saved">ILL+ कैलिब्रेशन सहेजा गया और लागू किया गया</string>
     <string name="night_mode_start">नाइट मोड प्रारंभ समय</string>
     <string name="night_mode_end">नाइट मोड समाप्ति समय</string>
 

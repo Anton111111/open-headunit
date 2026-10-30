@@ -276,6 +276,16 @@
     <string name="current_light_reading">Current light: %d Lux</string>
     <string name="current_brightness_reading">Current brightness: %d / 255</string>
     <string name="enable_fine_lux_control">Fine control (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Current car_mode: %1$d. Mapping: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Day, non-zero = Night</string>
+    <string name="car_signal_mapping_inverted">0 = Night, non-zero = Day</string>
+    <string name="car_signal_unavailable">Cannot read car_mode on this head unit right now.</string>
+    <string name="car_signal_headlights_question">Are the headlights on now?</string>
+    <string name="car_signal_calibration_title">ILL+ Calibration</string>
+    <string name="car_signal_recalibrate">Recalibrate</string>
+    <string name="car_signal_headlights_on">On</string>
+    <string name="car_signal_headlights_off">Off</string>
+    <string name="car_signal_calibration_saved">ILL+ calibration saved and applied</string>
     <string name="night_mode_start">Night Mode Start Time</string>
     <string name="night_mode_end">Night Mode End Time</string>
 

@@ -251,6 +251,16 @@
     <string name="current_light_reading">Lumière actuelle : %d lux</string>
     <string name="current_brightness_reading">Luminosité actuelle : %d / 255</string>
     <string name="enable_fine_lux_control">Réglage fin (0–100 lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode actuel : %1$d. Correspondance : %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Jour, non nul = Nuit</string>
+    <string name="car_signal_mapping_inverted">0 = Nuit, non nul = Jour</string>
+    <string name="car_signal_unavailable">Impossible de lire car_mode sur cette unité principale pour le moment.</string>
+    <string name="car_signal_headlights_question">Les phares sont-ils allumés maintenant ?</string>
+    <string name="car_signal_calibration_title">Étalonnage ILL+</string>
+    <string name="car_signal_recalibrate">Recalibrer</string>
+    <string name="car_signal_headlights_on">Allumés</string>
+    <string name="car_signal_headlights_off">Éteints</string>
+    <string name="car_signal_calibration_saved">Étalonnage ILL+ enregistré et appliqué</string>
     <string name="night_mode_start">Heure de début du mode nuit</string>
     <string name="night_mode_end">Heure de fin du mode nuit</string>
 

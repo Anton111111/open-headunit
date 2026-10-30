@@ -39,6 +39,16 @@
     <string name="threshold_brightness_hint">Ekran parlaklığı bu değerin altında olduğunda koyu mod etkinleşir. Android parlaklığı 0–255 olarak bildirir ancak gerçek aralık cihaza göre değişebilir. Cihazınız için doğru eşiği denemeniz gerekebilir.</string>
     <string name="current_light_reading">Mevcut ışık: %d Lux</string>
     <string name="enable_fine_lux_control">Hassas kontrol (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Geçerli car_mode: %1$d. Eşleme: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Gündüz, sıfır dışı = Gece</string>
+    <string name="car_signal_mapping_inverted">0 = Gece, sıfır dışı = Gündüz</string>
+    <string name="car_signal_unavailable">Bu ana ünitede car_mode şu anda okunamıyor.</string>
+    <string name="car_signal_headlights_question">Farlar şu anda açık mı?</string>
+    <string name="car_signal_calibration_title">ILL+ Kalibrasyonu</string>
+    <string name="car_signal_recalibrate">Yeniden kalibre et</string>
+    <string name="car_signal_headlights_on">Açık</string>
+    <string name="car_signal_headlights_off">Kapalı</string>
+    <string name="car_signal_calibration_saved">ILL+ kalibrasyonu kaydedildi ve uygulandı</string>
     <string name="night_mode_start">Gece Modu Başlangıç Saati</string>
     <string name="night_mode_end">Gece Modu Bitiş Saati</string>
 

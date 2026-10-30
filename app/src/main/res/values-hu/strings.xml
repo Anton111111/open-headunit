@@ -38,6 +38,16 @@
     <string name="threshold_brightness_hint">A sötét mód akkor kapcsol be, ha a képernyő fényereje az érték alá csökken. Az Android a fényerőt 0–255 közötti értékként adja meg, de a tényleges tartomány eszközönként eltérhet. Lehet, hogy kísérletezned kell, mire megtalálod az eszközödhöz illő küszöbértéket.</string>
     <string name="current_light_reading">Aktuális fény: %d lux</string>
     <string name="enable_fine_lux_control">Finom szabályozás (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Jelenlegi car_mode: %1$d. Leképezés: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Nappal, nem nulla = Éjszaka</string>
+    <string name="car_signal_mapping_inverted">0 = Éjszaka, nem nulla = Nappal</string>
+    <string name="car_signal_unavailable">Jelenleg nem olvasható a car_mode ezen a fejegységen.</string>
+    <string name="car_signal_headlights_question">Most be vannak kapcsolva a fényszórók?</string>
+    <string name="car_signal_calibration_title">ILL+ kalibrálás</string>
+    <string name="car_signal_recalibrate">Újrakalibrálás</string>
+    <string name="car_signal_headlights_on">Be</string>
+    <string name="car_signal_headlights_off">Ki</string>
+    <string name="car_signal_calibration_saved">Az ILL+ kalibrálás mentve és alkalmazva</string>
     <string name="night_mode_start">Éjszakai mód kezdete</string>
     <string name="night_mode_end">Éjszakai mód vége</string>
 

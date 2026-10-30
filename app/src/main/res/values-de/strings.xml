@@ -39,6 +39,16 @@
     <string name="threshold_brightness_hint">Der Dunkelmodus wird aktiviert, wenn die Bildschirmhelligkeit unter diesem Wert liegt. Android meldet die Helligkeit als 0–255, der tatsächliche Bereich kann aber je nach Gerät abweichen. Eventuell musst du etwas ausprobieren, um den passenden Schwellenwert für dein Gerät zu finden.</string>
     <string name="current_light_reading">Aktuelles Licht: %d Lux</string>
     <string name="enable_fine_lux_control">Feinsteuerung (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Aktueller car_mode: %1$d. Zuordnung: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Tag, ungleich 0 = Nacht</string>
+    <string name="car_signal_mapping_inverted">0 = Nacht, ungleich 0 = Tag</string>
+    <string name="car_signal_unavailable">car_mode kann auf dieser Headunit derzeit nicht gelesen werden.</string>
+    <string name="car_signal_headlights_question">Sind die Scheinwerfer jetzt eingeschaltet?</string>
+    <string name="car_signal_calibration_title">ILL+-Kalibrierung</string>
+    <string name="car_signal_recalibrate">Neu kalibrieren</string>
+    <string name="car_signal_headlights_on">Ein</string>
+    <string name="car_signal_headlights_off">Aus</string>
+    <string name="car_signal_calibration_saved">ILL+-Kalibrierung gespeichert und angewendet</string>
     <string name="night_mode_start">Startzeit des Nachtmodus</string>
     <string name="night_mode_end">Endzeit des Nachtmodus</string>
 

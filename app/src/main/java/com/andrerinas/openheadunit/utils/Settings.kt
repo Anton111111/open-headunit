@@ -298,6 +298,21 @@ class Settings(private val context: Context) {
             prefs.edit().putInt("night-mode-threshold-brightness", value).apply()
         }
 
+    /**
+     * Inverts interpretation of Settings.System.car_mode for ILL+ mode.
+     * Default mapping: 0 = day, non-zero = night.
+     */
+    var carSignalInvert: Boolean
+        get() = prefs.getBoolean("car-signal-invert", false)
+        set(value) {
+            prefs.edit().putBoolean("car-signal-invert", value).apply()
+        }
+
+    fun resolveCarSignalNight(carMode: Int): Boolean {
+        val defaultNight = carMode != 0
+        return if (carSignalInvert) !defaultNight else defaultNight
+    }
+
     var keyCodes: MutableMap<Int, Int>
         get() {
             val set = prefs.getStringSet("key-codes", mutableSetOf())!!

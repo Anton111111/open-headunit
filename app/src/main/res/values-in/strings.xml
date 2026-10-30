@@ -251,6 +251,16 @@
     <string name="current_light_reading">Cahaya saat ini: %d Lux</string>
     <string name="current_brightness_reading">Kecerahan saat ini: %d / 255</string>
     <string name="enable_fine_lux_control">Kontrol presisi (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode saat ini: %1$d. Pemetaan: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Siang, non-zero = Malam</string>
+    <string name="car_signal_mapping_inverted">0 = Malam, non-zero = Siang</string>
+    <string name="car_signal_unavailable">Tidak dapat membaca car_mode di head unit ini saat ini.</string>
+    <string name="car_signal_headlights_question">Apakah lampu depan sedang menyala?</string>
+    <string name="car_signal_calibration_title">Kalibrasi ILL+</string>
+    <string name="car_signal_recalibrate">Kalibrasi ulang</string>
+    <string name="car_signal_headlights_on">Menyala</string>
+    <string name="car_signal_headlights_off">Mati</string>
+    <string name="car_signal_calibration_saved">Kalibrasi ILL+ disimpan dan diterapkan</string>
     <string name="night_mode_start">Waktu Mulai Mode Malam</string>
     <string name="night_mode_end">Waktu Selesai Mode Malam</string>
 
