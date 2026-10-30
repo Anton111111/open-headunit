@@ -24,6 +24,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import com.andrerinas.openheadunit.aap.protocol.messages.BluetoothAnnouncePolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketProbe
 import com.andrerinas.openheadunit.utils.OemAppManager
 import com.andrerinas.openheadunit.utils.CarLauncherManager
 import com.andrerinas.openheadunit.utils.OnboardingLauncherPolicy
@@ -89,6 +90,7 @@ import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeAaHandsh
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.ExternalBtTransportPolicy
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.NativeCredentialsPreflight
 import com.andrerinas.openheadunit.utils.BluetoothHelper
+import com.andrerinas.openheadunit.utils.ExternalBtPolicy
 import androidx.lifecycle.lifecycleScope
 import com.andrerinas.openheadunit.utils.WifiStackRecovery
 import androidx.lifecycle.Lifecycle
@@ -215,6 +217,7 @@ class SettingsFragment : Fragment() {
     private var pendingNativeAaIgnoreExternalBt by pending::nativeAaIgnoreExternalBt
     private var pendingExternalBtZbtTransport by pending::externalBtZbtTransport
     private var pendingExternalBtBlinkTransport by pending::externalBtBlinkTransport
+    private var pendingExternalBtZjSocketTransport by pending::externalBtZjSocketTransport
 
     // The probe's verdict is not a pending setting: it changes nothing and there is nothing to
     // save. It lives in the companion object with the job that produces it. This one is
@@ -657,6 +660,7 @@ class SettingsFragment : Fragment() {
         pendingNativeAaIgnoreExternalBt?.let { if (it != settings.nativeAaIgnoreExternalBt) settings.nativeAaIgnoreExternalBt = it }
         pendingExternalBtZbtTransport?.let { if (it != settings.externalBtZbtTransport) settings.externalBtZbtTransport = it }
         pendingExternalBtBlinkTransport?.let { if (it != settings.externalBtBlinkTransport) settings.externalBtBlinkTransport = it }
+        pendingExternalBtZjSocketTransport?.let { if (it != settings.externalBtZjSocketTransport) settings.externalBtZjSocketTransport = it }
         pendingNativeApTransport?.let { if (it != settings.nativeApStrategy) settings.nativeApStrategy = it }
         pendingNativeDriverSelectionMode?.let { if (it != settings.nativeDriverSelectionMode) settings.nativeDriverSelectionMode = it }
         pendingNativeDriverSelectionTimeout?.let { if (it != settings.nativeDriverSelectionTimeoutSec) settings.nativeDriverSelectionTimeoutSec = it }
@@ -1280,7 +1284,9 @@ class SettingsFragment : Fragment() {
                     ignoreChecked,
                     pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
                     radioFytEvidence,
-                    hctService
+                    hctService,
+                    pendingExternalBtZjSocketTransport ?: settings.externalBtZjSocketTransport,
+                    ZjSocketProbe.answer()
                 )) {
                 items.add(SettingItem.ToggleSettingEntry(
                     stableId = "nativeAaIgnoreExternalBt",
@@ -1345,6 +1351,28 @@ class SettingsFragment : Fragment() {
                 searchKeywords = "fyt blink duduauto dudu carlink external bluetooth module transport auto_serial",
                 onCheckedChanged = { isChecked ->
                     pendingExternalBtBlinkTransport = isChecked
+                    checkChanges()
+                    updateSettingsList()
+                }
+            ))
+        }
+
+        // The ZJ socket switch; the route is also taken unasked when the socket accepts a connect.
+        val zjChecked = pendingExternalBtZjSocketTransport ?: settings.externalBtZjSocketTransport
+        if (ExternalBtTransportPolicy.showZjSocketToggle(
+                ZbtDiscovery.snapshot(),
+                BluetoothHelper.fytModuleEvidence,
+                ExternalBtPolicy.ZJ_SOCKET_PATHS.any { File(it).exists() },
+                zjChecked
+            )) {
+            items.add(SettingItem.ToggleSettingEntry(
+                stableId = "externalBtZjSocketTransport",
+                nameResId = R.string.external_bt_zj_socket_transport,
+                descriptionResId = R.string.external_bt_zj_socket_transport_description,
+                isChecked = zjChecked,
+                searchKeywords = "zj zlink gocsdk socket unix external bluetooth module transport handshake",
+                onCheckedChanged = { isChecked ->
+                    pendingExternalBtZjSocketTransport = isChecked
                     checkChanges()
                     updateSettingsList()
                 }
@@ -3307,6 +3335,7 @@ class SettingsFragment : Fragment() {
         val fiveGhzChannel: Int,
         val externalBtZbtTransport: Boolean,
         val externalBtBlinkTransport: Boolean,
+        val externalBtZjSocketTransport: Boolean,
         val nativeAaIgnoreExternalBt: Boolean,
         val autoEnableHotspot: Boolean,
         val insecureAaRfcommListener: Boolean,
@@ -3707,6 +3736,7 @@ class SettingsFragment : Fragment() {
             fiveGhzChannel = settings.fiveGhzChannel,
             externalBtZbtTransport = settings.externalBtZbtTransport,
             externalBtBlinkTransport = settings.externalBtBlinkTransport,
+            externalBtZjSocketTransport = settings.externalBtZjSocketTransport,
             nativeAaIgnoreExternalBt = settings.nativeAaIgnoreExternalBt,
             autoEnableHotspot = settings.autoEnableHotspot,
             insecureAaRfcommListener = settings.insecureAaRfcommListener,
@@ -3772,6 +3802,7 @@ class SettingsFragment : Fragment() {
         fiveGhzChannel = settings.fiveGhzChannel,
         externalBtZbtTransport = settings.externalBtZbtTransport,
         externalBtBlinkTransport = settings.externalBtBlinkTransport,
+        externalBtZjSocketTransport = settings.externalBtZjSocketTransport,
         nativeAaIgnoreExternalBt = settings.nativeAaIgnoreExternalBt,
         autoEnableHotspot = settings.autoEnableHotspot,
         insecureAaRfcommListener = settings.insecureAaRfcommListener,
@@ -3788,6 +3819,7 @@ class SettingsFragment : Fragment() {
             fiveGhzChannel = snapshot.fiveGhzChannel,
             externalBtZbtTransport = snapshot.externalBtZbtTransport,
             externalBtBlinkTransport = snapshot.externalBtBlinkTransport,
+            externalBtZjSocketTransport = snapshot.externalBtZjSocketTransport,
             nativeAaIgnoreExternalBt = snapshot.nativeAaIgnoreExternalBt,
             autoEnableHotspot = snapshot.autoEnableHotspot,
             insecureAaRfcommListener = snapshot.insecureAaRfcommListener,
@@ -4199,7 +4231,9 @@ class SettingsFragment : Fragment() {
             pendingNativeAaIgnoreExternalBt ?: settings.nativeAaIgnoreExternalBt,
             blinkTransportEnabled = pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport,
             fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-            hctServiceAvailable = HctServiceObserver.available(requireContext())
+            hctServiceAvailable = HctServiceObserver.available(requireContext()),
+            zjSocketEnabled = pendingExternalBtZjSocketTransport ?: settings.externalBtZjSocketTransport,
+            zjSocketConnects = ZjSocketProbe.answer()
         )
 
     /** The WiFi Direct band the block is currently showing settings for. */
@@ -4789,7 +4823,8 @@ class SettingsFragment : Fragment() {
             // ZBT only counts off FYT module units, where the route can actually take it.
             val chosen = ((pendingExternalBtZbtTransport ?: settings.externalBtZbtTransport) &&
                 BluetoothHelper.fytModuleEvidence == null) ||
-                (pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport)
+                (pendingExternalBtBlinkTransport ?: settings.externalBtBlinkTransport) ||
+                (pendingExternalBtZjSocketTransport ?: settings.externalBtZjSocketTransport)
             externalBtRouteJob?.cancel()
             externalBtRouteJob = viewLifecycleOwner.lifecycleScope.launch {
                 val viaModule = if (chosen) true else if (BluetoothHelper.fytModuleEvidence != null) false else {

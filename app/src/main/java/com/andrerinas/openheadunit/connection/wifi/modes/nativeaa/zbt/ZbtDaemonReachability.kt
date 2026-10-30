@@ -180,6 +180,7 @@ object ZbtDaemonReachability {
      * The cached answer, dialling if there is none. Blocking; never call from the main thread.
      * A daemon restarting after ACC on refuses briefly, so with [retryRefusals] a refusal is
      * re-dialled across [ZbtReachabilityPolicy.REFUSAL_WINDOW_MS] and only the last one is cached.
+     * [refusalIsFinal] gets the refusal count and ends the window early when another route answered.
      */
     @Synchronized
     fun resolve(
@@ -191,7 +192,8 @@ object ZbtDaemonReachability {
         keepTrying: () -> Boolean = { true },
         requireIdentity: Boolean = false,
         identityDial: (() -> ZbtIdentityProbe.Outcome)? = null,
-        cacheIdentityRefusal: Boolean = true
+        cacheIdentityRefusal: Boolean = true,
+        refusalIsFinal: (Int) -> Boolean = { false }
     ): Boolean {
         // A live carrier is the answer, and dialling past it would cache its own silence as a no.
         if (requireIdentity && (carrierLive() || carrierWantsClient())) {
@@ -243,10 +245,12 @@ object ZbtDaemonReachability {
                 return true
             }
             refusals++
+            val endedEarly = retryRefusals && refusalIsFinal(refusals)
+            if (!keepTrying()) return false
             val candidateBootRetry = firstRefusalAt < CANDIDATE_BOOT_WINDOW_MS
             val windowMs = if (requireIdentity) CANDIDATE_REFUSAL_WINDOW_MS else ZbtReachabilityPolicy.REFUSAL_WINDOW_MS
             val spentMs = nowMs() - firstRefusalAt
-            val wait = if (retryRefusals && spentMs < windowMs &&
+            val wait = if (!endedEarly && retryRefusals && spentMs < windowMs &&
                 (!requireIdentity || (candidateBootRetry && identity == ZbtIdentityProbe.Outcome.REFUSED))) {
                 ZbtReachabilityPolicy.redialAfterMs(refusals, spentMs)?.coerceAtMost(windowMs - spentMs)
             } else null
@@ -262,7 +266,10 @@ object ZbtDaemonReachability {
                 if (requireIdentity) AppLog.i(
                     "NativeAA: [ZBT candidate] no confirmed ZBT greeting; retaining Android Bluetooth route."
                 )
-                if (retryRefusals && !requireIdentity) AppLog.i(
+                if (endedEarly) AppLog.i(
+                    "NativeAA: [ZBT] 127.0.0.1:3152 refused and another module route answered; " +
+                        "ending this attempt without the retry window."
+                ) else if (retryRefusals && !requireIdentity) AppLog.i(
                     "NativeAA: [ZBT] the local daemon check did not establish reachability during this " +
                         "attempt's ${ZbtReachabilityPolicy.REFUSAL_WINDOW_MS / 1000}s retry window. " +
                         "This does not determine whether the module can become available later."
