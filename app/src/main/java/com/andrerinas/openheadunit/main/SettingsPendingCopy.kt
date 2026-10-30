@@ -48,7 +48,6 @@ class SettingsPendingCopy {
     var showToastMessages: Boolean? = null
     var screenOrientation: Settings.ScreenOrientation? = null
     var appLanguage: String? = null
-    var fakeSpeed: Boolean? = null
     var autoRestartWifi: Boolean? = null
     var narrowBandProfileCap: Boolean? = null
     var debugVideoLowLatency: Boolean? = null
@@ -137,7 +136,6 @@ class SettingsPendingCopy {
         showToastMessages = settings.showToastMessages
         screenOrientation = settings.screenOrientation
         appLanguage = settings.appLanguage
-        fakeSpeed = settings.fakeSpeed
         autoRestartWifi = settings.autoRestartWifiWhenP2pStuck
         narrowBandProfileCap = settings.narrowBandProfileCap
         debugVideoLowLatency = settings.debugVideoLowLatency
@@ -227,7 +225,6 @@ class SettingsPendingCopy {
         showToastMessages != settings.showToastMessages ||
         screenOrientation != settings.screenOrientation ||
         appLanguage != settings.appLanguage ||
-        fakeSpeed != settings.fakeSpeed ||
         autoRestartWifi != settings.autoRestartWifiWhenP2pStuck ||
         narrowBandProfileCap != settings.narrowBandProfileCap ||
         debugVideoLowLatency != settings.debugVideoLowLatency ||

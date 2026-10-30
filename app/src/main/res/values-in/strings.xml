@@ -1047,8 +1047,6 @@
     <string name="wait_for_wifi_description">Saat boot, tunggu Wi-Fi terhubung sebelum memulai Wi-Fi Direct. Aktifkan ini jika head unit Anda memerlukan beberapa detik untuk terhubung ke Wi-Fi setelah menyala.</string>
     <string name="wait_for_wifi_timeout">Batas waktu tunggu Wi-Fi</string>
     <string name="wireless_24ghz_warning">Catatan: Android Auto nirkabel pada perangkat 2,4 GHz dapat menyebabkan lag, tersendat, dan koneksi terputus. Jika Anda mengalami masalah, coba melalui USB untuk memastikan apakah penyebabnya keterbatasan jaringan.</string>
-    <string name="fake_speed_title">Nonaktifkan Kunci Video (Kecepatan Palsu)</string>
-    <string name="fake_speed_description">Melaporkan kecepatan rendah yang konstan (0,5 m/s) ke ponsel agar konten video tidak diblokir saat berkendara. Gunakan dengan hati-hati.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nirkabel Asli (Native)</string>
     <string name="wireless_mode_server">Server Headunit</string>

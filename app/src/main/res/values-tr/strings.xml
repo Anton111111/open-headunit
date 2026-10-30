@@ -522,8 +522,6 @@
     <string name="wait_for_wifi_description">Açılışta Wi-Fi Direct başlatılmadan önce Wi-Fi bağlantısı beklenir. Multimedya sisteminiz açıldıktan sonra Wi-Fi\'a bağlanmak için birkaç saniyeye ihtiyaç duyuyorsa bunu etkinleştirin.</string>
     <string name="wait_for_wifi_timeout">Wi-Fi bekleme zaman aşımı</string>
     <string name="wireless_24ghz_warning">Not: 2.4GHz cihazlarda kablosuz Android Auto gecikmelere, takılmalara ve bağlantı kesilmelerine neden olabilir. Sorun yaşarsanız, bunun bir ağ kısıtlaması olup olmadığını doğrulamak için lütfen USB üzerinden test edin.</string>
-    <string name="fake_speed_title">Video Kilidini Devre Dışı Bırak (Sahte Hız)</string>
-    <string name="fake_speed_description">Sürüş sırasında video içeriğinin engellenmesini önlemek için telefona sabit bir düşük hız (0.5 m/s) bildirir. Dikkatli kullanın.</string>
     <string name="wireless_mode_helper">Kablosuz Yardımcı</string>
     <string name="wireless_mode_native">Yerel (Native)</string>
     <string name="wireless_mode_server">Headunit Sunucusu</string>

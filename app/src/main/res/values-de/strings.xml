@@ -579,8 +579,6 @@
     <string name="wait_for_wifi_description">Beim Start auf die WLAN-Verbindung warten, bevor WiFi Direct gestartet wird. Aktiviere dies, wenn deine Headunit nach dem Einschalten einige Sekunden braucht, um sich mit dem WLAN zu verbinden.</string>
     <string name="wait_for_wifi_timeout">WLAN-Wartezeit</string>
     <string name="wireless_24ghz_warning">Hinweis: Kabelloses Android Auto auf 2,4-GHz-Geräten kann zu Verzögerungen, Rucklern und Verbindungsabbrüchen führen. Bei Problemen teste bitte die USB-Verbindung, um zu prüfen, ob das Netzwerk die Ursache ist.</string>
-    <string name="fake_speed_title">Video-Sperre deaktivieren (Fake Speed)</string>
-    <string name="fake_speed_description">Meldet dem Handy eine konstante niedrige Geschwindigkeit (0,5 m/s), um die Video-Sperre während der Fahrt zu umgehen. Mit Vorsicht verwenden.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nativ</string>
     <string name="wireless_mode_server">Headunit Server</string>

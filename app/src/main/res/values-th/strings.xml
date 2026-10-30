@@ -1047,8 +1047,6 @@
     <string name="wait_for_wifi_description">เมื่อเปิดเครื่อง ให้รอ Wi-Fi เชื่อมต่อก่อนเริ่ม Wi-Fi Direct เปิดตัวเลือกนี้หากเฮดยูนิตของคุณต้องใช้เวลาสักครู่ในการเชื่อมต่อ Wi-Fi หลังเปิดเครื่อง</string>
     <string name="wait_for_wifi_timeout">ระยะเวลารอ Wi-Fi</string>
     <string name="wireless_24ghz_warning">หมายเหตุ: Android Auto แบบไร้สายบนอุปกรณ์ 2.4GHz อาจทำให้ภาพหน่วง กระตุก และหลุดการเชื่อมต่อ หากพบปัญหา โปรดลองใช้ผ่าน USB เพื่อตรวจสอบว่าเป็นข้อจำกัดของเครือข่ายหรือไม่</string>
-    <string name="fake_speed_title">ปิดการล็อกวิดีโอ (ความเร็วจำลอง)</string>
-    <string name="fake_speed_description">รายงานความเร็วต่ำคงที่ (0.5 ม./วินาที) ไปยังโทรศัพท์เพื่อป้องกันไม่ให้เนื้อหาวิดีโอถูกบล็อกขณะขับขี่ ใช้ด้วยความระมัดระวัง</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">เนทีฟ (Native)</string>
     <string name="wireless_mode_server">เซิร์ฟเวอร์เฮดยูนิต</string>

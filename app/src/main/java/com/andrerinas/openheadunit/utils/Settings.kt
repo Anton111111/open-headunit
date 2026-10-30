@@ -442,12 +442,6 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("wifi-restart-adb-verified", false)
         set(value) = prefs.edit().putBoolean("wifi-restart-adb-verified", value).apply()
 
-    var fakeSpeed: Boolean
-        get() = prefs.getBoolean("fake_speed", true)
-        set(value) {
-            prefs.edit().putBoolean("fake_speed", value).apply()
-        }
-
     var gestureHintShown: Boolean
         get() = prefs.getBoolean("gesture_hint_shown", false)
         set(value) {

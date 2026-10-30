@@ -592,8 +592,6 @@
     <string name="wait_for_wifi_description">부팅 후 Wi-Fi가 연결될 때까지 기다린 다음 Wi-Fi Direct를 시작합니다. 전원을 켠 뒤 Wi-Fi 연결에 몇 초 걸리는 헤드유닛에서 사용하세요.</string>
     <string name="wait_for_wifi_timeout">Wi-Fi 최대 대기 시간</string>
     <string name="wireless_24ghz_warning">참고: 2.4 GHz 기기에서 무선 Android Auto를 사용하면 지연, 끊김, 연결 해제가 발생할 수 있습니다. 문제가 발생하면 USB로 테스트하여 네트워크 제한이 원인인지 확인하세요.</string>
-    <string name="fake_speed_title">주행 중 영상 제한 우회(가짜 속도)</string>
-    <string name="fake_speed_description">휴대전화에 일정한 저속(0.5 m/s)을 보고해 주행 중에도 영상 콘텐츠가 차단되지 않게 합니다. 주의해서 사용하세요.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Native</string>
     <string name="wireless_mode_server">헤드유닛 서버</string>

@@ -1047,8 +1047,6 @@
     <string name="wait_for_wifi_description">बूट होने पर वाई-फ़ाई डायरेक्ट शुरू करने से पहले वाई-फ़ाई कनेक्ट होने का इंतज़ार करता है। अगर पावर चालू होने के बाद आपकी हेड यूनिट को वाई-फ़ाई से जुड़ने में कुछ सेकंड लगते हैं, तो इसे चालू करें।</string>
     <string name="wait_for_wifi_timeout">वाई-फ़ाई इंतज़ार की समय सीमा</string>
     <string name="wireless_24ghz_warning">नोट: 2.4GHz डिवाइस पर वायरलेस Android Auto में लैग, अटकना और डिसकनेक्ट होना हो सकता है। समस्या आए तो USB से जाँचें कि कहीं यह नेटवर्क की सीमा तो नहीं।</string>
-    <string name="fake_speed_title">वीडियो-लॉक बंद करें (नकली गति)</string>
-    <string name="fake_speed_description">फ़ोन को हमेशा कम गति (0.5 m/s) बताता है, ताकि गाड़ी चलाते समय वीडियो ब्लॉक न हो। सावधानी से इस्तेमाल करें।</string>
     <string name="wireless_mode_helper">वायरलेस हेल्पर</string>
     <string name="wireless_mode_native">नेटिव</string>
     <string name="wireless_mode_server">हेडयूनिट सर्वर</string>

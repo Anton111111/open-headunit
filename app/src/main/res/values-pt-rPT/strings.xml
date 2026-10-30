@@ -1047,8 +1047,6 @@
     <string name="wait_for_wifi_description">Ao arrancar, espera que o Wi-Fi se ligue antes de iniciar o Wi-Fi Direct. Ative esta opção se a unidade precisar de alguns segundos para se ligar ao Wi-Fi depois de ser ligada.</string>
     <string name="wait_for_wifi_timeout">Tempo limite do Wi-Fi</string>
     <string name="wireless_24ghz_warning">Nota: o Android Auto sem fios em dispositivos de 2,4 GHz pode causar atrasos, falhas de imagem e desligações. Se tiver problemas, teste por USB para confirmar se se trata de uma limitação da rede.</string>
-    <string name="fake_speed_title">Desativar bloqueio de vídeo (velocidade simulada)</string>
-    <string name="fake_speed_description">Comunica uma velocidade baixa constante (0,5 m/s) ao telemóvel para impedir o bloqueio de vídeo durante a condução. Utilize com precaução.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nativo (Native)</string>
     <string name="wireless_mode_server">Servidor da Unidade</string>

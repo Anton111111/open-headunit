@@ -530,8 +530,6 @@
     <string name="native_aa_poke_not_running">このヘッドユニットでワイヤレスの Bluetooth が動作していません。設定をご確認ください。</string>
     <string name="not_supported_nativeaa">ネイティブワイヤレスはサポートされていないようです</string>
     <string name="not_supported_nativeaa_desc">お使いのデバイスは、ネイティブワイヤレスに必要な Bluetooth または Wi-Fi 機能をサポートしていない可能性があります。とにかく試してみることもできますが、失敗した場合は、代わりに「Wireless Helper」または「Auto (Headunit Server)」モードを使用してください。</string>
-    <string name="fake_speed_title">ビデオロックを無効化（疑似速度）</string>
-    <string name="fake_speed_description">走行中にビデオコンテンツがブロックされるのを防ぐため、一定の低速 (0.5 m/s) をスマートフォンに報告します。注意して使用してください。</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">ネイティブ</string>
     <string name="wireless_mode_server">Headunit Server</string>
