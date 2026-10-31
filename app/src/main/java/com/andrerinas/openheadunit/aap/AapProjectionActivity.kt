@@ -130,6 +130,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var twoFingerTracker: TwoFingerGestureTracker? = null
     private var lastTwoFingerEvent: MotionEvent? = null
     private var consumeGestureUntilUp = false
+    private var suspendRemoteTouchUntilAllUp = false
     private val gestureHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val twoFingerLongPress = Runnable {
         if (twoFingerTracker?.canLongPress == true &&
@@ -2110,6 +2111,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
             consumeGestureUntilUp = false
+            suspendRemoteTouchUntilAllUp = false
             clearTwoFingerTracking()
         }
         if (consumeGestureUntilUp) {
@@ -2134,6 +2136,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                         80f * resources.displayMetrics.density
                     )
                     lastTwoFingerEvent = MotionEvent.obtain(ev)
+                    if (hasActiveTwoFingerGestureBindings()) {
+                        releaseRemotePrimaryPointer(ev)
+                        suspendRemoteTouchUntilAllUp = true
+                    }
                     if (settings.longPressTwoFingerGesture != Settings.GestureAction.DISABLED) {
                         gestureHandler.postDelayed(twoFingerLongPress, ViewConfiguration.getLongPressTimeout().toLong())
                     }
@@ -2181,11 +2187,30 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         cancel.action = MotionEvent.ACTION_CANCEL
         consumeGestureUntilUp = true
         clearTwoFingerTracking()
-        // End the stream already seen by Android Auto and by the local touch target.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) sendTouchEvent(cancel)
+        // End the stream in local views; remote forwarding deliberately does not support CANCEL.
         super.dispatchTouchEvent(cancel)
         cancel.recycle()
         performTouchGesture(action)
+    }
+
+    private fun hasActiveTwoFingerGestureBindings(): Boolean {
+        return settings.leftTwoFingerGesture != Settings.GestureAction.DISABLED ||
+            settings.rightTwoFingerGesture != Settings.GestureAction.DISABLED ||
+            settings.downTwoFingerGesture != Settings.GestureAction.DISABLED ||
+            settings.longPressTwoFingerGesture != Settings.GestureAction.DISABLED
+    }
+
+    private fun releaseRemotePrimaryPointer(event: MotionEvent) {
+        val up = MotionEvent.obtain(
+            event.downTime,
+            event.eventTime,
+            MotionEvent.ACTION_UP,
+            event.getX(0),
+            event.getY(0),
+            event.metaState
+        )
+        sendTouchEvent(up)
+        up.recycle()
     }
 
     private fun performTouchGesture(action: Settings.GestureAction): Boolean = when (action) {
@@ -2397,6 +2422,17 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     }
 
     private fun sendTouchEvent(event: MotionEvent) {
+        if (suspendRemoteTouchUntilAllUp) {
+            if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+                suspendRemoteTouchUntilAllUp = false
+            }
+            return
+        }
+
+        if (event.actionMasked == MotionEvent.ACTION_CANCEL) {
+            return
+        }
+
         val action = TouchEvent.motionEventToAction(event) ?: return
         val ts = SystemClock.elapsedRealtime()
 
