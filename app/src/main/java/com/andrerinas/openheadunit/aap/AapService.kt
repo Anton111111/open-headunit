@@ -1070,8 +1070,8 @@ class AapService : Service() {
     // A setting/permission snapshot is admission for a new capture, not ownership of an open one.
     private var microphoneTypeClaimed = false
 
-    // Serialize shutdown with in-flight promotions. Queued recorder cleanup and service refreshes
-    // must not recreate the foreground notification after the user or framework has stopped it.
+    // Serialize shutdown with in-flight promotions. Queued recorder cleanup must not recreate the
+    // notification; an actual delivered start still owes Android a base-only foreground promotion.
     @Synchronized
     private fun stopForegroundForShutdown() {
         isDestroying = true
@@ -1081,12 +1081,18 @@ class AapService : Service() {
 
     // Refresh the current claim rather than starting a new capture. In particular, a task-removal
     // restart must not drop the microphone type while AudioRecord is still delivering buffers.
+    // Lifecycle starts must still promote during the Stop wait, without cancelling Stop or
+    // reviving microphone capture.
     @Synchronized
     private fun startForegroundWithCurrentTypes() {
-        if (isDestroying) return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1, createNotification(), ForegroundServiceTypePolicy.withMicrophone(
-                Build.VERSION.SDK_INT, microphoneTypeClaimed, microphoneTypeClaimed))
+            val types = if (isDestroying) {
+                ForegroundServiceTypePolicy.baseTypeMask(Build.VERSION.SDK_INT)
+            } else {
+                ForegroundServiceTypePolicy.withMicrophone(
+                    Build.VERSION.SDK_INT, microphoneTypeClaimed, microphoneTypeClaimed)
+            }
+            startForeground(1, createNotification(), types)
         } else {
             startForeground(1, createNotification())
         }
