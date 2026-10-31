@@ -575,7 +575,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
              val sv = projectionView as ProjectionView
              if (sv.holder.surface.isValid) {
                  AppLog.w("Watchdog: SurfaceView IS valid. Forcing onSurfaceChanged.")
-                 onSurfaceChanged(sv.holder.surface, sv.width, sv.height)
+                 onSurfaceChanged(sv.holder.surface, sv.reportedSurfaceWidth, sv.reportedSurfaceHeight)
              } else {
                  AppLog.e("Watchdog: SurfaceView NOT valid.")
              }
