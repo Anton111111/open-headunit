@@ -66,6 +66,16 @@
     <string name="threshold_brightness_hint">يتم تفعيل الوضع الداكن عندما يكون سطوع الشاشة أقل من هذه القيمة. يُبلغ أندرويد عن السطوع بنطاق 0–255، لكن النطاق الفعلي قد يختلف حسب الجهاز. قد تحتاج إلى التجربة للعثور على الحد المناسب لجهازك.</string>
     <string name="current_light_reading">الضوء الحالي: %d لوكس</string>
     <string name="enable_fine_lux_control">تحكم دقيق (0–100 لوكس)</string>
+    <string name="car_signal_calibration_info_format">قيمة car_mode الحالية: %1$d. التعيين: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = نهار، قيمة غير صفرية = ليل</string>
+    <string name="car_signal_mapping_inverted">0 = ليل، قيمة غير صفرية = نهار</string>
+    <string name="car_signal_unavailable">لا يمكن قراءة car_mode على هذه الوحدة الآن.</string>
+    <string name="car_signal_headlights_question">هل المصابيح الأمامية قيد التشغيل الآن؟</string>
+    <string name="car_signal_calibration_title">معايرة ILL+</string>
+    <string name="car_signal_recalibrate">إعادة المعايرة</string>
+    <string name="car_signal_headlights_on">تشغيل</string>
+    <string name="car_signal_headlights_off">إيقاف</string>
+    <string name="car_signal_calibration_saved">تم حفظ معايرة ILL+ وتطبيقها</string>
     <string name="night_mode_start">وقت بدء الوضع الليلي</string>
     <string name="night_mode_end">وقت انتهاء الوضع الليلي</string>
 
@@ -131,6 +141,7 @@
     <string name="orientation_portrait">عمودي (90°)</string>
     <string name="orientation_portrait_reverse">عمودي معكوس (270°)</string>
     <string name="enter_dpi_value">أدخل قيمة DPI (0 للتلقائي)</string>
+    <string name="enter_audio_offset_value">أدخل قيمة (0-250)</string>
     <string name="custom_margin">هوامش مخصصة</string>
     <string name="custom_margin_description">تعيين هوامش عرض مخصصة (0 للتلقائي).</string>
     <string name="enter_custom_margins">أدخل الهوامش المخصصة (0 للتلقائي)</string>
@@ -548,8 +559,6 @@
     <string name="wireless_24ghz_warning">ملاحظة: قد يؤدي استخدام Android Auto اللاسلكي على أجهزة 2.4 غيغاهرتز إلى تأخر وتقطع وانقطاع في الاتصال. إذا واجهت مشكلات، جرّب الاتصال عبر USB للتأكد مما إذا كان السبب قيودًا في الشبكة.</string>
     <string name="supported_nativeaa">دعم لاسلكي محسّن</string>
     <string name="supported_nativeaa_desc">أخبار رائعة! يدعم جهازك وضع \"لاسلكي أصلي\"، ما يوفر تجربة Android Auto أكثر سلاسة.\n\nلتفعيله، نحتاج إلى تحديث ذاكرة التخزين المؤقت للبلوتوث. يرجى اتباع الخطوات التالية:\n1. أزِل الاقتران الحالي على هاتفك\n2. انقر على موافق لإعادة تشغيل البلوتوث\n3. أعِد إقران هاتفك\n\nهل تريد التبديل إلى وضع Native AA الآن؟</string>
-    <string name="fake_speed_title">تعطيل قفل الفيديو (Fake Speed)</string>
-    <string name="fake_speed_description">يبلغ الهاتف سرعة منخفضة ثابتة (0.5 م/ث) لمنع قفل محتوى الفيديو أثناء القيادة. استخدم بحذر.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">أصلي (Native)</string>
     <string name="wireless_mode_server">خادم الوحدة الرئيسية</string>
@@ -765,6 +774,12 @@
     <string name="settings_tab_basic">أساسي</string>
     <string name="settings_tab_advanced">متقدم</string>
     <string name="settings_search_hint">البحث في الإعدادات</string>
+    <string name="settings_scope_wifi_hidden">عرض إعدادات USB. إعدادات WiFi مخفية.</string>
+    <string name="settings_scope_usb_hidden">عرض إعدادات WiFi. إعدادات USB مخفية.</string>
+    <string name="settings_scope_usb_wifi_hidden">عرض إعدادات الوضع الذاتي. إعدادات USB وWiFi مخفية.</string>
+    <string name="settings_scope_change">تغيير</string>
+    <string name="settings_search_clear">مسح البحث</string>
+    <string name="settings_search_no_results">لا توجد إعدادات تطابق \"%1$s\".</string>
     <string name="connection_mode">وضع الاتصال</string>
     <string name="connection_kind_usb_cable">كابل USB (مباشر)</string>
     <string name="connection_kind_usb_wireless_adapter">محول USB لاسلكي</string>
@@ -1007,13 +1022,15 @@
     <string name="zbt_probe_title">اختبار وحدة البلوتوث في الجهاز</string>
     <string name="zbt_probe_idle">انقر للتشغيل</string>
     <string name="zbt_probe_running">جارٍ التشغيل…</string>
-    <string name="zbt_probe_message">يسأل شريحة البلوتوث المنفصلة في هذا الجهاز عمّا إذا كانت تستطيع حمل اتصال Android Auto. يتحقق خلال ثماني ثوانٍ تقريبًا من أن الشريحة تستجيب أصلًا، وعندها فقط يراقب نحو دقيقة ونصف. يعرض السطر أسفل هذا الإعداد ما يجري، ولا يُمس أي شيء آخر في الجهاز.\n\nتتحدث الشريحة مع برنامج واحد في كل مرة. فإذا كان هناك اتصال يمر عبرها بالفعل، يذكر الاختبار ذلك بدل أن يختبر. أطفئ الإعداد أعلاه أولًا لاختبارها وحدها.\n\nكما يطلب \"الإيقاظ والمراقبة\" من الشريحة إعادة الاتصال بهاتفك من أجل Android Auto. هذا هو الجزء الوحيد الذي يغيّر شيئًا، وإعادة تشغيل الجهاز تلغيه. يرجى تصدير السجل بعد ذلك وإرفاقه.</string>
+    <string name="zbt_probe_message">يهيئ كلا الخيارين وحدة Bluetooth قبل مراقبتها، وقد يؤثر ذلك في حالتها. يطلب خيار الإيقاظ والمراقبة أيضًا الاتصال بالهاتف.\n\nيُفسح الاختبار المجال عندما يستخدم OHU الوحدة أو يفحصها. صدّر السجل بعد الاختبار.</string>
     <string name="zbt_probe_watch_only">المراقبة فقط</string>
     <string name="zbt_probe_wake_and_watch">الإيقاظ والمراقبة</string>
     <string name="external_bt_blink_transport">الاتصال عبر وحدة البلوتوث الخارجية في FYT</string>
     <string name="external_bt_module_controls_hint">تتولى وحدة البلوتوث الخارجية إدارة اقتران الهاتف وأولوية الاتصال واختيار برنامج التشغيل.</string>
     <string name="external_bt_module_last_phone">آخر هاتف اتصل عبر الوحدة</string>
     <string name="external_bt_blink_transport_description">تجريبي. لوحدات FYT التي يقترن هاتفها للمكالمات بوحدة بلوتوث منفصلة، مثل \"DUDUAUTO\" على DUDUOS، وهو النظام الوحيد الذي اختُبر حتى الآن. تتولى هذه الوحدة، لا بلوتوث الجهاز، مصافحة Android Auto اللاسلكي، ويرد عليها عادةً تطبيق Car Link الأصلي. عند تشغيل هذا الخيار يرد هذا التطبيق بدلاً منه، فتبقى المكالمات على الوحدة وعلى مكبرات صوت السيارة.\n\nعطّل تطبيق Car Link الأصلي أولاً (pm disable-user com.syu.carlink)، وإلا سيقرأ التطبيقان القناة نفسها. تُفتح القناة دون صلاحيات الجذر إن سمحت الوحدة بذلك، وإلا فعبر الجذر. اختر \"أصلي\"، واقرن الهاتف بالوحدة فقط، وصدّر السجل إذا لم يتصل.</string>
+    <string name="external_bt_zj_socket_transport">الاتصال عبر مقبس Bluetooth الخاص بـ ZJ</string>
+    <string name="external_bt_zj_socket_transport_description">للوحدات التي تنقل فيها وحدة ZJ Bluetooth عملية المصافحة اللاسلكية لـ Android Auto عبر مقبس محلي (/dev/socket/zj_bt_socket). يستخدمه التطبيق تلقائيًا عندما يقبل هذا المقبس اتصالًا. فعّل هذا الخيار فقط إذا كانت وحدتك تحتوي على المقبس ولا يكتشفه التطبيق.</string>
     <string name="external_bt_blink_refused_stock_enabled">وحدة البلوتوث الخارجية: تطبيق Car Link الأصلي ما زال مفعّلاً. عطّله (pm disable-user com.syu.carlink) أو أوقف هذا النقل.</string>
     <string name="external_bt_blink_refused_stock_running">وحدة البلوتوث الخارجية: تطبيق Car Link الأصلي معطّل لكنه ما زال يعمل. أعِد تشغيل الوحدة.</string>
     <string name="external_bt_blink_refused_root">وحدة البلوتوث الخارجية: يتطلب فتح قناة الوحدة صلاحيات الجذر على هذه الوحدة، وقد رُفض الوصول إليها أو هو غير متاح.</string>
@@ -1435,8 +1452,13 @@
     <string name="home_favorites_full">المفضلات الأربع ممتلئة. اضغط مطولًا على أحدها في الشاشة الرئيسية لتغييره.</string>
     <string name="home_choose_favorite_app">اختر تطبيقًا أو اختصارًا</string>
     <string name="home_shortcut_badge">اختصار</string>
-    <string name="home_show_favorite_apps">التطبيقات والأدوات على الشاشة الرئيسية</string>
-    <string name="home_show_favorite_apps_description">تطبيقاتك المفضلة وأدواتك أسفل الزر الرئيسي، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="app_drawer_tab_shortcuts">الاختصارات</string>
+    <string name="home_show_favorite_apps">التطبيقات المفضلة على الشاشة الرئيسية</string>
+    <string name="home_show_favorite_apps_description">تطبيقاتك المفضلة أسفل الزر الرئيسي، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="home_show_widgets">الأدوات على الشاشة الرئيسية</string>
+    <string name="home_show_widgets_description">أدواتك وصفحاتها وبلاطة «إضافة أداة»، عندما يكون Open Headunit مشغّل الشاشة الرئيسية لديك</string>
+    <string name="home_surface_opacity">شفافية اللوحات</string>
+    <string name="home_surface_opacity_description">خفّض القيمة لتظهر صورة الخلفية عبر لوحات الشاشة الرئيسية وأزرارها.</string>
     <string name="home_show_clock">التاريخ والوقت على الشاشة الرئيسية</string>
     <string name="home_show_clock_description">الوقت وتاريخ اليوم في أعلى الزر الرئيسي</string>
     <string name="home_show_speed">سرعة GPS على الشاشة الرئيسية</string>
@@ -1472,4 +1494,16 @@
     <string name="audio_settings_reconnect">تم حفظ إعدادات الصوت. أعد توصيل Android Auto لتطبيقها.</string>
     <string name="native_aa_candidate_android_radio_description">استخدم Bluetooth في Android بدلاً من اختيار وحدة Bluetooth في الجهاز تلقائياً. اترك الخيار معطلاً للاختيار التلقائي. إذا كان أي خيار للاتصال عبر الوحدة مفعلاً، فعطّله أولاً.</string>
     <string name="external_bt_candidate_transport_description">افرض الاتصال عبر وحدة Bluetooth في الجهاز بدلاً من الاختيار التلقائي. يتطلب ذلك خدمة وحدة متوافقة. اترك الخيار معطلاً للسماح باستخدام Bluetooth في Android عند عدم استجابة الخدمة؛ تفعيله يمنع هذا البديل.</string>
+    <string name="audio_matching_mode">تصحيح توقيت الموسيقى</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">افتراضي</string>
+    <string name="audio_matching_wsola_hint">خفيف</string>
+    <string name="audio_matching_phase_vocoder_hint">متوازن</string>
+    <string name="audio_matching_phase_vocoder_short_hint">تأخر منخفض</string>
+    <string name="audio_matching_phase_gradient_hint">تشغيل بطيء</string>
+    <string name="audio_matching_description">يبقى OHU الخيار الافتراضي. يحاذي WSOLA الموجات المتداخلة ويضبط Phase Vocoder الأطوار الطيفية. يستخدم Short نافذة تحليل أقصر. يعيد Phase Gradient بناء الأطوار بتكامل تدرجات الطور. تضيف هذه التطبيقات المستقلة تأخرًا في المعالجة؛ ولا تمثل أسماؤها ترتيبًا لجودة الصوت.\n\nالطرق الأصلية: موسيقى PCM. تستخدم إرشادات الملاحة والردود الصوتية وأصوات النظام وAAC OHU.\nأعد الاتصال للتطبيق. تعود إعدادات المحركات المحذوفة إلى OHU.</string>
 </resources>

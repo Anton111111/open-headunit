@@ -438,7 +438,7 @@ internal class AapAudio(
             Channel.ID_AU2 -> systemVolumeOffset
             else -> 0
         }
-        val gain = (1.0f + (offset / 100.0f)).coerceIn(0.0f, 2.0f)
+        val gain = (1.0f + (offset / 100.0f)).coerceIn(0.0f, 2.5f)
 
         // The latency preference sets the network reserve for every audio sink. Guidance
         // shares the same delivery stalls as music. Short completed prompts can still drain
@@ -448,11 +448,12 @@ internal class AapAudio(
         val fromSetup = sinkCodecs[channel]
         val codec = fromSetup ?: defaultCodec
         val codecSource = if (fromSetup != null) "setup" else "setting"
-        AppLog.i("AudioDecoder.start: channel=$channel, stream=$stream, gain=$gain, sampleRate=${config.sampleRate}, numberOfBits=${config.numberOfBits}, numberOfChannels=${config.numberOfChannels}, codec=$codec, source=$codecSource, latencyMultiplier=$effectiveMultiplier, queueCapacity=$audioQueueCapacity, attachHwDspEqualizer=$attachHwDspEqualizer")
+        AppLog.i("AudioDecoder.start: channel=$channel, stream=$stream, gain=$gain, sampleRate=${config.sampleRate}, numberOfBits=${config.numberOfBits}, numberOfChannels=${config.numberOfChannels}, codec=$codec, source=$codecSource, latencyMultiplier=$effectiveMultiplier, queueCapacity=$audioQueueCapacity, matching=${sessionConfig.matchingMode.preferenceValue}, attachHwDspEqualizer=$attachHwDspEqualizer")
         audioDecoder.start(channel, stream, config.sampleRate, config.numberOfBits, config.numberOfChannels,
             codec.isAac, gain, effectiveMultiplier, audioQueueCapacity, staticAudioFocus, attachHwDspEqualizer,
-            preferAAudio = settings.useAAudioOutput, isAdts = codec == AudioSinkCodec.AAC_LC_ADTS, session = decoderSession)
-        if (announcePlayback) audioDecoder.getTrack(channel, decoderSession)?.let {
+            preferAAudio = settings.useAAudioOutput, isAdts = codec == AudioSinkCodec.AAC_LC_ADTS, session = decoderSession,
+            matchingMode = sessionConfig.matchingMode)
+        if (announcePlayback) audioDecoder.getTrack(channel, decoderSession)?.takeIf { it.canAcceptAudioInput() }?.let {
             onAudioPlaybackStarted(channel, it.playbackOwner)
         }
     }
@@ -586,7 +587,7 @@ internal class AapAudio(
         val track = audioDecoder.getTrack(channel, decoderSession)
         if (track == null) {
             startAudioTrack(channel)
-        } else {
+        } else if (track.canAcceptAudioInput()) {
             // Cheap and already guarded: it returns at once unless this is the first channel to
             // carry audio. The track may have been built at setup, so this is where focus is taken.
             onAudioPlaybackStarted(channel, track.playbackOwner)
@@ -596,9 +597,9 @@ internal class AapAudio(
     }
 
     fun updateGains() {
-        val mediaGain = (1.0f + (settings.mediaVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
-        val guidanceGain = (1.0f + (settings.guidanceVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
-        val systemGain = (1.0f + (settings.systemVolumeOffset / 100.0f)).coerceIn(0.0f, 2.0f)
+        val mediaGain = (1.0f + (settings.mediaVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
+        val guidanceGain = (1.0f + (settings.guidanceVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
+        val systemGain = (1.0f + (settings.systemVolumeOffset / 100.0f)).coerceIn(0.0f, 2.5f)
 
         audioDecoder.setGain(Channel.ID_AUD, mediaGain, decoderSession)
         audioDecoder.setGain(Channel.ID_AU1, guidanceGain, decoderSession)

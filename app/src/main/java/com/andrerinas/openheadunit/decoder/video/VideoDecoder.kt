@@ -23,7 +23,7 @@ interface VideoDimensionsListener {
 
 /**
  * Main video decoding engine.
- * Handles H.264/H.265 streams via MediaCodec.
+ * Handles H.264/H.265 streams via MediaCodec or the optional bundled FFmpeg backend.
  *
  * [readMemory] is called at every session start rather than once, and its answer is reported with
  * the codec configuration so that every bug report carries what the device actually has. It is a
@@ -41,6 +41,9 @@ class VideoDecoder(
 ) {
     companion object {
         private const val TIMEOUT_US = 10000L
+        // A ready output wakes the codec wait immediately; this is not a render delay.
+        // Bound idle polling well below stop's 500ms join and the 2s stall watchdog.
+        private const val OUTPUT_TIMEOUT_US = 50_000L
         private const val MAX_RESTARTS_WITHOUT_FRAME = 3
 
         // sync_stall watchdog tuning. An intermittently slow decoder — one that renders, just not
@@ -194,13 +197,13 @@ class VideoDecoder(
             return false
         }
 
-        fun isBundledHevcDecoderAvailable(): Boolean {
-            return FfmpegHevcDecoder.isAvailable()
+        fun isBundledDecoderAvailable(type: CodecType): Boolean {
+            return FfmpegVideoDecoder.isAvailable(type)
         }
     }
 
     private var codec: MediaCodec? = null
-    private var softwareHevcDecoder: FfmpegHevcDecoder? = null
+    private var softwareVideoDecoder: FfmpegVideoDecoder? = null
     private var codecBufferInfo: MediaCodec.BufferInfo? = null
     @Volatile private var mSurface: Surface? = null
     // The surface last detached, so a teardown callback arriving after the detach is not mistaken for a stale one.
@@ -219,19 +222,12 @@ class VideoDecoder(
 
     private var mWidth = 0
     private var mHeight = 0
-    private var vps: ByteArray? = null
-    private var sps: ByteArray? = null
-    private var pps: ByteArray? = null
-    @Volatile private var codecConfigured = false
+    private val parameterSets = ParameterSetCache()
     @Volatile private var currentCodecType = CodecType.H264
     private var currentCodecName: String? = null
 
-    // Once a codec type has been used to successfully start a decoder this session, it is
-    // "pinned": restarts reuse it directly instead of re-running detectCodecType() on
-    // whatever raw packet happens to be arriving at that instant. detectCodecType()'s NAL-type
-    // heuristic can misclassify an ordinary H.264 slice byte as an HEVC VPS/SPS/PPS NAL
-    // (e.g. nal_unit_type=1/nal_ref_idc=2 -> byte 0x41 -> 0x41 >> 1 == 32), and re-detecting on
-    // every restart let that false positive hijack an otherwise-working H.264 session.
+    // Decoder restarts and surface changes do not renegotiate the stream. Retain the codec
+    // selected from valid SPS evidence or the session's announcement until disconnect.
     private var codecTypePinned = false
     // One-shot per session: the parameter sets are re-sent on every keyframe, and the fields we
     // want out of them do not change mid-stream, so logging them once keeps the diagnostic out of
@@ -257,6 +253,7 @@ class VideoDecoder(
     private var backpressureWindows = 0
     private var reportedBackpressure = false
     private var restartsSinceLastFrame = 0
+    // Strong stream evidence corrected the announced codec, not a decoder-failure guess.
     @Volatile private var codecFallbackUsed = false
     private var decoderPermanentlyFailed = false
     // True once any frame of this session has rendered. Session-scoped where lastFrameRenderedMs
@@ -326,7 +323,18 @@ class VideoDecoder(
     // offerWithBackpressure() paces that thread by one queue slot - one frame period in steady
     // state - so the phone's ack window throttles it instead of frames being shed. Frames are
     // copied on the way in because the transport reuses the buffer it hands us.
-    private class PendingFrame(var data: ByteArray, var size: Int, var arrivalNanos: Long)
+    private class PendingFrame(
+        var data: ByteArray, var size: Int, var arrivalNanos: Long, var generation: Long = 0L
+    )
+    private class FeedOwner(
+        val thread: Thread,
+        val codec: MediaCodec,
+        val inputBuffers: Array<ByteBuffer>?,
+        val startTime: Long,
+        val type: CodecType,
+        val queue: ArrayBlockingQueue<PendingFrame>,
+        val generation: Long,
+    )
     // Re-derived per session by refreshPipelineSizing(), not fixed here. This object is built once
     // in AppComponent and lives for the whole process, so a depth chosen in the constructor
     // outlasted every settings change: a unit switched to 30fps kept the 60fps queue, and a log
@@ -335,6 +343,7 @@ class VideoDecoder(
     @Volatile private var frameQueueCapacity = VideoFeedQueuePolicy.capacityFor(settings.fpsLimit)
     @Volatile private var frameQueue = ArrayBlockingQueue<PendingFrame>(frameQueueCapacity)
     @Volatile private var framePool = ArrayBlockingQueue<PendingFrame>(frameQueueCapacity + 2)
+    @Volatile private var decoderGeneration = 0L
 
     @Volatile private var constrained = memoryReading.profile == DeviceMemoryProfile.CONSTRAINED
     @Volatile private var minPooledFrameBytes =
@@ -374,7 +383,6 @@ class VideoDecoder(
 
     // Reuse buffers for older API levels to minimize GC pressure
     private var inputBuffers: Array<ByteBuffer>? = null
-    private var legacyFrameBuffer: ByteArray? = null
 
     var dimensionsListener: VideoDimensionsListener? = null
     var onFpsChanged: ((Int) -> Unit)? = null
@@ -412,9 +420,9 @@ class VideoDecoder(
     // phone-side pause (no input) apart from a local display stall (input flowing, nothing drawn).
     @Volatile var lastInputBytesReceivedMs: Long = 0L
 
-    // True while the bundled software HEVC decoder is active. That path renders through the
-    // GLES YUV sink, so the projection watchdog must not fall back to a non-GLES backend.
-    val usingBundledSoftwareHevc: Boolean get() = softwareHevcDecoder != null
+    // The bundled decoder can render directly to a surface or through the GLES YUV sink.
+    // Bundled output has no MediaCodec presentation-timestamp accounting.
+    val usingBundledSoftwareVideo: Boolean get() = softwareVideoDecoder != null
 
     @Volatile private var decoderNeedsRestart = false
     @Volatile private var decoderRestartReason: String? = null
@@ -429,7 +437,7 @@ class VideoDecoder(
     // being rebuilt: the codec is fine and the stream has nothing it can decode yet.
     var onKeyframeStarved: (() -> Unit)? = null
 
-    // Fired, throttled, when a frame is shed with the picture live - see notifyFrameDropped().
+    // Fired, throttled, when a frame is shed with the picture live - see recordFrameDropped().
     // The transport wires it to the same gain-only keyframe nudge corrupt-frame recovery uses.
     var onFrameDropped: (() -> Unit)? = null
 
@@ -610,7 +618,7 @@ class VideoDecoder(
     val hasCrediblePicture: Boolean
         get() = PictureCredibilityPolicy.hasCrediblePicture(
             renderedSinceCodecStart = lastFrameRenderedMs != 0L,
-            keyframeAccountingAvailable = !usingBundledSoftwareHevc,
+            keyframeAccountingAvailable = !usingBundledSoftwareVideo,
             keyframeDecodedSinceCodecStart = keyframeRepair.keyframeDecoded,
             msSincePendingKeyframeFed = pendingKeyframeAgeMs(),
         )
@@ -621,9 +629,10 @@ class VideoDecoder(
         return elapsedRealtime() - fedAtMs
     }
 
-    enum class CodecType(val mimeType: String, val displayName: String, val settingsValue: String) {
-        H264("video/avc", "H.264/AVC", "H.264"),
-        H265("video/hevc", "H.265/HEVC", "H.265")
+    enum class CodecType(val mimeType: String, val displayName: String, val settingsValue: String, val ffmpegCodecId: Int) {
+        // Stable JNI IDs; never use enum ordinals at the native boundary.
+        H264("video/avc", "H.264/AVC", "H.264", 1),
+        H265("video/hevc", "H.265/HEVC", "H.265", 2)
     }
 
     /**
@@ -674,6 +683,14 @@ class VideoDecoder(
     private inline fun <T> publishOutput(owner: Thread, update: () -> T): T? =
         synchronized(outputPublicationLock) {
             if (!running || outputThread !== owner) null else update()
+        }
+
+    private fun isCurrentFeed(owner: FeedOwner): Boolean =
+        running && feedThread === owner.thread && decoderGeneration == owner.generation
+
+    private inline fun <T> publishFeed(owner: FeedOwner, update: () -> T): T? =
+        synchronized(outputPublicationLock) {
+            if (isCurrentFeed(owner)) update() else null
         }
 
     internal class OutputEvents(private val origin: String = "VideoDecoder.outputThreadLoop") {
@@ -821,8 +838,16 @@ class VideoDecoder(
                 reason == DecoderStopPolicy.REASON_SCREEN_OFF_SLEEP) {
                 surfaceStopGeneration++
             }
+            var retiredFeed: Thread? = null
+            val retiredQueue = frameQueue
             val retiredOutput = synchronized(outputPublicationLock) {
                 running = false
+                decoderGeneration++
+                retiredFeed = feedThread
+                feedThread = null
+                // A retired poll can outlive the join too. Its captured queue must never receive
+                // replacement input, even when the configured capacity has not changed.
+                frameQueue = ArrayBlockingQueue(frameQueueCapacity)
                 outputThread.also { outputThread = null }
             }
             try {
@@ -842,17 +867,18 @@ class VideoDecoder(
             // feedThread remains the backstop for a thread that overruns even this: it can only
             // exit, never feed the next session's codec.
             try {
-                if (feedThread != null && feedThread != Thread.currentThread()) {
-                    feedThread?.interrupt()
-                    feedThread?.join(500)
+                if (retiredFeed != null && retiredFeed !== Thread.currentThread()) {
+                    retiredFeed?.interrupt()
+                    retiredFeed?.join(500)
                 }
             } catch (e: Exception) {}
-            feedThread = null
-            clearFrameQueue()
+            retiredQueue.clear()
             // Pooled frames grow to the largest ever seen and never shrink, so a 4K session would
             // otherwise pin that size for the life of the process.
-            framePool.clear()
-            pooledBytes.set(0)
+            synchronized(outputPublicationLock) {
+                framePool.clear()
+                pooledBytes.set(0)
+            }
 
             try {
                 codec?.stop()
@@ -863,15 +889,14 @@ class VideoDecoder(
                 AppLog.e("Error releasing decoder", e)
             }
             try {
-                softwareHevcDecoder?.stop()
+                softwareVideoDecoder?.stop()
             } catch (e: Exception) {
-                AppLog.e("Error releasing software HEVC decoder", e)
+                AppLog.e("Error releasing software video decoder", e)
             }
 
             codec = null
-            softwareHevcDecoder = null
+            softwareVideoDecoder = null
             inputBuffers = null
-            legacyFrameBuffer = null
             codecBufferInfo = null
             if (!DecoderStopPolicy.isDecoderRestart(reason)) {
                 restartsSinceLastFrame = 0
@@ -894,12 +919,9 @@ class VideoDecoder(
             if (DecoderStopPolicy.endsSession(reason)) {
                 codecTypePinned = false
                 renderedThisSession = false
-                vps = null
-                sps = null
-                pps = null
+                parameterSets.clear()
                 mWidth = 0
                 mHeight = 0
-                codecConfigured = false
                 loggedParameterSet = false
                 // Session-scoped, like everything else in this block: a restart does not change what
                 // the phone is sending, so a change reported across one would be reporting the
@@ -959,10 +981,11 @@ class VideoDecoder(
      * the calling thread for up to [VideoFeedThrottlePolicy.WAIT_BUDGET_MS], which is what
      * throttles the phone through its ack window - see [offerWithBackpressure]. A frame that
      * outlasts even that wait is lost here, and once the picture is live the loss asks the phone
-     * for a keyframe - see [notifyFrameDropped] for the shape of that ask and why it stays silent
+     * for a keyframe - see [recordFrameDropped] for the shape of that ask and why it stays silent
      * before the first rendered frame.
      */
-    fun decode(buffer: ByteArray, offset: Int, size: Int, forceSoftware: Boolean, codecName: String) {
+    fun decode(buffer: ByteArray, offset: Int, size: Int, forceSoftware: Boolean, announcedCodec: CodecType) {
+        var repairedKeyframeCallback: (() -> Unit)? = null
         val frame = synchronized(this) {
             // Input-side liveness: bytes are arriving from the phone right now.
             lastInputBytesReceivedMs = elapsedRealtime()
@@ -971,38 +994,18 @@ class VideoDecoder(
             if (decoderNeedsRestart) {
                 AppLog.w("Decoder restart requested: $decoderRestartReason")
 
-                // Track restarts that never produced a single frame for the currently pinned
-                // codec type. A genuinely broken hardware decoder (e.g. an MTK HEVC component
-                // that can't configure at all) will keep failing here forever otherwise. A
-                // session that has already rendered is excluded: the codec type is proven for
-                // this stream, so restarts after a surface swap are warm-up churn, and counting
-                // them walked healthy sessions through the flip and into the permanent latch.
+                // Bound repeated cold-start failures, but never change the stream's codec to
+                // recover a decoder. That would feed the same bytes to an incompatible decoder.
+                // A session that already rendered is excluded from this cold-start limit.
                 if (DecoderRestartPolicy.countsTowardFailure(
-                        codecTypePinned,
                         renderedSinceLastStart = lastFrameRenderedMs != 0L,
                         renderedThisSession = renderedThisSession
                     )
                 ) {
                     restartsSinceLastFrame++
                     if (restartsSinceLastFrame >= MAX_RESTARTS_WITHOUT_FRAME) {
-                        if (!codecFallbackUsed) {
-                            val fallbackType = if (currentCodecType == CodecType.H264) CodecType.H265 else CodecType.H264
-                            // Don't burn the one-time fallback on a codec type the device has no
-                            // decoder for at all (hw or sw) - e.g. HEVC on a pre-Lollipop device
-                            // with zero HEVC components. That flip is guaranteed to fail again.
-                            if (findBestCodec(fallbackType.mimeType, true) == null) {
-                                AppLog.e("${currentCodecType.displayName} failed $restartsSinceLastFrame times in a row without rendering a frame, and this device has no decoder for ${fallbackType.displayName} either. Giving up to avoid an infinite restart loop.")
-                                decoderPermanentlyFailed = true
-                            } else {
-                                AppLog.e("${currentCodecType.displayName} failed $restartsSinceLastFrame times in a row without rendering a frame. Falling back to ${fallbackType.displayName}.")
-                                currentCodecType = fallbackType
-                                codecFallbackUsed = true
-                                restartsSinceLastFrame = 0
-                            }
-                        } else {
-                            AppLog.e("Both codec types failed to render a frame this session. Giving up to avoid an infinite restart loop.")
-                            decoderPermanentlyFailed = true
-                        }
+                        AppLog.e("${currentCodecType.displayName} failed $restartsSinceLastFrame times without rendering a frame. Stopping initialization retries for this codec.")
+                        decoderPermanentlyFailed = true
                     }
                 } else if (lastFrameRenderedMs != 0L || renderedThisSession) {
                     // Decoder was healthy before this restart, or the session has already proven
@@ -1017,100 +1020,94 @@ class VideoDecoder(
                 onDecoderError?.invoke(restartReason)
             }
 
-            if (decoderPermanentlyFailed) return
-
-            // Buffer management for backward compatibility
-            // Modern devices (API 21+) use the original buffer with offset/size to avoid GC pressure.
-            val frameData: ByteArray
-            val frameOffset: Int
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-                if (legacyFrameBuffer == null || legacyFrameBuffer!!.size < size) {
-                    legacyFrameBuffer = ByteArray(size + 1024)
+            // Strong stream evidence belongs to the session, not to a successfully created owner.
+            // Keep it while a surface is absent or the first decoder creation fails.
+            if (codec == null && softwareVideoDecoder == null && !codecTypePinned) {
+                val detectedType = CodecTypeSelectionPolicy.detect(buffer, offset, size)
+                val selected = CodecTypeSelectionPolicy.select(detectedType, announcedCodec)
+                if (selected != currentCodecType) {
+                    if (detectedType != null) {
+                        // A proven different codec has not spent the previous codec's budget.
+                        restartsSinceLastFrame = 0
+                        decoderPermanentlyFailed = false
+                    }
+                    parameterSets.clear()
+                    mWidth = 0
+                    mHeight = 0
                 }
-                System.arraycopy(buffer, offset, legacyFrameBuffer!!, 0, size)
-                frameData = legacyFrameBuffer!!
-                frameOffset = 0
-            } else {
-                frameData = buffer
-                frameOffset = offset
+                currentCodecType = selected
+                codecTypePinned = detectedType != null
+                if (selected != announcedCodec) {
+                    codecFallbackUsed = true
+                    AppLog.w(
+                        "Stream parameter sets identify ${selected.displayName}, but this session " +
+                            "announced ${announcedCodec.displayName}; using the stream codec"
+                    )
+                }
             }
 
+            // Capture the entire access unit on every backend, including while an owner is
+            // running or absent. Recovery must retain all configurations the live decoder saw.
+            scanAndApplyConfig(buffer, offset, size, currentCodecType)
+            if (decoderPermanentlyFailed) return
 
-            // Initialization phase: detect codec and configuration (SPS/PPS).
-            // Only runs the detection heuristic on the very first init of the session; once a
-            // codec type is pinned (see codecTypePinned), restarts reuse it directly instead of
-            // re-sniffing arbitrary mid-stream bytes.
-            if (codec == null && softwareHevcDecoder == null) {
-                val typeToUse = if (codecTypePinned) {
-                    currentCodecType
-                } else {
-                    val detectedType = detectCodecType(frameData, frameOffset, size)
-                    val requestedType = if (codecName.contains("265")) CodecType.H265 else CodecType.H264
-                    val hevcDetectable = isHevcSupported()
-                    val hevcUsable = hevcDetectable || bundledHevcSelected()
-                    val selected = CodecTypeSelectionPolicy.select(
-                        detected = detectedType,
-                        requested = requestedType,
-                        hevcDetectable = hevcDetectable,
-                        hevcUsable = hevcUsable,
-                    )
-                    if (selected != requestedType) {
-                        AppLog.i(
-                            "Building a $selected decoder although the setting asks for " +
-                                "$requestedType (stream says ${detectedType ?: "nothing yet"}, " +
-                                "HEVC detectable=$hevcDetectable usable=$hevcUsable)"
-                        )
-                    }
-                    selected
-                }
-                currentCodecType = typeToUse
-
-                if (!codecConfigured) {
-                    scanAndApplyConfig(frameData, frameOffset, size, typeToUse)
-
-                    if (mWidth == 0) {
-                         // Fallback dimensions if SPS/PPS parsing fails or is missing
-                         val negotiatedW = HeadUnitScreenConfig.getNegotiatedWidth()
-                         val negotiatedH = HeadUnitScreenConfig.getNegotiatedHeight()
-                         if (negotiatedW > 0 && negotiatedH > 0) {
-                             AppLog.i("Fallback to negotiated dimensions: ${negotiatedW}x${negotiatedH}")
-                             mWidth = negotiatedW
-                             mHeight = negotiatedH
-                             dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
-                         }
+            if (codec == null && softwareVideoDecoder == null) {
+                if (mWidth == 0) {
+                    val negotiatedW = HeadUnitScreenConfig.getNegotiatedWidth()
+                    val negotiatedH = HeadUnitScreenConfig.getNegotiatedHeight()
+                    if (negotiatedW > 0 && negotiatedH > 0) {
+                        AppLog.i("Fallback to negotiated dimensions: ${negotiatedW}x${negotiatedH}")
+                        mWidth = negotiatedW
+                        mHeight = negotiatedH
+                        dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
                     }
                 }
 
                 if (mSurface == null || !mSurface!!.isValid) return
                 if (mWidth == 0 || mHeight == 0) return
 
-                if (shouldUseBundledHevc(typeToUse, settings.forceSoftwareDecoding || forceSoftware)) {
-                    startBundledHevc(mWidth, mHeight)
+                if (VideoDecoderBackendPolicy.useBundled(currentCodecType, settings.forceSoftwareDecoding || forceSoftware, settings.softwareVideoDecoder)) {
+                    startBundledVideo(currentCodecType, mWidth, mHeight)
                 } else {
-                    start(typeToUse.mimeType, settings.forceSoftwareDecoding || forceSoftware, mWidth, mHeight)
+                    start(currentCodecType.mimeType, settings.forceSoftwareDecoding || forceSoftware, mWidth, mHeight)
                 }
             }
 
-            softwareHevcDecoder?.let { decoder ->
-                val renderedFrames = decoder.decode(frameData, frameOffset, size)
-                if (renderedFrames > 0) {
-                    onSoftwareFramesRendered(renderedFrames)
-                } else if (renderedFrames < 0) {
-                    AppLog.e("Bundled HEVC decoder failed with code $renderedFrames")
-                    scheduleRestart("software_hevc_error_$renderedFrames")
+            softwareVideoDecoder?.let { decoder ->
+                val renderedFrames = try {
+                    decoder.decode(buffer, offset, size)
+                } catch (e: Exception) {
+                    AppLog.e("Bundled ${currentCodecType.displayName} output failed", e)
+                    scheduleRestart("software_video_output_exception")
+                    return@synchronized null
                 }
-                return
+                if (renderedFrames > 0) {
+                    if (decoder.outputWidth > 0 && decoder.outputHeight > 0 &&
+                        (mWidth != decoder.outputWidth || mHeight != decoder.outputHeight)) {
+                        mWidth = decoder.outputWidth
+                        mHeight = decoder.outputHeight
+                        dimensionsListener?.onVideoDimensionsChanged(mWidth, mHeight)
+                    }
+                    onSoftwareFramesRendered(renderedFrames)
+                    if (decoder.keyframeRendered) repairedKeyframeCallback = onKeyframeObserved
+                } else if (renderedFrames < 0) {
+                    AppLog.e("Bundled ${currentCodecType.displayName} decoder failed with code $renderedFrames")
+                    scheduleRestart("software_video_error_$renderedFrames")
+                }
+                return@synchronized null
             }
 
             if (codec == null) return
 
-            prepareFrame(frameData, frameOffset, size)
-        } ?: return
+            prepareFrame(buffer, offset, size)
+        }
+        // Notify other owners only after releasing the decoder's state monitor.
+        repairedKeyframeCallback?.invoke()
 
         // Outside the monitor on purpose: stop() synchronizes on this object, and a wait held
         // inside it would block the teardown for up to the whole budget. Out here stop() clears
         // running and the wait aborts within one slice.
-        offerWithBackpressure(frame)
+        frame?.let { offerWithBackpressure(it) }
     }
 
     /**
@@ -1127,6 +1124,7 @@ class VideoDecoder(
 
         System.arraycopy(frameData, frameOffset, frame.data, 0, size)
         frame.size = size
+        frame.generation = decoderGeneration
         // Stamped here, not where the frame is handed over: the feed thread drains a backlog in
         // a few milliseconds, so timestamps taken there would give a dozen frames near-identical
         // values and flatten the cadence the codec sees.
@@ -1152,18 +1150,23 @@ class VideoDecoder(
      * Budget expiry still sheds the frame: the feed thread's own give-up frees a slot every
      * [VideoFeedQueuePolicy.INPUT_DEQUEUE_PATIENCE_MS], so outlasting the budget means the codec
      * took nothing for the whole wait - a wedge, which belongs to the sync_stall watchdog, with
-     * [notifyFrameDropped]'s keyframe ask covering the picture that frame cost.
+     * [recordFrameDropped]'s keyframe ask covering the picture that frame cost.
      */
     private fun offerWithBackpressure(frame: PendingFrame) {
+        val generation = frame.generation
         // Read once: this runs outside the monitor, and a session start on the same thread can
         // have replaced the queue between two reads of the field.
-        val queue = frameQueue
-        if (queue.offer(frame)) return
+        val queue = synchronized(outputPublicationLock) {
+            if (!running || generation != decoderGeneration) return
+            if (frameQueue.offer(frame)) return
+            frameQueue
+        }
 
         val waitStart = elapsedRealtime()
         var accepted = false
         var elapsed = 0L
-        while (!accepted && VideoFeedThrottlePolicy.shouldKeepWaiting(elapsed, running)) {
+        while (!accepted && generation == decoderGeneration &&
+            VideoFeedThrottlePolicy.shouldKeepWaiting(elapsed, running)) {
             accepted = try {
                 queue.offer(frame, VideoFeedThrottlePolicy.OFFER_SLICE_MS, TimeUnit.MILLISECONDS)
             } catch (e: InterruptedException) {
@@ -1177,17 +1180,23 @@ class VideoDecoder(
         // paced, and a wait that ran out the budget paced it for the whole budget - counting only
         // the admitted ones would zero the largest waits there are and make a wedge read as a
         // session that never waited at all.
-        enqueueWaitMs += elapsedRealtime() - waitStart
-
-        if (accepted) {
-            logFeedPacing()
-        } else {
-            recycleFrame(frame)
-            // A teardown fails the offer the same way a wedge does - stop() clears running and
-            // empties the queue. Say nothing then: the frame is moot and the keyframe ask would
-            // fire on every ordinary stop.
-            if (running) notifyFrameDropped()
+        val events = if (accepted) null else OutputEvents("VideoDecoder.offerWithBackpressure")
+        val pacingMessage = synchronized(outputPublicationLock) {
+            if (generation != decoderGeneration || !running) {
+                if (accepted) queue.remove(frame)
+                return
+            }
+            enqueueWaitMs += elapsedRealtime() - waitStart
+            if (accepted) {
+                feedPacingMessage()
+            } else {
+                recycleFrame(frame)
+                recordFrameDropped(checkNotNull(events))
+                null
+            }
         }
+        pacingMessage?.let { AppLog.i(it) }
+        events?.dispatch { running && generation == decoderGeneration }
     }
 
     /**
@@ -1196,24 +1205,25 @@ class VideoDecoder(
      * Called from the transport's read thread only. The throughput line's `enqueueWait` carries
      * the magnitude; this line only says it began.
      */
-    private fun logFeedPacing() {
+    private fun feedPacingMessage(): String? {
         val now = elapsedRealtime()
         if (lastFeedPacingLogMs != 0L && now - lastFeedPacingLogMs < FEED_DROP_LOG_INTERVAL_MS) {
             suppressedFeedPacingLogs++
-            return
+            return null
         }
         lastFeedPacingLogMs = now
         val alsoSuppressed =
             if (suppressedFeedPacingLogs > 0) " (+$suppressedFeedPacingLogs more since the last line)" else ""
         suppressedFeedPacingLogs = 0
-        AppLog.i("Feed queue full - pacing the transport thread instead of shedding frames%s", alsoSuppressed)
+        return "Feed queue full - pacing the transport thread instead of shedding frames$alsoSuppressed"
     }
 
     /** Takes a buffer from the pool, growing it if this frame does not fit, or allocates one. */
     private fun borrowFrame(size: Int): PendingFrame {
-        val pooled = framePool.poll()
+        val pooled = synchronized(outputPublicationLock) {
+            framePool.poll()?.also { pooledBytes.addAndGet(-it.data.size) }
+        }
         if (pooled != null) {
-            pooledBytes.addAndGet(-pooled.data.size)
             if (pooled.data.size < size) pooled.data = ByteArray(maxOf(size, minPooledFrameBytes))
             return pooled
         }
@@ -1228,9 +1238,12 @@ class VideoDecoder(
      * behaviour exactly.
      */
     private fun recycleFrame(frame: PendingFrame) {
-        val bytes = frame.data.size
-        if (pooledBytes.get().toLong() + bytes > pooledByteBudget.toLong()) return
-        if (framePool.offer(frame)) pooledBytes.addAndGet(bytes)
+        synchronized(outputPublicationLock) {
+            if (frame.generation != decoderGeneration) return
+            val bytes = frame.data.size
+            if (pooledBytes.get().toLong() + bytes > pooledByteBudget.toLong()) return
+            if (framePool.offer(frame)) pooledBytes.addAndGet(bytes)
+        }
     }
 
     /**
@@ -1252,13 +1265,13 @@ class VideoDecoder(
      * [com.andrerinas.openheadunit.decoder.video.WarmRelaunchKeyframePolicy], which must not have a second
      * decider reaching for the same lever underneath it.
      */
-    private fun notifyFrameDropped() {
+    private fun recordFrameDropped(events: OutputEvents) {
         framesDropped++
         val now = elapsedRealtime()
         if (VideoRecoveryPolicy.shouldRequestOnDroppedFrame(lastFrameRenderedMs != 0L, now, lastDropKeyframeRequestMs)) {
             lastDropKeyframeRequestMs = now
-            AppLog.w("VideoDecoder: dropped a reference frame, requesting keyframe")
-            onFrameDropped?.invoke()
+            events.warn("VideoDecoder: dropped a reference frame, requesting keyframe")
+            events.callback(onFrameDropped)
         }
     }
 
@@ -1268,71 +1281,57 @@ class VideoDecoder(
      * instead - read [codec] once, and let stop() clear [running] and interrupt before releasing.
      */
     private fun feedThreadLoop() {
+        val self = Thread.currentThread()
+        val owner = synchronized(outputPublicationLock) {
+            if (!running || feedThread !== self) return
+            FeedOwner(self, codec ?: return, inputBuffers, startTime, currentCodecType, frameQueue, decoderGeneration)
+        }
         AppLog.i(
             "Feed thread started (queue holds $frameQueueCapacity frames, " +
                 "${VideoFeedQueuePolicy.heldMsAt(settings.fpsLimit)}ms at ${settings.fpsLimit}fps)"
         )
-        // Read once, not per frame: this thread must not touch SharedPreferences on its hot path,
-        // and a mid-session change taking effect silently is exactly what the loud line prevents.
+        // Read once, not per frame: avoid SharedPreferences on the hot path and do not silently
+        // change a running session's debug hold after its startup diagnostic has been emitted.
         val feedHoldMs = settings.debugVideoFeedHoldMs
         if (feedHoldMs > 0) {
-            AppLog.w(
-                "Feed thread: DEBUG hold ${feedHoldMs}ms per frame - simulating a decoder slower " +
-                    "than the stream. No real fault looks like this line."
-            )
+            AppLog.w("Feed thread: DEBUG hold ${feedHoldMs}ms per frame - simulating a decoder slower " +
+                "than the stream. No real fault looks like this line.")
         }
-        val self = Thread.currentThread()
-        while (running && feedThread === self) {
+        val events = OutputEvents("VideoDecoder.feedThreadLoop")
+        val isCurrent = { isCurrentFeed(owner) }
+        while (isCurrentFeed(owner)) {
             val frame = try {
-                frameQueue.poll(FEED_POLL_MS, TimeUnit.MILLISECONDS)
-            } catch (e: InterruptedException) {
+                owner.queue.poll(FEED_POLL_MS, TimeUnit.MILLISECONDS)
+            } catch (_: InterruptedException) {
                 break
             } ?: continue
-
             try {
-                if (!FeedLoopPolicy.shouldFeed(running, feedThread === self, codec != null, decoderNeedsRestart)) continue
-                val buf = ByteBuffer.wrap(frame.data, 0, frame.size)
-                when (feedInputBuffer(buf, frame.arrivalNanos)) {
-                    FeedResult.FED -> {
-                        framesFed++
-                        // After the feed, not inside the codec wait, so inputWait stays honest:
-                        // the hold reads as a full queue and a paced transport while the codec
-                        // itself keeps decoding and rendering - the shape of a real decoder at
-                        // its ceiling.
-                        if (feedHoldMs > 0) {
-                            try {
-                                Thread.sleep(feedHoldMs.toLong())
-                            } catch (e: InterruptedException) {
-                                Thread.currentThread().interrupt()
-                            }
+                if (frame.generation != owner.generation || !FeedLoopPolicy.shouldFeed(
+                        running, feedThread === owner.thread, codec === owner.codec, decoderNeedsRestart
+                    )) continue
+                val result = feedInputBuffer(owner, events, ByteBuffer.wrap(frame.data, 0, frame.size), frame.arrivalNanos)
+                publishFeed(owner) {
+                    when (result) {
+                        FeedResult.FED -> framesFed++
+                        // Errors and oversized inputs already have their own diagnostics. Calling
+                        // logFeedDrop here would incorrectly relabel them as a full input buffer.
+                        FeedResult.DROPPED_TOO_LARGE, FeedResult.ERROR -> recordFrameDropped(events)
+                        FeedResult.NO_INPUT_BUFFER -> if (!decoderNeedsRestart) {
+                            // Only a current, non-restarting worker reports saturation; shutdown
+                            // also interrupts admission but must not request a keyframe on every stop.
+                            // recordFrameDropped stays quiet before the first rendered picture.
+                            // Persistent lack of progress still belongs to the output watchdog.
+                            logFeedDrop(events)
+                            recordFrameDropped(events)
                         }
                     }
-                    // Counted and answered where the real buffer capacity is known.
-                    FeedResult.DROPPED_TOO_LARGE -> {}
-                    FeedResult.ERROR -> {
-                        // Already logged with the exception where it happened; logFeedDrop would
-                        // relabel it "Input buffer full", which is the one thing it was not. The
-                        // frame is a lost reference frame all the same, so ask for the keyframe.
-                        if (running && feedThread === self && codec != null) {
-                            notifyFrameDropped()
-                        }
-                    }
-                    FeedResult.NO_INPUT_BUFFER -> {
-                        // A teardown fails the same way a full queue does. Say nothing in that
-                        // case: the frame is moot and the log line would appear on every
-                        // ordinary stop.
-                        if (running && feedThread === self && codec != null) {
-                            // The codec had no free input buffer for the whole wait. Drop the
-                            // frame and carry on, asking for the keyframe that repairs the
-                            // picture - see notifyFrameDropped(), whose rendered-frame gate keeps
-                            // this quiet in the window where it used to misfire: within a second
-                            // of the decoder starting, while the component is merely draining its
-                            // first buffers. A decoder that is genuinely stuck rather than busy
-                            // is still caught by the sync_stall watchdog.
-                            logFeedDrop("")
-                            notifyFrameDropped()
-                        }
-                    }
+                }
+                events.dispatch(isCurrent)
+                // Hold only after accepted input, so the knob models a slow consumer without
+                // consuming the codec's own input-dequeue patience budget.
+                if (result == FeedResult.FED && feedHoldMs > 0 && isCurrentFeed(owner)) {
+                    try { Thread.sleep(feedHoldMs.toLong()) }
+                    catch (_: InterruptedException) { break }
                 }
             } catch (e: Exception) {
                 AppLog.w("Feed thread error: ${e.message}")
@@ -1340,15 +1339,16 @@ class VideoDecoder(
                 recycleFrame(frame)
             }
         }
+        events.dispatch(isCurrent)
         AppLog.i("Feed thread stopped")
     }
 
     /**
      * Reports a frame the codec had no room for, at most once per [FEED_DROP_LOG_INTERVAL_MS].
      *
-     * Called from the feed thread only, so the counters need no synchronisation.
+     * Called by the current feed worker under the publication lock; diagnostics dispatch afterward.
      */
-    private fun logFeedDrop(detail: String) {
+    private fun logFeedDrop(events: OutputEvents) {
         val now = elapsedRealtime()
         if (lastFeedDropLogMs != 0L && now - lastFeedDropLogMs < FEED_DROP_LOG_INTERVAL_MS) {
             suppressedFeedDropLogs++
@@ -1357,7 +1357,7 @@ class VideoDecoder(
         lastFeedDropLogMs = now
         val alsoSuppressed = if (suppressedFeedDropLogs > 0) " (+$suppressedFeedDropLogs more since the last line)" else ""
         suppressedFeedDropLogs = 0
-        AppLog.w("Input buffer full. Dropping frame.%s%s", detail, alsoSuppressed)
+        events.warn("Input buffer full. Dropping frame.$alsoSuppressed")
     }
 
     /**
@@ -1394,58 +1394,46 @@ class VideoDecoder(
         }
     }
 
-    private fun shouldUseBundledHevc(type: CodecType, forceSoftware: Boolean): Boolean {
-        return type == CodecType.H265 &&
-                forceSoftware &&
-                settings.softwareVideoDecoder == Settings.SoftwareVideoDecoder.BUNDLED_FFMPEG &&
-                FfmpegHevcDecoder.isAvailable()
-    }
-
-    /**
-     * True when an explicitly selected software HEVC decoder is available, i.e. H.265 is playable
-     * here even though [isHevcSupported] - which is hardware-only - says no. Mirrors the
-     * `explicitSoftwareHevc` half of the announcement, so the decoder and the codec we asked the
-     * phone for agree about whether H.265 was ever on the table.
-     */
-    private fun bundledHevcSelected(): Boolean =
-        settings.forceSoftwareDecoding && when (settings.softwareVideoDecoder) {
-            Settings.SoftwareVideoDecoder.BUNDLED_FFMPEG -> isBundledHevcDecoderAvailable()
-            Settings.SoftwareVideoDecoder.DEVICE_MEDIACODEC -> isHevcDecoderAvailable(includeSoftware = true)
-        }
-
-    private fun startBundledHevc(width: Int, height: Int) {
+    private fun startBundledVideo(type: CodecType, width: Int, height: Int) {
         try {
             val surface = mSurface ?: return
             refreshPipelineSizing()
-            AppLog.i("Configuring bundled FFmpeg HEVC decoder for ${width}x$height")
-            val yuvFrameSink = if (settings.viewMode == Settings.ViewMode.GLES) {
-                softwareYuvFrameSink
-            } else {
-                null
-            }
-            val decoder = FfmpegHevcDecoder(
+            AppLog.i("Configuring bundled FFmpeg ${type.displayName} decoder for ${width}x$height")
+            val yuvFrameSink = softwareYuvFrameSink
+            val decoder = FfmpegVideoDecoder(
+                codecType = type,
                 surface = if (yuvFrameSink == null) surface else null,
                 yuvFrameSink = yuvFrameSink,
                 width = width,
                 height = height
             )
             if (!decoder.start()) {
-                AppLog.e("Bundled FFmpeg HEVC decoder is unavailable")
+                AppLog.e("Bundled FFmpeg ${type.displayName} decoder failed to initialize")
+                if (surface.isValid) scheduleRestart("bundled_video_start_failed")
                 return
             }
-            softwareHevcDecoder = decoder
-            currentCodecName = "ffmpeg-hevc"
+            softwareVideoDecoder = decoder
+            for (slot in 0..parameterSets.lastIndex) {
+                val data = parameterSets[slot] ?: continue
+                if (decoder.decode(data, 0, data.size) < 0) {
+                    throw IllegalStateException("cached parameter sets rejected")
+                }
+            }
+            currentCodecName = if (type == CodecType.H264) "ffmpeg-h264" else "ffmpeg-hevc"
             running = true
             startTime = System.nanoTime()
             codecTypePinned = true
-            AppLog.i("Bundled FFmpeg HEVC decoder initialized")
+            AppLog.i("Bundled FFmpeg ${type.displayName} decoder initialized")
         } catch (e: Exception) {
-            AppLog.e("Failed to start bundled FFmpeg HEVC decoder", e)
-            softwareHevcDecoder = null
+            AppLog.e("Failed to start bundled FFmpeg ${type.displayName} decoder", e)
+            softwareVideoDecoder?.stop()
+            softwareVideoDecoder = null
             running = false
-            scheduleRestart("bundled_hevc_start_failed: ${e.message}")
+            if (mSurface == null || !mSurface!!.isValid) return
+            scheduleRestart("bundled_video_start_failed: ${e.message}")
         }
     }
+
 
     private fun onSoftwareFramesRendered(renderedFrames: Int) {
         lastFrameRenderedMs = elapsedRealtime()
@@ -1453,9 +1441,13 @@ class VideoDecoder(
         framesRenderedThisSession += renderedFrames
         if (!loggedFirstSoftwareFrame) {
             loggedFirstSoftwareFrame = true
-            AppLog.i("First bundled software HEVC frame rendered")
+            AppLog.i("First bundled software ${currentCodecType.displayName} frame rendered")
         }
-        onFirstFrameListener?.let { it(); onFirstFrameListener = null }
+        // Claim before invoking: a callback or the UI may register the next listener during delivery.
+        val firstFrameListener = synchronized(outputPublicationLock) {
+            onFirstFrameListener.also { onFirstFrameListener = null }
+        }
+        firstFrameListener?.invoke()
 
         frameCount += renderedFrames
         // The bundled decoder has no output thread, so drive the throughput tick from here. It
@@ -1476,36 +1468,10 @@ class VideoDecoder(
         }
     }
 
-    private fun detectCodecType(buffer: ByteArray, offset: Int, size: Int): CodecType? {
-        if (size < 5) return null
-        val limit = offset + size
-        // Need at least 5 bytes visible from position i: [0, 0, 0/1, 1, NAL_HEADER]
-        for (i in offset until limit - 4) {
-            if (buffer[i].toInt() == 0 && buffer[i+1].toInt() == 0) {
-                val headerPos: Int
-                if (buffer[i+2].toInt() == 0 && buffer[i+3].toInt() == 1) {
-                    headerPos = i + 4
-                } else if (buffer[i+2].toInt() == 1) {
-                    headerPos = i + 3
-                } else continue
-                if (headerPos >= limit) return null
-                val b = buffer[headerPos].toInt()
-                val avcType = b and 0x1F
-                if (avcType == 7 || avcType == 8) return CodecType.H264
-
-                val hevcType = (b and 0x7E) shr 1
-                if (hevcType in 32..34 && isHevcSupported()) return CodecType.H265
-            }
-            // Only scan the first ~100 bytes for performance
-            if (i - offset >= 96) break
-        }
-        return null
-    }
-
     /**
-     * Splits a combined packet into multiple NAL units and normalizes start codes.
+     * Walks the full access unit and exposes only parameter-set ranges, without copying picture data.
      */
-    private fun forEachNalUnit(buffer: ByteArray, offset: Int, size: Int, callback: (ByteArray, Int) -> Unit) {
+    private inline fun forEachParameterSet(buffer: ByteArray, offset: Int, size: Int, type: CodecType, callback: (Int, Int, Int) -> Unit) {
         var currentPos = offset
         val limit = offset + size
 
@@ -1532,19 +1498,20 @@ class VideoDecoder(
                     }
                 }
 
-                val rawNal = buffer.copyOfRange(nalStart, nalEnd)
-                val fixedNal = if (startCodeLen == 3) {
-                    // Normalize to 4-byte start codes for better decoder compatibility
-                    ByteArray(rawNal.size + 1).apply {
-                        this[0] = 0; System.arraycopy(rawNal, 0, this, 1, rawNal.size)
+                val header = nalStart + startCodeLen
+                if (header < nalEnd) {
+                    val first = buffer[header].toInt() and 0xFF
+                    val kind = if (type == CodecType.H265) (first and 0x7E) shr 1 else first and 0x1F
+                    val parameterSet = if (type == CodecType.H265) kind in 32..34 else kind == 7 || kind == 8
+                    if (parameterSet) {
+                        callback(header, nalEnd - header, kind)
                     }
-                } else rawNal
-
-                callback(fixedNal, if (startCodeLen == 3) 4 else 4)
+                }
                 currentPos = nalEnd
             } else break
         }
     }
+
 
     /**
      * Reads this session's sequence parameter set: picture size for the codec, and the buffering
@@ -1566,6 +1533,8 @@ class VideoDecoder(
      * than assume either way. Read-only - nothing modifies the bitstream.
      */
     private fun applyParameterSet(nalData: ByteArray, headerLen: Int, type: CodecType) {
+        val seedDimensions = codec == null && softwareVideoDecoder == null && !renderedThisSession
+        if (!seedDimensions && loggedParameterSet) return
         val length = nalData.size - headerLen
         val summary: String?
         val parsedWidth: Int
@@ -1582,7 +1551,7 @@ class VideoDecoder(
             parsedHeight = parsed?.height ?: 0
         }
 
-        applyStreamDimensions(parsedWidth, parsedHeight, type)
+        if (seedDimensions) applyStreamDimensions(parsedWidth, parsedHeight, type)
 
         if (loggedParameterSet) return
         loggedParameterSet = true
@@ -1594,7 +1563,7 @@ class VideoDecoder(
     }
 
     /**
-     * Takes the picture size from the stream rather than from what was negotiated.
+     * Seeds initial configuration from an SPS; it does not identify the active picture's SPS.
      *
      * H.265 had no parser at all, so `mWidth` stayed zero and every H.265 session configured its
      * codec from `HeadUnitScreenConfig`'s negotiated size - which is what the phone was *asked* for,
@@ -1603,9 +1572,9 @@ class VideoDecoder(
      *
      * Bounded rather than trusted, in the same spirit as the crop-rectangle check: a parse that comes
      * back with something outside any resolution a head unit projects is more likely a desync than a
-     * discovery, and the negotiated size is the better guess in that case. Nothing here is final
-     * either way - [handleOutputFormatChange] corrects the size again from the component's own output
-     * format once frames start, which is the authority when they disagree.
+     * discovery, and the negotiated size is the better guess in that case. Actual MediaCodec
+     * output format or FFmpeg frame dimensions remain authoritative. Receiving another SPS
+     * while playing must not change the displayed size before a picture uses it.
      */
     private fun applyStreamDimensions(width: Int, height: Int, type: CodecType) {
         if (width <= 0 || height <= 0) return
@@ -1627,27 +1596,12 @@ class VideoDecoder(
      * Extracts SPS/PPS/VPS data for the decoder configuration (CSD).
      */
     private fun scanAndApplyConfig(buffer: ByteArray, offset: Int, size: Int, type: CodecType) {
-        forEachNalUnit(buffer, offset, size) { nalData, headerLen ->
-            val nalFirstByte = nalData[headerLen].toInt()
-            if (type == CodecType.H264) {
-                val nalType = nalFirstByte and 0x1F
-                if (nalType == 7) { // SPS
-                    sps = nalData
-                    applyParameterSet(nalData, headerLen, CodecType.H264)
-                } else if (nalType == 8) pps = nalData // PPS
-
-                // H.264 requires at least SPS to start
-                if (sps != null) codecConfigured = true
-            } else {
-                val nalType = (nalFirstByte and 0x7E) shr 1
-                if (nalType == 32) vps = nalData
-                else if (nalType == 33) {
-                    sps = nalData
-                    applyParameterSet(nalData, headerLen, CodecType.H265)
-                } else if (nalType == 34) pps = nalData
-
-                // H.265 requires VPS and SPS to start reliably
-                if (vps != null && sps != null) codecConfigured = true
+        forEachParameterSet(buffer, offset, size, type) { header, length, kind ->
+            val previous = parameterSets.latest(kind)
+            val data = parameterSets.store(buffer, header, length, type == CodecType.H265, kind)
+                ?: return@forEachParameterSet
+            if ((kind == 7 || kind == 33) && data !== previous) {
+                applyParameterSet(data, 4, type)
             }
         }
     }
@@ -1669,9 +1623,8 @@ class VideoDecoder(
 
         // Apply Codec Specific Data (CSD) from parsed SPS/PPS/VPS
         if (mimeType == CodecType.H265.mimeType) {
-            val combined = (vps ?: byteArrayOf()) + (sps ?: byteArrayOf()) + (pps ?: byteArrayOf())
-            if (combined.isNotEmpty()) {
-                format.setByteBuffer("csd-0", ByteBuffer.wrap(combined))
+            parameterSets.codecSpecificData(hevc = true, index = 0)?.let {
+                format.setByteBuffer("csd-0", ByteBuffer.wrap(it))
             }
             // [BUG_FIX] Dynamic buffer size based on resolution.
             // 8MB is too large for many older 1080p decoders (Allwinner/Rockchip),
@@ -1691,8 +1644,10 @@ class VideoDecoder(
             format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize)
             requestedMaxInputSize = maxInputSize
         } else {
-            if (sps != null) format.setByteBuffer("csd-0", ByteBuffer.wrap(sps!!))
-            if (pps != null) format.setByteBuffer("csd-1", ByteBuffer.wrap(pps!!))
+            val sequenceData = parameterSets.codecSpecificData(hevc = false, index = 0)
+            val pictureData = parameterSets.codecSpecificData(hevc = false, index = 1)
+            if (sequenceData != null) format.setByteBuffer("csd-0", ByteBuffer.wrap(sequenceData))
+            if (pictureData != null) format.setByteBuffer("csd-1", ByteBuffer.wrap(pictureData))
 
             // [BUG_FIX] Lower buffer for legacy devices (Android < 9) to prevent startup stalls.
             // Kept as a ceiling; see the H.265 branch above for why the request itself is now
@@ -1916,14 +1871,14 @@ class VideoDecoder(
      * real change in what reaches the component and it was previously invisible: three lines a
      * session make it a fact in the capture instead of an argument about the code.
      */
-    private fun reportContentOnce(content: CodecConfigScanner.Content) {
+    private fun reportContentOnce(content: CodecConfigScanner.Content, events: OutputEvents) {
         if (!loggedContentKinds.add(content)) return
         val consequence = when (content) {
             CodecConfigScanner.Content.PARAMETER_SETS_ONLY -> "flagged to the codec as configuration"
             CodecConfigScanner.Content.PARAMETER_SETS_WITH_PICTURE -> "carries a picture too, so not flagged"
             CodecConfigScanner.Content.NO_PARAMETER_SETS -> "an ordinary frame"
         }
-        AppLog.i("VideoDecoder: access unit classified $content - $consequence (first this session)")
+        events.info("VideoDecoder: access unit classified $content - $consequence (first this session)")
     }
 
     /**
@@ -1931,44 +1886,30 @@ class VideoDecoder(
      *
      * Diagnostic only - see [ParameterSetTracker] for why nothing here writes to the stored CSD or
      * the configured size. Runs only on units the config scanner says carry parameter sets, which is
-     * keyframes and config messages, so the per-NAL copying [forEachNalUnit] does is paid a few times
-     * a minute rather than sixty times a second.
+     * keyframes and config messages; [forEachParameterSet] never copies their picture payload.
      */
-    private fun trackParameterSets(data: ByteArray, offset: Int, size: Int) {
+    private fun trackParameterSets(data: ByteArray, offset: Int, size: Int, events: OutputEvents) {
         val hevc = currentCodecType == CodecType.H265
-        var spsNal: ByteArray? = null
-        var spsHeaderLen = 0
-        forEachNalUnit(data, offset, size) { nalData, headerLen ->
-            val first = nalData[headerLen].toInt()
-            val kind = if (hevc) {
-                when ((first and 0x7E) shr 1) {
-                    32 -> ParameterSetTracker.Kind.VPS
-                    33 -> ParameterSetTracker.Kind.SPS
-                    34 -> ParameterSetTracker.Kind.PPS
-                    else -> null
-                }
-            } else {
-                when (first and 0x1F) {
-                    7 -> ParameterSetTracker.Kind.SPS
-                    8 -> ParameterSetTracker.Kind.PPS
-                    else -> null
-                }
+        var spsOffset = -1
+        var spsLength = 0
+        forEachParameterSet(data, offset, size, currentCodecType) { header, length, nalKind ->
+            val kind = when (nalKind) {
+                32 -> ParameterSetTracker.Kind.VPS
+                7, 33 -> ParameterSetTracker.Kind.SPS
+                8, 34 -> ParameterSetTracker.Kind.PPS
+                else -> return@forEachParameterSet
             }
-            if (kind != null) {
-                parameterSetTracker.offer(kind, nalData, headerLen, nalData.size - headerLen)
-                if (kind == ParameterSetTracker.Kind.SPS) {
-                    spsNal = nalData
-                    spsHeaderLen = headerLen
-                }
+            parameterSetTracker.offer(kind, data, header, length)
+            if (kind == ParameterSetTracker.Kind.SPS) {
+                spsOffset = header
+                spsLength = length
             }
         }
 
         val change = parameterSetTracker.takeChange() ?: return
         val kinds = change.kinds.joinToString(" ")
-        // Snapshotted because the lambda above assigns it; a captured var is not smart-castable.
-        val sps = spsNal
-        val sizeNote = if (sps != null) describeSizeChange(sps, spsHeaderLen, hevc) else "size unread"
-        AppLog.w(
+        val sizeNote = if (spsOffset >= 0) describeSizeChange(data, spsOffset, spsLength, hevc) else "size unread"
+        events.warn(
             "VideoDecoder: parameter sets changed mid-session ($kinds, $sizeNote) - change #${change.ordinal}"
         )
     }
@@ -1978,8 +1919,7 @@ class VideoDecoder(
      * configured size is corrected by the component's own output format, and second-guessing it from
      * here is the behaviour change this measurement exists to justify or rule out.
      */
-    private fun describeSizeChange(nalData: ByteArray, headerLen: Int, hevc: Boolean): String {
-        val length = nalData.size - headerLen
+    private fun describeSizeChange(nalData: ByteArray, headerLen: Int, length: Int, hevc: Boolean): String {
         val width: Int
         val height: Int
         if (hevc) {
@@ -2007,10 +1947,10 @@ class VideoDecoder(
         /** No free input buffer inside the patience window; nothing was queued. */
         NO_INPUT_BUFFER,
 
-        /** Frame exceeds the codec's input buffer; dropped and accounted for inside. */
+        /** Frame exceeds the codec's input buffer; the caller records the dropped reference. */
         DROPPED_TOO_LARGE,
 
-        /** The codec threw mid-feed; the frame is lost and the dequeued buffer was handed back. */
+        /** The codec threw mid-feed; return any held slot, or request restart if return also fails. */
         ERROR,
     }
 
@@ -2022,146 +1962,140 @@ class VideoDecoder(
      * the codec as a frame of its own and corrupts the picture as surely as the loss it was
      * trying to avoid - that is what the old truncate-and-feed path did.
      */
-    private fun feedInputBuffer(buffer: ByteBuffer, arrivalNanos: Long): FeedResult {
-        val currentCodec = codec ?: return FeedResult.NO_INPUT_BUFFER
-        // Snapshot with the codec: stop() nulls the field, and a pre-API 21 buffer must be this codec's.
-        @Suppress("DEPRECATION") val currentInputBuffers = inputBuffers
-        // Outside the try so the catch can hand a dequeued buffer back, and so it can tell a
-        // throw before queueInputBuffer from one after it - the frame's fate differs.
+    private fun feedInputBuffer(
+        owner: FeedOwner, events: OutputEvents, buffer: ByteBuffer, arrivalNanos: Long
+    ): FeedResult {
+        // Capture the codec and its legacy input-buffer array together in FeedOwner. A late native
+        // completion must never switch to the replacement codec's buffers or timestamp origin.
+        val currentCodec = owner.codec
+        // Keep these outside try: catch must distinguish a dequeued slot from accepted input.
         var inputIndex = -1
         var queued = false
+        var keyframeToken = 0L
         try {
-            // ~300ms of patience. Anything much shorter gives up while the codec is merely busy:
-            // at 30ms this reported a full input queue within a second of every decoder start,
-            // before the component had drained its first buffers, on hardware that then went on to
-            // decode at full rate.
+            // ~300ms of patience. A much shorter budget used to report a full queue within a second
+            // of startup on hardware that subsequently decoded at full rate; busy is not wedged.
+            // Time the entire dequeue sequence, including the first blocking call, not just retries.
             //
-            // The whole dequeue is timed, not just the retries: the first call blocks for up to
-            // TIMEOUT_US on its own, and what holds up audio behind us is the total.
-            //
-            // running is checked every iteration because interrupt() cannot abort a MediaCodec
-            // call: stop() clears running before it joins this thread, so checking it here bounds
-            // the time a stopping decoder waits on us to one dequeue rather than the full budget -
-            // which is what lets stop()'s join reliably win before it releases the codec.
+            // interrupt() cannot abort a native MediaCodec call. Check worker ownership on every
+            // iteration so shutdown waits for at most the current dequeue, not the remaining budget.
+            // A vendor call can still overrun the join; publication checks exclude its late result.
             val waitStart = elapsedRealtime()
-            while (running && elapsedRealtime() - waitStart < VideoFeedQueuePolicy.INPUT_DEQUEUE_PATIENCE_MS) {
+            while (isCurrentFeed(owner) &&
+                elapsedRealtime() - waitStart < VideoFeedQueuePolicy.INPUT_DEQUEUE_PATIENCE_MS) {
                 inputIndex = currentCodec.dequeueInputBuffer(TIMEOUT_US)
-                if (inputIndex >= 0) break
-                if (decoderNeedsRestart) break
+                if (inputIndex >= 0 || decoderNeedsRestart) break
             }
-            inputWaitMs += elapsedRealtime() - waitStart
-
-            if (inputIndex < 0) {
-                // Silent here on purpose. A wait cut short by a teardown is ordinary and the frame
-                // is moot, so "full" would blame the codec on every stop; and the caller reports the
-                // genuine case through logFeedDrop, which throttles it. Printing at ERROR here as
-                // well doubled the per-frame logging cost of a saturated link for no information.
-                return FeedResult.NO_INPUT_BUFFER
-            }
-
-            // The output thread may have declared this codec dead while the dequeue ran.
-            if (decoderNeedsRestart) return FeedResult.NO_INPUT_BUFFER
+            publishFeed(owner) { inputWaitMs += elapsedRealtime() - waitStart }
+                ?: return FeedResult.NO_INPUT_BUFFER
+            // The caller throttles genuine saturation reports. A retired worker or an already
+            // requested restart must not produce a second "input full" diagnostic for the same event.
+            if (inputIndex < 0 || decoderNeedsRestart) return FeedResult.NO_INPUT_BUFFER
             val inputBuffer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 currentCodec.getInputBuffer(inputIndex)
             } else {
-                currentInputBuffers?.get(inputIndex)
+                owner.inputBuffers?.get(inputIndex)
             }
-
+            if (!isCurrentFeed(owner)) return FeedResult.NO_INPUT_BUFFER
             if (inputBuffer == null) {
-                // Rare (a codec mid-flush can answer null), but the index is dequeued and must go
-                // back or the pool is one buffer shallower for the rest of the codec's life.
+                // A component can return a null view during a flush. The index was still acquired:
+                // return it empty or the codec's available input pool becomes one slot shallower.
                 currentCodec.queueInputBuffer(inputIndex, 0, 0, 0, 0)
                 return FeedResult.NO_INPUT_BUFFER
             }
             inputBuffer.clear()
-
             val capacity = inputBuffer.capacity()
-            if (!loggedInputBufferCapacity) {
-                loggedInputBufferCapacity = true
-                AppLog.i(
-                    "Codec input buffer: requested ${requestedMaxInputSize / 1024}KB, " +
-                        "got ${capacity / 1024}KB per buffer"
-                )
-            }
-
             val content = if (buffer.hasArray()) {
                 CodecConfigScanner.classify(
-                    buffer.array(), buffer.position(), buffer.remaining(), currentCodecType == CodecType.H265
+                    buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), owner.type == CodecType.H265
                 )
-            } else {
-                CodecConfigScanner.Content.NO_PARAMETER_SETS
-            }
-            reportContentOnce(content)
-            if (content != CodecConfigScanner.Content.NO_PARAMETER_SETS && buffer.hasArray()) {
-                trackParameterSets(buffer.array(), buffer.position(), buffer.remaining())
-            }
+            } else CodecConfigScanner.Content.NO_PARAMETER_SETS
             val isKeyframe = buffer.hasArray() && VideoKeyframeScanner.containsKeyframe(
-                buffer.array(), buffer.position(), buffer.remaining(), currentCodecType == CodecType.H265
+                buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), owner.type == CodecType.H265
             )
-            // BUFFER_FLAG_CODEC_CONFIG says the buffer is codec-specific data and nothing else, so a
-            // component may consume it and produce no output. Set it only for a unit that really is
-            // only parameter sets: on a keyframe that leads with SPS/PPS and continues into its IDR
-            // slice, this flag risks the slice - and with it the repair the keyframe was for.
+            publishFeed(owner) {
+                if (!loggedInputBufferCapacity) {
+                    loggedInputBufferCapacity = true
+                    events.info("Codec input buffer: requested ${requestedMaxInputSize / 1024}KB, " +
+                        "got ${capacity / 1024}KB per buffer")
+                }
+                reportContentOnce(content, events)
+                if (content != CodecConfigScanner.Content.NO_PARAMETER_SETS && buffer.hasArray()) {
+                    trackParameterSets(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining(), events)
+                }
+            } ?: return FeedResult.NO_INPUT_BUFFER
+            // BUFFER_FLAG_CODEC_CONFIG marks configuration rather than picture data. A component
+            // may consume it without producing output, so SPS/PPS followed by an IDR slice must
+            // remain ordinary input; flagging the whole unit risks losing the repair picture.
             //
-            // Chipset name no longer decides this. The three families that were listed here
-            // (Rockchip, Allwinner, Telechips) were the only ones that flagged config mid-stream at
-            // all, and they were also the only ones that could flag a fused keyframe as
-            // configuration, because the old check read the first NAL and answered for the whole
-            // unit. Getting the classification right makes the list unnecessary in both directions:
-            // every device now gets the flag on genuine config, which Moonlight's errata says some
-            // decoders crash without, and no device gets it on a picture.
+            // Classification, not chipset name, decides this. The old Rockchip/Allwinner/Telechips
+            // allowlist flagged mid-stream config but could also flag a fused keyframe because it
+            // only checked the first NAL. Inspecting the whole unit preserves genuine configuration
+            // delivery on all devices without misclassifying pictures on the formerly listed ones.
             val flags = if (content == CodecConfigScanner.Content.PARAMETER_SETS_ONLY) {
                 MediaCodec.BUFFER_FLAG_CODEC_CONFIG
             } else 0
-
             if (buffer.remaining() > capacity) {
-                // Handled here rather than in the caller because this is the only place the real
-                // buffer capacity is known - codecs are free to allocate more or less than the
-                // KEY_MAX_INPUT_SIZE the format asked for. The dequeued buffer goes straight back
-                // empty so the codec's pool is not depleted by the drop.
-                AppLog.w("Frame larger than the codec input buffer: ${buffer.remaining()} > $capacity bytes. Dropping frame.")
-                currentCodec.queueInputBuffer(inputIndex, 0, 0, 0, 0)
-                notifyFrameDropped()
+                // Check the actual component buffer, not KEY_MAX_INPUT_SIZE: the codec may allocate
+                // less than requested. Return this acquired slot empty instead of truncating a frame
+                // or depleting the codec's pool. The caller records the lost reference frame.
+                events.warn("Frame larger than the codec input buffer: ${buffer.remaining()} > $capacity bytes. Dropping frame.")
+                if (isCurrentFeed(owner)) currentCodec.queueInputBuffer(inputIndex, 0, 0, 0, 0)
                 return FeedResult.DROPPED_TOO_LARGE
             }
-
             inputBuffer.put(buffer)
             inputBuffer.flip()
-
-            val pts = ((if (arrivalNanos > 0L) arrivalNanos else System.nanoTime()) - startTime) / 1000
-
+            val pts = ((if (arrivalNanos > 0L) arrivalNanos else System.nanoTime()) - owner.startTime) / 1000
+            publishFeed(owner) {
+                if (isKeyframe) keyframeToken = keyframeRepair.beginKeyframe(pts)
+            } ?: return FeedResult.NO_INPUT_BUFFER
+            // Output may already be released before this call returns. Reserve first, but do not
+            // let provisional output acknowledge a keyframe whose input ultimately throws.
             currentCodec.queueInputBuffer(inputIndex, 0, inputBuffer.limit(), pts, flags)
             queued = true
-            if (isKeyframe) {
-                // Fed, not yet repaired. The picture counts as repaired at the output side, where
-                // a keyframe that arrived holed is told apart from one that decodes.
-                keyframeRepair.onKeyframeFed(pts)
-                lastKeyframeFedMs = elapsedRealtime()
-                AppLog.i("VideoDecoder: keyframe reached the codec (${inputBuffer.limit()} bytes)")
+            publishFeed(owner) {
+                if (isKeyframe) {
+                    keyframeRepair.commitKeyframe(keyframeToken)
+                    lastKeyframeFedMs = elapsedRealtime()
+                    events.info("VideoDecoder: keyframe reached the codec (${inputBuffer.limit()} bytes)")
+                }
             }
             return FeedResult.FED
         } catch (e: Exception) {
             if (queued) {
-                // The frame reached the codec; only the bookkeeping after the queue failed. Calling
-                // it anything but fed would report a frame the codec holds as shed and spend a
-                // keyframe request on a picture that is not broken.
+                // The codec already accepted the frame; only later bookkeeping failed. Reporting a
+                // drop here would request repair for input that is still owned by the codec.
                 AppLog.e("Error after feeding input buffer", e)
                 return FeedResult.FED
             }
-            if (inputIndex >= 0) {
-                // Hand the dequeued buffer back empty, or the codec's input pool is permanently one
-                // buffer shallower per throw - enough of these and every later feed times out with
-                // NO_INPUT_BUFFER, which the stall watchdog then answers with a rebuild the codec
-                // never earned.
+            publishFeed(owner) { keyframeRepair.cancelKeyframe(keyframeToken) }
+            if (inputIndex >= 0 && isCurrentFeed(owner)) {
+                // A failed feed does not necessarily return its acquired slot. Return it empty;
+                // repeated forgotten slots would otherwise look like permanent input starvation.
+                // If this return fails too, let the existing restart path retire the uncertain pool.
                 try {
                     currentCodec.queueInputBuffer(inputIndex, 0, 0, 0, 0)
                 } catch (returnError: Exception) {
+                    publishFeed(owner) { scheduleRestart("input_buffer_return_failed") }
                     AppLog.e("Could not return the input buffer after a failed feed", returnError)
                 }
             }
             AppLog.e("Error feeding input buffer", e)
             return FeedResult.ERROR
         }
+    }
+
+    private fun reportKeyframeRepair(events: OutputEvents) {
+        if (keyframeRepair.timestampsUnusable && !loggedUnusableOutputTimestamps) {
+            loggedUnusableOutputTimestamps = true
+            events.warn(
+                "$currentCodecName never carries a keyframe's timestamp through to its " +
+                    "output, so a repaired picture is read from frames arriving rather " +
+                    "than from the frame that repaired it."
+            )
+        }
+        events.info("VideoDecoder: keyframe decoded - the picture is repaired")
+        events.callback(onKeyframeObserved)
     }
 
     /**
@@ -2182,9 +2116,8 @@ class VideoDecoder(
      * `rendered` against `fed` to judge the codec, and `presented` against nothing else at all when
      * the complaint is that the picture is not smooth.
      *
-     * Called from the output thread on every loop iteration. That loop turns over at least every
-     * 10ms (dequeueOutputBuffer's timeout) whether or not a frame came out, so the tick still
-     * fires while nothing is rendering - which is the case most worth reporting.
+     * Called on every output-loop iteration, including bounded dequeue timeouts while the phone
+     * is idle or the codec has stopped producing frames.
      */
     private fun logThroughput(
         info: (String) -> Unit = { AppLog.i(it) },
@@ -2294,6 +2227,7 @@ class VideoDecoder(
         // still return from a native call while its replacement is collecting output; sharing
         // indices would let one worker release the other's buffers against the wrong codec.
         val readyIndices = IntArray(MAX_CATCHUP_SKIPS + 2)
+        val readyTimestamps = LongArray(readyIndices.size)
         val events = OutputEvents()
         val info: (String) -> Unit = { events.info(it, "VideoDecoder.logThroughput") }
         val warn: (String) -> Unit = { events.warn(it, "VideoDecoder.logThroughput") }
@@ -2305,10 +2239,14 @@ class VideoDecoder(
         // A vendor dequeue may outlive stop's join budget. It must never consume a newer
         // codec after that replacement sets running=true again.
         outputLoop@ while (running && outputThread === self) {
+            var readyCount = 0
+            var releasedCount = 0
             try {
-                val outputIndex = currentCodec.dequeueOutputBuffer(bufferInfo, 10000L)
+                val outputIndex = currentCodec.dequeueOutputBuffer(bufferInfo, OUTPUT_TIMEOUT_US)
                 if (!running || outputThread !== self) break
                 if (outputIndex >= 0) {
+                    readyIndices[readyCount] = outputIndex
+                    readyTimestamps[readyCount++] = bufferInfo.presentationTimeUs
                     // The codec produced output, whatever the screen ends up showing. This is the
                     // stall watchdog's clock and it is deliberately not the render stamp: the two
                     // were the same fact only while every dequeued buffer was also displayed, and
@@ -2340,15 +2278,14 @@ class VideoDecoder(
                     // until a third frame is ready: at depth two both are rendered back to back
                     // and the display shows whichever it can, and only a genuine burst - the one
                     // that arrives after silence, dozens deep - reaches the discard path.
-                    readyIndices[0] = outputIndex
-                    var readyCount = 1
                     var passes = 0
                     while (readyCount <= MAX_CATCHUP_SKIPS && passes < MAX_CATCHUP_SKIPS * 2) {
                         passes++
                         val readyIndex = currentCodec.dequeueOutputBuffer(bufferInfo, 0L)
                         if (!running || outputThread !== self) break
                         if (readyIndex >= 0) {
-                            readyIndices[readyCount++] = readyIndex
+                            readyIndices[readyCount] = readyIndex
+                            readyTimestamps[readyCount++] = bufferInfo.presentationTimeUs
                         } else if (readyIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                             handleOutputFormatChange(currentCodec, currentCodec.outputFormat)
                         } else {
@@ -2356,125 +2293,105 @@ class VideoDecoder(
                         }
                     }
 
-                    val renderIndex = readyIndices[readyCount - 1]
                     if (!running || outputThread !== self) break
 
-                    // The repair question is answered before anything is released, because whether
-                    // this pass's frame repaired the picture decides whether it is shown at all.
-                    // bufferInfo carries the last successful dequeue, which is renderIndex. The
-                    // frames released ahead of it in this pass decoded earlier and so have smaller
-                    // timestamps, and the ones the catch-up branch discarded decoded too - so this
-                    // one stamp answers for the whole pass either way.
-                    var repaired = false
-                    var outcome = CorruptionConcealmentPolicy.Outcome.SHOW
+                    // Keep candidate ownership fixed across native releases. Recapturing after a
+                    // release could credit a newer input that was reserved while it blocked.
+                    var repairToken = 0L
+                    var acceptedRepairToken = 0L
+                    var reportedStamp = 0L
                     publishOutput(self) {
-                        repaired = keyframeRepair.onFrameRendered(bufferInfo.presentationTimeUs)
-                        // The report is consumed whatever the outcome is. One answered with SHOW while
-                        // the policy is disarmed must not linger, or it would reopen a window against a
-                        // stale fault the moment the next keyframe re-arms.
-                        val reportedStamp = corruptionReportedMs
-                        val reported = reportedStamp > consumedCorruptionMs
-                        if (reported) consumedCorruptionMs = reportedStamp
-                        val passNow = elapsedRealtime()
-                        outcome = CorruptionConcealmentPolicy.next(
-                            passNow,
-                            concealState,
-                            concealWindowOpenedMs,
-                            corruptionReported = reported,
-                            keyframeRepaired = repaired,
-                            sessionHasRendered = renderedThisSession,
-                        )
-                        applyConcealmentTransition(outcome, passNow, concealmentWarning)
-
+                        repairToken = keyframeRepair.outputToken()
+                        acceptedRepairToken = keyframeRepair.acceptedOutputToken()
+                        reportedStamp = corruptionReportedMs
                     } ?: break
-                    events.dispatch(isCurrent)
 
-                    var alsoRendered = 0
-                    if (!outcome.renders) {
-                        // The whole pass is withheld; the surface keeps the last good frame. These
-                        // buffers are decoded first, so the codec's reference state stays current -
-                        // the feed is never gated, only what the screen shows.
-                        for (i in 0 until readyCount - 1) {
-                            currentCodec.releaseOutputBuffer(readyIndices[i], false)
-                            if (!running || outputThread !== self) break@outputLoop
-                        }
-                    } else if (readyCount > 2) {
-                        for (i in 0 until readyCount - 1) {
-                            currentCodec.releaseOutputBuffer(readyIndices[i], false)
-                            if (!running || outputThread !== self) break@outputLoop
-                        }
-                    } else {
-                        for (i in 0 until readyCount - 1) {
-                            currentCodec.releaseOutputBuffer(readyIndices[i], true)
-                            if (!running || outputThread !== self) break@outputLoop
-                            alsoRendered++
-                        }
-                    }
-                    currentCodec.releaseOutputBuffer(renderIndex, outcome.renders)
-                    // releaseOutputBuffer and listeners may block beyond stop's join budget.
-                    // Their eventual return is not output progress for a replacement decoder.
-                    if (!running || outputThread !== self) break
-                    publishOutput(self) {
-                        framesRendered += alsoRendered
-                        frameCount += alsoRendered
-                        framesRenderedThisSession += alsoRendered
-                        if (!outcome.renders) framesConcealed += (readyCount - 1).toLong()
-                        else if (readyCount > 2) framesSkippedAtRender += readyCount - 1
-                        consecutiveErrors = 0
-                        if (outcome.renders) {
-                            lastFrameRenderedMs = elapsedRealtime()
-                            renderedThisSession = true
-                            // repaired implies a rendering outcome (CLOSE_REPAIRED or REARM), so the
-                            // repair announcement cannot be lost to a concealed pass.
-                            if (repaired) {
-                                if (keyframeRepair.timestampsUnusable && !loggedUnusableOutputTimestamps) {
-                                    loggedUnusableOutputTimestamps = true
-                                    events.warn(
-                                        "$currentCodecName never carries a keyframe's timestamp through to its " +
-                                            "output, so a repaired picture is read from frames arriving rather " +
-                                            "than from the frame that repaired it."
+                    var presented = false
+                    var queuedFirstFrameListener: (() -> Unit)? = null
+                    for (i in 0 until readyCount) {
+                        val outputPts = readyTimestamps[i]
+                        // A later repair picture must not authorize an earlier damaged one.
+                        // Preview per slot; only a successful release supplies actual proof.
+                        val outcome = publishOutput(self) {
+                            CorruptionConcealmentPolicy.next(
+                                elapsedRealtime(), concealState, concealWindowOpenedMs,
+                                corruptionReported = reportedStamp > consumedCorruptionMs,
+                                keyframeRepaired = keyframeRepair.canRepair(
+                                    repairToken, acceptedRepairToken, outputPts, countOutput = i == 0
+                                ),
+                                sessionHasRendered = renderedThisSession,
+                            )
+                        } ?: break@outputLoop
+                        val render = outcome.renders && (readyCount <= 2 || i == readyCount - 1)
+                        currentCodec.releaseOutputBuffer(readyIndices[i], render)
+                        releasedCount++
+                        // Each native completion is independent. A later failure must not erase
+                        // the picture, repair evidence or notification already delivered here.
+                        publishOutput(self) {
+                            val now = if (i == 0 || render) elapsedRealtime() else 0L
+                            if (i == 0 || render) {
+                                // Intermediate discarded slots neither advance this pass again
+                                // nor supply picture proof.
+                                keyframeRepair.onOutputReleased(
+                                    repairToken, acceptedRepairToken, outputPts, render, countOutput = i == 0
+                                )
+                                val repaired = keyframeRepair.consumeRepair()
+                                applyConcealmentTransition(
+                                    CorruptionConcealmentPolicy.next(
+                                        now, concealState, concealWindowOpenedMs,
+                                        corruptionReported = reportedStamp > consumedCorruptionMs,
+                                        keyframeRepaired = repaired,
+                                        sessionHasRendered = renderedThisSession,
+                                    ), now, concealmentWarning
+                                )
+                                if (reportedStamp > consumedCorruptionMs) consumedCorruptionMs = reportedStamp
+                                if (repaired) reportKeyframeRepair(events)
+                            }
+                            if (render) {
+                                lastFrameRenderedMs = now
+                                renderedThisSession = true
+                                framesRenderedThisSession++
+                                // Report the first actual render, even if a later slot fails.
+                                if (!loggedFirstHardwareFrame) {
+                                    loggedFirstHardwareFrame = true
+                                    events.info(
+                                        if (keyframeRepair.keyframeDecoded) "First frame rendered (hardware decode)"
+                                        else "First frame rendered (hardware decode) - no keyframe has decoded " +
+                                            "yet, so this is output, not a picture"
                                     )
                                 }
-                                events.info("VideoDecoder: keyframe decoded - the picture is repaired")
-                                events.callback(onKeyframeObserved)
-
-                            }
-                            framesRenderedThisSession++
-                            // The one landmark that says video actually reached the screen on the path
-                            // almost every unit runs. Driven by its own flag rather than the listener
-                            // below, which only exists while the projection activity is up — the sessions
-                            // worth timing are exactly the ones where it might not be.
-                            if (!loggedFirstHardwareFrame) {
-                                loggedFirstHardwareFrame = true
-                                // The flag resets per codec instance, so on a warm rebuild this first
-                                // frame can be gray output decoded from a P-frame rather than a picture.
-                                // Say which, keeping the prefix that marks the landmark.
-                                events.info(
-                                    if (keyframeRepair.keyframeDecoded) "First frame rendered (hardware decode)"
-                                    else "First frame rendered (hardware decode) - no keyframe has decoded " +
-                                        "yet, so this is output, not a picture"
-                                )
-                            }
-                            onFirstFrameListener?.let { expected ->
-                                events.callback {
-                                    // Keep the notification pending if this worker retires before
-                                    // dispatch. Once claimed, deliver the captured callback even if
-                                    // retirement follows: it must not be lost or clear a new one.
-                                    val claimed = publishOutput(self) {
-                                        if (onFirstFrameListener === expected) {
-                                            onFirstFrameListener = null
-                                            expected
-                                        } else null
+                                val expected = onFirstFrameListener
+                                if (expected != null && expected !== queuedFirstFrameListener) {
+                                    queuedFirstFrameListener = expected
+                                    events.callback {
+                                        // Claim at dispatch so retirement cannot consume a replacement listener.
+                                        val claimed = publishOutput(self) {
+                                            if (onFirstFrameListener === expected) {
+                                                onFirstFrameListener = null
+                                                expected
+                                            } else null
+                                        }
+                                        claimed?.invoke()
                                     }
-                                    claimed?.invoke()
                                 }
+                                frameCount++
+                                framesRendered++
+                                // The surface keeps one picture per pass, including a partial pass.
+                                if (!presented) {
+                                    framesPresented++
+                                    presented = true
+                                }
+                            } else if (!outcome.renders) {
+                                framesConcealed++
+                            } else {
+                                framesSkippedAtRender++
                             }
-
-                            frameCount++
-                            framesRendered++
-                            // Once per pass, on the last buffer only - the one the surface keeps.
-                            framesPresented++
-
+                            Unit
+                        } ?: break@outputLoop
+                    }
+                    consecutiveErrors = 0
+                    publishOutput(self) {
+                        if (presented) {
                             val now = System.currentTimeMillis()
                             val elapsed = now - lastFpsLogTime
                             if (elapsed >= 1000) {
@@ -2485,8 +2402,6 @@ class VideoDecoder(
                                 frameCount = 0
                                 lastFpsLogTime = now
                             }
-                        } else {
-                            framesConcealed++
                         }
                         Unit
                     } ?: break
@@ -2499,11 +2414,23 @@ class VideoDecoder(
 
                 val restart = publishOutput(self) {
                     logThroughput(info, warn)
+                    if (keyframeRepair.consumeRepair()) {
+                        // Input acceptance can finish after its sole output has already rendered.
+                        // Finish on a bounded idle tick; a static phone screen need not send more.
+                        val now = elapsedRealtime()
+                        applyConcealmentTransition(
+                            CorruptionConcealmentPolicy.next(
+                                now, concealState, concealWindowOpenedMs,
+                                corruptionReported = false, keyframeRepaired = true,
+                                sessionHasRendered = renderedThisSession,
+                            ), now, concealmentWarning
+                        )
+                        reportKeyframeRepair(events)
+                    }
 
                     // A window can only close on an output buffer, and a phone that goes idle
-                    // mid-window sends none - so the cap is also held on wall clock, once per loop
-                    // turn (the dequeue above times out in 10ms). On expiry there is no buffer to
-                    // show; the transition and its line happen now, the next buffer renders.
+                    // mid-window sends none. Check the wall-clock cap on each bounded dequeue
+                    // timeout too; the next buffer renders even if none arrived at expiry.
                     if (concealState == CorruptionConcealmentPolicy.State.CONCEALING) {
                         val tickNow = elapsedRealtime()
                         applyConcealmentTransition(
@@ -2559,9 +2486,9 @@ class VideoDecoder(
                                 lastSyncStallSuppressedLogMs = now
                                 events.warn("Decoder has had no keyframe since it started ${stallGap}ms ago - waiting for one instead of rebuilding.")
                             }
-                            // The ask runs on the shorter of the two clocks. This loop turns over every
-                            // 10ms, so it needs its own throttle rather than the report's - the same
-                            // one every other keyframe request in the app is held to.
+                            // The ask runs on the shorter of the two clocks. Output polling is
+                            // faster than the request interval, so keep the same throttle as
+                            // every other keyframe request in the app.
                             if (VideoRecoveryPolicy.canRequestKeyframe(now, lastKeyframeStarvedAskMs)) {
                                 lastKeyframeStarvedAskMs = now
                                 events.callback(onKeyframeStarved)
@@ -2599,6 +2526,18 @@ class VideoDecoder(
                 events.dispatch(isCurrent)
                 if (restart) break
             } catch (e: Exception) {
+                // A failed catch-up dequeue or format callback can leave earlier output indices
+                // in our hands. Return those slots before retrying, or a busy codec can stall
+                // permanently waiting for buffers this worker has forgotten.
+                var returnFailed = false
+                while (releasedCount < readyCount && running && outputThread === self) {
+                    try {
+                        currentCodec.releaseOutputBuffer(readyIndices[releasedCount], false)
+                    } catch (_: Exception) {
+                        returnFailed = true
+                    }
+                    releasedCount++
+                }
                 val restart = publishOutput(self) {
                     // MediaCodec has classified its own failures since API 21 and this read them all
                     // as the same thing: a component saying it was busy spent a strike, and one
@@ -2609,6 +2548,11 @@ class VideoDecoder(
                         "Codec exception in output thread - ${DecoderExceptionPolicy.describe(response)}: " +
                             "${e.message}"
                     )
+                    if (returnFailed) {
+                        events.error("Could not return held codec output. Forcing restart.")
+                        scheduleRestart("output_buffer_return_failed")
+                        return@publishOutput true
+                    }
                     when (response) {
                         DecoderExceptionPolicy.Response.CONTINUE -> {}
                         DecoderExceptionPolicy.Response.RESTART_NOW -> {

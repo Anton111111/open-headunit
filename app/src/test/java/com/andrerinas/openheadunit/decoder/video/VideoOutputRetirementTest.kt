@@ -307,4 +307,273 @@ class VideoOutputRetirementTest {
             f.decoder.stop("test cleanup")
         }
     }
+
+    @Test fun `idle output expires concealment without requiring another frame`() {
+        val now = java.util.concurrent.atomic.AtomicLong(10_000L)
+        val f = Fixture { now.get() }
+        f.set("concealState", CorruptionConcealmentPolicy.State.CONCEALING)
+        f.set("concealWindowOpenedMs", now.get())
+        f.set("renderedThisSession", true)
+        val deadline = now.get() + CorruptionConcealmentPolicy.CONCEAL_MAX_MS
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            if (f.get("concealState") != CorruptionConcealmentPolicy.State.CONCEALING) {
+                f.set("running", false)
+            } else {
+                val waitUs = it.getArgument<Long>(1)
+                check(waitUs in 1L..100_000L) { "idle output must periodically service recovery" }
+                now.addAndGet((waitUs + 999) / 1000)
+                check(now.get() <= deadline + 100) { "concealment remained latched without output" }
+            }
+            MediaCodec.INFO_TRY_AGAIN_LATER
+        }
+        f.start()
+        try {
+            f.join()
+            assertEquals(CorruptionConcealmentPolicy.State.DISARMED, f.get("concealState"))
+            assertTrue(now.get() in deadline..deadline + 100)
+            assertEquals(false, f.get("decoderNeedsRestart"))
+            verify(f.codec, never()).releaseOutputBuffer(anyInt(), anyBoolean())
+        } finally { f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `bounded output waits still restart a stalled codec while input continues`() {
+        val now = java.util.concurrent.atomic.AtomicLong(10_000L)
+        val f = Fixture { now.get() }
+        val tracker = f.get("keyframeRepair") as KeyframeRepairTracker
+        val repair = tracker.beginKeyframe(1)
+        tracker.commitKeyframe(repair)
+        tracker.onOutputReleased(repair, repair, 1, true, countOutput = true)
+        assertTrue(tracker.consumeRepair())
+        f.set("renderedThisSession", true)
+        f.set("lastFrameRenderedMs", now.get())
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            val waitUs = it.getArgument<Long>(1)
+            check(waitUs in 1L..100_000L)
+            now.addAndGet((waitUs + 999) / 1000)
+            f.set("lastInputBytesReceivedMs", now.get())
+            check(now.get() <= 12_100L) { "output waits starved the stall watchdog" }
+            MediaCodec.INFO_TRY_AGAIN_LATER
+        }
+        f.start()
+        try {
+            f.join()
+            assertEquals(true, f.get("decoderNeedsRestart"))
+            assertEquals("sync_stall", f.get("decoderRestartReason"))
+            assertTrue(now.get() in 12_001L..12_100L)
+        } finally { f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `a catch-up dequeue failure returns held output before retrying`() {
+        val f = Fixture()
+        val calls = AtomicInteger()
+        val returned = java.util.concurrent.atomic.AtomicBoolean()
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            when (calls.incrementAndGet()) {
+                1 -> 7
+                2 -> throw IllegalStateException("catch-up dequeue failed")
+                3 -> {
+                    if (returned.get()) 8 else {
+                        // A one-slot codec cannot produce more output until its held slot returns.
+                        f.set("running", false)
+                        MediaCodec.INFO_TRY_AGAIN_LATER
+                    }
+                }
+                else -> MediaCodec.INFO_TRY_AGAIN_LATER
+            }
+        }
+        doAnswer { returned.set(true); null }.`when`(f.codec).releaseOutputBuffer(7, false)
+        f.decoder.onFirstFrameListener = { f.set("running", false) }
+        f.start()
+        try {
+            f.join()
+            assertTrue("the failed pass must not strand a codec output slot", returned.get())
+            verify(f.codec).releaseOutputBuffer(8, true)
+            assertEquals(1L, f.get("framesRendered"))
+            assertEquals(false, f.get("decoderNeedsRestart"))
+        } finally { f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `a successful earlier render survives a later release failure and idle output`() {
+        for (firstPts in listOf(1_000L, 900L)) {
+            val now = java.util.concurrent.atomic.AtomicLong(10_000L)
+            val f = Fixture { now.get() }
+            val tracker = f.get("keyframeRepair") as KeyframeRepairTracker
+            val repair = tracker.beginKeyframe(1_000L)
+            tracker.commitKeyframe(repair)
+            f.set("lastKeyframeFedMs", now.get())
+            val calls = AtomicInteger()
+            val repairs = AtomicInteger()
+            val firstFrames = AtomicInteger()
+            f.decoder.onKeyframeObserved = { repairs.incrementAndGet(); Unit }
+            f.decoder.onFirstFrameListener = { firstFrames.incrementAndGet(); Unit }
+            `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+                val info = it.getArgument<MediaCodec.BufferInfo>(0)
+                when (calls.incrementAndGet()) {
+                    1 -> { info.presentationTimeUs = firstPts; 7 }
+                    2 -> { info.presentationTimeUs = 1_010L; 8 }
+                    3 -> MediaCodec.INFO_TRY_AGAIN_LATER
+                    4 -> { now.set(13_000L); MediaCodec.INFO_TRY_AGAIN_LATER }
+                    else -> { f.set("running", false); MediaCodec.INFO_TRY_AGAIN_LATER }
+                }
+            }
+            doThrow(IllegalStateException("later render failed")).`when`(f.codec).releaseOutputBuffer(8, true)
+            f.start()
+            try {
+                f.join()
+                assertEquals("only successfully rendered timestamps prove repair", firstPts >= 1_000L, tracker.keyframeDecoded)
+                assertEquals(if (firstPts >= 1_000L) 1 else 0, repairs.get())
+                assertEquals(firstPts >= 1_000L, f.decoder.hasCrediblePicture)
+                assertEquals(1, firstFrames.get())
+                assertEquals(1L, f.get("framesRendered"))
+                assertEquals(1L, f.get("framesPresented"))
+                assertEquals(1L, f.decoder.framesRenderedThisSession)
+                assertEquals(10_000L, f.decoder.lastFrameRenderedMs)
+                verify(f.codec).releaseOutputBuffer(7, true)
+                verify(f.codec, never()).releaseOutputBuffer(7, false)
+                verify(f.codec).releaseOutputBuffer(8, false)
+                assertEquals(false, f.get("decoderNeedsRestart"))
+            } finally { f.decoder.stop("test cleanup") }
+        }
+    }
+
+    @Test fun `rearming a first frame listener waits for output after its callback`() {
+        val f = Fixture()
+        val calls = AtomicInteger()
+        val notifications = AtomicInteger()
+        lateinit var listener: () -> Unit
+        listener = {
+            notifications.incrementAndGet()
+            f.decoder.onFirstFrameListener = listener
+        }
+        f.decoder.onFirstFrameListener = listener
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            when (calls.incrementAndGet()) {
+                1 -> 7
+                2 -> 8
+                3 -> MediaCodec.INFO_TRY_AGAIN_LATER
+                else -> { f.set("running", false); MediaCodec.INFO_TRY_AGAIN_LATER }
+            }
+        }
+        f.start()
+        try {
+            f.join()
+            assertEquals(1, notifications.get())
+            assertSame(listener, f.decoder.onFirstFrameListener)
+            assertEquals(2L, f.get("framesRendered"))
+            assertEquals(1L, f.get("framesPresented"))
+        } finally { f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `a later repair candidate does not expose an earlier concealed picture`() {
+        for (laterFails in listOf(false, true)) {
+            val f = Fixture { 10_000L }
+            f.set("renderedThisSession", true)
+            f.set("lastFrameRenderedMs", 9_900L)
+            f.set("concealState", CorruptionConcealmentPolicy.State.CONCEALING)
+            f.set("concealWindowOpenedMs", 10_000L)
+            val tracker = f.get("keyframeRepair") as KeyframeRepairTracker
+            val token = tracker.beginKeyframe(1_000L)
+            tracker.commitKeyframe(token)
+            val calls = AtomicInteger()
+            `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+                val info = it.getArgument<MediaCodec.BufferInfo>(0)
+                when (calls.incrementAndGet()) {
+                    1 -> { info.presentationTimeUs = 900L; 7 }
+                    2 -> { info.presentationTimeUs = 1_000L; 8 }
+                    3 -> MediaCodec.INFO_TRY_AGAIN_LATER
+                    else -> { f.set("running", false); MediaCodec.INFO_TRY_AGAIN_LATER }
+                }
+            }
+            if (laterFails) {
+                doThrow(IllegalStateException("repair render failed")).`when`(f.codec).releaseOutputBuffer(8, true)
+            }
+            f.start()
+            try {
+                f.join()
+                verify(f.codec).releaseOutputBuffer(7, false)
+                verify(f.codec, never()).releaseOutputBuffer(7, true)
+                assertEquals(!laterFails, tracker.keyframeDecoded)
+                assertEquals(if (laterFails) 0L else 1L, f.get("framesRendered"))
+                assertEquals(1L, f.get("framesConcealed"))
+                assertEquals(
+                    if (laterFails) CorruptionConcealmentPolicy.State.CONCEALING else CorruptionConcealmentPolicy.State.ARMED,
+                    f.get("concealState")
+                )
+                assertEquals(if (laterFails) 9_900L else 10_000L, f.decoder.lastFrameRenderedMs)
+            } finally { f.decoder.stop("test cleanup") }
+        }
+    }
+
+    @Test fun `unreturnable output requests restart instead of retaining a depleted pool`() {
+        val f = Fixture()
+        val calls = AtomicInteger()
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            if (calls.incrementAndGet() == 1) 7 else throw IllegalStateException("drain failed")
+        }
+        doThrow(IllegalStateException("return failed")).`when`(f.codec).releaseOutputBuffer(7, false)
+        f.start()
+        try {
+            f.join()
+            assertEquals(true, f.get("decoderNeedsRestart"))
+            assertEquals("output_buffer_return_failed", f.get("decoderRestartReason"))
+            assertEquals(2, calls.get())
+        } finally { f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `failed output cleanup after retirement cannot restart a replacement`() {
+        val f = Fixture()
+        val pause = NativePause()
+        val calls = AtomicInteger()
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer {
+            if (calls.incrementAndGet() == 1) 7 else throw IllegalStateException("drain failed")
+        }
+        doAnswer {
+            pause.block()
+            throw IllegalStateException("retired during return")
+        }.`when`(f.codec).releaseOutputBuffer(7, false)
+        f.start()
+        try {
+            pause.await()
+            val replacement = f.replace()
+            pause.resume.countDown()
+            f.join()
+            assertEquals(false, f.get("decoderNeedsRestart"))
+            verifyNoInteractions(replacement)
+        } finally { pause.resume.countDown(); f.decoder.stop("test cleanup") }
+    }
+
+    @Test fun `failed render keeps repair pending until a later successful picture`() {
+        val f = Fixture { 1_000L }
+        val tracker = f.get("keyframeRepair") as KeyframeRepairTracker
+        tracker.commitKeyframe(tracker.beginKeyframe(1_000))
+        f.set("concealState", CorruptionConcealmentPolicy.State.CONCEALING)
+        f.set("concealWindowOpenedMs", 1_000L)
+        f.set("renderedThisSession", true)
+        val calls = AtomicInteger()
+        val repairs = AtomicInteger()
+        `when`(f.codec.dequeueOutputBuffer(any(), anyLong())).thenAnswer { call ->
+            when (calls.incrementAndGet()) {
+                1 -> { call.getArgument<MediaCodec.BufferInfo>(0).presentationTimeUs = 1_000L; 7 }
+                3 -> {
+                    assertFalse("failed rendering must not consume repair evidence", tracker.keyframeDecoded)
+                    assertEquals(CorruptionConcealmentPolicy.State.CONCEALING, f.get("concealState"))
+                    assertEquals(0, repairs.get())
+                    call.getArgument<MediaCodec.BufferInfo>(0).presentationTimeUs = 1_010L
+                    8
+                }
+                else -> MediaCodec.INFO_TRY_AGAIN_LATER
+            }
+        }
+        doThrow(IllegalStateException("render failed")).`when`(f.codec).releaseOutputBuffer(7, true)
+        f.decoder.onKeyframeObserved = { repairs.incrementAndGet(); f.set("running", false) }
+        f.start()
+        try {
+            f.join()
+            assertTrue(tracker.keyframeDecoded)
+            assertFalse(tracker.awaitingOutput)
+            assertEquals(1, repairs.get())
+            verify(f.codec).releaseOutputBuffer(7, false)
+            verify(f.codec).releaseOutputBuffer(8, true)
+        } finally { f.decoder.stop("test cleanup") }
+    }
 }

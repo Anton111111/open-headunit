@@ -66,6 +66,16 @@
     <string name="threshold_brightness_hint">Modul întunecat se activează când luminozitatea ecranului este sub această valoare. Android raportează luminozitatea ca 0–255, dar intervalul real poate varia în funcție de dispozitiv. Poate fi nevoie să încerci mai multe valori pentru a găsi pragul potrivit pentru dispozitivul tău.</string>
     <string name="current_light_reading">Lumină actuală: %d Lux</string>
     <string name="enable_fine_lux_control">Control fin (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode curent: %1$d. Mapare: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Zi, diferit de zero = Noapte</string>
+    <string name="car_signal_mapping_inverted">0 = Noapte, diferit de zero = Zi</string>
+    <string name="car_signal_unavailable">Nu se poate citi car_mode pe această unitate în acest moment.</string>
+    <string name="car_signal_headlights_question">Farurile sunt aprinse acum?</string>
+    <string name="car_signal_calibration_title">Calibrare ILL+</string>
+    <string name="car_signal_recalibrate">Recalibrează</string>
+    <string name="car_signal_headlights_on">Aprinse</string>
+    <string name="car_signal_headlights_off">Stinse</string>
+    <string name="car_signal_calibration_saved">Calibrarea ILL+ a fost salvată și aplicată</string>
     <string name="night_mode_start">Oră început mod de noapte</string>
     <string name="night_mode_end">Oră sfârșit mod de noapte</string>
 
@@ -131,6 +141,7 @@
     <string name="orientation_portrait">Vertical (90°)</string>
     <string name="orientation_portrait_reverse">Vertical inversat (270°)</string>
     <string name="enter_dpi_value">Introdu valoarea DPI (0 pentru auto)</string>
+    <string name="enter_audio_offset_value">Introdu valoarea (0-250)</string>
     <string name="custom_margin">Margini personalizate</string>
     <string name="custom_margin_description">Setează margini de afișare personalizate (0 pentru auto).</string>
     <string name="enter_custom_margins">Introdu marginile personalizate (0 pentru auto)</string>
@@ -549,8 +560,6 @@
     <string name="wireless_24ghz_warning">Notă: Android Auto wireless pe dispozitive de 2,4 GHz poate duce la întârzieri, sacadări și deconectări. Dacă întâmpinați probleme, vă rugăm să testați prin USB pentru a confirma dacă este o limitare a rețelei.</string>
     <string name="supported_nativeaa">Suport wireless îmbunătățit</string>
     <string name="supported_nativeaa_desc">Veste bună! Dispozitivul dvs. acceptă modul „Native Wireless”, care oferă o experiență Android Auto mai fluidă.\n\nPentru a-l activa, trebuie să reîmprospătăm memoria cache Bluetooth. Vă rugăm:\n1. Eliminați asocierea existentă de pe telefon\n2. Atingeți OK pentru a reporni Bluetooth\n3. Asociați din nou telefonul\n\nDoriți să treceți acum la modul Native AA?</string>
-    <string name="fake_speed_title">Dezactivează blocarea video (viteză simulată)</string>
-    <string name="fake_speed_description">Raportează telefonului o viteză redusă constantă (0,5 m/s) pentru a preveni blocarea conținutului video în timpul conducerii. Utilizați cu prudență.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Nativ</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -763,6 +772,12 @@
     <string name="settings_tab_basic">De bază</string>
     <string name="settings_tab_advanced">Avansate</string>
     <string name="settings_search_hint">Caută în setări</string>
+    <string name="settings_scope_wifi_hidden">Se afișează setările USB. Setările WiFi sunt ascunse.</string>
+    <string name="settings_scope_usb_hidden">Se afișează setările WiFi. Setările USB sunt ascunse.</string>
+    <string name="settings_scope_usb_wifi_hidden">Se afișează setările pentru modul local. Setările USB și WiFi sunt ascunse.</string>
+    <string name="settings_scope_change">Schimbă</string>
+    <string name="settings_search_clear">Șterge căutarea</string>
+    <string name="settings_search_no_results">Nicio setare nu corespunde cu „%1$s”.</string>
     <string name="connection_mode">Mod de conectare</string>
     <string name="connection_kind_usb_cable">Cablu USB (direct)</string>
     <string name="connection_kind_usb_wireless_adapter">Adaptor wireless USB</string>
@@ -1003,13 +1018,15 @@
     <string name="zbt_probe_title">Testează modulul Bluetooth al unității</string>
     <string name="zbt_probe_idle">Atingeți pentru a rula</string>
     <string name="zbt_probe_running">Se execută…</string>
-    <string name="zbt_probe_message">Întreabă cipul Bluetooth separat al acestei unități dacă poate transporta o conexiune Android Auto. Verifică în aproximativ opt secunde dacă cipul răspunde și, doar dacă răspunde, urmărește aproximativ un minut și jumătate. Linia de sub această setare arată ce se întâmplă, iar nimic altceva de pe unitate nu este modificat.\n\nCipul comunică cu un singur program la un moment dat. Dacă o conexiune trece deja prin el, testul indică acest lucru în loc să testeze. Dezactivează mai întâi setarea de mai sus pentru a-l testa separat.\n\nOpțiunea „Trezește și urmărește” cere în plus cipului să se reconecteze la telefon pentru Android Auto. Este singura parte care modifică ceva, iar repornirea unității o anulează. Exportă apoi jurnalul și atașează-l.</string>
+    <string name="zbt_probe_message">Ambele opțiuni inițializează modulul Bluetooth înainte de monitorizare. Acest lucru îi poate afecta starea. Trezirea și monitorizarea solicită și conectarea la telefon.\n\nTestul cedează accesul când OHU utilizează sau verifică modulul. Exportați jurnalul după test.</string>
     <string name="zbt_probe_watch_only">Doar urmărește</string>
     <string name="zbt_probe_wake_and_watch">Trezește și urmărește</string>
     <string name="external_bt_blink_transport">Conectare prin modulul Bluetooth extern FYT</string>
     <string name="external_bt_module_controls_hint">Asocierea telefonului, prioritatea conexiunii și selecția driverului sunt gestionate de modulul Bluetooth extern.</string>
     <string name="external_bt_module_last_phone">Ultimul telefon conectat prin modul</string>
     <string name="external_bt_blink_transport_description">Funcție experimentală. Pentru unitățile FYT al căror telefon se asociază pentru apeluri cu un modul Bluetooth separat, precum „DUDUAUTO” pe DUDUOS, singurul ROM testat până acum. Modulul, nu Bluetooth-ul unității, transportă negocierea Android Auto wireless, iar aplicația Car Link originală îi răspunde de obicei. Cu această opțiune activată, îi răspunde această aplicație, astfel încât apelurile rămân pe modul și pe difuzoarele mașinii.\n\nDezactivați mai întâi aplicația Car Link originală (pm disable-user com.syu.carlink), altfel ambele aplicații vor citi același canal. Canalul se deschide fără root, dacă unitatea permite, iar în caz contrar prin root. Alegeți Nativ, asociați telefonul doar cu modulul și exportați jurnalul dacă nu se conectează.</string>
+    <string name="external_bt_zj_socket_transport">Conectează prin socketul Bluetooth ZJ</string>
+    <string name="external_bt_zj_socket_transport_description">Pentru unitățile al căror modul Bluetooth ZJ transportă handshake-ul wireless Android Auto printr-un socket local (/dev/socket/zj_bt_socket). Aplicația îl folosește singură când socketul acceptă o conexiune. Activează opțiunea doar dacă unitatea are socketul și aplicația nu îl detectează.</string>
     <string name="external_bt_blink_refused_stock_enabled">Modul Bluetooth extern: aplicația Car Link originală este încă activată. Dezactivați-o (pm disable-user com.syu.carlink) sau opriți acest transport.</string>
     <string name="external_bt_blink_refused_stock_running">Modul Bluetooth extern: aplicația Car Link originală este dezactivată, dar încă rulează. Reporniți unitatea.</string>
     <string name="external_bt_blink_refused_root">Modul Bluetooth extern: deschiderea canalului modulului necesită root pe această unitate, iar accesul root a fost refuzat sau nu este disponibil.</string>
@@ -1430,8 +1447,13 @@
     <string name="home_favorites_full">Toate cele patru favorite sunt ocupate. Ține apăsat pe una în ecranul principal pentru a o schimba.</string>
     <string name="home_choose_favorite_app">Alege o aplicație sau o comandă rapidă</string>
     <string name="home_shortcut_badge">Comandă rapidă</string>
-    <string name="home_show_favorite_apps">Aplicații și widgeturi pe ecranul principal</string>
-    <string name="home_show_favorite_apps_description">Aplicațiile tale favorite și widgeturile sub butonul principal, când Open Headunit este launcherul tău</string>
+    <string name="app_drawer_tab_shortcuts">Comenzi rapide</string>
+    <string name="home_show_favorite_apps">Aplicații favorite pe ecranul principal</string>
+    <string name="home_show_favorite_apps_description">Aplicațiile tale favorite sub butonul principal, când Open Headunit este launcherul tău</string>
+    <string name="home_show_widgets">Widgeturi pe ecranul principal</string>
+    <string name="home_show_widgets_description">Widgeturile tale, paginile lor și cardul Adaugă un widget, când Open Headunit este launcherul tău</string>
+    <string name="home_surface_opacity">Opacitatea panourilor</string>
+    <string name="home_surface_opacity_description">Micșorează valoarea ca imaginea de fundal să se vadă prin panourile și butoanele ecranului principal.</string>
     <string name="home_show_clock">Data și ora pe ecranul principal</string>
     <string name="home_show_clock_description">Ora și data de astăzi, sus pe butonul principal</string>
     <string name="home_show_speed">Viteza GPS pe ecranul principal</string>
@@ -1467,4 +1489,16 @@
     <string name="audio_settings_reconnect">Setările audio au fost salvate. Reconectează Android Auto pentru a le aplica.</string>
     <string name="native_aa_candidate_android_radio_description">Folosește Bluetooth din Android în loc să selectezi automat modulul Bluetooth al unității. Lasă dezactivat pentru selecție automată. Dacă este activată o opțiune de conectare prin modul, dezactiveaz-o mai întâi.</string>
     <string name="external_bt_candidate_transport_description">Forțează conectarea prin modulul Bluetooth al unității în locul selecției automate. Necesită un serviciu de modul compatibil. Lasă dezactivat pentru a permite Bluetooth din Android când serviciul nu răspunde; activarea împiedică această alternativă.</string>
+    <string name="audio_matching_mode">Corecție temporală a muzicii</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Implicit</string>
+    <string name="audio_matching_wsola_hint">Consum redus</string>
+    <string name="audio_matching_phase_vocoder_hint">Echilibrat</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Latență redusă</string>
+    <string name="audio_matching_phase_gradient_hint">Redare lentă</string>
+    <string name="audio_matching_description">OHU rămâne implicit. WSOLA aliniază formele de undă suprapuse; Phase Vocoder ajustează fazele spectrale. Short folosește o fereastră de analiză mai scurtă. Phase Gradient reconstruiește fazele prin integrarea gradienților de fază. Aceste implementări independente adaugă latență de procesare; numele nu clasifică calitatea sunetului.\n\nMetode native: muzică PCM. Navigarea, răspunsurile vocale, sunetele de sistem și AAC folosesc OHU.\nReconectează-te pentru aplicare. Setările motoarelor eliminate revin la OHU.</string>
 </resources>

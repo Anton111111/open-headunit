@@ -17,6 +17,12 @@
     <string name="settings_tab_basic">Basic</string>
     <string name="settings_tab_advanced">Advanced</string>
     <string name="settings_search_hint">Search settings</string>
+    <string name="settings_scope_wifi_hidden">Showing USB settings. WiFi settings are hidden.</string>
+    <string name="settings_scope_usb_hidden">Showing WiFi settings. USB settings are hidden.</string>
+    <string name="settings_scope_usb_wifi_hidden">Showing Self Mode settings. USB and WiFi settings are hidden.</string>
+    <string name="settings_scope_change">Change</string>
+    <string name="settings_search_clear">Clear search</string>
+    <string name="settings_search_no_results">No settings match \"%1$s\".</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">Connection mode</string>
@@ -298,6 +304,16 @@
     <string name="current_light_reading">Current light: %d Lux</string>
     <string name="current_brightness_reading">Current brightness: %d / 255</string>
     <string name="enable_fine_lux_control">Fine control (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Current car_mode: %1$d. Mapping: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Day, non-zero = Night</string>
+    <string name="car_signal_mapping_inverted">0 = Night, non-zero = Day</string>
+    <string name="car_signal_unavailable">Cannot read car_mode on this head unit right now.</string>
+    <string name="car_signal_headlights_question">Are the headlights on now?</string>
+    <string name="car_signal_calibration_title">ILL+ Calibration</string>
+    <string name="car_signal_recalibrate">Recalibrate</string>
+    <string name="car_signal_headlights_on">On</string>
+    <string name="car_signal_headlights_off">Off</string>
+    <string name="car_signal_calibration_saved">ILL+ calibration saved and applied</string>
     <string name="night_mode_start">Night Mode Start Time</string>
     <string name="night_mode_end">Night Mode End Time</string>
 
@@ -397,6 +413,7 @@
     <string name="orientation_portrait">Portrait (90°)</string>
     <string name="orientation_portrait_reverse">Portrait Reverse (270°)</string>
     <string name="enter_dpi_value">Enter DPI value (0 for auto)</string>
+    <string name="enter_audio_offset_value">Enter value (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">Pixel aspect ratio x10000 (10000 = square pixels)</string>
     <string name="custom_margin">Custom Margin</string>
     <string name="custom_margin_description">Set custom display margins (0 for auto).</string>
@@ -558,7 +575,7 @@
     <!-- Video Settings -->
     <string name="category_video">Video</string>
     <string name="force_software_decoding">Force Software Decoding</string>
-    <string name="force_software_decoding_description">May fix issues on some devices, but is slower.</string>
+    <string name="force_software_decoding_description">Uses the selected software decoder for H.264 or H.265. Bundled FFmpeg is available on ARMv7 and ARM64 devices running Android 5.0 or newer. May fix device decoder issues, but is slower.</string>
     <string name="software_video_decoder">Software Decoder Source</string>
     <string name="software_video_decoder_bundled">Bundled FFmpeg</string>
     <string name="software_video_decoder_device">Device MediaCodec</string>
@@ -1168,8 +1185,6 @@
     <string name="wait_for_wifi_description">On boot, wait for WiFi to connect before starting WiFi Direct. Enable this if your head unit needs a few seconds to connect to WiFi after power on.</string>
     <string name="wait_for_wifi_timeout">WiFi wait timeout</string>
     <string name="wireless_24ghz_warning">Note: Wireless Android Auto on 2.4GHz devices can lead to lag, stutters, and disconnects. If you experience issues, please test via USB to confirm if it\'s a network limitation.</string>
-    <string name="fake_speed_title">Disable Video-Lock (Fake Speed)</string>
-    <string name="fake_speed_description">Reports a constant low speed (0.5 m/s) to the phone to prevent video content from being blocked while driving. Use with caution.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Native</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -1324,13 +1339,15 @@
     <string name="zbt_probe_title">Test the head unit\'s Bluetooth module</string>
     <string name="zbt_probe_idle">Tap to run</string>
     <string name="zbt_probe_running">Running…</string>
-    <string name="zbt_probe_message">Asks this unit\'s separate Bluetooth chip whether it will carry an Android Auto connection. It spends about eight seconds checking that the chip answers at all and, only if it does, watches for about a minute and a half. The line under this setting shows what is happening, and nothing else on the unit is touched.\n\nThe chip talks to one program at a time, so if a connection is already running through it the test says so instead of testing. Turn the setting above off first to test it on its own.\n\nWake and watch also asks the chip to reconnect to your phone for Android Auto. That is the only part that changes anything, and restarting the unit undoes it. Please export the log afterwards and attach it.</string>
+    <string name="zbt_probe_message">Both options initialize the Bluetooth module before monitoring it. This may affect its Bluetooth state. Wake and watch also requests a connection to your phone.\n\nThe test yields while OHU is using or checking the module. Export the log after the test.</string>
     <string name="zbt_probe_watch_only">Watch only</string>
     <string name="zbt_probe_wake_and_watch">Wake and watch</string>
     <string name="external_bt_blink_transport">Connect through the FYT external Bluetooth module</string>
     <string name="external_bt_module_controls_hint">Phone pairing, connection priority, and driver selection are managed by the external Bluetooth module.</string>
     <string name="external_bt_module_last_phone">Last phone connected through the module</string>
     <string name="external_bt_blink_transport_description">Experimental. For FYT units whose phone pairs for calls with a separate Bluetooth module, such as \"DUDUAUTO\" on DUDUOS, the only ROM tested so far. The module, not this unit\'s Bluetooth, carries the wireless Android Auto handshake, and the stock Car Link app normally answers it. With this on, this app answers it instead, so calls stay on the module and the car\'s speakers.\n\nDisable the stock Car Link app first (pm disable-user com.syu.carlink), or both apps will read the same channel. The channel is opened without root where the unit allows it, and through root otherwise. Choose Native, pair the phone with the module only, and export the log if it does not connect.</string>
+    <string name="external_bt_zj_socket_transport">Connect through the ZJ Bluetooth socket</string>
+    <string name="external_bt_zj_socket_transport_description">For units whose ZJ Bluetooth module carries the wireless Android Auto handshake over a local socket (/dev/socket/zj_bt_socket). The app uses it by itself when that socket accepts a connection. Turn this on only if your unit has the socket and the app does not see it.</string>
     <string name="external_bt_blink_refused_stock_enabled">External Bluetooth module: the stock Car Link app is still enabled. Disable it (pm disable-user com.syu.carlink) or turn this transport off.</string>
     <string name="external_bt_blink_refused_stock_running">External Bluetooth module: the stock Car Link app is disabled but still running. Restart the unit.</string>
     <string name="external_bt_blink_refused_root">External Bluetooth module: opening the module\'s channel needs root on this unit, and root access was denied or is not available.</string>
@@ -1535,8 +1552,13 @@
     <string name="home_favorites_full">All four favorites are taken. Long-press one on the home screen to change it.</string>
     <string name="home_choose_favorite_app">Choose an app or shortcut</string>
     <string name="home_shortcut_badge">Shortcut</string>
-    <string name="home_show_favorite_apps">Apps and widgets on the home screen</string>
-    <string name="home_show_favorite_apps_description">Your favorite apps and widgets under the main button, when Open Headunit is your launcher</string>
+    <string name="app_drawer_tab_shortcuts">Shortcuts</string>
+    <string name="home_show_favorite_apps">Favorite apps on the home screen</string>
+    <string name="home_show_favorite_apps_description">Your favorite apps under the main button, when Open Headunit is your launcher</string>
+    <string name="home_show_widgets">Widgets on the home screen</string>
+    <string name="home_show_widgets_description">Your widgets, their pages and the Add widget tile, when Open Headunit is your launcher</string>
+    <string name="home_surface_opacity">Panel opacity</string>
+    <string name="home_surface_opacity_description">Lower it to let your background image show through the home screen\'s panels and buttons.</string>
     <string name="home_show_clock">Date and time on the home screen</string>
     <string name="home_show_clock_description">The time and today\'s date, at the top of the main button</string>
     <string name="home_show_speed">GPS speed on the home screen</string>
@@ -1646,4 +1668,18 @@
     <string name="wifi_scan_legacy_limit">Renewal on Android 8–10\n• Request a pause on connection, then every five minutes while connected.\n• Android may enable searches between requests. The interval limits repeated cleanup work; it cannot keep every scan stopped.\n\nIf enabling searches fails, keep Shizuku running and retry. Rebooting resets this temporary control.</string>
     <string name="native_aa_candidate_android_radio_description">Use Android Bluetooth instead of automatically selecting the head unit Bluetooth module. Leave off for automatic selection. If a module connection option is enabled, turn it off first.</string>
     <string name="external_bt_candidate_transport_description">Force connection through the head unit Bluetooth module instead of automatic selection. This requires a compatible module service. Leave off to allow Android Bluetooth when that service does not respond; forcing this option prevents that fallback.</string>
+
+    <string name="audio_matching_mode">Music time correction</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Default</string>
+    <string name="audio_matching_wsola_hint">Lightweight</string>
+    <string name="audio_matching_phase_vocoder_hint">Balanced</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Low latency</string>
+    <string name="audio_matching_phase_gradient_hint">Slow playback</string>
+    <string name="audio_matching_option" translatable="false">%1$s\n(%2$s)</string>
+    <string name="audio_matching_description">OHU remains the default. WSOLA aligns overlapping waveforms; Phase Vocoder adjusts spectral phases. Short uses a shorter analysis window. Phase Gradient integrates phase gradients to reconstruct phases. These independent methods add processing latency; their names do not rank sound quality.\n\nNative methods: PCM music. Navigation, voice responses, system sounds and AAC use OHU.\nReconnect to apply. Removed engine preferences reset to OHU.</string>
 </resources>

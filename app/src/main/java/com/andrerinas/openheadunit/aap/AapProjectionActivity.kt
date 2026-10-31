@@ -263,6 +263,13 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
     private var lastSurfaceSetMs = 0L
     private val relaunchRecovery = com.andrerinas.openheadunit.decoder.video.SurfaceRecoveryState()
 
+    /** The service revokes the retained WPP lease before publishing Disconnected. */
+    private fun requestProjectionExit() {
+        ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
+            action = AapService.ACTION_DISCONNECT
+        })
+    }
+
     /**
      * A relaunch handed the decoder a fresh surface and no picture has followed it.
      *
@@ -578,7 +585,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
              val sv = projectionView as ProjectionView
              if (sv.holder.surface.isValid) {
                  AppLog.w("Watchdog: SurfaceView IS valid. Forcing onSurfaceChanged.")
-                 onSurfaceChanged(sv.holder.surface, sv.width, sv.height)
+                 onSurfaceChanged(sv.holder.surface, sv.reportedSurfaceWidth, sv.reportedSurfaceHeight)
              } else {
                  AppLog.e("Watchdog: SurfaceView NOT valid.")
              }
@@ -768,11 +775,10 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         val reason = if (collapsed) "$longFramesInWindow slow frames in window" else "no draw for ${now - effectiveDrawn}ms"
 
         val effectiveMode = forcedViewModeOverride ?: settings.viewMode
-        // After a plain rebuild fails to stick, escalate away from a non-SurfaceView backend
-        // (unless the bundled software HEVC decoder is active, which needs the GLES YUV sink).
-        val shouldFallBack = displayStallRecoveries >= 2 &&
-            effectiveMode != Settings.ViewMode.SURFACE &&
-            !videoDecoder.usingBundledSoftwareHevc
+        // Both MediaCodec and FFmpeg can render to a Surface after a consumer stalls.
+        val shouldFallBack = ProjectionWatchdogPolicy.shouldFallBackToSurface(
+            displayStallRecoveries, effectiveMode == Settings.ViewMode.SURFACE
+        )
         ProjectionHealthRecorder.noteRendererRecovery(shouldFallBack)
         if (shouldFallBack) {
             AppLog.w("Display stall ($reason) again on $effectiveMode. Falling back to SurfaceView for this session. See issue #650.")
@@ -1271,7 +1277,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         setupCustomLoadingScreen()
 
         findViewById<Button>(R.id.disconnect_button)?.setOnClickListener {
-            commManager.disconnect()
+            requestProjectionExit()
             finish()
         }
 
@@ -1810,7 +1816,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 val selected = options[which]
                 when (selected.titleResId) {
                     R.string.exit_dialog_stop -> {
-                        commManager.disconnect(sendByeBye = true)
+                        requestProjectionExit()
                         finish()
                     }
                     R.string.exit_dialog_end_stay_armed -> {
@@ -2681,7 +2687,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         container.addView(view)
         videoDecoder.softwareYuvFrameSink = projectionView as? SoftwareYuvFrameSink
         if (videoDecoder.softwareYuvFrameSink != null) {
-            AppLog.i("Using GLES YUV sink for bundled software HEVC")
+            AppLog.i("GLES YUV output sink attached")
         }
 
         projectionView.addCallback(this)

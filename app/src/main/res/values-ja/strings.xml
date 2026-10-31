@@ -66,6 +66,16 @@
     <string name="threshold_brightness_hint">画面の明るさがこの値よりも低い場合、ダークモードが有効になります。Android上では明るさが0~255の範囲で表されますが、実際の範囲はデバイスによって異なる場合があります。そのため、お使いのデバイスに最適な値を見つける必要があります。</string>
     <string name="current_light_reading">現在の明るさ: %d ルクス</string>
     <string name="enable_fine_lux_control">微調整 (0–100 ルクス)</string>
+    <string name="car_signal_calibration_info_format">現在のcar_mode: %1$d。マッピング: %2$s。</string>
+    <string name="car_signal_mapping_default">0 = 昼、0以外 = 夜</string>
+    <string name="car_signal_mapping_inverted">0 = 夜、0以外 = 昼</string>
+    <string name="car_signal_unavailable">このヘッドユニットでは現在 car_mode を読み取れません。</string>
+    <string name="car_signal_headlights_question">現在ヘッドライトは点灯していますか？</string>
+    <string name="car_signal_calibration_title">ILL+ キャリブレーション</string>
+    <string name="car_signal_recalibrate">再キャリブレーション</string>
+    <string name="car_signal_headlights_on">オン</string>
+    <string name="car_signal_headlights_off">オフ</string>
+    <string name="car_signal_calibration_saved">ILL+ キャリブレーションを保存して適用しました</string>
     <string name="night_mode_start">ナイトモードの開始時間</string>
     <string name="night_mode_end">ナイトモードの終了時間</string>
 
@@ -135,6 +145,7 @@
     <string name="orientation_portrait">縦向き (90°)</string>
     <string name="orientation_portrait_reverse">縦向きの反転 (270°)</string>
     <string name="enter_dpi_value">DPI値を入力してください (自動の場合は0)</string>
+    <string name="enter_audio_offset_value">値を入力してください (0-250)</string>
     <string name="custom_margin">カスタムマージン</string>
     <string name="custom_margin_description">カスタム表示マージンを設定する (自動の場合は0)。</string>
     <string name="enter_custom_margins">カスタムマージンを入力 (自動の場合は0)</string>
@@ -557,8 +568,6 @@
     <string name="native_aa_poke_not_running">このヘッドユニットでワイヤレスの Bluetooth が動作していません。設定をご確認ください。</string>
     <string name="not_supported_nativeaa">ネイティブワイヤレスはサポートされていないようです</string>
     <string name="not_supported_nativeaa_desc">お使いのデバイスは、ネイティブワイヤレスに必要な Bluetooth または Wi-Fi 機能をサポートしていない可能性があります。とにかく試してみることもできますが、失敗した場合は、代わりに「Wireless Helper」または「Auto (Headunit Server)」モードを使用してください。</string>
-    <string name="fake_speed_title">ビデオロックを無効化（疑似速度）</string>
-    <string name="fake_speed_description">走行中にビデオコンテンツがブロックされるのを防ぐため、一定の低速 (0.5 m/s) をスマートフォンに報告します。注意して使用してください。</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">ネイティブ</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -768,6 +777,12 @@
     <string name="settings_tab_basic">基本</string>
     <string name="settings_tab_advanced">詳細</string>
     <string name="settings_search_hint">設定を検索</string>
+    <string name="settings_scope_wifi_hidden">USB の設定を表示中です。WiFi の設定は非表示です。</string>
+    <string name="settings_scope_usb_hidden">WiFi の設定を表示中です。USB の設定は非表示です。</string>
+    <string name="settings_scope_usb_wifi_hidden">セルフモードの設定を表示中です。USB と WiFi の設定は非表示です。</string>
+    <string name="settings_scope_change">変更</string>
+    <string name="settings_search_clear">検索をクリア</string>
+    <string name="settings_search_no_results">「%1$s」に一致する設定はありません。</string>
     <string name="connection_mode">接続モード</string>
     <string name="connection_kind_usb_cable">USBケーブル (直接)</string>
     <string name="connection_kind_usb_wireless_adapter">USBワイヤレスアダプター</string>
@@ -1009,13 +1024,15 @@
     <string name="zbt_probe_title">ヘッドユニットの Bluetooth モジュールをテスト</string>
     <string name="zbt_probe_idle">タップして実行</string>
     <string name="zbt_probe_running">実行中…</string>
-    <string name="zbt_probe_message">この機器に内蔵された別のBluetoothチップに、Android Autoの接続を中継できるかどうかを問い合わせます。まず約8秒でチップが応答するかを確認し、応答した場合のみ、約1分半のあいだ監視します。この設定の下の行に状況が表示されます。機器のそれ以外の部分には一切手を加えません。\n\nチップは一度に1つのプログラムとしか通信しません。すでにチップ経由の接続が動作している場合、テストは実行されず、その旨が表示されます。単独でテストするには、先に上の設定をオフにしてください。\n\n「起こして監視」では、さらにチップに対して、Android Autoのためにスマートフォンへ再接続するよう要求します。変更が加わるのはこの部分だけで、機器を再起動すると元に戻ります。終わったらログを書き出して添付してください。</string>
+    <string name="zbt_probe_message">どちらの操作もBluetoothモジュールを初期化してから状態を監視するため、Bluetoothの状態に影響する場合があります。「起こして監視」は、スマートフォンへの接続も要求します。\n\nOHUがモジュールを使用中または確認中の場合、テストは処理を譲ります。テスト後にログを書き出してください。</string>
     <string name="zbt_probe_watch_only">監視のみ</string>
     <string name="zbt_probe_wake_and_watch">起こして監視</string>
     <string name="external_bt_blink_transport">FYTの外部Bluetoothモジュール経由で接続</string>
     <string name="external_bt_module_controls_hint">スマートフォンのペアリング、接続の優先順位、ドライバーの選択は、外部Bluetoothモジュールが管理します。</string>
     <string name="external_bt_module_last_phone">モジュール経由で最後に接続したスマートフォン</string>
     <string name="external_bt_blink_transport_description">実験的な機能です。通話用のスマートフォンを別のBluetoothモジュールとペアリングするFYT機器向けです。例：DUDUOSの「DUDUAUTO」（現在、動作を確認した唯一のROM）。ワイヤレスAndroid Autoのハンドシェイクは、この機器のBluetoothではなくモジュールが運び、通常は標準のCar Linkアプリが応答します。これをオンにすると、代わりにこのアプリが応答するため、通話はモジュールと車のスピーカーのままになります。\n\n先に標準のCar Linkアプリを無効にしてください（pm disable-user com.syu.carlink）。そうしないと、両方のアプリが同じチャンネルを読み取ります。チャンネルは、機器が許可していればroot権限なしで、そうでなければroot権限で開きます。「ネイティブ」を選び、スマートフォンをモジュールにのみペアリングしてください。接続できない場合は、ログを書き出してください。</string>
+    <string name="external_bt_zj_socket_transport">ZJ Bluetoothソケット経由で接続</string>
+    <string name="external_bt_zj_socket_transport_description">ZJ Bluetoothモジュールがワイヤレス Android Autoのハンドシェイクをローカルソケット（/dev/socket/zj_bt_socket）で処理するユニット向けです。このソケットが接続を受け付ける場合、アプリは自動的に使用します。ユニットにソケットがあるのにアプリが検出しない場合のみ、オンにしてください。</string>
     <string name="external_bt_blink_refused_stock_enabled">外部Bluetoothモジュール：標準のCar Linkアプリがまだ有効です。無効にする（pm disable-user com.syu.carlink）か、この接続方式をオフにしてください。</string>
     <string name="external_bt_blink_refused_stock_running">外部Bluetoothモジュール：標準のCar Linkアプリは無効ですが、まだ動作しています。機器を再起動してください。</string>
     <string name="external_bt_blink_refused_root">外部Bluetoothモジュール：モジュールのチャンネルを開くには、この機器でroot権限が必要ですが、root権限が拒否されたか、利用できません。</string>
@@ -1436,8 +1453,13 @@
     <string name="home_favorites_full">お気に入りは4つとも使用中です。ホーム画面で長押しすると変更できます。</string>
     <string name="home_choose_favorite_app">アプリまたはショートカットを選択</string>
     <string name="home_shortcut_badge">ショートカット</string>
-    <string name="home_show_favorite_apps">ホーム画面のアプリとウィジェット</string>
-    <string name="home_show_favorite_apps_description">Open Headunit をランチャーにしているとき、お気に入りのアプリとウィジェットをメインボタンの下に表示します</string>
+    <string name="app_drawer_tab_shortcuts">ショートカット</string>
+    <string name="home_show_favorite_apps">ホーム画面のお気に入りアプリ</string>
+    <string name="home_show_favorite_apps_description">Open Headunit をランチャーにしているとき、お気に入りのアプリをメインボタンの下に表示します</string>
+    <string name="home_show_widgets">ホーム画面のウィジェット</string>
+    <string name="home_show_widgets_description">Open Headunit をランチャーにしているとき、ウィジェット、そのページ、「ウィジェットを追加」タイルを表示します</string>
+    <string name="home_surface_opacity">パネルの不透明度</string>
+    <string name="home_surface_opacity_description">下げると、ホーム画面のパネルやボタンから背景画像が透けて見えます。</string>
     <string name="home_show_clock">ホーム画面に日付と時刻</string>
     <string name="home_show_clock_description">メインボタンの上に時刻と今日の日付</string>
     <string name="home_show_speed">ホーム画面にGPS速度</string>
@@ -1473,4 +1495,16 @@
     <string name="audio_settings_reconnect">オーディオ設定を保存しました。適用するにはAndroid Autoを再接続してください。</string>
     <string name="native_aa_candidate_android_radio_description">ヘッドユニットの Bluetooth モジュールを自動選択する代わりに、Android の Bluetooth を使用します。自動選択する場合はオフにしてください。モジュール経由の接続オプションがオンの場合は、先にオフにしてください。</string>
     <string name="external_bt_candidate_transport_description">自動選択の代わりに、ヘッドユニットの Bluetooth モジュール経由の接続を強制します。対応するモジュールサービスが必要です。サービスが応答しないときに Android の Bluetooth を使用できるようにするには、オフにしてください。オンにすると、この代替経路は使えなくなります。</string>
+    <string name="audio_matching_mode">音楽の時間補正</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">既定</string>
+    <string name="audio_matching_wsola_hint">軽量</string>
+    <string name="audio_matching_phase_vocoder_hint">バランス型</string>
+    <string name="audio_matching_phase_vocoder_short_hint">低遅延</string>
+    <string name="audio_matching_phase_gradient_hint">低速再生</string>
+    <string name="audio_matching_description">既定はOHUです。WSOLAは重なり合う波形を整列し、Phase Vocoderは周波数成分の位相を調整します。Shortは短い解析窓を使います。Phase Gradientは位相勾配を積分して位相を再構成します。独立実装の方式で処理遅延が加わります。名称は音質の順位ではありません。\n\nネイティブ方式：PCM音楽に適用。経路案内・音声応答・システム音・AACではOHUを使用します。\n再接続すると適用されます。削除されたエンジンの保存設定はOHUに戻ります。</string>
 </resources>

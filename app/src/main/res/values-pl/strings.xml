@@ -66,6 +66,16 @@
     <string name="threshold_brightness_hint">Tryb ciemny aktywuje się, gdy jasność ekranu jest poniżej tej wartości. Android raportuje jasność jako 0–255, ale rzeczywisty zakres może się różnić w zależności od urządzenia. Może być konieczne eksperymentowanie, aby znaleźć właściwy próg dla Twojego urządzenia.</string>
     <string name="current_light_reading">Aktualne światło: %d Lux</string>
     <string name="enable_fine_lux_control">Precyzyjna kontrola (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Bieżąca wartość car_mode: %1$d. Mapowanie: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Dzień, wartość różna od zera = Noc</string>
+    <string name="car_signal_mapping_inverted">0 = Noc, wartość różna od zera = Dzień</string>
+    <string name="car_signal_unavailable">Nie można teraz odczytać car_mode na tej jednostce.</string>
+    <string name="car_signal_headlights_question">Czy światła są teraz włączone?</string>
+    <string name="car_signal_calibration_title">Kalibracja ILL+</string>
+    <string name="car_signal_recalibrate">Kalibruj ponownie</string>
+    <string name="car_signal_headlights_on">Włączone</string>
+    <string name="car_signal_headlights_off">Wyłączone</string>
+    <string name="car_signal_calibration_saved">Kalibracja ILL+ została zapisana i zastosowana</string>
     <string name="night_mode_start">Czas rozpoczęcia trybu nocnego</string>
     <string name="night_mode_end">Czas zakończenia trybu nocnego</string>
 
@@ -131,6 +141,7 @@
     <string name="orientation_portrait">Pionowo (90°)</string>
     <string name="orientation_portrait_reverse">Pionowo odwrócone (270°)</string>
     <string name="enter_dpi_value">Wprowadź wartość DPI (0 dla auto)</string>
+    <string name="enter_audio_offset_value">Wprowadź wartość (0-250)</string>
     <string name="custom_margin">Własne marginesy</string>
     <string name="custom_margin_description">Ustaw własne marginesy ekranu (0 dla auto).</string>
     <string name="enter_custom_margins">Wprowadź marginesy (0 dla auto)</string>
@@ -549,8 +560,6 @@
     <string name="wireless_24ghz_warning">Uwaga: Bezprzewodowe Android Auto na urządzeniach 2,4 GHz może powodować opóźnienia, zacięcia i rozłączenia. W przypadku problemów sprawdź połączenie przez USB, aby potwierdzić, czy jest to ograniczenie sieciowe.</string>
     <string name="supported_nativeaa">Ulepszona obsługa łączności bezprzewodowej</string>
     <string name="supported_nativeaa_desc">Dobra wiadomość! Twoje urządzenie obsługuje tryb \"Native Wireless\", który zapewnia płynniejsze działanie Android Auto.\n\nAby go włączyć, musimy odświeżyć pamięć podręczną Bluetooth. Zrób to tak:\n1. Usuń istniejące sparowanie w telefonie\n2. Wybierz OK, aby zrestartować Bluetooth\n3. Sparuj telefon ponownie\n\nCzy chcesz teraz przełączyć się na tryb Native AA?</string>
-    <string name="fake_speed_title">Wyłącz blokadę wideo (Fake Speed)</string>
-    <string name="fake_speed_description">Zgłasza do telefonu stałą niską prędkość (0,5 m/s), aby zapobiec blokowaniu treści wideo podczas jazdy. Używaj ostrożnie.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Natywny</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -764,6 +773,12 @@
     <string name="settings_tab_basic">Podstawowe</string>
     <string name="settings_tab_advanced">Zaawansowane</string>
     <string name="settings_search_hint">Szukaj w ustawieniach</string>
+    <string name="settings_scope_wifi_hidden">Widoczne są ustawienia USB. Ustawienia WiFi są ukryte.</string>
+    <string name="settings_scope_usb_hidden">Widoczne są ustawienia WiFi. Ustawienia USB są ukryte.</string>
+    <string name="settings_scope_usb_wifi_hidden">Widoczne są ustawienia trybu samodzielnego. Ustawienia USB i WiFi są ukryte.</string>
+    <string name="settings_scope_change">Zmień</string>
+    <string name="settings_search_clear">Wyczyść wyszukiwanie</string>
+    <string name="settings_search_no_results">Żadne ustawienie nie pasuje do „%1$s”.</string>
     <string name="connection_mode">Tryb połączenia</string>
     <string name="connection_kind_usb_cable">Kabel USB (bezpośrednio)</string>
     <string name="connection_kind_usb_wireless_adapter">Bezprzewodowy adapter USB</string>
@@ -1012,13 +1027,15 @@
     <string name="zbt_probe_title">Przetestuj moduł Bluetooth jednostki</string>
     <string name="zbt_probe_idle">Dotknij, aby uruchomić</string>
     <string name="zbt_probe_running">Trwa…</string>
-    <string name="zbt_probe_message">Sprawdza, czy dedykowany układ Bluetooth stacji obsługuje połączenie Android Auto. Przez około 8 sekund sprawdza, czy układ w ogóle odpowiada, a jeśli tak — monitoruje go przez ok. półtorej minuty. Wiersz poniżej informuje o postępie; żadne inne funkcje stacji nie są w tym czasie modyfikowane.\n\nUkład Bluetooth może komunikować się tylko z jedną aplikacją naraz. Jeśli połączenie jest już aktywne, test poinformuje o tym zamiast ponawiać próbę. Aby przetestować go osobno, najpierw wyłącz powyższe ustawienie.\n\nOpcja „Obudź i obserwuj” dodatkowo wymusza ponowne połączenie układu z telefonem na potrzeby Android Auto. To jedyny krok wprowadzający jakiekolwiek zmiany — restart stacji przywraca stan początkowy. Po teście wyeksportuj logi i dołącz je do zgłoszenia.</string>
+    <string name="zbt_probe_message">Obie opcje inicjalizują moduł Bluetooth przed obserwacją. Może to wpłynąć na jego stan. Wybudzenie i obserwacja dodatkowo żąda połączenia z telefonem.\n\nTest ustępuje, gdy OHU używa modułu lub go sprawdza. Po teście wyeksportuj dziennik.</string>
     <string name="zbt_probe_watch_only">Tylko obserwuj</string>
     <string name="zbt_probe_wake_and_watch">Obudź i obserwuj</string>
     <string name="external_bt_blink_transport">Połącz przez zewnętrzny moduł Bluetooth FYT</string>
     <string name="external_bt_module_controls_hint">Parowanie telefonu, priorytet połączeń i wybór telefonu kierowcy są obsługiwane przez zewnętrzny moduł Bluetooth.</string>
     <string name="external_bt_module_last_phone">Ostatni telefon połączony przez moduł</string>
     <string name="external_bt_blink_transport_description">Funkcja eksperymentalna. Przeznaczona dla urządzeń FYT, w których telefon paruje się do rozmów z osobnym modułem Bluetooth (np. „DUDUAUTO” w DUDUOS — jedynym dotychczas przetestowanym systemie). Nawiązywanie bezprzewodowego połączenia Android Auto odbywa się przez ten moduł zamiast przez systemowy Bluetooth Androida, a domyślnie obsługuje je fabryczna aplikacja Car Link. Po włączeniu tej opcji komunikację przejmuje Open Headunit, dzięki czemu połączenia głosowe pozostają w module i głośnikach auta.\n\nNajpierw wyłącz fabryczną aplikację Car Link (poleceniem: pm disable-user com.syu.carlink) — w przeciwnym razie obie aplikacje będą korzystać z tego samego kanału. Aplikacja otwiera kanał bez uprawnień roota (jeśli urządzenie na to pozwala) lub z uprawnieniami roota. Wybierz tryb Native, sparuj telefon wyłącznie z modułem i wyeksportuj logi, jeśli nie uda się połączyć.</string>
+    <string name="external_bt_zj_socket_transport">Połącz przez gniazdo Bluetooth ZJ</string>
+    <string name="external_bt_zj_socket_transport_description">Dla stacji, w których moduł Bluetooth ZJ przenosi bezprzewodowe uzgadnianie Android Auto przez lokalne gniazdo (/dev/socket/zj_bt_socket). Aplikacja używa go sama, gdy gniazdo przyjmuje połączenie. Włącz to tylko wtedy, gdy stacja ma to gniazdo, a aplikacja go nie widzi.</string>
     <string name="external_bt_blink_refused_stock_enabled">Zewnętrzny moduł Bluetooth: fabryczna aplikacja Car Link jest nadal aktywna. Wyłącz ją (pm disable-user com.syu.carlink) lub wyłącz tę metodę połączenia.</string>
     <string name="external_bt_blink_refused_stock_running">Zewnętrzny moduł Bluetooth: fabryczna aplikacja Car Link została wyłączona, ale nadal działa w tle. Uruchom ponownie urządzenie.</string>
     <string name="external_bt_blink_refused_root">Zewnętrzny moduł Bluetooth: otwarcie kanału modułu wymaga roota na tym urządzeniu, a dostęp root został odrzucony lub jest niedostępny.</string>
@@ -1439,8 +1456,13 @@
     <string name="home_favorites_full">Wszystkie cztery ulubione są zajęte. Przytrzymaj jedną na ekranie głównym, aby ją zmienić.</string>
     <string name="home_choose_favorite_app">Wybierz aplikację lub skrót</string>
     <string name="home_shortcut_badge">Skrót</string>
-    <string name="home_show_favorite_apps">Aplikacje i widżety na ekranie głównym</string>
-    <string name="home_show_favorite_apps_description">Twoje ulubione aplikacje i widżety pod głównym przyciskiem, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="app_drawer_tab_shortcuts">Skróty</string>
+    <string name="home_show_favorite_apps">Ulubione aplikacje na ekranie głównym</string>
+    <string name="home_show_favorite_apps_description">Twoje ulubione aplikacje pod głównym przyciskiem, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="home_show_widgets">Widżety na ekranie głównym</string>
+    <string name="home_show_widgets_description">Twoje widżety, ich strony i kafelek Dodaj widget, gdy Open Headunit jest Twoim launcherem</string>
+    <string name="home_surface_opacity">Przezroczystość paneli</string>
+    <string name="home_surface_opacity_description">Zmniejsz ją, aby obraz tła prześwitywał przez panele i przyciski ekranu głównego.</string>
     <string name="home_show_clock">Data i godzina na ekranie głównym</string>
     <string name="home_show_clock_description">Godzina i dzisiejsza data, u góry głównego przycisku</string>
     <string name="home_show_speed">Prędkość GPS na ekranie głównym</string>
@@ -1476,4 +1498,16 @@
     <string name="audio_settings_reconnect">Ustawienia dźwięku zapisane. Połącz ponownie Android Auto, aby je zastosować.</string>
     <string name="native_aa_candidate_android_radio_description">Używaj Bluetooth Androida zamiast automatycznie wybierać moduł Bluetooth jednostki. Pozostaw wyłączone, aby wybierać automatycznie. Jeśli włączono opcję połączenia przez moduł, najpierw ją wyłącz.</string>
     <string name="external_bt_candidate_transport_description">Wymuś połączenie przez moduł Bluetooth jednostki zamiast automatycznego wyboru. Wymaga zgodnej usługi modułu. Pozostaw wyłączone, aby umożliwić użycie Bluetooth Androida, gdy usługa nie odpowiada; włączenie blokuje tę drogę zastępczą.</string>
+    <string name="audio_matching_mode">Korekcja czasu muzyki</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Domyślny</string>
+    <string name="audio_matching_wsola_hint">Lekki</string>
+    <string name="audio_matching_phase_vocoder_hint">Zrównoważony</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Niskie opóźnienie</string>
+    <string name="audio_matching_phase_gradient_hint">Wolne odtwarzanie</string>
+    <string name="audio_matching_description">OHU pozostaje domyślny. WSOLA wyrównuje nakładające się przebiegi; Phase Vocoder dostosowuje fazy widmowe. Short używa krótszego okna analizy. Phase Gradient odtwarza fazy przez całkowanie gradientów fazy. Te niezależne implementacje dodają opóźnienie przetwarzania; nazwy nie określają rankingu jakości dźwięku.\n\nMetody natywne: muzyka PCM. Nawigacja, odpowiedzi głosowe, dźwięki systemowe i AAC używają OHU.\nPołącz ponownie, aby zastosować. Ustawienia usuniętych silników wracają do OHU.</string>
 </resources>

@@ -162,7 +162,7 @@ adb shell am start -a android.intent.action.VIEW -d "headunit://connect?ip=192.1
 - Info/Help descriptions to the settings for better understanding
 
 ## Changelog
-### 4.0.0-alpha
+### 4.0.0-beta1
 - New Homescreen, thanks to @andrecuellar
 - AAP: send one version request over TCP, so a slow head unit server is not left deaf
 - AAP: Keep media and navigation display updates off the receive path
@@ -176,6 +176,10 @@ adb shell am start -a android.intent.action.VIEW -d "headunit://connect?ip=192.1
 - Fix(usb): Resolve dongle AOA switching
 - Status pill: stop saying Android Auto is starting when nothing is
 - Projection: keep the decoder through a short cover
+- Display: size Automatic DPI to the panel, and keep the widescreen layout it already had
+- Video: Add H.264 support to bundled FFmpeg
+- Logs: name captures OHU_Log_ instead of HUR_Log_
+- Audio: Reduce renderer work and add independent music correction
 
 ### v.3.5.0
 - Native AA: reconnect to a network that is still there, wake the phone over Bluetooth or the external module, bring a lost group or hotspot back after sleep, boot or ACC wake, stop advertising an address that moves, and pick, wake or hold back only for a phone that is on

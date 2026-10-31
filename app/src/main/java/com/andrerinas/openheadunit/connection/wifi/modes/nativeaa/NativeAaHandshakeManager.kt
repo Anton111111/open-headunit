@@ -1,7 +1,8 @@
 package com.andrerinas.openheadunit.connection.wifi.modes.nativeaa
 
 import com.andrerinas.openheadunit.R
-import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctAaCarrier
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctWppOwner
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctProjectionStage
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctOpening
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctServiceObserver
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.hct.HctWakePolicy
@@ -22,6 +23,9 @@ import com.andrerinas.openheadunit.connection.wifi.direct.StoredP2pIdentity
 import com.andrerinas.openheadunit.aap.AapService
 
 import com.andrerinas.openheadunit.connection.wifi.direct.WifiBandCapability
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketCarrier
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketPolicy
+import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zjsocket.ZjSocketProbe
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscovery
 import com.andrerinas.openheadunit.connection.wifi.modes.nativeaa.zbt.ZbtDiscoveryPolicy
 import com.andrerinas.openheadunit.utils.BluetoothAddressSeedPolicy
@@ -56,6 +60,7 @@ import com.andrerinas.openheadunit.connection.ConnectionStage
 import com.andrerinas.openheadunit.connection.ConnectionStageTracker
 import com.andrerinas.openheadunit.connection.wifi.modes.WifiLauncherNative
 import com.andrerinas.openheadunit.utils.Settings
+import com.andrerinas.openheadunit.utils.ExternalBtPolicy
 import com.andrerinas.openheadunit.utils.SystemProperties
 import java.io.DataInputStream
 import java.io.OutputStream
@@ -149,7 +154,9 @@ class NativeAaHandshakeManager(
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
                 fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-                hctServiceAvailable = HctServiceObserver.available(context)
+                hctServiceAvailable = HctServiceObserver.available(context),
+                zjSocketEnabled = settings.externalBtZjSocketTransport,
+                zjSocketConnects = ZjSocketProbe.answer()
             )
         }
 
@@ -162,7 +169,9 @@ class NativeAaHandshakeManager(
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
                 fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-                hctServiceAvailable = HctServiceObserver.available(context)
+                hctServiceAvailable = HctServiceObserver.available(context),
+                zjSocketEnabled = settings.externalBtZjSocketTransport,
+                zjSocketConnects = ZjSocketProbe.answer()
             )
         }
 
@@ -175,13 +184,20 @@ class NativeAaHandshakeManager(
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
                 fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-                hctServiceAvailable = HctServiceObserver.available(context)
+                hctServiceAvailable = HctServiceObserver.available(context),
+                zjSocketEnabled = settings.externalBtZjSocketTransport,
+                zjSocketConnects = ZjSocketProbe.answer()
             )
         }
 
         fun checkCompatibility(context: Context): Boolean {
             val discovery = ZbtDiscovery.snapshot()
             when (transportRoute(context, discovery)) {
+                // The raw Unix domain socket (/dev/socket/zj_bt_socket) directly carries RFCOMM frames.
+                ExternalBtTransportPolicy.Route.ZJ_SOCKET -> {
+                    AppLog.i("NativeAA: Bluetooth runs over raw Unix domain socket (/dev/socket/zj_bt_socket), compatibility check SUCCESS.")
+                    return true
+                }
                 // The module has its own listener and its own compatibility, established by the
                 // daemon answering at connection time. Nothing below measures that.
                 ExternalBtTransportPolicy.Route.ZBT, ExternalBtTransportPolicy.Route.BLINK,
@@ -315,31 +331,12 @@ class NativeAaHandshakeManager(
     private val ownSocketCloseAt = ConcurrentHashMap<String, Long>()
 
     /**
-     * The credentials to hand the phone, as one value.
-     *
-     * Four separate fields were written by WifiDirectManager's delivery thread and read by the
-     * handshake coroutine with no synchronisation, which allowed two failures. A read could see the
-     * SSID and passphrase of one group beside the BSSID of another, and Gearhead joins with a
-     * WifiNetworkSpecifier matching SSID *and* BSSID under a full mask, so it rejects the pair with
-     * no clue as to why. And the null check and the `!!` that followed it were separate reads, so an
-     * invalidate landing between them threw a KotlinNullPointerException that surfaced as
-     * "Handshake error: null" and named nothing.
-     *
-     * One immutable snapshot behind one volatile reference: a reader gets all four fields from the
-     * same group or none of them, and reads them once. [identity] travels with them for the same
-     * reason: whether this network will still exist under this name and address next time is a
-     * fact about this group, and WppEndpointPolicy reads it beside the address it describes.
+     * Publish one complete Wi-Fi configuration together with its withdrawal generation.
+     * The sender uses the same snapshot for SSID, key, BSSID and STATIC/DYNAMIC policy;
+     * a later withdrawal is still visible while the phone is joining that network.
      */
-    private data class WifiCredentials(
-        val ssid: String,
-        val psk: String,
-        val ip: String,
-        val bssid: String,
-        val identity: GroupIdentityStability,
-    )
-
-    @Volatile
-    private var credentials: WifiCredentials? = null
+    private val credentialStore = WppCredentialStore()
+    private val credentials: NativeNetworkCredentials? get() = credentialStore.current.credentials
 
     /**
      * Whether the user is on a screen the wake poke must not interrupt. Answered by the launcher;
@@ -483,7 +480,7 @@ class NativeAaHandshakeManager(
      */
     fun selectDriver(mac: String, explicit: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            (moduleCarrier as? HctAaCarrier)?.let { carrier ->
+            (moduleCarrier as? HctWppOwner.Client)?.let { carrier ->
                 val accepted = carrier.requestWakeFor(mac, allowReplacePending = explicit) {
                     commitDriverSelection(mac, explicit)
                     wakeStoodDown = false
@@ -729,19 +726,15 @@ class NativeAaHandshakeManager(
         identity: GroupIdentityStability,
     ) {
         AppLog.i("NativeAA: Credentials updated. SSID=$ssid, IP=$ip, BSSID=$bssid, identity stable=${GroupIdentityStabilityPolicy.label(identity)}")
-        credentials = WifiCredentials(ssid = ssid, psk = psk, ip = ip, bssid = bssid, identity = identity)
+        credentialStore.publish(NativeNetworkCredentials(ssid, psk, ip, bssid, identity))
         earlyWakeSpent = false
     }
 
     /** Clears cached credentials so an in-progress wait doesn't hand out stale ones for a group
      *  that's about to be torn down. */
     fun invalidateCredentials() {
-        credentials = null
-        credentialsWithdrawals.incrementAndGet()
+        credentialStore.withdraw()
     }
-
-    /** Counts groups taken down, so a handshake can tell the network it sent has since gone. */
-    private val credentialsWithdrawals = java.util.concurrent.atomic.AtomicInteger()
 
     // isRunning alone isn't enough once closeAaListeners() can close the AA_UUID listener while
     // leaving the manager otherwise running (HFP stays up) — callers like AutoStartReceiver's
@@ -869,10 +862,42 @@ class NativeAaHandshakeManager(
         if (measureGeneration != generation || !measuringDaemon) return
         if (completion == ZbtDiscovery.Measurement.Completion.CANCELLED) return
         if (completion == ZbtDiscovery.Measurement.Completion.CARRIER_BUSY) {
+            if (!decision.requiresIdentity) {
+                // Known external-module markers cannot fall back to Android's separate radio.
+                // Occupancy is not a daemon refusal either. Finish this arming without caching
+                // failure or immediately re-arming against the same unknown result. The WiFi
+                // button can start a fresh measurement after the previous owner has retired.
+                measuringDaemon = false
+                wakeAwaitingModule = false
+                notStartedReason = "the Bluetooth module is still in use by another OHU operation; try again when it finishes"
+                AppLog.w("NativeAA: $notStartedReason")
+                return
+            }
             ZbtDiscovery.deferIdentityForArming(decision)
             AppLog.w("NativeAA: Bluetooth module still busy after 10s; using Android Bluetooth for this arming.")
         }
         resumeAfterDaemonMeasurement(generation, arm)
+    }
+
+    /** The socket is asked only once the ZBT daemon has refused and nothing else decided. */
+    private fun wantsZjSocketProbe(): Boolean {
+        val after = ZbtDiscovery.snapshot()
+        return after.reachable == false && ExternalBtTransportPolicy.needsDaemonMeasurement(
+            after,
+            settings.externalBtZbtTransport,
+            settings.nativeAaIgnoreExternalBt,
+            blinkTransportEnabled = settings.externalBtBlinkTransport,
+            fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
+            hctServiceAvailable = HctServiceObserver.available(context),
+            zjSocketEnabled = settings.externalBtZjSocketTransport,
+            zjSocketConnects = ZjSocketProbe.answer()
+        )
+    }
+
+    /** Runs inside the ZBT window, after each refusal: the measurement's own gates already passed. */
+    private fun zjSocketEndsZbtWait(refusals: Int): Boolean {
+        if (ZjSocketPolicy.probesDuringZbtWait(refusals, ZjSocketProbe.answer())) ZjSocketProbe.measure()
+        return ZjSocketPolicy.endsZbtWait(refusals, ZjSocketProbe.answer())
     }
 
     fun start() = start(resumingMeasurement = false)
@@ -883,6 +908,7 @@ class NativeAaHandshakeManager(
         if (isRunning || measuringDaemon) return
         if (!resumingMeasurement) {
             ZbtDiscovery.beginArming()
+            ZjSocketProbe.beginArming()
             // Retain start()'s original fresh-arming reset: a cancellation from the previous
             // attempt must not reject every new phone, or leave the new session stood down.
             // Measurement completion belongs to the same arming, so preserve a phone selected
@@ -909,7 +935,9 @@ class NativeAaHandshakeManager(
                 settings.nativeAaIgnoreExternalBt,
                 blinkTransportEnabled = settings.externalBtBlinkTransport,
                 fytModuleEvidence = BluetoothHelper.fytModuleEvidence,
-                hctServiceAvailable = HctServiceObserver.available(context)
+                hctServiceAvailable = HctServiceObserver.available(context),
+                zjSocketEnabled = settings.externalBtZjSocketTransport,
+                zjSocketConnects = ZjSocketProbe.answer()
             )
         ) {
             notStartedReason = "the vendor Bluetooth daemon is still being asked whether it will carry Android Auto."
@@ -919,8 +947,17 @@ class NativeAaHandshakeManager(
             scope.launch(Dispatchers.IO + CoroutineName("NativeAa-ZbtReachability")) {
                 val measurement = ZbtDiscovery.measurement(discovery.decision)
                 val completion = measurement.awaitResolution(
-                    keepTrying = { measuringDaemon && measureGeneration == generation }
+                    keepTrying = { measuringDaemon && measureGeneration == generation },
+                    refusalIsFinal = ::zjSocketEndsZbtWait
                 )
+                // A socket refused early in the window may be up by its end, so ask it again.
+                ZjSocketProbe.forgetNegative()
+                // Only after ZBT refused, so a daemon that answers is never joined by a second dial.
+                if (completion != ZbtDiscovery.Measurement.Completion.CANCELLED &&
+                    measuringDaemon && measureGeneration == generation && wantsZjSocketProbe()
+                ) {
+                    ZjSocketProbe.measure()
+                }
                 withContext(Dispatchers.Main.immediate) {
                     completeDaemonMeasurement(generation, discovery.decision, completion)
                 }
@@ -931,7 +968,14 @@ class NativeAaHandshakeManager(
         // Leave isRunning false, like the "adapter disabled" case below: isActive() callers must
         // see this as genuinely stopped. Nothing here is retryable, but a listener that was never
         // opened must not be reported as up.
-        when (transportRoute(context, discovery)) {
+        val selectedRoute = transportRoute(context, discovery)
+        if (selectedRoute != ExternalBtTransportPolicy.Route.HCT) context.closeRetainedHct()
+        when (selectedRoute) {
+            // The raw Unix domain socket (/dev/socket/zj_bt_socket) carries the RFCOMM stream directly.
+            ExternalBtTransportPolicy.Route.ZJ_SOCKET -> {
+                startOverZjSocket()
+                return
+            }
             // The module carries the handshake instead, over its own channel. None of the RFCOMM
             // setup below applies to it.
             ExternalBtTransportPolicy.Route.ZBT -> {
@@ -1254,7 +1298,7 @@ class NativeAaHandshakeManager(
     }
 
     private fun usesHctCarrier(): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && moduleCarrier is HctAaCarrier
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && moduleCarrier is HctWppOwner.Client
 
     /**
      * Puts the Bluetooth side back where it was before the session, without taking it down.
@@ -2622,7 +2666,7 @@ class NativeAaHandshakeManager(
      */
     fun manualPoke(address: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            (moduleCarrier as? HctAaCarrier)?.let {
+            (moduleCarrier as? HctWppOwner.Client)?.let {
                 wakeStoodDown = false
                 sessionEndedAt = 0L
                 resetHandshakeBackoff()
@@ -2841,23 +2885,21 @@ class NativeAaHandshakeManager(
             if (hctStageOwner === stageOwner && mayReportFailure())
                 ConnectionStageTracker.reportWirelessHandoffEnded()
         }
-        lateinit var carrier: HctAaCarrier
-        carrier = HctAaCarrier(
-            context = context,
+        // Retained-channel reuse can start a lease before the cancelled lease's Main
+        // cleanup runs. Arming identity alone cannot distinguish those two projections.
+        val stageLease = HctProjectionStage(
+            started = { ConnectionStageTracker.report(ConnectionStage.PHONE_ANSWERED) },
+            ended = ::finishStageIfIdle
+        )
+        lateinit var carrier: HctWppOwner.Client
+        carrier = context.hctWppOwner.attach(
             openingRequest = {
                 HctOpening.versionRequest(
                     WppChannelTypePolicy.forHeadUnit(WifiBandCapability.supports5Ghz(context)),
                     WifiBandCapability.sessionFrequencyMhz()
                 )
             },
-            serve = { link ->
-                ConnectionStageTracker.report(ConnectionStage.PHONE_ANSWERED)
-                try { handleHandshake(link) } finally {
-                    // handleHandshake also returns normally after a write failure or timeout.
-                    // Restore retry access after that result, not just a carrier exception.
-                    withContext(NonCancellable + Dispatchers.Main.immediate) { finishStageIfIdle() }
-                }
-            },
+            serve = { link -> stageLease.serve { handleHandshake(link) } },
             mayServe = {
                 val now = SystemClock.elapsedRealtime()
                 // Match the normal radio's bounded cancel/prompt hold. The peer gate below
@@ -2869,9 +2911,17 @@ class NativeAaHandshakeManager(
                     !isHandshakeInFlight() && !isHandoffSettling() &&
                     NativeHandoffPolicy.shouldServeHandshake(consecutiveHandshakeFailures)
             },
+            // A deliberate same-phone reuse is allowed to clear only selection holds.
+            // Busy/session conditions stay independent of those holds and are checked before
+            // committing the chosen driver, under the retained owner's admission lock.
+            maySelect = {
+                isRunning && !aaListenersClosedForSession && !commManager.isConnected &&
+                    commManager.connectionState.value !is CommManager.ConnectionState.Connecting &&
+                    !isHandshakeInFlight() && !isHandoffSettling()
+            },
             acceptPeer = ::shouldAcceptHandshake,
             onPhoneEvidence = { resetHandshakeBackoff() },
-            onUnavailable = { result, stillCurrent ->
+            onUnavailable = { result ->
                 val message = when (result) {
                     HctWakePolicy.Result.HFP_ALREADY_CONNECTED -> R.string.hct_aa_waiting_existing_bluetooth
                     HctWakePolicy.Result.HFP_BUSY -> R.string.hct_aa_bluetooth_busy
@@ -2879,13 +2929,11 @@ class NativeAaHandshakeManager(
                     HctWakePolicy.Result.LOCAL_NOT_READY -> R.string.hct_aa_wake_not_sent
                     else -> R.string.hct_aa_handoff_unavailable
                 }
-                scope.launch(Dispatchers.Main) {
-                    // A queued failure belongs to this carrier, not a replacement started by
-                    // a later Wi-Fi button press. Check again at UI delivery, after dispatch.
-                    if (moduleCarrier === carrier && isRunning && stillCurrent() && mayReportFailure()) {
-                        finishStageIfIdle()
-                        ToastUtils.showToast(context, context.getString(message), Toast.LENGTH_LONG, force = true)
-                    }
+                // Owner delivery is already on Main, fenced by carrier, client and source
+                // event. Do not redispatch and open another stale-notification window.
+                if (moduleCarrier === carrier && isRunning && mayReportFailure()) {
+                    finishStageIfIdle()
+                    ToastUtils.showToast(context, context.getString(message), Toast.LENGTH_LONG, force = true)
                 }
             }
         )
@@ -2977,6 +3025,55 @@ class NativeAaHandshakeManager(
         ConnectionStageTracker.retreat(ConnectionStage.WAKING_PHONE, ConnectionStage.WAITING_FOR_PHONE)
         scope.launch(Dispatchers.Main) {
             ToastUtils.showToast(context, refusal.message, Toast.LENGTH_LONG, force = true)
+        }
+    }
+
+    private fun startOverZjSocket() {
+        isRunning = true
+        notStartedReason = null
+        aaListenersClosedForSession = false
+        localRadioName = "ZJ socket (${ZjSocketProbe.path()})"
+        // The module's own address, which the phone is bonded to. Without it no Bluetooth service
+        // is announced and calls stay on the phone.
+        val moduleAddress = SystemProperties.get(ExternalBtPolicy.ZJ_MODULE_ADDRESS_PROPERTY, "").trim()
+        if (moduleAddress.isNotEmpty()) {
+            seedBluetoothAddressFromModule(moduleAddress)
+        } else {
+            AppLog.i(
+                "NativeAA: [ZJ] ${ExternalBtPolicy.ZJ_MODULE_ADDRESS_PROPERTY} is not set, so the module's " +
+                    "Bluetooth address is unknown here. Unless the Bluetooth address setting holds it, " +
+                    "calls may stay on the phone."
+            )
+        }
+        AppLog.i(
+            "NativeAA: [ZJ] socket transport is on (${BluetoothHelper.externalBtEvidence}); " +
+                "the handshake will connect to ${ZjSocketProbe.path()} directly."
+        )
+        val carrier = ZjSocketCarrier(
+            socketPath = ZjSocketProbe.path(),
+            serve = { link ->
+                ConnectionStageTracker.report(ConnectionStage.PHONE_ANSWERED)
+                handleHandshake(link)
+            },
+            isRunning = { isRunning },
+            isSessionConnected = { commManager.isConnected },
+            isHandshakeInFlight = { isHandshakeInFlight() },
+            isSettling = { isHandoffSettling() },
+            mayServeHandshake = { NativeHandoffPolicy.shouldServeHandshake(consecutiveHandshakeFailures) },
+            onPhoneEvidence = { resetHandshakeBackoff() },
+            servedRefusals = { consecutiveJoinRefusals }
+        )
+        moduleCarrier = carrier
+        // A wake queued during the measurement needs no send and no pill claim on this route.
+        wakeAwaitingModule = false
+        scope.launch(Dispatchers.IO + CoroutineName("NativeAa-ZjSocketCarrier")) {
+            try {
+                carrier.run()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLog.e("NativeAA: [ZJ] carrier stopped unexpectedly: ${e.message}", e)
+            }
         }
     }
 
@@ -3127,14 +3224,23 @@ class NativeAaHandshakeManager(
         // actually hosting, and a saved transport does not reach the running launcher until it is
         // re-armed.
         val transport = launcher.strategy
-        val session = WppHandshakeSession(holdsChannel = true)
+        val session = WppHandshakeSession(holdsChannel = true, versionNegotiated = link.versionNegotiated)
         // Everything the phone sends, in order. Replaces the single bounded read this used to do:
         // types 6 and 7 arrive *after* the credentials go out, so a one-shot read could never see
         // them, and the phone is free to interject a ping at any point in between.
-        val inbound = Channel<ProtobufMessage>(Channel.UNLIMITED)
+        val input = DataInputStream(link.input)
+        val messages = WppInboundMessages(link.versionNegotiated) { readProtobuf(input) }
+        val inbound = messages.channel
         var readerJob: Job? = null
         var arbiterClaim: ConnectionArbiter.Claim? = null
         try {
+            if (link.versionNegotiated) {
+                // Version/Ping belong to the physical reader and are intentionally absent
+                // from this lease's message count. No Start response is not radio silence.
+                resetHandshakeBackoff()
+                ConnectionIssues.clear(context, ConnectionIssue.BLUETOOTH_SENT_NO_DATA)
+                retiredSilentRecord = true
+            }
             val peerName = link.peerName
             val peerAddress = link.peerAddress
             AppLog.i("NativeAA: Handling handshake for $peerName ($peerAddress) on local radio [${link.radioLabel ?: "?"}]")
@@ -3168,7 +3274,6 @@ class NativeAaHandshakeManager(
                 settings.nativePokeBtMacs = setOf(peerAddress)
             }
 
-            val input = DataInputStream(link.input)
             val output = link.output
 
             // [BUG_FIX] There is no BluetoothSocket.setSoTimeout(), and the old workaround —
@@ -3180,7 +3285,7 @@ class NativeAaHandshakeManager(
             // still unreclaimable on such a stack; consecutiveHandshakeFailures bounds that.
             readerJob = scope.launch(Dispatchers.IO + CoroutineName("NativeAa-Reader-$peerAddress")) {
                 try {
-                    while (isActive) inbound.send(readProtobuf(input))
+                    messages.readUntilClosed()
                 } catch (e: Exception) {
                     AppLog.d("NativeAA: Bluetooth reader ended: ${e.message}")
                 } finally {
@@ -3203,10 +3308,14 @@ class NativeAaHandshakeManager(
             // What the credentials looked like when this exchange captured them, kept as resolved
             // so the re-read before Type 3 compares like with like.
             var capturedCreds = NativeNetworkCredentials("", "", "", "")
+            // The network whose WPP endpoint (Type 4, TCP 5299) went out, or null while none has.
+            // Not the projection address: that is credIp:5288 in Type 1. Kept as first advertised,
+            // so a repeated Type 4 cannot move it; see CredentialFreshnessPolicy.keepsEndpoint.
+            var advertisedNetwork: NativeNetworkCredentials? = null
             // Set when the network named above stopped existing before Type 3 could go out.
             var credentialsWentStale = false
             // The withdrawal count the credentials were sent under, or -1 before Type 3.
-            var sentUnderWithdrawals = -1
+            var sentUnderWithdrawals = -1L
             // When the opening message last went out, for the transports that have to repeat it.
             var lastOpenerSentAt = 0L
             // The held channel's bookkeeping, for its periodic summary and its release line.
@@ -3224,7 +3333,7 @@ class NativeAaHandshakeManager(
                             return
                         }
                         AppLog.i("NativeAA: [TX] Sending WifiVersionRequest (Type 4) v${WppHandshakeSession.WPP_VERSION_MAJOR}.${WppHandshakeSession.WPP_VERSION_MINOR}")
-                        sendWifiVersionRequest(output, transport)
+                        sendWifiVersionRequest(output, transport, advertisedNetwork)?.let { advertisedNetwork = it }
                         lastOpenerSentAt = SystemClock.elapsedRealtime()
                         spokeToPhone = true
                     }
@@ -3251,11 +3360,15 @@ class NativeAaHandshakeManager(
                         // Read again here rather than trusting the snapshot this exchange started
                         // with. A group removed inside the pause above leaves the phone hunting an
                         // SSID that is gone, which it cannot recover from without a new handshake.
-                        val withdrawalsAtSend = credentialsWithdrawals.get()
-                        val live = credentials
+                        // Read the network and its withdrawal generation together. A replacement
+                        // published between two reads must not inherit the old generation.
+                        val publication = credentialStore.current
+                        val withdrawalsAtSend = publication.withdrawals
+                        val live = publication.credentials
                         when (CredentialFreshnessPolicy.decide(
                             captured = capturedCreds,
-                            live = live?.let { NativeNetworkCredentials(it.ssid, it.psk, it.ip, it.bssid.uppercase()) },
+                            live = live?.copy(bssid = live.bssid.uppercase()),
+                            endpointNetwork = advertisedNetwork,
                         )) {
                             CredentialFreshnessPolicy.Action.SEND_AS_CAPTURED ->
                                 AppLog.d("NativeAA: the live credentials still match the ones this handshake captured.")
@@ -3276,7 +3389,7 @@ class NativeAaHandshakeManager(
                             }
 
                             CredentialFreshnessPolicy.Action.ABORT -> {
-                                AppLog.e("NativeAA: the network these credentials name was taken down while Type 3 was pending, so nothing is sent; the phone retries once a group is up.")
+                                AppLog.e("NativeAA: WiFi credentials were withdrawn, incomplete, moved to another endpoint, or no longer the network whose WPP endpoint went out before Type 3; ending this exchange so the next one describes the network that exists now.")
                                 credentialsWentStale = true
                             }
                         }
@@ -3289,7 +3402,7 @@ class NativeAaHandshakeManager(
                         }
                         sendWifiSecurityResponse(
                             output, credSsid, credPsk, credBssid,
-                            credentials?.identity ?: GroupIdentityStability.UNPROVEN
+                            live!!.identity
                         )
                         // Set after the write returns, not before the delay above: this marks that
                         // we put bytes on the channel, and a phone that opened the exchange itself
@@ -3350,9 +3463,9 @@ class NativeAaHandshakeManager(
                     is WppAction.Release -> {
                         val heldS = (SystemClock.elapsedRealtime() - holdingSince) / 1000
                         if (action.peerClosed) {
-                            AppLog.w("NativeAA: the phone closed the held Bluetooth channel after ${heldS}s and $pingsWhileHolding pings; the Android Auto listeners reopen when this session ends.")
+                            AppLog.w("NativeAA: the phone closed the held Bluetooth channel after ${heldS}s and $pingsWhileHolding lease-handled pings; the Android Auto listeners reopen when this session ends.")
                         } else {
-                            AppLog.i("NativeAA: the session ended; releasing the held Bluetooth channel after ${heldS}s and $pingsWhileHolding pings.")
+                            AppLog.i("NativeAA: the session ended; releasing the held Bluetooth channel after ${heldS}s and $pingsWhileHolding lease-handled pings.")
                         }
                     }
                     is WppAction.Fail -> {
@@ -3439,7 +3552,8 @@ class NativeAaHandshakeManager(
                                 ConnectionIssues.clear(context, ConnectionIssue.BLUETOOTH_SENT_NO_DATA)
                             }
                         }
-                        feed(WppEvent.MessageReceived(msg.type, parseStatus(msg)), msg)
+                        val status = parseStatus(msg)
+                        feed(WppEvent.MessageReceived(msg.type, status), msg)
                         if (session.isTerminal()) return
                     }
                 }
@@ -3452,7 +3566,7 @@ class NativeAaHandshakeManager(
                         !sessionAlive -> feed(WppEvent.SessionEnded)
                         now - lastHoldSummaryAt >= HOLD_SUMMARY_INTERVAL_MS -> {
                             lastHoldSummaryAt = now
-                            AppLog.i("NativeAA: [HOLD] Bluetooth channel held ${(now - holdingSince) / 1000}s, $pingsWhileHolding pings answered.")
+                            AppLog.i("NativeAA: [HOLD] Bluetooth channel held ${(now - holdingSince) / 1000}s, $pingsWhileHolding lease-handled pings answered.")
                         }
                     }
                     return
@@ -3468,7 +3582,7 @@ class NativeAaHandshakeManager(
                     return
                 }
                 if (session.stage == WppStage.SETTLING && sentUnderWithdrawals >= 0 &&
-                    credentialsWithdrawals.get() != sentUnderWithdrawals
+                    credentialStore.current.withdrawals != sentUnderWithdrawals
                 ) {
                     AppLog.w("NativeAA: the network the phone was sent was taken down while it was joining, so this handshake ends now and the phone is woken for the new one.")
                     feed(WppEvent.NetworkWithdrawn)
@@ -3547,7 +3661,7 @@ class NativeAaHandshakeManager(
                 }
                 resendOpener(
                     now,
-                    { sendWifiVersionRequest(output, transport) },
+                    { sendWifiVersionRequest(output, transport, advertisedNetwork)?.let { advertisedNetwork = it } },
                     "WifiVersionRequest (Type 4)"
                 )
                 tick(500)
@@ -3579,11 +3693,22 @@ class NativeAaHandshakeManager(
                 return@withContext
             }
 
+            // Before Type 1 names this network's projection address. A Type 4 that advertised another
+            // network's endpoint (it was replaced, or re-judged as not to be kept, during the wait)
+            // cannot be followed by this one's credentials, so the exchange ends here and the next
+            // one opens with a Type 4 that matches. A cold start whose Type 4 carried no endpoint
+            // has nothing to keep, and carries on.
+            if (!CredentialFreshnessPolicy.keepsEndpoint(advertisedNetwork, snapshot)) {
+                AppLog.w("NativeAA: the WPP endpoint went out for ${advertisedNetwork?.ssid}, and the network now is ${snapshot.ssid} (identity stable=${GroupIdentityStabilityPolicy.label(snapshot.identity)}); ending this exchange rather than send Type 1 and Type 3 for a network the endpoint does not describe.")
+                abortedLocally = true
+                return@withContext
+            }
+
             credIp = snapshot.ip
             credSsid = snapshot.ssid
             credPsk = snapshot.psk
             credBssid = snapshot.bssid.uppercase()
-            capturedCreds = NativeNetworkCredentials(credSsid, credPsk, credIp, credBssid)
+            capturedCreds = snapshot.copy(bssid = credBssid)
 
             // Before the BSSID, because this one is certain rather than merely likely: an open
             // network is refused by every client, and sending it spends a wake poke, which takes
@@ -3723,7 +3848,7 @@ class NativeAaHandshakeManager(
                 // Excludes our own pre-exchange aborts (no credentials, masked BSSID, USB already
                 // up) — those repeat for as long as location services are off, and backing off
                 // would bury the log line saying how to fix it.
-                if (spokeToPhone && !abortedLocally && session.messagesReceived == 0) {
+                if (spokeToPhone && !abortedLocally && session.messagesReceived == 0 && !link.versionNegotiated) {
                     consecutiveHandshakeFailures++
                     // The same fact, written down where the user can be told about it. Our bytes
                     // went out and the phone answered none of them, which is what a head unit
@@ -3871,34 +3996,53 @@ class NativeAaHandshakeManager(
      * which is worse than staying quiet: it stores what we advertise and dials it in preference to
      * running this handshake again. On WiFi Direct that is decided by whether this unit's group has
      * been seen to keep its name and address, which travels with the credentials.
+     *
+     * Returns the network whose endpoint went out, or null when none did. That is the WPP-over-TCP
+     * endpoint (5299) the phone stores; the projection address (5288) is Type 1's, not this one's.
      */
-    private fun sendWifiVersionRequest(output: OutputStream, transport: NativeStrategy) {
-        val endpoint = when (val decision =
-            WppEndpointPolicy.decide(
-                transport,
-                wppTcpServer?.listeningPort,
-                credentials?.identity ?: GroupIdentityStability.UNPROVEN,
-            )) {
-            is WppEndpointDecision.Withhold -> {
+    private fun sendWifiVersionRequest(
+        output: OutputStream,
+        transport: NativeStrategy,
+        alreadyAdvertised: NativeNetworkCredentials?,
+    ): NativeNetworkCredentials? {
+        val snapshot = credentials
+        val decision = WppEndpointPolicy.decide(
+            transport,
+            wppTcpServer?.listeningPort,
+            snapshot?.identity ?: GroupIdentityStability.UNPROVEN,
+        )
+        // A repeat after the network changed: the phone may already hold the first endpoint, so
+        // this one must not quietly become the exchange's new baseline. The check before Type 1
+        // ends the exchange instead.
+        val rebases = decision is WppEndpointDecision.Advertise && alreadyAdvertised != null &&
+            snapshot != null && !alreadyAdvertised.sameNetworkAs(snapshot)
+        val endpoint = when {
+            decision is WppEndpointDecision.Withhold -> {
                 AppLog.i("NativeAA: not advertising WPP over TCP: ${decision.reason}")
                 null
             }
-            is WppEndpointDecision.Advertise ->
-                WppMessages.endpoint(credentials?.ip.orEmpty(), decision.port).also {
+            rebases -> {
+                AppLog.w("NativeAA: repeating Type 4 without an endpoint; the one already sent was for ${alreadyAdvertised?.ssid}, not ${snapshot?.ssid}.")
+                null
+            }
+            snapshot != null && decision is WppEndpointDecision.Advertise ->
+                WppMessages.endpoint(snapshot.ip, decision.port).also {
                     AppLog.i("NativeAA: advertising WPP over TCP at ${it.ip}:${it.port}")
-                    recordAdvertisedEndpoint(transport)
+                    recordAdvertisedEndpoint(transport, snapshot)
                 }
+            else -> null
         }
         val channelType = WppChannelTypePolicy.forHeadUnit(WifiBandCapability.supports5Ghz(context))
         val channels = WppChannelListPolicy.forGroup(WifiBandCapability.sessionFrequencyMhz())
         AppLog.i("NativeAA: [TX] version request channel type=$channelType channels=$channels")
         val request = WppMessages.versionRequest(carInfo(), endpoint, channelType, channels)
         sendProtobuf(output, request.toByteArray(), WppMessageType.VERSION_REQUEST)
+        return snapshot.takeIf { endpoint != null }
     }
 
     /** Remembers the network an endpoint went out under, which is the one the phone will insist on. */
-    private fun recordAdvertisedEndpoint(transport: NativeStrategy) {
-        val creds = credentials ?: return
+    private fun recordAdvertisedEndpoint(transport: NativeStrategy, snapshot: NativeNetworkCredentials?) {
+        val creds = snapshot ?: return
         if (transport == NativeStrategy.HOTSPOT) {
             val ap = SoftApEndpointStabilityPolicy.advertisement(creds.ssid, creds.psk, creds.bssid, creds.ip) ?: return
             if (settings.softApAdvertisedEndpoint != ap) settings.softApAdvertisedEndpoint = ap
@@ -3942,13 +4086,9 @@ class NativeAaHandshakeManager(
         if (wppTcpServer != null) return
         val server = WppTcpServer(context, scope, object : WppTcpServer.Callbacks {
             override fun credentials(): NativeNetworkCredentials? = this@NativeAaHandshakeManager.credentials
-                ?.let { NativeNetworkCredentials(it.ssid, it.psk, it.ip, it.bssid) }
 
             // The hosted transport, not the saved one: see handleHandshake().
             override fun strategy(): NativeStrategy = launcher.strategy
-
-            override fun identity(): GroupIdentityStability =
-                this@NativeAaHandshakeManager.credentials?.identity ?: GroupIdentityStability.UNPROVEN
 
             override fun carInfo(): Wireless.WppCarInfo = this@NativeAaHandshakeManager.carInfo()
 
@@ -3958,8 +4098,8 @@ class NativeAaHandshakeManager(
 
             override fun projectionSessionUp(): Boolean = commManager.isConnected
 
-            override fun projectionEndpoint(): Pair<String, Int>? =
-                this@NativeAaHandshakeManager.credentials?.ip?.takeIf { it.isNotBlank() }?.let { it to 5288 }
+            override fun projectionEndpoint(network: NativeNetworkCredentials): Pair<String, Int>? =
+                network.ip.takeIf { it.isNotBlank() }?.let { it to 5288 }
 
             override fun noteDialRefused() { dialRefusedSinceLastLanding = true }
 
@@ -3967,7 +4107,8 @@ class NativeAaHandshakeManager(
 
             override fun noteEndpointRetired() = retireAdvertisedEndpoint("the phone's dial was rejected")
 
-            override fun noteEndpointAdvertised() = recordAdvertisedEndpoint(launcher.strategy)
+            override fun noteEndpointAdvertised(credentials: NativeNetworkCredentials) =
+                recordAdvertisedEndpoint(launcher.strategy, credentials)
         })
         wppTcpServer = server
         server.start()
@@ -4094,7 +4235,7 @@ class NativeAaHandshakeManager(
         }
         aaServerSocket = null
         hfpServerSocket = null
-        credentials = null
+        credentialStore.withdraw()
         pokeJob?.cancel()
         pokeJob = null
         lastPokeTriggerCredentials = null

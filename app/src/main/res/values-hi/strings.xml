@@ -7,6 +7,12 @@
     <string name="settings_tab_basic">बेसिक</string>
     <string name="settings_tab_advanced">ऐडवांस</string>
     <string name="settings_search_hint">सेटिंग्स खोजें</string>
+    <string name="settings_scope_wifi_hidden">USB सेटिंग्स दिखाई जा रही हैं। WiFi सेटिंग्स छिपी हैं।</string>
+    <string name="settings_scope_usb_hidden">WiFi सेटिंग्स दिखाई जा रही हैं। USB सेटिंग्स छिपी हैं।</string>
+    <string name="settings_scope_usb_wifi_hidden">सेल्फ़ मोड सेटिंग्स दिखाई जा रही हैं। USB और WiFi सेटिंग्स छिपी हैं।</string>
+    <string name="settings_scope_change">बदलें</string>
+    <string name="settings_search_clear">खोज साफ़ करें</string>
+    <string name="settings_search_no_results">\"%1$s\" से कोई सेटिंग मेल नहीं खाती।</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">कनेक्शन मोड</string>
@@ -273,6 +279,16 @@
     <string name="current_light_reading">मौजूदा रोशनी: %d Lux</string>
     <string name="current_brightness_reading">स्क्रीन की मौजूदा रोशनी: %d / 255</string>
     <string name="enable_fine_lux_control">सटीक नियंत्रण (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">वर्तमान car_mode: %1$d. मैपिंग: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = दिन, शून्य नहीं = रात</string>
+    <string name="car_signal_mapping_inverted">0 = रात, शून्य नहीं = दिन</string>
+    <string name="car_signal_unavailable">इस हेड यूनिट पर अभी car_mode पढ़ा नहीं जा सकता।</string>
+    <string name="car_signal_headlights_question">क्या अभी हेडलाइट्स चालू हैं?</string>
+    <string name="car_signal_calibration_title">ILL+ कैलिब्रेशन</string>
+    <string name="car_signal_recalibrate">पुनः कैलिब्रेट करें</string>
+    <string name="car_signal_headlights_on">चालू</string>
+    <string name="car_signal_headlights_off">बंद</string>
+    <string name="car_signal_calibration_saved">ILL+ कैलिब्रेशन सहेजा गया और लागू किया गया</string>
     <string name="night_mode_start">नाइट मोड प्रारंभ समय</string>
     <string name="night_mode_end">नाइट मोड समाप्ति समय</string>
 
@@ -372,6 +388,7 @@
     <string name="orientation_portrait">पोर्ट्रेट (90°)</string>
     <string name="orientation_portrait_reverse">रिवर्स पोर्ट्रेट (270°)</string>
     <string name="enter_dpi_value">DPI मान दर्ज करें (ऑटो के लिए 0)</string>
+    <string name="enter_audio_offset_value">मान दर्ज करें (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">पिक्सल आस्पेक्ट रेशियो x10000 (10000 = चौकोर पिक्सल)</string>
     <string name="custom_margin">कस्टम मार्जिन</string>
     <string name="custom_margin_description">कस्टम डिस्प्ले मार्जिन सेट करें (ऑटो के लिए 0)।</string>
@@ -1068,8 +1085,6 @@
     <string name="wait_for_wifi_description">बूट होने पर वाई-फ़ाई डायरेक्ट शुरू करने से पहले वाई-फ़ाई कनेक्ट होने का इंतज़ार करता है। अगर पावर चालू होने के बाद आपकी हेड यूनिट को वाई-फ़ाई से जुड़ने में कुछ सेकंड लगते हैं, तो इसे चालू करें।</string>
     <string name="wait_for_wifi_timeout">वाई-फ़ाई इंतज़ार की समय सीमा</string>
     <string name="wireless_24ghz_warning">नोट: 2.4GHz डिवाइस पर वायरलेस Android Auto में लैग, अटकना और डिसकनेक्ट होना हो सकता है। समस्या आए तो USB से जाँचें कि कहीं यह नेटवर्क की सीमा तो नहीं।</string>
-    <string name="fake_speed_title">वीडियो-लॉक बंद करें (नकली गति)</string>
-    <string name="fake_speed_description">फ़ोन को हमेशा कम गति (0.5 m/s) बताता है, ताकि गाड़ी चलाते समय वीडियो ब्लॉक न हो। सावधानी से इस्तेमाल करें।</string>
     <string name="wireless_mode_helper">वायरलेस हेल्पर</string>
     <string name="wireless_mode_native">नेटिव</string>
     <string name="wireless_mode_server">हेडयूनिट सर्वर</string>
@@ -1213,13 +1228,15 @@
     <string name="zbt_probe_title">हेड यूनिट के ब्लूटूथ मॉड्यूल की जाँच करें</string>
     <string name="zbt_probe_idle">चलाने के लिए टैप करें</string>
     <string name="zbt_probe_running">चल रहा है…</string>
-    <string name="zbt_probe_message">इस यूनिट की अलग ब्लूटूथ चिप से पूछता है कि क्या वह Android Auto कनेक्शन चला सकती है। यह करीब आठ सेकंड में जाँचता है कि चिप जवाब देती भी है या नहीं, और जवाब देने पर ही करीब डेढ़ मिनट तक निगरानी करता है। इस सेटिंग के नीचे की लाइन में दिखता है कि क्या हो रहा है। यूनिट में और कुछ नहीं बदला जाता।\n\nचिप एक बार में एक ही प्रोग्राम से बात करती है, इसलिए अगर उससे कोई कनेक्शन पहले से चल रहा है तो जाँच करने के बजाय यही बताया जाता है। अकेले जाँचने के लिए पहले ऊपर की सेटिंग बंद करें।\n\n\"जगाएं और देखें\" चिप से Android Auto के लिए आपके फ़ोन से दोबारा जुड़ने को भी कहता है। सिर्फ़ यही हिस्सा कुछ बदलता है, और यूनिट रीस्टार्ट करने पर वह पहले जैसा हो जाता है। कृपया बाद में लॉग एक्सपोर्ट करके भेजें।</string>
+    <string name="zbt_probe_message">दोनों विकल्प निगरानी से पहले Bluetooth मॉड्यूल को आरंभ करते हैं। इससे उसकी Bluetooth स्थिति प्रभावित हो सकती है। जगाएँ और देखें विकल्प फ़ोन से कनेक्शन का अनुरोध भी करता है।\n\nजब OHU मॉड्यूल का उपयोग या जाँच करता है, तब परीक्षण उसे प्राथमिकता देता है। परीक्षण के बाद लॉग निर्यात करें।</string>
     <string name="zbt_probe_watch_only">केवल देखें</string>
     <string name="zbt_probe_wake_and_watch">जगाएं और देखें</string>
     <string name="external_bt_blink_transport">FYT के बाहरी ब्लूटूथ मॉड्यूल से कनेक्ट करें</string>
     <string name="external_bt_module_controls_hint">फ़ोन पेयरिंग, कनेक्शन की प्राथमिकता और ड्राइवर का चुनाव बाहरी ब्लूटूथ मॉड्यूल संभालता है।</string>
     <string name="external_bt_module_last_phone">मॉड्यूल से आखिरी बार जुड़ा फ़ोन</string>
     <string name="external_bt_blink_transport_description">प्रयोगात्मक। उन FYT यूनिट के लिए जिनमें फ़ोन कॉल के लिए अलग ब्लूटूथ मॉड्यूल से पेयर होता है, जैसे DUDUOS पर \"DUDUAUTO\", जो अब तक जाँचा गया एकमात्र ROM है। वायरलेस Android Auto हैंडशेक यह मॉड्यूल ले जाता है, इस यूनिट का ब्लूटूथ नहीं, और इसका जवाब आम तौर पर स्टॉक Car Link ऐप देता है। इसे चालू करने पर जवाब यही ऐप देता है, इसलिए कॉल मॉड्यूल और कार के स्पीकर पर ही रहती हैं।\n\nपहले स्टॉक Car Link ऐप बंद करें (pm disable-user com.syu.carlink), वरना दोनों ऐप एक ही चैनल पढ़ेंगे। जहाँ यूनिट इजाज़त दे, चैनल बिना रूट के खुलता है, नहीं तो रूट से। नेटिव चुनें, फ़ोन को सिर्फ़ मॉड्यूल से पेयर करें, और कनेक्ट न हो तो लॉग एक्सपोर्ट करें।</string>
+    <string name="external_bt_zj_socket_transport">ZJ Bluetooth सॉकेट से कनेक्ट करें</string>
+    <string name="external_bt_zj_socket_transport_description">उन यूनिट के लिए, जिनमें ZJ Bluetooth मॉड्यूल वायरलेस Android Auto हैंडशेक को लोकल सॉकेट (/dev/socket/zj_bt_socket) से भेजता है। जब यह सॉकेट कनेक्शन स्वीकार करता है, तो ऐप इसे अपने आप इस्तेमाल करता है। इसे केवल तभी चालू करें, जब आपकी यूनिट में यह सॉकेट हो और ऐप उसे न पहचान पाए।</string>
     <string name="external_bt_blink_refused_stock_enabled">बाहरी ब्लूटूथ मॉड्यूल: स्टॉक Car Link ऐप अभी चालू है। उसे बंद करें (pm disable-user com.syu.carlink) या यह ट्रांसपोर्ट बंद करें।</string>
     <string name="external_bt_blink_refused_stock_running">बाहरी ब्लूटूथ मॉड्यूल: स्टॉक Car Link ऐप बंद है, पर अब भी चल रहा है। यूनिट रीस्टार्ट करें।</string>
     <string name="external_bt_blink_refused_root">बाहरी ब्लूटूथ मॉड्यूल: मॉड्यूल का चैनल खोलने के लिए इस यूनिट पर रूट चाहिए, और रूट एक्सेस नहीं मिला या उपलब्ध नहीं है।</string>
@@ -1480,8 +1497,13 @@
     <string name="home_favorites_full">चारों पसंदीदा भरे हुए हैं। बदलने के लिए होम स्क्रीन पर किसी एक को दबाकर रखें।</string>
     <string name="home_choose_favorite_app">ऐप या शॉर्टकट चुनें</string>
     <string name="home_shortcut_badge">शॉर्टकट</string>
-    <string name="home_show_favorite_apps">होम स्क्रीन पर ऐप्स और विजेट</string>
-    <string name="home_show_favorite_apps_description">जब Open Headunit आपका लॉन्चर हो, तब मुख्य बटन के नीचे आपके पसंदीदा ऐप्स और विजेट</string>
+    <string name="app_drawer_tab_shortcuts">शॉर्टकट</string>
+    <string name="home_show_favorite_apps">होम स्क्रीन पर पसंदीदा ऐप्स</string>
+    <string name="home_show_favorite_apps_description">जब Open Headunit आपका लॉन्चर हो, तब मुख्य बटन के नीचे आपके पसंदीदा ऐप्स</string>
+    <string name="home_show_widgets">होम स्क्रीन पर विजेट</string>
+    <string name="home_show_widgets_description">जब Open Headunit आपका लॉन्चर हो, तब आपके विजेट, उनके पेज और «विजेट जोड़ें» टाइल</string>
+    <string name="home_surface_opacity">पैनल की अपारदर्शिता</string>
+    <string name="home_surface_opacity_description">इसे घटाएँ, ताकि आपकी बैकग्राउंड छवि होम स्क्रीन के पैनल और बटन के पीछे से दिखे।</string>
     <string name="home_show_clock">होम स्क्रीन पर तारीख़ और समय</string>
     <string name="home_show_clock_description">मुख्य बटन के ऊपर समय और आज की तारीख़</string>
     <string name="home_show_speed">होम स्क्रीन पर GPS गति</string>
@@ -1517,4 +1539,16 @@
     <string name="audio_settings_reconnect">ऑडियो सेटिंग्स सेव हो गईं। इन्हें लागू करने के लिए Android Auto को दोबारा कनेक्ट करें।</string>
     <string name="native_aa_candidate_android_radio_description">हेड यूनिट का Bluetooth मॉड्यूल अपने आप चुनने के बजाय Android Bluetooth इस्तेमाल करें। अपने आप चुनने के लिए इसे बंद रखें। अगर मॉड्यूल से कनेक्शन का कोई विकल्प चालू है, तो पहले उसे बंद करें।</string>
     <string name="external_bt_candidate_transport_description">अपने आप चुनने के बजाय हेड यूनिट के Bluetooth मॉड्यूल से कनेक्शन अनिवार्य करें। इसके लिए संगत मॉड्यूल सेवा ज़रूरी है। सेवा जवाब न दे तो Android Bluetooth इस्तेमाल करने देने के लिए इसे बंद रखें; चालू करने पर यह विकल्प उपलब्ध नहीं होगा।</string>
+    <string name="audio_matching_mode">संगीत समय सुधार</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">डिफ़ॉल्ट</string>
+    <string name="audio_matching_wsola_hint">हल्का</string>
+    <string name="audio_matching_phase_vocoder_hint">संतुलित</string>
+    <string name="audio_matching_phase_vocoder_short_hint">कम विलंब</string>
+    <string name="audio_matching_phase_gradient_hint">धीमा प्लेबैक</string>
+    <string name="audio_matching_description">OHU डिफ़ॉल्ट बना रहता है। WSOLA ओवरलैप होती तरंगों को संरेखित करता है; Phase Vocoder स्पेक्ट्रम के फेज़ समायोजित करता है। Short छोटी विश्लेषण विंडो का उपयोग करता है। Phase Gradient फेज़ ग्रेडिएंट का समाकलन करके फेज़ पुनर्निर्मित करता है। ये स्वतंत्र कार्यान्वयन प्रोसेसिंग में देरी जोड़ते हैं; इनके नाम ध्वनि गुणवत्ता की रैंकिंग नहीं हैं।\n\nनेटिव तरीके: PCM संगीत। नेविगेशन, बोलकर दिए गए जवाब, सिस्टम ध्वनियाँ और AAC OHU का उपयोग करते हैं।\nलागू करने के लिए फिर से कनेक्ट करें। हटाए गए इंजन की सेटिंग OHU पर रीसेट होती है।</string>
 </resources>

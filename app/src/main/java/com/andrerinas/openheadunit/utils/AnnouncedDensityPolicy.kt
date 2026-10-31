@@ -16,7 +16,7 @@ object AnnouncedDensityPolicy {
     const val PORTRAIT_MIN_WIDTH_DP = 730
     private const val FALLBACK_DPI = 160
 
-    enum class Reason { AS_STORED, AUTOMATIC, WIDTH_FLOOR, HEIGHT_FLOOR, PORTRAIT, PORTRAIT_FLOOR, FLOOR_OVERRIDE }
+    enum class Reason { AS_STORED, AUTOMATIC, PANEL, WIDESCREEN_KEPT, WIDTH_FLOOR, HEIGHT_FLOOR, PORTRAIT, PORTRAIT_FLOOR, FLOOR_OVERRIDE }
 
     data class Decision(val announced: Int, val requested: Int, val reason: Reason)
 
@@ -27,9 +27,9 @@ object AnnouncedDensityPolicy {
     fun widescreenMaxDpi(codecWidth: Int): Int =
         if (codecWidth <= 0) 0 else codecWidth * 160 / WIDESCREEN_MIN_WIDTH_DP
 
-    /** The widescreen layout is a landscape layout, so a portrait or unknown codec gets 0. */
-    fun widescreenHintDpi(codecWidth: Int, codecHeight: Int): Int =
-        if (codecWidth <= 0 || codecHeight <= 0 || codecHeight > codecWidth) 0 else widescreenMaxDpi(codecWidth)
+    /** For the canvas the phone lays out (stretched by the pixel aspect ratio); portrait or unknown gets 0. */
+    fun widescreenHintDpi(canvasWidth: Int, canvasHeight: Int): Int =
+        if (canvasWidth <= 0 || canvasHeight <= 0 || canvasHeight > canvasWidth) 0 else widescreenMaxDpi(canvasWidth)
 
     /** The highest density that keeps a portrait canvas this wide (phone pixels) out of the narrow layout. */
     fun portraitMaxDpi(phoneWidth: Int): Int = maxOf(1, phoneWidth * 160 / PORTRAIT_MIN_WIDTH_DP)
@@ -47,6 +47,17 @@ object AnnouncedDensityPolicy {
         val (w, h) = if ((panelH > panelW) == (resH > resW)) resW to resH else resH to resW
         val (vw, vh) = visibleSize(mode, panelW, panelH, resW, resH)
         return ProjectionGeometryPolicy.pixelAspectRatioE4(mode, panelW, panelH, w, h, w - vw, h - vh)
+    }
+
+    /**
+     * The density that makes one dp 1/160 inch on this panel: its pixels per inch at the preset's
+     * diagonal, per row of the canvas the phone lays out. 0 when the panel is unknown.
+     */
+    fun panelDpi(preset: DisplaySizePreset, panelW: Int, panelH: Int, visibleW: Int, visibleH: Int, parE4: Int): Int {
+        if (panelW <= 0 || panelH <= 0 || visibleW <= 0 || visibleH <= 0) return 0
+        val ppi = Math.hypot(panelW.toDouble(), panelH.toDouble()) / preset.diagonalInch
+        val shownRows = minOf(panelH.toDouble(), visibleH * minOf(panelW.toDouble() / visibleW, panelH.toDouble() / visibleH))
+        return Math.round(phoneCanvas(visibleW, visibleH, parE4).second * ppi / shownRows).toInt()
     }
 
     fun canvasDp(px: Int, dpi: Int): Int = if (dpi <= 0) 0 else px * 160 / dpi
@@ -73,7 +84,8 @@ object AnnouncedDensityPolicy {
 
     fun decide(
         stored: Int, preset: DisplaySizePreset, visibleW: Int, visibleH: Int,
-        parE4: Int = ProjectionGeometryPolicy.SQUARE_PIXELS_E4, floorOverride: Boolean = false
+        parE4: Int = ProjectionGeometryPolicy.SQUARE_PIXELS_E4, floorOverride: Boolean = false,
+        panelW: Int = 0, panelH: Int = 0
     ): Decision {
         if (visibleW <= 0 || visibleH <= 0) {
             return if (stored > 0) Decision(stored, stored, Reason.AS_STORED)
@@ -93,9 +105,15 @@ object AnnouncedDensityPolicy {
             }
         }
         if (stored <= 0) {
-            return Decision(
-                OnboardingDisplayPolicy.recommendedDpi(preset, visibleW, visibleH, false), 0, Reason.AUTOMATIC
-            )
+            // The codec-based value is too small on a dense panel, so Automatic never goes below the panel's own,
+            // but it never costs a canvas the widescreen layout it had either.
+            val codec = OnboardingDisplayPolicy.recommendedDpi(preset, visibleW, visibleH, false)
+            val panel = minOf(panelDpi(preset, panelW, panelH, visibleW, visibleH, parE4), huigMaxDpi(visibleW, visibleH))
+            if (panel <= codec) return Decision(codec, 0, Reason.AUTOMATIC)
+            val (canvasW, canvasH) = phoneCanvas(visibleW, visibleH, parE4)
+            val wide = widescreenHintDpi(canvasW, canvasH)
+            return if (codec <= wide && panel > wide) Decision(wide, 0, Reason.WIDESCREEN_KEPT)
+            else Decision(panel, 0, Reason.PANEL)
         }
         val max = huigMaxDpi(visibleW, visibleH)
         if (stored <= max) return Decision(stored, stored, Reason.AS_STORED)
@@ -118,6 +136,8 @@ object AnnouncedDensityPolicy {
         val why = when (decision.reason) {
             Reason.AS_STORED -> "within the HUIG floor"
             Reason.AUTOMATIC -> "codec-based"
+            Reason.PANEL -> "panel-based"
+            Reason.WIDESCREEN_KEPT -> "panel-based, held at the $WIDESCREEN_MIN_WIDTH_DP dp widescreen line"
             Reason.WIDTH_FLOOR -> "clamped to the $HUIG_MIN_WIDTH_DP dp width floor"
             Reason.HEIGHT_FLOOR -> "clamped to the $HUIG_MIN_HEIGHT_DP dp height floor"
             Reason.PORTRAIT -> "portrait, within the $PORTRAIT_MIN_WIDTH_DP dp width floor"

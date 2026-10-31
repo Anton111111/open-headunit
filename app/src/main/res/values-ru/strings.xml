@@ -66,6 +66,16 @@
     <string name="threshold_brightness_hint">Тёмный режим активируется, когда яркость экрана ниже этого значения. Android сообщает яркость как 0–255, но фактический диапазон может отличаться в зависимости от устройства. Возможно, вам придётся поэкспериментировать, чтобы найти подходящий порог для вашего устройства.</string>
     <string name="current_light_reading">Освещённость: %d лк</string>
     <string name="enable_fine_lux_control">Точная настройка (0–100 лк)</string>
+    <string name="car_signal_calibration_info_format">Текущее значение car_mode: %1$d. Сопоставление: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = День, ненулевое = Ночь</string>
+    <string name="car_signal_mapping_inverted">0 = Ночь, ненулевое = День</string>
+    <string name="car_signal_unavailable">Сейчас невозможно прочитать car_mode на этом головном устройстве.</string>
+    <string name="car_signal_headlights_question">Сейчас фары включены?</string>
+    <string name="car_signal_calibration_title">Калибровка ILL+</string>
+    <string name="car_signal_recalibrate">Перекалибровать</string>
+    <string name="car_signal_headlights_on">Включены</string>
+    <string name="car_signal_headlights_off">Отключены</string>
+    <string name="car_signal_calibration_saved">Калибровка ILL+ сохранена и применена</string>
     <string name="night_mode_start">Время начала ночного режима</string>
     <string name="night_mode_end">Время окончания ночного режима</string>
 
@@ -131,6 +141,7 @@
     <string name="orientation_portrait">Портретная (90°)</string>
     <string name="orientation_portrait_reverse">Портретная перевернутая (270°)</string>
     <string name="enter_dpi_value">Введите значение DPI (0 - автоматически)</string>
+    <string name="enter_audio_offset_value">Введите значение (0-250)</string>
     <string name="custom_margin">Отступы дисплея</string>
     <string name="custom_margin_description">Установить отступы дисплея (0 - автоматически).</string>
     <string name="enter_custom_margins">Введите отступы дисплея (0 - автоматически)</string>
@@ -576,8 +587,6 @@ Open Headunit предоставляется «как есть» без каки
     <string name="loading_screen_loop_video">Повторять короткие анимации</string>
     <string name="supported_nativeaa">Расширенная беспроводная поддержка</string>
     <string name="supported_nativeaa_desc">Отличные новости! Ваше устройство поддерживает режим «Native Wireless», который обеспечивает более плавную работу Android Auto. \n\nЧтобы включить его, нам нужно обновить кеш Bluetooth. Пожалуйста: \n1. Удалите существующее сопряжение на телефоне \n2. Нажмите ОК, чтобы перезапустить Bluetooth \n3. Снова выполните сопряжение с телефоном \n\nХотите переключиться на режим Native AA сейчас?</string>
-    <string name="fake_speed_title">Отключить блокировку видео (Fake Speed)</string>
-    <string name="fake_speed_description">Сообщает телефону постоянную низкую скорость (0,5 м/с), чтобы видео не блокировалось во время движения. Используйте с осторожностью.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Нативный</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -761,6 +770,12 @@ Open Headunit предоставляется «как есть» без каки
     <string name="settings_tab_basic">Основные</string>
     <string name="settings_tab_advanced">Расширенные</string>
     <string name="settings_search_hint">Поиск настроек</string>
+    <string name="settings_scope_wifi_hidden">Показаны настройки USB. Настройки WiFi скрыты.</string>
+    <string name="settings_scope_usb_hidden">Показаны настройки WiFi. Настройки USB скрыты.</string>
+    <string name="settings_scope_usb_wifi_hidden">Показаны настройки автономного режима. Настройки USB и WiFi скрыты.</string>
+    <string name="settings_scope_change">Изменить</string>
+    <string name="settings_search_clear">Очистить поиск</string>
+    <string name="settings_search_no_results">Нет настроек по запросу «%1$s».</string>
     <string name="connection_mode">Режим подключения</string>
     <string name="connection_kind_usb_cable">USB-кабель (напрямую)</string>
     <string name="connection_kind_usb_wireless_adapter">Беспроводной USB-адаптер</string>
@@ -1004,13 +1019,15 @@ Open Headunit предоставляется «как есть» без каки
     <string name="zbt_probe_title">Проверить модуль Bluetooth устройства</string>
     <string name="zbt_probe_idle">Нажмите, чтобы запустить</string>
     <string name="zbt_probe_running">Выполняется…</string>
-    <string name="zbt_probe_message">Спрашивает отдельный модуль Bluetooth этого устройства, сможет ли он передавать соединение Android Auto. Примерно за восемь секунд проверяется, отвечает ли модуль вообще, и только если да, то около полутора минут идёт наблюдение. Строка под этой настройкой показывает, что происходит. Больше ничего на устройстве не изменяется.\n\nМодуль работает только с одной программой за раз. Если через него уже идёт соединение, тест сообщит об этом вместо проверки. Чтобы проверить модуль отдельно, сначала выключите настройку выше.\n\n«Разбудить и наблюдать» дополнительно просит модуль переподключиться к телефону для Android Auto. Только эта часть что-то меняет, и перезагрузка устройства отменяет изменение. После проверки экспортируйте журнал и приложите его.</string>
+    <string name="zbt_probe_message">Оба варианта инициализируют модуль Bluetooth перед наблюдением. Это может повлиять на его состояние. «Разбудить и наблюдать» также запрашивает подключение к телефону.\n\nТест уступает доступ, пока OHU использует или проверяет модуль. После теста экспортируйте журнал.</string>
     <string name="zbt_probe_watch_only">Только наблюдать</string>
     <string name="zbt_probe_wake_and_watch">Разбудить и наблюдать</string>
     <string name="external_bt_blink_transport">Подключаться через внешний модуль Bluetooth FYT</string>
     <string name="external_bt_module_controls_hint">Сопряжение телефона, приоритет подключения и выбор драйвера управляются внешним модулем Bluetooth.</string>
     <string name="external_bt_module_last_phone">Последний телефон, подключённый через модуль</string>
     <string name="external_bt_blink_transport_description">Экспериментально. Для устройств FYT, у которых телефон сопрягается для звонков с отдельным модулем Bluetooth, например «DUDUAUTO» в DUDUOS (пока это единственная проверенная прошивка). Данные для запуска беспроводного Android Auto передаются через этот модуль, а не через Bluetooth самого устройства, и обычно на них отвечает штатное приложение Car Link. Если включить настройку, на них ответит это приложение, поэтому звонки остаются на модуле и динамиках автомобиля.\n\nСначала отключите штатное приложение Car Link (pm disable-user com.syu.carlink), иначе оба приложения будут читать один и тот же канал. Канал открывается без root, если устройство это позволяет, а иначе через root. Выберите Native, сопрягите телефон только с модулем и экспортируйте журнал, если подключиться не удастся.</string>
+    <string name="external_bt_zj_socket_transport">Подключаться через сокет ZJ Bluetooth</string>
+    <string name="external_bt_zj_socket_transport_description">Для магнитол, у которых модуль ZJ Bluetooth передаёт беспроводное рукопожатие Android Auto через локальный сокет (/dev/socket/zj_bt_socket). Приложение использует его само, когда сокет принимает подключение. Включайте, только если в вашей магнитоле есть этот сокет, а приложение его не видит.</string>
     <string name="external_bt_blink_refused_stock_enabled">Внешний модуль Bluetooth: штатное приложение Car Link всё ещё включено. Отключите его (pm disable-user com.syu.carlink) или выключите этот транспорт.</string>
     <string name="external_bt_blink_refused_stock_running">Внешний модуль Bluetooth: штатное приложение Car Link отключено, но всё ещё работает. Перезагрузите устройство.</string>
     <string name="external_bt_blink_refused_root">Внешний модуль Bluetooth: для открытия канала модуля нужен root, но доступ root отклонён или недоступен.</string>
@@ -1431,8 +1448,13 @@ Open Headunit предоставляется «как есть» без каки
     <string name="home_favorites_full">Все четыре места заняты. Удерживайте одно из приложений на главном экране, чтобы заменить его.</string>
     <string name="home_choose_favorite_app">Выберите приложение или ярлык</string>
     <string name="home_shortcut_badge">Ярлык</string>
-    <string name="home_show_favorite_apps">Приложения и виджеты на главном экране</string>
-    <string name="home_show_favorite_apps_description">Ваши избранные приложения и виджеты под главной кнопкой, когда Open Headunit является вашим лаунчером</string>
+    <string name="app_drawer_tab_shortcuts">Ярлыки</string>
+    <string name="home_show_favorite_apps">Избранные приложения на главном экране</string>
+    <string name="home_show_favorite_apps_description">Ваши избранные приложения под главной кнопкой, когда Open Headunit является вашим лаунчером</string>
+    <string name="home_show_widgets">Виджеты на главном экране</string>
+    <string name="home_show_widgets_description">Ваши виджеты, их страницы и плитка «Добавить виджет», когда Open Headunit является вашим лаунчером</string>
+    <string name="home_surface_opacity">Прозрачность панелей</string>
+    <string name="home_surface_opacity_description">Уменьшите значение, чтобы фоновое изображение проступало сквозь панели и кнопки главного экрана.</string>
     <string name="home_show_clock">Дата и время на главном экране</string>
     <string name="home_show_clock_description">Время и сегодняшняя дата в верхней части главной кнопки</string>
     <string name="home_show_speed">Скорость по GPS на главном экране</string>
@@ -1468,4 +1490,16 @@ Open Headunit предоставляется «как есть» без каки
     <string name="audio_settings_reconnect">Настройки звука сохранены. Чтобы применить их, переподключите Android Auto.</string>
     <string name="native_aa_candidate_android_radio_description">Использовать Bluetooth Android вместо автоматического выбора Bluetooth-модуля головного устройства. Для автоматического выбора оставьте выключенным. Если включена опция подключения через модуль, сначала выключите её.</string>
     <string name="external_bt_candidate_transport_description">Принудительно подключаться через Bluetooth-модуль головного устройства вместо автоматического выбора. Нужна совместимая служба модуля. Оставьте выключенным, чтобы использовать Bluetooth Android, если служба не отвечает; включение блокирует этот запасной путь.</string>
+    <string name="audio_matching_mode">Временная коррекция музыки</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">По умолчанию</string>
+    <string name="audio_matching_wsola_hint">Лёгкий</string>
+    <string name="audio_matching_phase_vocoder_hint">Сбалансированный</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Низкая задержка</string>
+    <string name="audio_matching_phase_gradient_hint">Медленное воспроизведение</string>
+    <string name="audio_matching_description">OHU остаётся вариантом по умолчанию. WSOLA совмещает перекрывающиеся волны; Phase Vocoder корректирует спектральные фазы. Short использует более короткое окно анализа. Phase Gradient восстанавливает фазы интегрированием фазовых градиентов. Эти независимые реализации добавляют задержку обработки; названия не являются рейтингом качества звука.\n\nНативные методы: музыка PCM. Навигация, голосовые ответы, системные звуки и AAC используют OHU.\nПереподключитесь для применения. Настройки удалённых движков сбрасываются на OHU.</string>
 </resources>

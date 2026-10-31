@@ -642,7 +642,7 @@ object HeadUnitScreenConfig {
         if (VideoDecoder.isHevcSupported()) return true
         if (currentSettings.videoCodec != VideoDecoder.CodecType.H265.settingsValue || !currentSettings.forceSoftwareDecoding) return false
         return when (currentSettings.softwareVideoDecoder) {
-            Settings.SoftwareVideoDecoder.BUNDLED_FFMPEG -> VideoDecoder.isBundledHevcDecoderAvailable()
+            Settings.SoftwareVideoDecoder.BUNDLED_FFMPEG -> VideoDecoder.isBundledDecoderAvailable(VideoDecoder.CodecType.H265)
             Settings.SoftwareVideoDecoder.DEVICE_MEDIACODEC -> VideoDecoder.isHevcDecoderAvailable(includeSoftware = true)
         }
     }
@@ -705,7 +705,7 @@ object HeadUnitScreenConfig {
         return AnnouncedDensityPolicy.decide(
             currentSettings.dpiPixelDensity, preset,
             getNegotiatedWidth() - getWidthMargin(), getNegotiatedHeight() - getHeightMargin(),
-            getPixelAspectRatioE4(), currentSettings.dpiFloorOverride
+            getPixelAspectRatioE4(), currentSettings.dpiFloorOverride, screenWidthPx, screenHeightPx
         )
     }
 

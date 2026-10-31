@@ -98,8 +98,7 @@ class HomeFragment : Fragment() {
     private val vpnPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             AppLog.i("VPN permission granted. Starting DummyVpnService and Self Mode.")
-            VpnControl.startVpn(requireContext());
-            startSelfModeInternal()
+            startSelfModeInternal(needsDummyVpn = true)
         } else {
             AppLog.w("VPN permission denied. Offline Self Mode might fail.")
             ToastUtils.showToast(requireContext(), getString(R.string.failed_start_android_auto), Toast.LENGTH_LONG, force = true)
@@ -681,10 +680,12 @@ class HomeFragment : Fragment() {
         (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
     // A theme change recreates the activity, so the palette can be kept for the life of the view.
-    private fun homePalette(ctx: Context): HomeUiHelper.Palette = cachedPalette ?: run {
+    private fun homePalette(ctx: Context): HomeUiHelper.Palette {
         val appSettings = App.provide(ctx).settings
+        // The opacity is changed on another screen, so a palette cached before it is stale.
+        cachedPalette?.takeIf { it.surfaceOpacityPercent == appSettings.homeSurfaceOpacityPercent }?.let { return it }
         val mode = HomeThemePolicy.resolve(appSettings.appTheme, appSettings.useExtremeDarkMode, isNightActive())
-        HomeUiHelper.palette(ctx, mode).also { cachedPalette = it }
+        return HomeUiHelper.palette(ctx, mode, appSettings.homeSurfaceOpacityPercent).also { cachedPalette = it }
     }
 
     private fun updateLauncherViews() {
@@ -818,8 +819,9 @@ class HomeFragment : Fragment() {
      * - A small or narrow screen used as the launcher has no room for the main button and the
      *   favorite apps together, so the main button keeps the first page and the favorite apps and
      *   widgets get the next one.
-     * - A very wide unit gets two columns: the card on the driver's side and the favorites and
-     *   widgets beside it, so the width is used instead of left empty under a wide card.
+     * - A very wide unit (8:3, not 16:9) gets two columns: the card on the driver's side and the
+     *   favorites and widgets beside it, so the width is used instead of left empty under a wide
+     *   card.
      * - Everything else keeps the card on top and the favorites under it.
      *
      * Any widget page the driver added follows those. The pages are rebuilt here, so this runs
@@ -833,9 +835,11 @@ class HomeFragment : Fragment() {
 
         val small = config.screenHeightDp < COMPACT_HEIGHT_DP || config.screenWidthDp < COMPACT_WIDTH_DP
         val compact = isLauncherActive && small
-        val wide = isLauncherActive &&
-            config.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-            config.screenWidthDp >= WIDE_WIDTH_DP
+        val wide = isLauncherActive && HomePagesPolicy.sideBySide(
+            config.orientation == Configuration.ORIENTATION_LANDSCAPE,
+            config.screenWidthDp,
+            config.screenHeightDp
+        )
         compactHome = compact
         ultrawideHome = wide
 
@@ -880,8 +884,8 @@ class HomeFragment : Fragment() {
      */
     private fun renderPages(root: View, appSettings: Settings, isLauncherActive: Boolean, area: View, main: LinearLayout) {
         val pager = root.findViewById<HomePager>(R.id.home_pager) ?: return
-        // With the favorites switch off the stored pages are left as they are, not even pruned.
-        val widgetsShown = appSettings.showHomeFavoriteApps
+        // With the widgets switch off the stored pages are left as they are, not even pruned.
+        val widgetsShown = appSettings.showHomeWidgets
         val stored = if (isLauncherActive && widgetsShown) prunePages(root.context, appSettings.homeWidgetPages) else emptyList()
         val pages = if (isLauncherActive) {
             HomePagesPolicy.pages(compactHome, stored.size, widgetRowOnItsOwnPage(appSettings), widgetsShown)
@@ -920,7 +924,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun widgetRowOnItsOwnPage(appSettings: Settings): Boolean =
-        widgetRowOverflows && !ultrawideHome && appSettings.showHomeFavoriteApps && appSettings.homeWidgets.isNotEmpty()
+        widgetRowOverflows && !ultrawideHome && appSettings.showHomeWidgets && appSettings.homeWidgets.isNotEmpty()
 
     private fun appsPage(ctx: Context, area: View): View = LinearLayout(ctx).apply {
         id = R.id.home_page_apps
@@ -1073,7 +1077,7 @@ class HomeFragment : Fragment() {
                 compactHome,
                 appSettings.homeWidgetPages.size,
                 widgetRowOnItsOwnPage(appSettings),
-                widgetsShown = appSettings.showHomeFavoriteApps
+                widgetsShown = appSettings.showHomeWidgets
             )
         val actions = mutableListOf<HomeActionDialog.Action>()
         if (canAdd) {
@@ -1109,7 +1113,9 @@ class HomeFragment : Fragment() {
     private fun showActions(title: String, actions: List<HomeActionDialog.Action>) {
         val ctx = context ?: return
         actionDialog?.dismiss()
-        actionDialog = HomeActionDialog.show(ctx, title, actions, homePalette(ctx))
+        // The menu stays opaque whatever the home's opacity, or it would vanish over the home.
+        val opaque = HomeUiHelper.palette(ctx, homePalette(ctx).mode)
+        actionDialog = HomeActionDialog.show(ctx, title, actions, opaque)
     }
 
     private fun addWidgetPage() {
@@ -1224,8 +1230,8 @@ class HomeFragment : Fragment() {
         row.removeAllViews()
         val appSettings = App.provide(ctx).settings
         // A widget can only be drawn in one place, and on this screen that place is its own page.
-        // The favorites switch turns the widgets off with the favorites, add tile included.
-        if (!appSettings.isCarLauncherActive || !appSettings.showHomeFavoriteApps || widgetRowOnItsOwnPage(appSettings)) {
+        // The widgets switch turns the row off, add tile included.
+        if (!appSettings.isCarLauncherActive || !appSettings.showHomeWidgets || widgetRowOnItsOwnPage(appSettings)) {
             scroll.visibility = View.GONE
             return
         }
@@ -1616,9 +1622,10 @@ class HomeFragment : Fragment() {
         startActivity(aapIntent)
     }
 
-    private fun startSelfModeInternal() {
+    private fun startSelfModeInternal(needsDummyVpn: Boolean = false) {
         val intent = Intent(requireContext(), AapService::class.java)
         intent.action = AapService.ACTION_START_SELF_MODE
+        intent.putExtra(AapService.EXTRA_SELF_MODE_VPN, needsDummyVpn)
         ContextCompat.startForegroundService(requireContext(), intent)
         AppLog.i("Auto start selfmode")
     }
@@ -1632,15 +1639,15 @@ class HomeFragment : Fragment() {
         val path = SelfLauncherManager.installedPath(requireContext())
         val offline = activeNetwork == null
 
-        if (SelfLaunchRoutePolicy.needsDummyVpn(path, offline, VpnControl.isVpnAvailable())) {
+        val needsDummyVpn = SelfLaunchRoutePolicy.needsDummyVpn(path, offline, VpnControl.isVpnAvailable())
+        if (needsDummyVpn) {
             AppLog.i("Device is offline. Preparing Dummy VPN for Self Mode.")
             val vpnIntent = VpnControl.consentIntent(requireContext())
             if (vpnIntent != null) {
                 vpnPermissionLauncher.launch(vpnIntent)
                 return
             } else {
-                AppLog.i("VPN permission already granted. Starting VPN service.")
-                VpnControl.startVpn(requireContext());
+                AppLog.i("VPN permission already granted. Self Mode will prepare it after launch admission.")
             }
         } else if (offline) {
             if (path == SelfLaunchPath.HEADUNIT_SERVER) {
@@ -1649,7 +1656,7 @@ class HomeFragment : Fragment() {
                 AppLog.i("Device is offline and VPN is not available in this build. Self Mode may fail.")
             }
         }
-        startSelfModeInternal()
+        startSelfModeInternal(needsDummyVpn)
     }
 
     /**
@@ -2112,7 +2119,7 @@ class HomeFragment : Fragment() {
             alreadyShown = appSettings.homePagesHintShown,
             launcherActive = appSettings.isCarLauncherActive,
             widgetsSupported = HomeWidgets.supported(),
-            appsAndWidgetsOn = appSettings.showHomeFavoriteApps,
+            widgetsOn = appSettings.showHomeWidgets,
             connected = commManager.isConnected,
             status = decision?.status,
             bringUpRunning = ConnectionStageTracker.stage.value != null || MainActivity.overlayOwnsScreen(),
@@ -2615,9 +2622,9 @@ class HomeFragment : Fragment() {
         val deviceListView = dialogView.findViewById<ListView>(R.id.driverDeviceList)
         val btnToggleFilter = dialogView.findViewById<TextView>(R.id.btnToggleFilter)
 
-        val brandTeal = ContextCompat.getColor(requireContext(), R.color.brand_teal)
+        val brandPrimary = ContextCompat.getColor(requireContext(), R.color.brand_primary)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            countdownProgress.progressTintList = ColorStateList.valueOf(brandTeal)
+            countdownProgress.progressTintList = ColorStateList.valueOf(brandPrimary)
         }
 
         val connectedMacSet = connectedMacs.toSet()
@@ -2641,7 +2648,7 @@ class HomeFragment : Fragment() {
                 when (NativeDriverSelectionPolicy.presenceOf(device.address, connectedMacSet, presenceReadable)) {
                     NativeDriverSelectionPolicy.DriverPresence.CONNECTED -> {
                         statusView.text = "🟢 " + context.getString(R.string.driver_device_connected)
-                        statusView.setTextColor(ContextCompat.getColor(context, R.color.brand_teal))
+                        statusView.setTextColor(ContextCompat.getColor(context, R.color.brand_primary))
                     }
                     NativeDriverSelectionPolicy.DriverPresence.DISCONNECTED -> {
                         statusView.text = context.getString(R.string.driver_device_disconnected)
@@ -2949,13 +2956,13 @@ class HomeFragment : Fragment() {
         val connectionProgress = dialogView.findViewById<ProgressBar>(R.id.connectionProgress)
 
         // Ensure the loading spinner is visible in both Light and Dark modes by forcing our brand color.
-        val brandTeal = ContextCompat.getColor(requireContext(), R.color.brand_teal)
+        val brandPrimary = ContextCompat.getColor(requireContext(), R.color.brand_primary)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            connectionProgress.indeterminateTintList = ColorStateList.valueOf(brandTeal)
+            connectionProgress.indeterminateTintList = ColorStateList.valueOf(brandPrimary)
             connectionProgress.indeterminateTintMode = android.graphics.PorterDuff.Mode.SRC_IN
         } else {
             @Suppress("DEPRECATION")
-            connectionProgress.indeterminateDrawable?.setColorFilter(brandTeal, android.graphics.PorterDuff.Mode.SRC_IN)
+            connectionProgress.indeterminateDrawable?.setColorFilter(brandPrimary, android.graphics.PorterDuff.Mode.SRC_IN)
         }
 
         // Custom adapter to handle rounded backgrounds like in USB/Network lists
@@ -3068,8 +3075,6 @@ class HomeFragment : Fragment() {
         private const val PAGES_HINT_PREFERRED_SPOT_DP = 120
 
         private const val COMPACT_WIDTH_DP = 400
-        /** Where the unit is wide enough for the card and the favorites side by side. */
-        private const val WIDE_WIDTH_DP = 1100
         /** The idle page dots, about half as bright as the muted text. */
         private const val DOT_IDLE_ALPHA = 0x80
         fun resetAutoStart() {

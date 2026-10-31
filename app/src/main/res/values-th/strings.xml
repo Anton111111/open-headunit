@@ -7,6 +7,12 @@
     <string name="settings_tab_basic">พื้นฐาน</string>
     <string name="settings_tab_advanced">ขั้นสูง</string>
     <string name="settings_search_hint">ค้นหาการตั้งค่า</string>
+    <string name="settings_scope_wifi_hidden">กำลังแสดงการตั้งค่า USB การตั้งค่า WiFi ถูกซ่อนอยู่</string>
+    <string name="settings_scope_usb_hidden">กำลังแสดงการตั้งค่า WiFi การตั้งค่า USB ถูกซ่อนอยู่</string>
+    <string name="settings_scope_usb_wifi_hidden">กำลังแสดงการตั้งค่าโหมดตนเอง การตั้งค่า USB และ WiFi ถูกซ่อนอยู่</string>
+    <string name="settings_scope_change">เปลี่ยน</string>
+    <string name="settings_search_clear">ล้างการค้นหา</string>
+    <string name="settings_search_no_results">ไม่มีการตั้งค่าที่ตรงกับ \"%1$s\"</string>
 
     <!-- Connection mode selector -->
     <string name="connection_mode">โหมดการเชื่อมต่อ</string>
@@ -273,6 +279,16 @@
     <string name="current_light_reading">แสงปัจจุบัน: %d Lux</string>
     <string name="current_brightness_reading">ความสว่างปัจจุบัน: %d / 255</string>
     <string name="enable_fine_lux_control">การควบคุมแบบละเอียด (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">ค่า car_mode ปัจจุบัน: %1$d การแมป: %2$s</string>
+    <string name="car_signal_mapping_default">0 = กลางวัน, ไม่เป็นศูนย์ = กลางคืน</string>
+    <string name="car_signal_mapping_inverted">0 = กลางคืน, ไม่เป็นศูนย์ = กลางวัน</string>
+    <string name="car_signal_unavailable">ไม่สามารถอ่าน car_mode บนเฮดยูนิตนี้ได้ในขณะนี้</string>
+    <string name="car_signal_headlights_question">ตอนนี้ไฟหน้ารถเปิดอยู่หรือไม่?</string>
+    <string name="car_signal_calibration_title">การปรับเทียบ ILL+</string>
+    <string name="car_signal_recalibrate">ปรับเทียบใหม่</string>
+    <string name="car_signal_headlights_on">เปิด</string>
+    <string name="car_signal_headlights_off">ปิด</string>
+    <string name="car_signal_calibration_saved">บันทึกและนำการปรับเทียบ ILL+ ไปใช้แล้ว</string>
     <string name="night_mode_start">เวลาเริ่มต้นโหมดกลางคืน</string>
     <string name="night_mode_end">เวลาสิ้นสุดโหมดกลางคืน</string>
 
@@ -372,6 +388,7 @@
     <string name="orientation_portrait">แนวตั้ง (90°)</string>
     <string name="orientation_portrait_reverse">แนวตั้งกลับด้าน (270°)</string>
     <string name="enter_dpi_value">ป้อนค่า DPI (0 สำหรับอัตโนมัติ)</string>
+    <string name="enter_audio_offset_value">ป้อนค่า (0-250)</string>
     <string name="enter_pixel_aspect_ratio_value">อัตราส่วนพิกเซล x10000 (10000 = พิกเซลสี่เหลี่ยมจัตุรัส)</string>
     <string name="custom_margin">ระยะขอบที่กำหนดเอง</string>
     <string name="custom_margin_description">กำหนดระยะขอบการแสดงผลเอง (0 สำหรับอัตโนมัติ)</string>
@@ -1068,8 +1085,6 @@
     <string name="wait_for_wifi_description">เมื่อเปิดเครื่อง ให้รอ Wi-Fi เชื่อมต่อก่อนเริ่ม Wi-Fi Direct เปิดตัวเลือกนี้หากเฮดยูนิตของคุณต้องใช้เวลาสักครู่ในการเชื่อมต่อ Wi-Fi หลังเปิดเครื่อง</string>
     <string name="wait_for_wifi_timeout">ระยะเวลารอ Wi-Fi</string>
     <string name="wireless_24ghz_warning">หมายเหตุ: Android Auto แบบไร้สายบนอุปกรณ์ 2.4GHz อาจทำให้ภาพหน่วง กระตุก และหลุดการเชื่อมต่อ หากพบปัญหา โปรดลองใช้ผ่าน USB เพื่อตรวจสอบว่าเป็นข้อจำกัดของเครือข่ายหรือไม่</string>
-    <string name="fake_speed_title">ปิดการล็อกวิดีโอ (ความเร็วจำลอง)</string>
-    <string name="fake_speed_description">รายงานความเร็วต่ำคงที่ (0.5 ม./วินาที) ไปยังโทรศัพท์เพื่อป้องกันไม่ให้เนื้อหาวิดีโอถูกบล็อกขณะขับขี่ ใช้ด้วยความระมัดระวัง</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">เนทีฟ (Native)</string>
     <string name="wireless_mode_server">เซิร์ฟเวอร์เฮดยูนิต</string>
@@ -1213,13 +1228,15 @@
     <string name="zbt_probe_title">ทดสอบโมดูลบลูทูธของเฮดยูนิต</string>
     <string name="zbt_probe_idle">แตะเพื่อเริ่มทดสอบ</string>
     <string name="zbt_probe_running">กำลังทดสอบ…</string>
-    <string name="zbt_probe_message">สอบถามชิปบลูทูธแยกของยูนิตนี้ว่าจะรองรับการเชื่อมต่อ Android Auto หรือไม่ ระบบใช้เวลาราว 8 วินาทีเพื่อตรวจว่าชิปตอบสนองหรือไม่ และเฉพาะเมื่อชิปตอบสนอง จึงจะเฝ้าดูต่ออีกราวหนึ่งนาทีครึ่ง บรรทัดใต้การตั้งค่านี้แสดงสิ่งที่กำลังเกิดขึ้น และไม่มีการเปลี่ยนแปลงสิ่งอื่นบนยูนิต\n\nชิปคุยกับโปรแกรมได้ครั้งละหนึ่งโปรแกรม หากมีการเชื่อมต่อที่ทำงานผ่านชิปอยู่แล้ว การทดสอบจะแจ้งเรื่องนี้แทนการทดสอบ ให้ปิดการตั้งค่าด้านบนก่อน เพื่อทดสอบแยกต่างหาก\n\nตัวเลือก ปลุกและเฝ้าดู จะสั่งให้ชิปเชื่อมต่อกับโทรศัพท์ของคุณใหม่สำหรับ Android Auto ด้วย ขั้นตอนนี้เป็นขั้นตอนเดียวที่เปลี่ยนแปลงค่าใดๆ และการรีสตาร์ทยูนิตจะย้อนค่ากลับ โปรดส่งออกล็อกหลังจากนั้นและแนบมาด้วย</string>
+    <string name="zbt_probe_message">ทั้งสองตัวเลือกจะเริ่มต้นโมดูล Bluetooth ก่อนตรวจดูสถานะ ซึ่งอาจส่งผลต่อสถานะ Bluetooth ตัวเลือกปลุกและเฝ้าดูจะขอเชื่อมต่อกับโทรศัพท์ด้วย\n\nการทดสอบจะหลีกทางเมื่อ OHU กำลังใช้หรือตรวจสอบโมดูล โปรดส่งออกบันทึกหลังการทดสอบ</string>
     <string name="zbt_probe_watch_only">ดูอย่างเดียว</string>
     <string name="zbt_probe_wake_and_watch">ปลุกและเฝ้าดู</string>
     <string name="external_bt_blink_transport">เชื่อมต่อผ่านโมดูลบลูทูธภายนอกของ FYT</string>
     <string name="external_bt_module_controls_hint">โมดูลบลูทูธภายนอกเป็นผู้จัดการการจับคู่โทรศัพท์ ลำดับความสำคัญของการเชื่อมต่อ และการเลือกไดรเวอร์</string>
     <string name="external_bt_module_last_phone">โทรศัพท์เครื่องล่าสุดที่เชื่อมต่อผ่านโมดูล</string>
     <string name="external_bt_blink_transport_description">เป็นการทดลอง สำหรับยูนิต FYT ที่โทรศัพท์จับคู่เพื่อโทรออกกับโมดูลบลูทูธแยก เช่น \"DUDUAUTO\" บน DUDUOS ซึ่งเป็น ROM เดียวที่ทดสอบแล้วจนถึงตอนนี้ โมดูลนี้ ไม่ใช่บลูทูธของยูนิต เป็นตัวส่งแฮนด์เชค Android Auto แบบไร้สาย และปกติแอป Car Link ดั้งเดิมจะเป็นผู้ตอบรับ เมื่อเปิดตัวเลือกนี้ แอปนี้จะตอบรับแทน การโทรจึงยังอยู่บนโมดูลและลำโพงของรถ\n\nปิดใช้งานแอป Car Link ดั้งเดิมก่อน (pm disable-user com.syu.carlink) ไม่เช่นนั้นทั้งสองแอปจะอ่านช่องเดียวกัน ระบบจะเปิดช่องโดยไม่ใช้รูทหากยูนิตอนุญาต และใช้รูทในกรณีอื่น เลือก Native จับคู่โทรศัพท์กับโมดูลเท่านั้น และส่งออกบันทึกหากเชื่อมต่อไม่ได้</string>
+    <string name="external_bt_zj_socket_transport">เชื่อมต่อผ่านซ็อกเก็ต ZJ Bluetooth</string>
+    <string name="external_bt_zj_socket_transport_description">สำหรับเครื่องที่โมดูล ZJ Bluetooth ส่งการแฮนด์เชคของ Android Auto แบบไร้สายผ่านซ็อกเก็ตในเครื่อง (/dev/socket/zj_bt_socket) แอปจะใช้ซ็อกเก็ตนี้เองเมื่อซ็อกเก็ตรับการเชื่อมต่อ เปิดตัวเลือกนี้เฉพาะเมื่อเครื่องของคุณมีซ็อกเก็ตแต่แอปตรวจไม่พบ</string>
     <string name="external_bt_blink_refused_stock_enabled">โมดูลบลูทูธภายนอก: แอป Car Link ดั้งเดิมยังเปิดใช้งานอยู่ ปิดใช้งานแอปนั้น (pm disable-user com.syu.carlink) หรือปิดการส่งผ่านนี้</string>
     <string name="external_bt_blink_refused_stock_running">โมดูลบลูทูธภายนอก: แอป Car Link ดั้งเดิมถูกปิดใช้งานแล้วแต่ยังทำงานอยู่ โปรดรีสตาร์ทยูนิต</string>
     <string name="external_bt_blink_refused_root">โมดูลบลูทูธภายนอก: การเปิดช่องของโมดูลต้องใช้สิทธิ์รูทบนยูนิตนี้ แต่ถูกปฏิเสธหรือไม่มีสิทธิ์รูท</string>
@@ -1485,8 +1502,13 @@
     <string name="home_favorites_full">รายการโปรดครบทั้งสี่แล้ว กดค้างที่แอปหนึ่งบนหน้าจอหลักเพื่อเปลี่ยน</string>
     <string name="home_choose_favorite_app">เลือกแอปหรือทางลัด</string>
     <string name="home_shortcut_badge">ทางลัด</string>
-    <string name="home_show_favorite_apps">แอปและวิดเจ็ตบนหน้าจอหลัก</string>
-    <string name="home_show_favorite_apps_description">แอปโปรดและวิดเจ็ตของคุณใต้ปุ่มหลัก เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="app_drawer_tab_shortcuts">ทางลัด</string>
+    <string name="home_show_favorite_apps">แอปโปรดบนหน้าจอหลัก</string>
+    <string name="home_show_favorite_apps_description">แอปโปรดของคุณใต้ปุ่มหลัก เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="home_show_widgets">วิดเจ็ตบนหน้าจอหลัก</string>
+    <string name="home_show_widgets_description">วิดเจ็ตของคุณ หน้าของวิดเจ็ต และไทล์เพิ่มวิดเจ็ต เมื่อ Open Headunit เป็นตัวเปิดแอปของคุณ</string>
+    <string name="home_surface_opacity">ความทึบของแผง</string>
+    <string name="home_surface_opacity_description">ลดค่าลงเพื่อให้ภาพพื้นหลังของคุณมองเห็นทะลุแผงและปุ่มของหน้าจอหลัก</string>
     <string name="home_show_clock">วันที่และเวลาบนหน้าจอหลัก</string>
     <string name="home_show_clock_description">เวลาและวันที่ของวันนี้ที่ด้านบนปุ่มหลัก</string>
     <string name="home_show_speed">ความเร็ว GPS บนหน้าจอหลัก</string>
@@ -1522,4 +1544,16 @@
     <string name="audio_settings_reconnect">บันทึกการตั้งค่าเสียงแล้ว เชื่อมต่อ Android Auto ใหม่เพื่อใช้การตั้งค่า</string>
     <string name="native_aa_candidate_android_radio_description">ใช้ Bluetooth ของ Android แทนการเลือกโมดูล Bluetooth ของเครื่องโดยอัตโนมัติ ปิดไว้เพื่อใช้การเลือกอัตโนมัติ หากเปิดตัวเลือกการเชื่อมต่อผ่านโมดูลอยู่ ให้ปิดตัวเลือกนั้นก่อน</string>
     <string name="external_bt_candidate_transport_description">บังคับเชื่อมต่อผ่านโมดูล Bluetooth ของเครื่องแทนการเลือกอัตโนมัติ ต้องมีบริการโมดูลที่เข้ากันได้ ปิดไว้เพื่อให้ใช้ Bluetooth ของ Android ได้เมื่อบริการไม่ตอบสนอง การเปิดตัวเลือกนี้จะปิดทางเลือกสำรองดังกล่าว</string>
+    <string name="audio_matching_mode">การแก้ไขจังหวะเวลาของเพลง</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">ค่าเริ่มต้น</string>
+    <string name="audio_matching_wsola_hint">ใช้ทรัพยากรน้อย</string>
+    <string name="audio_matching_phase_vocoder_hint">สมดุล</string>
+    <string name="audio_matching_phase_vocoder_short_hint">ความหน่วงต่ำ</string>
+    <string name="audio_matching_phase_gradient_hint">เล่นแบบช้า</string>
+    <string name="audio_matching_description">OHU ยังคงเป็นค่าเริ่มต้น WSOLA จัดแนวรูปคลื่นที่ซ้อนกัน ส่วน Phase Vocoder ปรับเฟสของสเปกตรัม Short ใช้หน้าต่างวิเคราะห์ที่สั้นกว่า Phase Gradient สร้างเฟสใหม่โดยอินทิเกรตเกรเดียนต์ของเฟส วิธีที่พัฒนาขึ้นอย่างอิสระเหล่านี้เพิ่มความหน่วงในการประมวลผล ชื่อไม่ได้จัดอันดับคุณภาพเสียง\n\nวิธีเนทีฟ: เพลง PCM\nเสียงนำทาง เสียงตอบกลับ เสียงระบบ และ AAC ใช้ OHU\nเชื่อมต่อใหม่เพื่อใช้การเปลี่ยนแปลง การตั้งค่าเอนจินที่ถูกลบจะกลับเป็น OHU</string>
 </resources>

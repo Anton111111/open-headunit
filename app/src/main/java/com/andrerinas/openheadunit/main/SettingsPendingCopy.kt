@@ -42,12 +42,12 @@ class SettingsPendingCopy {
     var enableRotary: Boolean? = null
     var mediaKeyRouting: MediaKeyRoutingPolicy.Mode? = null
     var audioLatencyMultiplier: Int? = null
+    var audioMatchingMode: com.andrerinas.openheadunit.decoder.audio.AudioTimeCorrectionMode? = null
     var useLibusb: Boolean? = null
     var audioQueueCapacity: Int? = null
     var showToastMessages: Boolean? = null
     var screenOrientation: Settings.ScreenOrientation? = null
     var appLanguage: String? = null
-    var fakeSpeed: Boolean? = null
     var autoRestartWifi: Boolean? = null
     var narrowBandProfileCap: Boolean? = null
     var debugVideoLowLatency: Boolean? = null
@@ -62,6 +62,7 @@ class SettingsPendingCopy {
     var nativeAaIgnoreExternalBt: Boolean? = null
     var externalBtZbtTransport: Boolean? = null
     var externalBtBlinkTransport: Boolean? = null
+    var externalBtZjSocketTransport: Boolean? = null
     var nativeApTransport: NativeStrategy? = null
     var nativeDriverSelectionMode: NativeDriverSelectionPolicy.Mode? = null
     var nativeDriverSelectionTimeout: Int? = null
@@ -130,12 +131,12 @@ class SettingsPendingCopy {
         enableRotary = settings.enableRotary
         mediaKeyRouting = settings.mediaKeyRouting
         audioLatencyMultiplier = settings.audioLatencyMultiplier
+        audioMatchingMode = settings.audioMatchingMode
         useLibusb = settings.useLibusb
         audioQueueCapacity = settings.audioQueueCapacity
         showToastMessages = settings.showToastMessages
         screenOrientation = settings.screenOrientation
         appLanguage = settings.appLanguage
-        fakeSpeed = settings.fakeSpeed
         autoRestartWifi = settings.autoRestartWifiWhenP2pStuck
         narrowBandProfileCap = settings.narrowBandProfileCap
         debugVideoLowLatency = settings.debugVideoLowLatency
@@ -150,6 +151,7 @@ class SettingsPendingCopy {
         nativeAaIgnoreExternalBt = settings.nativeAaIgnoreExternalBt
         externalBtZbtTransport = settings.externalBtZbtTransport
         externalBtBlinkTransport = settings.externalBtBlinkTransport
+        externalBtZjSocketTransport = settings.externalBtZjSocketTransport
         nativeApTransport = settings.nativeApStrategy
         nativeDriverSelectionMode = settings.nativeDriverSelectionMode
         nativeDriverSelectionTimeout = settings.nativeDriverSelectionTimeoutSec
@@ -219,12 +221,12 @@ class SettingsPendingCopy {
         enableRotary != settings.enableRotary ||
         mediaKeyRouting != settings.mediaKeyRouting ||
         audioLatencyMultiplier != settings.audioLatencyMultiplier ||
+        audioMatchingMode != settings.audioMatchingMode ||
         useLibusb != settings.useLibusb ||
         audioQueueCapacity != settings.audioQueueCapacity ||
         showToastMessages != settings.showToastMessages ||
         screenOrientation != settings.screenOrientation ||
         appLanguage != settings.appLanguage ||
-        fakeSpeed != settings.fakeSpeed ||
         autoRestartWifi != settings.autoRestartWifiWhenP2pStuck ||
         narrowBandProfileCap != settings.narrowBandProfileCap ||
         debugVideoLowLatency != settings.debugVideoLowLatency ||
@@ -239,6 +241,7 @@ class SettingsPendingCopy {
         nativeAaIgnoreExternalBt != settings.nativeAaIgnoreExternalBt ||
         externalBtZbtTransport != settings.externalBtZbtTransport ||
         externalBtBlinkTransport != settings.externalBtBlinkTransport ||
+        externalBtZjSocketTransport != settings.externalBtZjSocketTransport ||
         nativeApTransport != settings.nativeApStrategy ||
         nativeDriverSelectionMode != settings.nativeDriverSelectionMode ||
         nativeDriverSelectionTimeout != settings.nativeDriverSelectionTimeoutSec ||

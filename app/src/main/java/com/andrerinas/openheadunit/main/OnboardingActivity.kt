@@ -112,6 +112,10 @@ class OnboardingActivity : BaseActivity() {
     private val permSpecialLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { permissionBinder?.rebind() }
+    // onResume settles launcherRequestPending once this has run.
+    private val homeRoleLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { CarLauncherManager.onRoleRequestResult(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -430,7 +434,7 @@ class OnboardingActivity : BaseActivity() {
                 if (checked) {
                     if (!CarLauncherManager.isDefaultLauncher(this@OnboardingActivity)) {
                         launcherRequestPending = true
-                        CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+                        CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity, homeRoleLauncher)
                     }
                 } else {
                     launcherRequestPending = false
@@ -441,7 +445,7 @@ class OnboardingActivity : BaseActivity() {
         findViewById<MaterialButton>(R.id.onb_launcher_default_button).setOnClickListener {
             // Only shown with the switch on, where a request is already pending or launcher mode
             // is already stored, so asking again needs no extra bookkeeping.
-            CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity)
+            CarLauncherManager.promptSetDefaultLauncher(this@OnboardingActivity, homeRoleLauncher)
         }
 
         // --- Location: this device's GPS vs the connected phone's GPS ---
@@ -1184,7 +1188,7 @@ class OnboardingActivity : BaseActivity() {
         val par = AnnouncedDensityPolicy.pixelAspectE4(
             settings.videoFitMode, pw, ph, r.width, r.height, settings.pixelAspectRatioE4
         )
-        return AnnouncedDensityPolicy.decide(0, selectedSize, w, h, par).announced
+        return AnnouncedDensityPolicy.decide(0, selectedSize, w, h, par, panelW = pw, panelH = ph).announced
     }
 
     /** Warn (in red) when the current resolution is higher than the panel: the DPI is computed for

@@ -67,6 +67,16 @@
     <string name="threshold_brightness_hint">Ekran parlaklığı bu değerin altında olduğunda koyu mod etkinleşir. Android parlaklığı 0–255 olarak bildirir ancak gerçek aralık cihaza göre değişebilir. Cihazınız için doğru eşiği denemeniz gerekebilir.</string>
     <string name="current_light_reading">Mevcut ışık: %d Lux</string>
     <string name="enable_fine_lux_control">Hassas kontrol (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">Geçerli car_mode: %1$d. Eşleme: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Gündüz, sıfır dışı = Gece</string>
+    <string name="car_signal_mapping_inverted">0 = Gece, sıfır dışı = Gündüz</string>
+    <string name="car_signal_unavailable">Bu ana ünitede car_mode şu anda okunamıyor.</string>
+    <string name="car_signal_headlights_question">Farlar şu anda açık mı?</string>
+    <string name="car_signal_calibration_title">ILL+ Kalibrasyonu</string>
+    <string name="car_signal_recalibrate">Yeniden kalibre et</string>
+    <string name="car_signal_headlights_on">Açık</string>
+    <string name="car_signal_headlights_off">Kapalı</string>
+    <string name="car_signal_calibration_saved">ILL+ kalibrasyonu kaydedildi ve uygulandı</string>
     <string name="night_mode_start">Gece Modu Başlangıç Saati</string>
     <string name="night_mode_end">Gece Modu Bitiş Saati</string>
 
@@ -136,6 +146,7 @@
     <string name="orientation_portrait">Dikey (90°)</string>
     <string name="orientation_portrait_reverse">Ters Dikey (270°)</string>
     <string name="enter_dpi_value">DPI değeri girin (otomatik için 0)</string>
+    <string name="enter_audio_offset_value">Değeri girin (0-250)</string>
     <string name="custom_margin">Özel Kenar Boşluğu</string>
     <string name="custom_margin_description">Özel ekran kenar boşluklarını ayarla (otomatik için 0).</string>
     <string name="enter_custom_margins">Özel kenar boşluklarını girin (otomatik için 0)</string>
@@ -549,8 +560,6 @@
     <string name="wait_for_wifi_description">Açılışta Wi-Fi Direct başlatılmadan önce Wi-Fi bağlantısı beklenir. Multimedya sisteminiz açıldıktan sonra Wi-Fi\'a bağlanmak için birkaç saniyeye ihtiyaç duyuyorsa bunu etkinleştirin.</string>
     <string name="wait_for_wifi_timeout">Wi-Fi bekleme zaman aşımı</string>
     <string name="wireless_24ghz_warning">Not: 2.4GHz cihazlarda kablosuz Android Auto gecikmelere, takılmalara ve bağlantı kesilmelerine neden olabilir. Sorun yaşarsanız, bunun bir ağ kısıtlaması olup olmadığını doğrulamak için lütfen USB üzerinden test edin.</string>
-    <string name="fake_speed_title">Video Kilidini Devre Dışı Bırak (Sahte Hız)</string>
-    <string name="fake_speed_description">Sürüş sırasında video içeriğinin engellenmesini önlemek için telefona sabit bir düşük hız (0.5 m/s) bildirir. Dikkatli kullanın.</string>
     <string name="wireless_mode_helper">Kablosuz Yardımcı</string>
     <string name="wireless_mode_native">Yerel (Native)</string>
     <string name="wireless_mode_server">Headunit Sunucusu</string>
@@ -758,6 +767,12 @@
     <string name="settings_tab_basic">Temel</string>
     <string name="settings_tab_advanced">Gelişmiş</string>
     <string name="settings_search_hint">Ayarlarda ara</string>
+    <string name="settings_scope_wifi_hidden">USB ayarları gösteriliyor. WiFi ayarları gizli.</string>
+    <string name="settings_scope_usb_hidden">WiFi ayarları gösteriliyor. USB ayarları gizli.</string>
+    <string name="settings_scope_usb_wifi_hidden">Dahili Mod ayarları gösteriliyor. USB ve WiFi ayarları gizli.</string>
+    <string name="settings_scope_change">Değiştir</string>
+    <string name="settings_search_clear">Aramayı temizle</string>
+    <string name="settings_search_no_results">\"%1$s\" ile eşleşen ayar yok.</string>
     <string name="connection_mode">Bağlantı modu</string>
     <string name="connection_kind_usb_cable">USB kablosu (doğrudan)</string>
     <string name="connection_kind_usb_wireless_adapter">USB kablosuz adaptör</string>
@@ -1000,13 +1015,15 @@
     <string name="zbt_probe_title">Ana ünitenin Bluetooth modülünü test et</string>
     <string name="zbt_probe_idle">Çalıştırmak için dokunun</string>
     <string name="zbt_probe_running">Çalışıyor…</string>
-    <string name="zbt_probe_message">Bu ünitenin ayrı Bluetooth çipine bir Android Auto bağlantısı taşıyıp taşıyamayacağını sorar. Önce yaklaşık sekiz saniyede çipin yanıt verip vermediğini kontrol eder. Yanıt veriyorsa yaklaşık bir buçuk dakika izler. Bu ayarın altındaki satır ne olduğunu gösterir. Ünitede başka hiçbir şeye dokunulmaz.\n\nÇip aynı anda tek bir programla konuşur. Üzerinden zaten bir bağlantı geçiyorsa test, çalışmak yerine bunu bildirir. Tek başına denemek için önce yukarıdaki ayarı kapatın.\n\nUyandır ve izle, çipten Android Auto için telefonunuza yeniden bağlanmasını da ister. Bir şeyi değiştiren tek kısım budur ve üniteyi yeniden başlatmak bunu geri alır. Lütfen sonrasında günlüğü dışa aktarıp ekleyin.</string>
+    <string name="zbt_probe_message">Her iki seçenek de izlemeden önce Bluetooth modülünü başlatır. Bu, Bluetooth durumunu etkileyebilir. Uyandır ve izle ayrıca telefona bağlantı ister.\n\nOHU modülü kullanırken veya kontrol ederken test önceliği ona verir. Testten sonra günlüğü dışa aktarın.</string>
     <string name="zbt_probe_watch_only">Yalnızca izle</string>
     <string name="zbt_probe_wake_and_watch">Uyandır ve izle</string>
     <string name="external_bt_blink_transport">FYT harici Bluetooth modülü üzerinden bağlan</string>
     <string name="external_bt_module_controls_hint">Telefon eşleştirme, bağlantı önceliği ve sürücü seçimi harici Bluetooth modülü tarafından yönetilir.</string>
     <string name="external_bt_module_last_phone">Modül üzerinden bağlanan son telefon</string>
     <string name="external_bt_blink_transport_description">Deneyseldir. Telefonu aramalar için ayrı bir Bluetooth modülüyle eşleşen FYT üniteleri içindir; örneğin DUDUOS üzerindeki \"DUDUAUTO\". Şu ana kadar test edilen tek ROM budur. Kablosuz Android Auto bağlantı kurulum adımını bu ünitenin Bluetooth\'u değil modül taşır ve normalde bunu yerleşik Car Link uygulaması yanıtlar. Bu ayar açıkken yanıtı bu uygulama verir, böylece aramalar modülde ve aracın hoparlörlerinde kalır.\n\nÖnce yerleşik Car Link uygulamasını devre dışı bırakın (pm disable-user com.syu.carlink). Aksi halde iki uygulama aynı kanalı okur. Kanal, ünite izin veriyorsa root olmadan, vermiyorsa root ile açılır. Native\'i seçin, telefonu yalnızca modülle eşleştirin ve bağlanmazsa günlüğü dışa aktarın.</string>
+    <string name="external_bt_zj_socket_transport">ZJ Bluetooth soketi üzerinden bağlan</string>
+    <string name="external_bt_zj_socket_transport_description">ZJ Bluetooth modülünün kablosuz Android Auto el sıkışmasını yerel bir soket (/dev/socket/zj_bt_socket) üzerinden taşıdığı üniteler içindir. Bu soket bağlantı kabul ettiğinde uygulama onu kendiliğinden kullanır. Bunu yalnızca ünitenizde soket varsa ve uygulama onu görmüyorsa açın.</string>
     <string name="external_bt_blink_refused_stock_enabled">Harici Bluetooth modülü: yerleşik Car Link uygulaması hâlâ etkin. Uygulamayı devre dışı bırakın (pm disable-user com.syu.carlink) veya bu aktarım yöntemini kapatın.</string>
     <string name="external_bt_blink_refused_stock_running">Harici Bluetooth modülü: yerleşik Car Link uygulaması devre dışı ama hâlâ çalışıyor. Üniteyi yeniden başlatın.</string>
     <string name="external_bt_blink_refused_root">Harici Bluetooth modülü: modülün kanalını açmak için bu ünitede root gerekir ve root erişimi reddedildi veya kullanılamıyor.</string>
@@ -1427,8 +1444,13 @@
     <string name="home_favorites_full">Dört favorinin hepsi dolu. Değiştirmek için ana ekranda birine basılı tut.</string>
     <string name="home_choose_favorite_app">Bir uygulama veya kısayol seç</string>
     <string name="home_shortcut_badge">Kısayol</string>
-    <string name="home_show_favorite_apps">Ana ekranda uygulamalar ve widget\'lar</string>
-    <string name="home_show_favorite_apps_description">Open Headunit başlatıcınız olduğunda, ana düğmenin altında favori uygulamalarınız ve widget\'larınız</string>
+    <string name="app_drawer_tab_shortcuts">Kısayollar</string>
+    <string name="home_show_favorite_apps">Ana ekranda favori uygulamalar</string>
+    <string name="home_show_favorite_apps_description">Open Headunit başlatıcınız olduğunda, ana düğmenin altında favori uygulamalarınız</string>
+    <string name="home_show_widgets">Ana ekranda widget\'lar</string>
+    <string name="home_show_widgets_description">Open Headunit başlatıcınız olduğunda, widget\'larınız, sayfaları ve Widget ekle kutucuğu</string>
+    <string name="home_surface_opacity">Panel opaklığı</string>
+    <string name="home_surface_opacity_description">Arka plan resminizin ana ekrandaki panellerden ve düğmelerden görünmesi için değeri düşürün.</string>
     <string name="home_show_clock">Ana ekranda tarih ve saat</string>
     <string name="home_show_clock_description">Saat ve bugünün tarihi, ana düğmenin üstünde</string>
     <string name="home_show_speed">Ana ekranda GPS hızı</string>
@@ -1464,4 +1486,16 @@
     <string name="audio_settings_reconnect">Ses ayarları kaydedildi. Uygulamak için Android Auto\'yu yeniden bağlayın.</string>
     <string name="native_aa_candidate_android_radio_description">Ünitenin Bluetooth modülünü otomatik seçmek yerine Android Bluetooth kullanın. Otomatik seçim için kapalı bırakın. Modül üzerinden bağlantı seçeneği açıksa önce onu kapatın.</string>
     <string name="external_bt_candidate_transport_description">Otomatik seçim yerine ünitenin Bluetooth modülü üzerinden bağlantıyı zorlayın. Uyumlu bir modül hizmeti gerektirir. Hizmet yanıt vermediğinde Android Bluetooth kullanılabilmesi için kapalı bırakın; açılması bu yedek yolu engeller.</string>
+    <string name="audio_matching_mode">Müzik zaman düzeltmesi</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Varsayılan</string>
+    <string name="audio_matching_wsola_hint">Hafif</string>
+    <string name="audio_matching_phase_vocoder_hint">Dengeli</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Düşük gecikme</string>
+    <string name="audio_matching_phase_gradient_hint">Yavaş oynatma</string>
+    <string name="audio_matching_description">OHU varsayılan olarak kalır. WSOLA örtüşen dalga biçimlerini hizalar; Phase Vocoder spektral fazları ayarlar. Short daha kısa analiz penceresi kullanır. Phase Gradient faz gradyanlarını entegre ederek fazları yeniden oluşturur. Bu bağımsız uygulamalar işleme gecikmesi ekler; adlar ses kalitesini sıralamaz.\n\nYerel yöntemler: PCM müzik. Navigasyon, sesli yanıtlar, sistem sesleri ve AAC OHU kullanır.\nUygulamak için yeniden bağlanın. Kaldırılan motorların ayarları OHU olarak sıfırlanır.</string>
 </resources>

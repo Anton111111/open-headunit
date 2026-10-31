@@ -67,6 +67,16 @@
     <string name="current_light_reading">Ánh sáng hiện tại: %d Lux</string>
     <string name="current_brightness_reading">Độ sáng hiện tại: %d / 255</string>
     <string name="enable_fine_lux_control">Điều chỉnh tinh (0–100 Lux)</string>
+    <string name="car_signal_calibration_info_format">car_mode hiện tại: %1$d. Ánh xạ: %2$s.</string>
+    <string name="car_signal_mapping_default">0 = Ban ngày, khác 0 = Ban đêm</string>
+    <string name="car_signal_mapping_inverted">0 = Ban đêm, khác 0 = Ban ngày</string>
+    <string name="car_signal_unavailable">Không thể đọc car_mode trên đầu phát này lúc này.</string>
+    <string name="car_signal_headlights_question">Đèn pha hiện đang bật chứ?</string>
+    <string name="car_signal_calibration_title">Hiệu chỉnh ILL+</string>
+    <string name="car_signal_recalibrate">Hiệu chỉnh lại</string>
+    <string name="car_signal_headlights_on">Bật</string>
+    <string name="car_signal_headlights_off">Tắt</string>
+    <string name="car_signal_calibration_saved">Hiệu chỉnh ILL+ đã được lưu và áp dụng</string>
     <string name="night_mode_start">Giờ bắt đầu chế độ tối</string>
     <string name="night_mode_end">Giờ kết thúc chế độ tối</string>
 
@@ -136,6 +146,7 @@
     <string name="orientation_portrait">Dọc (90°)</string>
     <string name="orientation_portrait_reverse">Dọc ngược (270°)</string>
     <string name="enter_dpi_value">Nhập DPI (0 = tự động)</string>
+    <string name="enter_audio_offset_value">Nhập giá trị (0-250)</string>
     <string name="custom_margin">Lề tuỳ chỉnh</string>
     <string name="custom_margin_description">Đặt lề hiển thị tuỳ chỉnh (0 = tự động).</string>
     <string name="enter_custom_margins">Nhập lề tuỳ chỉnh (0 = tự động)</string>
@@ -569,8 +580,6 @@
     <string name="wait_for_wifi_description">Khi khởi động, chờ WiFi kết nối trước khi bắt đầu WiFi Direct. Bật nếu headunit cần vài giây để kết nối WiFi sau khi bật nguồn.</string>
     <string name="wait_for_wifi_timeout">Thời gian chờ WiFi</string>
     <string name="wireless_24ghz_warning">Lưu ý: Android Auto không dây trên thiết bị 2.4GHz có thể gây giật, lag và ngắt kết nối. Nếu gặp vấn đề, vui lòng kiểm tra qua USB để xác nhận có phải giới hạn mạng không.</string>
-    <string name="fake_speed_title">Tắt khoá video (Giả tốc độ)</string>
-    <string name="fake_speed_description">Báo cho điện thoại tốc độ thấp không đổi (0.5 m/s) để không bị chặn nội dung video khi lái. Dùng cẩn thận.</string>
     <string name="wireless_mode_helper">Wireless Helper</string>
     <string name="wireless_mode_native">Native</string>
     <string name="wireless_mode_server">Headunit Server</string>
@@ -766,6 +775,12 @@
     <string name="settings_tab_basic">Cơ bản</string>
     <string name="settings_tab_advanced">Nâng cao</string>
     <string name="settings_search_hint">Tìm cài đặt</string>
+    <string name="settings_scope_wifi_hidden">Đang hiện cài đặt USB. Cài đặt WiFi đang bị ẩn.</string>
+    <string name="settings_scope_usb_hidden">Đang hiện cài đặt WiFi. Cài đặt USB đang bị ẩn.</string>
+    <string name="settings_scope_usb_wifi_hidden">Đang hiện cài đặt chế độ độc lập. Cài đặt USB và WiFi đang bị ẩn.</string>
+    <string name="settings_scope_change">Thay đổi</string>
+    <string name="settings_search_clear">Xóa tìm kiếm</string>
+    <string name="settings_search_no_results">Không có cài đặt nào khớp với \"%1$s\".</string>
     <string name="connection_mode">Chế độ kết nối</string>
     <string name="connection_kind_usb_cable">Cáp USB (trực tiếp)</string>
     <string name="connection_kind_usb_wireless_adapter">Bộ chuyển không dây USB</string>
@@ -1007,13 +1022,15 @@
     <string name="zbt_probe_title">Kiểm tra mô-đun Bluetooth của đầu phát</string>
     <string name="zbt_probe_idle">Chạm để chạy</string>
     <string name="zbt_probe_running">Đang chạy…</string>
-    <string name="zbt_probe_message">Hỏi chip Bluetooth riêng của thiết bị này xem nó có mang được kết nối Android Auto hay không. Trong khoảng tám giây, phép thử kiểm tra xem chip có trả lời hay không, và chỉ khi có mới theo dõi khoảng một phút rưỡi. Dòng bên dưới tùy chọn này cho biết điều gì đang diễn ra, và không có gì khác trên thiết bị bị đụng tới.\n\nChip chỉ nói chuyện với một chương trình tại một thời điểm. Nếu đã có một kết nối đi qua nó, phép thử sẽ báo điều đó thay vì kiểm tra. Hãy tắt tùy chọn phía trên trước để thử riêng.\n\nĐánh thức và theo dõi còn yêu cầu chip kết nối lại với điện thoại của bạn cho Android Auto. Đó là phần duy nhất thay đổi điều gì đó, và khởi động lại thiết bị sẽ hoàn tác. Sau đó hãy xuất nhật ký và đính kèm.</string>
+    <string name="zbt_probe_message">Cả hai tùy chọn đều khởi tạo mô-đun Bluetooth trước khi theo dõi. Việc này có thể ảnh hưởng đến trạng thái Bluetooth. Đánh thức và theo dõi còn yêu cầu kết nối với điện thoại.\n\nPhép thử nhường quyền khi OHU đang sử dụng hoặc kiểm tra mô-đun. Hãy xuất nhật ký sau khi thử.</string>
     <string name="zbt_probe_watch_only">Chỉ theo dõi</string>
     <string name="zbt_probe_wake_and_watch">Đánh thức và theo dõi</string>
     <string name="external_bt_blink_transport">Kết nối qua mô-đun Bluetooth ngoài FYT</string>
     <string name="external_bt_module_controls_hint">Mô-đun Bluetooth ngoài quản lý việc ghép nối điện thoại, mức ưu tiên kết nối và lựa chọn trình điều khiển.</string>
     <string name="external_bt_module_last_phone">Điện thoại kết nối gần nhất qua mô-đun</string>
     <string name="external_bt_blink_transport_description">Thử nghiệm. Dành cho thiết bị FYT mà điện thoại ghép nối để gọi với một mô-đun Bluetooth riêng, như \"DUDUAUTO\" trên DUDUOS, ROM duy nhất đã được thử đến nay. Mô-đun này, không phải Bluetooth của thiết bị, truyền bắt tay Android Auto không dây, và ứng dụng Car Link gốc thường trả lời nó. Khi bật tùy chọn này, ứng dụng này sẽ trả lời thay, nên cuộc gọi vẫn ở trên mô-đun và loa xe.\n\nHãy tắt ứng dụng Car Link gốc trước (pm disable-user com.syu.carlink), nếu không cả hai ứng dụng sẽ đọc cùng một kênh. Kênh được mở không cần root nếu thiết bị cho phép, nếu không thì mở qua root. Chọn Native, chỉ ghép nối điện thoại với mô-đun, và xuất nhật ký nếu không kết nối được.</string>
+    <string name="external_bt_zj_socket_transport">Kết nối qua socket Bluetooth ZJ</string>
+    <string name="external_bt_zj_socket_transport_description">Dành cho các thiết bị có mô-đun Bluetooth ZJ truyền bắt tay Android Auto không dây qua một socket cục bộ (/dev/socket/zj_bt_socket). Ứng dụng tự dùng socket này khi nó chấp nhận kết nối. Chỉ bật khi thiết bị của bạn có socket mà ứng dụng không nhận ra.</string>
     <string name="external_bt_blink_refused_stock_enabled">Mô-đun Bluetooth ngoài: ứng dụng Car Link gốc vẫn đang bật. Hãy tắt nó (pm disable-user com.syu.carlink) hoặc tắt phương thức truyền này.</string>
     <string name="external_bt_blink_refused_stock_running">Mô-đun Bluetooth ngoài: ứng dụng Car Link gốc đã tắt nhưng vẫn đang chạy. Hãy khởi động lại thiết bị.</string>
     <string name="external_bt_blink_refused_root">Mô-đun Bluetooth ngoài: mở kênh của mô-đun cần quyền root trên thiết bị này, nhưng quyền root bị từ chối hoặc không có.</string>
@@ -1434,8 +1451,13 @@
     <string name="home_favorites_full">Đã đủ bốn ứng dụng yêu thích. Nhấn giữ một ứng dụng trên màn hình chính để đổi.</string>
     <string name="home_choose_favorite_app">Chọn ứng dụng hoặc lối tắt</string>
     <string name="home_shortcut_badge">Lối tắt</string>
-    <string name="home_show_favorite_apps">Ứng dụng và tiện ích trên màn hình chính</string>
-    <string name="home_show_favorite_apps_description">Ứng dụng yêu thích và tiện ích của bạn dưới nút chính, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="app_drawer_tab_shortcuts">Lối tắt</string>
+    <string name="home_show_favorite_apps">Ứng dụng yêu thích trên màn hình chính</string>
+    <string name="home_show_favorite_apps_description">Ứng dụng yêu thích của bạn dưới nút chính, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="home_show_widgets">Tiện ích trên màn hình chính</string>
+    <string name="home_show_widgets_description">Tiện ích của bạn, các trang của chúng và ô Thêm tiện ích, khi Open Headunit là trình khởi chạy của bạn</string>
+    <string name="home_surface_opacity">Độ mờ của bảng</string>
+    <string name="home_surface_opacity_description">Giảm xuống để hình nền của bạn hiện qua các bảng và nút trên màn hình chính.</string>
     <string name="home_show_clock">Ngày và giờ trên màn hình chính</string>
     <string name="home_show_clock_description">Giờ và ngày hôm nay ở trên nút chính</string>
     <string name="home_show_speed">Tốc độ GPS trên màn hình chính</string>
@@ -1471,4 +1493,16 @@
     <string name="audio_settings_reconnect">Đã lưu cài đặt âm thanh. Hãy kết nối lại Android Auto để áp dụng.</string>
     <string name="native_aa_candidate_android_radio_description">Dùng Bluetooth của Android thay vì tự động chọn mô-đun Bluetooth của đầu màn hình. Để tắt nếu muốn chọn tự động. Nếu tùy chọn kết nối qua mô-đun đang bật, hãy tắt tùy chọn đó trước.</string>
     <string name="external_bt_candidate_transport_description">Buộc kết nối qua mô-đun Bluetooth của đầu màn hình thay vì chọn tự động. Cần dịch vụ mô-đun tương thích. Để tắt để cho phép dùng Bluetooth của Android khi dịch vụ không phản hồi; bật tùy chọn này sẽ chặn đường kết nối dự phòng đó.</string>
+    <string name="audio_matching_mode">Hiệu chỉnh thời gian nhạc</string>
+    <string name="audio_matching_ohu">OHU</string>
+    <string name="audio_matching_wsola">WSOLA</string>
+    <string name="audio_matching_phase_vocoder">Phase Vocoder</string>
+    <string name="audio_matching_phase_vocoder_short">Phase Vocoder Short</string>
+    <string name="audio_matching_phase_gradient">Phase Gradient</string>
+    <string name="audio_matching_ohu_hint">Mặc định</string>
+    <string name="audio_matching_wsola_hint">Nhẹ</string>
+    <string name="audio_matching_phase_vocoder_hint">Cân bằng</string>
+    <string name="audio_matching_phase_vocoder_short_hint">Độ trễ thấp</string>
+    <string name="audio_matching_phase_gradient_hint">Phát chậm</string>
+    <string name="audio_matching_description">OHU vẫn là mặc định. WSOLA căn chỉnh các dạng sóng chồng lấp; Phase Vocoder điều chỉnh pha phổ. Short dùng cửa sổ phân tích ngắn hơn. Phase Gradient tái tạo pha bằng cách tích phân gradient pha. Các triển khai độc lập này tăng độ trễ xử lý; tên không xếp hạng chất lượng âm thanh.\n\nPhương pháp native: nhạc PCM. Điều hướng, câu trả lời bằng giọng nói, âm thanh hệ thống và AAC dùng OHU.\nKết nối lại để áp dụng. Cài đặt của bộ xử lý đã xóa được đặt lại về OHU.</string>
 </resources>

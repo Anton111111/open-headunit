@@ -220,10 +220,13 @@ class MainActivity : BaseActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             Settings.setUsbAttachedActivityEnabled(applicationContext, appSettings.listenForUsbDevices)
             val launcherStored = appSettings.enableCarLauncher
-            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, CarLauncherManager.isDefaultLauncher(applicationContext))) {
+            val held = CarLauncherManager.isDefaultLauncher(applicationContext)
+            if (OnboardingLauncherPolicy.syncsAlias(launcherStored, held)) {
                 CarLauncherManager.syncWithSettings(applicationContext, launcherStored)
             } else {
-                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, keeping the launcher alias")
+                // A granted home role starts this screen and clears the one that asked, before it can store the mode.
+                appSettings.enableCarLauncher = OnboardingLauncherPolicy.launcherModeOnOpen(launcherStored, held)
+                AppLog.i("MainActivity: the app is the home app with launcher mode not stored yet, storing car launcher mode")
             }
         }
 
@@ -391,11 +394,11 @@ class MainActivity : BaseActivity() {
     private fun cancelAutoConnect() {
         if (!autoConnectInProgress) return
         AppLog.i("Auto-connect: cancelled by user")
-        // disconnect() handles all states including the Connecting state where
-        // ACTION_DISCONNECT in AapService used to be a no-op. Setting state to
-        // Disconnected here also feeds the observer, but we end the UI
-        // immediately rather than waiting for the round-trip.
-        App.provide(this).commManager.disconnect()
+        // Keep Exit ordering in the service: revoke any retained WPP lease before
+        // publishing Disconnected. The overlay can finish without waiting for teardown.
+        ContextCompat.startForegroundService(this, Intent(this, AapService::class.java).apply {
+            action = AapService.ACTION_DISCONNECT
+        })
         endAutoConnect(success = false)
     }
 
@@ -1294,6 +1297,7 @@ class MainActivity : BaseActivity() {
         val root = findViewById<View>(R.id.root)
         val appSettings = Settings(this)
         SystemUI.apply(window, root, appSettings.fullscreenMode)
+        SystemUI.keepLegacyBarsHidden(window, appSettings.fullscreenMode)
     }
 
     override fun onResume() {

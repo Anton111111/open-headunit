@@ -13,6 +13,7 @@ import com.andrerinas.openheadunit.input.KeyCode
 import com.andrerinas.openheadunit.main.FavoriteAppsPolicy
 import com.andrerinas.openheadunit.main.FavoriteTarget
 import com.andrerinas.openheadunit.main.HomePagesPolicy
+import com.andrerinas.openheadunit.main.HomeSurfaceOpacityPolicy
 import com.andrerinas.openheadunit.main.HomeWidgetsPolicy
 import com.andrerinas.openheadunit.input.MediaKeyRoutingPolicy
 import com.andrerinas.openheadunit.view.PerformanceOverlayField
@@ -297,6 +298,21 @@ class Settings(private val context: Context) {
             prefs.edit().putInt("night-mode-threshold-brightness", value).apply()
         }
 
+    /**
+     * Inverts interpretation of Settings.System.car_mode for ILL+ mode.
+     * Default mapping: 0 = day, non-zero = night.
+     */
+    var carSignalInvert: Boolean
+        get() = prefs.getBoolean("car-signal-invert", false)
+        set(value) {
+            prefs.edit().putBoolean("car-signal-invert", value).apply()
+        }
+
+    fun resolveCarSignalNight(carMode: Int): Boolean {
+        val defaultNight = carMode != 0
+        return if (carSignalInvert) !defaultNight else defaultNight
+    }
+
     var keyCodes: MutableMap<Int, Int>
         get() {
             val set = prefs.getStringSet("key-codes", mutableSetOf())!!
@@ -440,12 +456,6 @@ class Settings(private val context: Context) {
     var wifiRestartAdbVerified: Boolean
         get() = prefs.getBoolean("wifi-restart-adb-verified", false)
         set(value) = prefs.edit().putBoolean("wifi-restart-adb-verified", value).apply()
-
-    var fakeSpeed: Boolean
-        get() = prefs.getBoolean("fake_speed", true)
-        set(value) {
-            prefs.edit().putBoolean("fake_speed", value).apply()
-        }
 
     var gestureHintShown: Boolean
         get() = prefs.getBoolean("gesture_hint_shown", false)
@@ -1343,6 +1353,11 @@ class Settings(private val context: Context) {
         get() = prefs.getInt("audio-queue-capacity", 50)
         set(value) { prefs.edit().putInt("audio-queue-capacity", value).apply() }
 
+    var audioMatchingMode: com.andrerinas.openheadunit.decoder.audio.AudioTimeCorrectionMode
+        get() = com.andrerinas.openheadunit.decoder.audio.AudioTimeCorrectionMode.fromPreference(
+            prefs.getString("audio-matching-mode", null))
+        set(value) { prefs.edit().putString("audio-matching-mode", value.preferenceValue).apply() }
+
     var useAacAudio: Boolean
         get() = prefs.getBoolean("use-aac-audio", false)
         set(value) { prefs.edit().putBoolean("use-aac-audio", value).apply() }
@@ -1646,10 +1661,21 @@ class Settings(private val context: Context) {
         get() = prefs.getBoolean("home-pages-hint-shown", false)
         set(value) { prefs.edit().putBoolean("home-pages-hint-shown", value).apply() }
 
-    /** The favorite apps and the widgets on the launcher home; off, neither is shown but both are kept. */
+    /** The favorite apps on the launcher home; off, they are hidden but kept. */
     var showHomeFavoriteApps: Boolean
         get() = prefs.getBoolean("show-home-favorite-apps", true)
         set(value) { prefs.edit().putBoolean("show-home-favorite-apps", value).apply() }
+
+    /** The widgets and their pages on the launcher home; off, they are hidden but kept. Until it is
+     *  first saved it follows the favorites switch, which used to control both. */
+    var showHomeWidgets: Boolean
+        get() = prefs.getBoolean("show-home-widgets", showHomeFavoriteApps)
+        set(value) { prefs.edit().putBoolean("show-home-widgets", value).apply() }
+
+    /** How opaque the home's panels and tiles are, so a background image can show through. */
+    var homeSurfaceOpacityPercent: Int
+        get() = HomeSurfaceOpacityPolicy.clamp(prefs.getInt("home-surface-opacity-percent", HomeSurfaceOpacityPolicy.DEFAULT))
+        set(value) { prefs.edit().putInt("home-surface-opacity-percent", HomeSurfaceOpacityPolicy.clamp(value)).apply() }
 
     /** Date and time on the home screen. Off by default: the driver asks for them. */
     var showHomeClock: Boolean
@@ -2670,5 +2696,11 @@ class Settings(private val context: Context) {
     var externalBtBlinkTransport: Boolean
         get() = prefs.getBoolean("external-bt-blink-transport", false)
         set(value) = prefs.edit().putBoolean("external-bt-blink-transport", value).apply()
+
+    // Carry the Native AA handshake over the ZJ daemon's Unix socket. Off by default: the app also
+    // takes this route unasked when the socket accepts a connect.
+    var externalBtZjSocketTransport: Boolean
+        get() = prefs.getBoolean("external-bt-zj-socket-transport", false)
+        set(value) = prefs.edit().putBoolean("external-bt-zj-socket-transport", value).apply()
 
 }
