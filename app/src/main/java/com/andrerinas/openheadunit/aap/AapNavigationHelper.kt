@@ -78,13 +78,22 @@ class AapNavigationHelper(
             }
             val maneuver = if (direction == null) prepared.actionText
                 else context.getString(R.string.night_overlay_direction, prepared.actionText, direction)
+            val isRoundaboutManeuver = prepared.nextManeuver
+                ?.let { NavigationStatus.NavigationManeuver.NavigationType.forNumber(it) }
+                ?.let(::isRoundaboutManeuverType)
+                ?: LegacyNextEvent.forNumber(prepared.nextEventType)?.let(::isRoundaboutLegacyEvent)
+                ?: false
             val overlayNavigation = if (prepared.nextEventType != LegacyNextEvent.UNKNOWN.number) {
                 NightOverlayState.Navigation(
                     maneuver = maneuver,
                     distanceMeters = prepared.distanceMeters?.takeIf { it >= 0 },
                     timeToManeuverSeconds = prepared.timeSeconds?.takeIf { it >= 0 },
                     road = prepared.road.takeIf { it.isNotBlank() },
-                    details = buildManeuverDetails(prepared.turnNumber, prepared.turnAngle),
+                    details = buildManeuverDetails(
+                        turnNumber = prepared.turnNumber,
+                        turnAngle = prepared.turnAngle,
+                        isRoundaboutManeuver = isRoundaboutManeuver
+                    ),
                     icon = toOverlayIcon(
                         maneuverType = prepared.nextManeuver?.let {
                             NavigationStatus.NavigationManeuver.NavigationType.forNumber(it)
@@ -180,17 +189,14 @@ class AapNavigationHelper(
             ?.number
             ?: maneuverType?.let { maneuverTypeToLegacyTurnSide(it) }
         val nextManeuver = state?.stepsList?.firstOrNull()?.maneuver?.type?.number
-        val isRoundaboutManeuver = maneuverType?.let(::isRoundaboutManeuverType)
-            ?: LegacyNextEvent.forNumber(nextEventType)?.let(::isRoundaboutLegacyEvent)
-            ?: false
         val turnNumber = (
             state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitNumber
                 ?: detail?.takeIf { it.hasTurnNumber() }?.turnNumber
-            ).takeIf { isRoundaboutManeuver }
+            )
         val turnAngle = (
             state?.stepsList?.firstOrNull()?.maneuver?.roundaboutExitAngle
                 ?: detail?.takeIf { it.hasTurnAngle() }?.turnAngle
-            ).takeIf { isRoundaboutManeuver }
+            )
         val actionText = state?.stepsList?.firstOrNull()?.maneuver?.type?.let { maneuverTypeToAction(it) }
             ?: detail?.takeIf { it.hasNextTurn() }?.let { nextEventToAction(it.nextTurn) }
             ?: context.getString(R.string.nav_action_unknown)
@@ -352,7 +358,12 @@ class AapNavigationHelper(
         }
     }
 
-    private fun buildManeuverDetails(turnNumber: Int?, turnAngle: Int?): String? {
+    private fun buildManeuverDetails(
+        turnNumber: Int?,
+        turnAngle: Int?,
+        isRoundaboutManeuver: Boolean
+    ): String? {
+        if (!isRoundaboutManeuver) return null
         val parts = mutableListOf<String>()
         turnNumber?.takeIf { it > 0 }?.let {
             parts.add(context.getString(R.string.night_overlay_exit_number, it))
