@@ -37,6 +37,7 @@ import com.andrerinas.openheadunit.decoder.video.WarmRelaunchKeyframePolicy
 import com.andrerinas.openheadunit.input.ProjectionKeyPolicy
 import com.andrerinas.openheadunit.input.TouchCoordinateMapper
 import com.andrerinas.openheadunit.input.TwoFingerGestureTracker
+import com.andrerinas.openheadunit.utils.ActivityState
 import kotlinx.coroutines.launch
 import com.andrerinas.openheadunit.decoder.audio.MicRecorder
 import com.andrerinas.openheadunit.decoder.video.DecoderStopPolicy
@@ -70,7 +71,6 @@ import android.animation.PropertyValuesHolder
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.VideoView
-import com.bumptech.glide.Glide
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.andrerinas.openheadunit.main.QuickSettingsFragment
 import com.andrerinas.openheadunit.main.RenameNotice
@@ -1550,7 +1550,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             when (mediaType) {
                 "image" -> {
                     customImage?.visibility = View.VISIBLE
-                    customImage?.let { Glide.with(this).load(file).into(it) }
+                    customImage?.let { ActivityState.glide(this).load(file).into(it) }
                     if (keepRatio) {
                         customImage?.let { imageView ->
                             kenBurnsAnimator?.cancel()
@@ -1569,7 +1569,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 }
                 "gif" -> {
                     customImage?.visibility = View.VISIBLE
-                    customImage?.let { Glide.with(this).asGif().load(file).into(it) }
+                    customImage?.let { ActivityState.glide(this).asGif().load(file).into(it) }
                 }
                 "video" -> {
                     customVideo?.visibility = View.VISIBLE
@@ -1652,8 +1652,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
 
         lifecycleScope.launch {
             kotlinx.coroutines.delay(1000)
-            val isDestroyedCompat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && isDestroyed
-            if (!isFinishing && !isDestroyedCompat) {
+            if (!ActivityState.isGone(this@AapProjectionActivity)) {
                 recreate()
             }
         }
@@ -2263,38 +2262,18 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
             armWarmRelaunch()
         }
 
-        // --- Surface Mismatch Detection ---
-        // Compare actual surface dimensions with what HeadUnitScreenConfig negotiated.
-        // If they differ (e.g. system bars appeared/disappeared), update margins.
-        val prevUsableW = HeadUnitScreenConfig.getUsableWidth()
-        val prevUsableH = HeadUnitScreenConfig.getUsableHeight()
-
-        val anchorMoved = HeadUnitScreenConfig.updateSurfaceDimensions(width, height)
-
-        // What is cached is the usable area, which the screen config has already turned the right
-        // way up, so the orientation guard this used to carry could only reject a correct reading.
-        val shouldCache = !App.isPiPActive
-
-        // Cached whether or not the anchor moved: service discovery answers before any surface
-        // exists, so next session's announcement has only this to go on.
-        val canvasW = HeadUnitScreenConfig.getUsableWidth()
-        val canvasH = HeadUnitScreenConfig.getUsableHeight()
-        val canvasHash = HeadUnitScreenConfig.computeSettingsHash(settings)
-        if (shouldCache && (settings.cachedSurfaceWidth != canvasW ||
-                settings.cachedSurfaceHeight != canvasH ||
-                settings.cachedSurfaceSettingsHash != canvasHash)
-        ) {
-            settings.cachedSurfaceWidth = canvasW
-            settings.cachedSurfaceHeight = canvasH
-            settings.cachedSurfaceSettingsHash = canvasHash
-        } else if (!shouldCache) {
-            AppLog.i("[UI_DEBUG_FIX] Skipping surface dimension cache update due to transient orientation mismatch: ${width}x${height}")
-        }
-
-        if (anchorMoved) {
-            AppLog.i("[UI_DEBUG_FIX] Surface mismatch! Expected: ${prevUsableW}x${prevUsableH}, Actual: ${width}x${height}")
-            reannounceMargins()
-            // If transport not started yet, ServiceDiscoveryResponse will use the corrected values automatically.
+        val measuredView = projectionView as View
+        SystemUI.measureProjectionSurface(findViewById(R.id.container), measuredView) {
+            val dimensionsCurrent = if (measuredView is ProjectionView) {
+                val frame = measuredView.holder.surfaceFrame
+                frame.width() == width && frame.height() == height
+            } else {
+                measuredView.width == width && measuredView.height == height
+            }
+            if (projectionView === measuredView && ownedSurface === surface &&
+                videoDecoder.isCurrentSurface(surface) && dimensionsCurrent) {
+                updateSurfaceGeometry(width, height)
+            }
         }
 
         when (commManager.connectionState.value) {
@@ -2332,6 +2311,33 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
                 projectionView.setVideoSize(currentVideoWidth, currentVideoHeight)
                 ProjectionViewScaler.updateScale(projectionView as View, currentVideoWidth, currentVideoHeight)
             }
+        }
+    }
+
+    /** Only a surface belonging to the completed root layout may change persistent geometry. */
+    private fun updateSurfaceGeometry(width: Int, height: Int) {
+        val prevUsableW = HeadUnitScreenConfig.getUsableWidth()
+        val prevUsableH = HeadUnitScreenConfig.getUsableHeight()
+        val anchorMoved = HeadUnitScreenConfig.updateSurfaceDimensions(width, height)
+        val shouldCache = !App.isPiPActive
+
+        // Cache the usable area, already normalised by the screen config, even when it matched.
+        val canvasW = HeadUnitScreenConfig.getUsableWidth()
+        val canvasH = HeadUnitScreenConfig.getUsableHeight()
+        val canvasHash = HeadUnitScreenConfig.computeSettingsHash(settings)
+        if (shouldCache && (settings.cachedSurfaceWidth != canvasW ||
+                settings.cachedSurfaceHeight != canvasH ||
+                settings.cachedSurfaceSettingsHash != canvasHash)
+        ) {
+            settings.cachedSurfaceWidth = canvasW
+            settings.cachedSurfaceHeight = canvasH
+            settings.cachedSurfaceSettingsHash = canvasHash
+        } else if (!shouldCache) {
+            AppLog.i("[UI_DEBUG_FIX] Skipping surface dimension cache update due to transient orientation mismatch: ${width}x${height}")
+        }
+        if (anchorMoved) {
+            AppLog.i("[UI_DEBUG_FIX] Surface mismatch! Expected: ${prevUsableW}x${prevUsableH}, Actual: ${width}x${height}")
+            reannounceMargins()
         }
     }
 
@@ -2571,6 +2577,7 @@ class AapProjectionActivity : SurfaceActivity(), IProjectionView.Callbacks, Vide
         ownedSurface = null
         isSurfaceSet = false
         super.onDestroy()
+        ActivityState.release(this, findViewById(R.id.loading_custom_image))
         autoStartOfferTimer?.cancel()
         autoStartOfferTimer = null
         HeadUnitScreenConfig.onMarginsDiverged = null
